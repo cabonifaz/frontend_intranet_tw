@@ -1,0 +1,463 @@
+// ─── Layout ──────────────────────────────────────────────────────────────────
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.login-layout {
+  display: flex;
+  height: 100%;
+  background: #F8FAFC;
+}
+
+// ─── Panel izquierdo ─────────────────────────────────────────────────────────
+.panel-izquierdo {
+  flex: 0 0 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #131B2E;
+  overflow: hidden;
+
+  // Capa de imagen industrial (opacity: 0.4 + blend saturation)
+  &__imagen {
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/images/industrial-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.35;
+    mix-blend-mode: normal;
+  }
+
+  // Capa de gradiente multiplicado
+  &__gradiente {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(147.99deg, rgba(19, 27, 46, 0.8) 0%, rgba(0, 74, 198, 0.4) 100%);
+    mix-blend-mode: multiply;
+    z-index: 1;
+  }
+
+  // Contenido sobre las capas
+  &__contenido {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 48px;
+    gap: 14.8px;
+    max-width: 512px;
+    width: 100%;
+  }
+}
+
+.logo-ctn {
+  display: inline-block;
+}
+
+.logo-img {
+  display: block;
+  width: 320px;
+  height: auto;
+}
+
+// Heading hero
+.hero-heading {
+  padding-top: 25.2px;
+}
+
+.hero-titulo {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: -0.48px;
+  color: #FFFFFF;
+}
+
+.hero-descripcion {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 23px;
+  color: #94A3B8;
+  max-width: 401px;
+}
+
+// Badges
+.insignias {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  padding-top: 17.2px;
+}
+
+.insignia {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.55px;
+  text-transform: uppercase;
+  color: #FFFFFF;
+
+  svg { flex-shrink: 0; }
+}
+
+// ─── Panel derecho ────────────────────────────────────────────────────────────
+.panel-form {
+  flex: 0 0 50%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #F8FAFC;
+  overflow-y: auto;
+}
+
+// ─── Tarjeta ─────────────────────────────────────────────────────────────────
+.tarjeta {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 40px;
+  gap: 32px;
+  width: 420px;
+  max-width: 420px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-shadow:
+    0px 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0px 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  &__titulo {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: -0.48px;
+    color: #111827;
+    width: 100%;
+  }
+
+  &__subtitulo {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 18px;
+    color: #6B7280;
+    width: 100%;
+  }
+}
+
+// ─── Formulario ──────────────────────────────────────────────────────────────
+.formulario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+// Campo
+.campo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+
+  &__etiqueta {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: #111827;
+  }
+
+  &__cabecera {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__olvido {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 18px;
+    color: #004AC6;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  // Wrapper relativo para posicionar ícono y ojo
+  &__wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  &__icono {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &__input {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 11px 16px 12px 40px;
+    width: 100%;
+    height: 42px;
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 17px;
+    color: #111827;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &::placeholder { color: #6B7280; }
+
+    &:focus {
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    // Contraseña: padding derecho para el botón ojo
+    &--password { padding-right: 48px; }
+  }
+
+  &__ojo {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: #94A3B8;
+    transition: color 0.15s;
+
+    &:hover { color: #6B7280; }
+  }
+
+  &__error {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    line-height: 16px;
+    color: #dc2626;
+  }
+
+  &--error .campo__input {
+    border-color: #dc2626;
+    &:focus { box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12); }
+  }
+}
+
+// Recordarme
+.recordarme {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+
+  &__check {
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    background: #FFFFFF;
+    border: 1px solid #D1D5DB;
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: #2563EB;
+    flex-shrink: 0;
+  }
+
+  &__texto {
+    padding-left: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 18px;
+    color: #6B7280;
+  }
+}
+
+// Alerta de error del servidor
+.alerta-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  width: 100%;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #dc2626;
+
+  svg { flex-shrink: 0; margin-top: 1px; }
+}
+
+// Botón submit
+.btn-submit {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  background: #2563EB;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  color: #FFFFFF;
+  transition: background 0.15s ease;
+
+  svg { flex-shrink: 0; }
+
+  &:hover:not(:disabled) { background: #1d4ed8; }
+  &:active:not(:disabled) { opacity: 0.92; }
+  &:disabled { opacity: 0.65; cursor: not-allowed; }
+
+  &__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: girar 0.65s linear infinite;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes girar {
+  to { transform: rotate(360deg); }
+}
+
+// Acceso seguro (border-top + líneas flanqueadoras + texto)
+.acceso-seguro {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 32px;
+  border-top: 1px solid #E5E7EB;
+
+  &__linea {
+    flex: 1;
+    height: 1px;
+    background: #E5E7EB;
+  }
+
+  &__texto {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    line-height: 16px;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+    color: #94A3B8;
+    white-space: nowrap;
+  }
+}
+
+// Footer copyright (absoluto en el panel derecho)
+.panel-form__footer {
+  position: absolute;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0.65px;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+
+// ─── Responsive ──────────────────────────────────────────────────────────────
+@media (max-width: 820px) {
+  .login-layout { flex-direction: column; }
+
+  .panel-izquierdo {
+    flex: 0 0 auto;
+    min-height: 260px;
+    &__contenido { padding: 32px 24px; gap: 12px; }
+  }
+
+  .hero-heading { padding-top: 16px; }
+  .hero-titulo { font-size: 20px; }
+  .insignias { padding-top: 12px; }
+
+  .panel-form {
+    flex: 1;
+    padding: 1.5rem 1rem;
+    padding-bottom: 4rem;
+  }
+
+  .tarjeta {
+    width: 100%;
+    max-width: 420px;
+    padding: 32px 24px;
+  }
+}

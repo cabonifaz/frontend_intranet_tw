@@ -1,1 +1,81 @@
-/* You can add global styles to this file, and also import other style files */
+/* ─── Design tokens ──────────────────────────────────────────────────────── */
+:root {
+  --tw-primario:       #1B2A48;
+  --tw-primario-dark:  #101E35;
+  --tw-acento:         #C8102E;
+  --tw-panel-oscuro:   #0C1622;
+
+  --tw-blanco:         #ffffff;
+  --tw-gris-50:        #f9fafb;
+  --tw-gris-100:       #f3f4f6;
+  --tw-gris-200:       #e5e7eb;
+  --tw-gris-400:       #9ca3af;
+  --tw-gris-500:       #6b7280;
+  --tw-gris-700:       #374151;
+  --tw-gris-900:       #111827;
+
+  --tw-error:          #dc2626;
+  --tw-exito:          #16a34a;
+
+  --tw-radio:          8px;
+  --tw-radio-lg:       12px;
+  --tw-sombra:         0 4px 24px rgba(0, 0, 0, 0.12);
+  --tw-sombra-lg:      0 8px 40px rgba(0, 0, 0, 0.18);
+
+  --tw-transicion:     0.2s ease;
+
+  --tw-fuente:         'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  font-family: var(--tw-fuente);
+  font-size: 16px;
+  color: var(--tw-gris-900);
+  background-color: var(--tw-blanco);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+/* ─── Utilitarios globales ───────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

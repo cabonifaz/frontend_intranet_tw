@@ -1,0 +1,197 @@
+<div class="login-layout">
+
+  <!-- ─── Panel izquierdo ──────────────────────────────────── -->
+  <aside class="panel-izquierdo" aria-hidden="true">
+    <div class="panel-izquierdo__imagen"></div>
+    <div class="panel-izquierdo__gradiente"></div>
+
+    <div class="panel-izquierdo__contenido">
+
+      <!-- Logo -->
+      <div class="logo-ctn">
+        <img src="/assets/images/totalweight-logo.png" alt="Total Weight" class="logo-img" />
+      </div>
+
+      <!-- Título -->
+      <div class="hero-heading">
+        <h1 class="hero-titulo">Pesaje Industrial a Nivel Nacional</h1>
+      </div>
+
+      <!-- Descripción -->
+      <p class="hero-descripcion">
+        Acceda a nuestra plataforma de gestión integral para control de pesaje,
+        logística y metrología industrial con precisión garantizada.
+      </p>
+
+      <!-- Badges -->
+      <div class="insignias">
+        <span class="insignia">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" fill="#059669"/>
+            <path d="M6.5 10L8.8 12.5L13.5 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          SISTEMAS CERTIFICADOS
+        </span>
+        <span class="insignia">
+          <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
+            <path d="M11 1L3 9H10L9 15L17 7H10L11 1Z" fill="#2563EB" stroke="#2563EB" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+          TIEMPO REAL
+        </span>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ─── Panel derecho ────────────────────────────────────── -->
+  <main class="panel-form">
+
+    <div class="tarjeta">
+
+      <!-- Header -->
+      <header class="tarjeta__header">
+        <h2 class="tarjeta__titulo">Bienvenido a Digital Suite</h2>
+        <p class="tarjeta__subtitulo">Ingresa tus credenciales para acceder al sistema interno</p>
+      </header>
+
+      <!-- Formulario -->
+      <form
+        class="formulario"
+        [formGroup]="formulario"
+        (ngSubmit)="enviar()"
+        novalidate
+        autocomplete="on"
+      >
+
+        <!-- Correo electrónico -->
+        <div class="campo" [class.campo--error]="correo.invalid && correo.touched">
+          <label class="campo__etiqueta" for="correo">Correo electrónico</label>
+          <div class="campo__wrapper">
+            <span class="campo__icono" aria-hidden="true">
+              <svg width="20" height="16" viewBox="0 0 20 16" fill="none">
+                <rect x="0.75" y="0.75" width="18.5" height="14.5" rx="1.25" stroke="#94A3B8" stroke-width="1.5"/>
+                <path d="M1 2L10 9.5L19 2" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <input
+              id="correo"
+              class="campo__input"
+              type="email"
+              formControlName="correo"
+              placeholder="ejemplo@totalweight.com"
+              autocomplete="email"
+              inputmode="email"
+            />
+          </div>
+          @if (correo.invalid && correo.touched) {
+            <span class="campo__error" role="alert">
+              @if (correo.errors?.['required']) { El correo es requerido. }
+              @else if (correo.errors?.['email']) { Ingresa un correo electrónico válido. }
+            </span>
+          }
+        </div>
+
+        <!-- Contraseña -->
+        <div class="campo" [class.campo--error]="contrasena.invalid && contrasena.touched">
+          <div class="campo__cabecera">
+            <label class="campo__etiqueta" for="contrasena">Contraseña</label>
+            <a href="#" class="campo__olvido">¿Olvidaste tu contraseña?</a>
+          </div>
+          <div class="campo__wrapper">
+            <span class="campo__icono" aria-hidden="true">
+              <svg width="16" height="21" viewBox="0 0 16 21" fill="none">
+                <rect x="0.75" y="8.75" width="14.5" height="11.5" rx="1.25" stroke="#94A3B8" stroke-width="1.5"/>
+                <path d="M4 8.5V6C4 3.79086 5.79086 2 8 2C10.2091 2 12 3.79086 12 6V8.5" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="14.5" r="1.5" fill="#94A3B8"/>
+              </svg>
+            </span>
+            <input
+              id="contrasena"
+              class="campo__input campo__input--password"
+              [type]="mostrarContrasena() ? 'text' : 'password'"
+              formControlName="contrasena"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="campo__ojo"
+              (click)="toggleContrasena()"
+              [attr.aria-label]="mostrarContrasena() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              @if (mostrarContrasena()) {
+                <svg width="22" height="15" viewBox="0 0 22 15" fill="none">
+                  <path d="M2 7.5C2 7.5 5.5 1 11 1C16.5 1 20 7.5 20 7.5C20 7.5 16.5 14 11 14C5.5 14 2 7.5 2 7.5Z" stroke="#94A3B8" stroke-width="1.5"/>
+                  <path d="M3 2.5L19 12.5" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              } @else {
+                <svg width="22" height="15" viewBox="0 0 22 15" fill="none">
+                  <path d="M2 7.5C2 7.5 5.5 1 11 1C16.5 1 20 7.5 20 7.5C20 7.5 16.5 14 11 14C5.5 14 2 7.5 2 7.5Z" stroke="#94A3B8" stroke-width="1.5"/>
+                  <circle cx="11" cy="7.5" r="2.5" stroke="#94A3B8" stroke-width="1.5"/>
+                </svg>
+              }
+            </button>
+          </div>
+          @if (contrasena.invalid && contrasena.touched) {
+            <span class="campo__error" role="alert">
+              @if (contrasena.errors?.['required']) { La contraseña es requerida. }
+              @else if (contrasena.errors?.['minlength']) { Mínimo 6 caracteres. }
+            </span>
+          }
+        </div>
+
+        <!-- Recordarme -->
+        <label class="recordarme">
+          <input class="recordarme__check" type="checkbox" formControlName="recordarme" />
+          <span class="recordarme__texto">Recordarme en este dispositivo</span>
+        </label>
+
+        <!-- Error servidor -->
+        @if (errorMensaje()) {
+          <div class="alerta-error" role="alert">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/>
+              <path d="M8 5V8.5" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="8" cy="11" r="0.75" fill="#dc2626"/>
+            </svg>
+            {{ errorMensaje() }}
+          </div>
+        }
+
+        <!-- Botón submit -->
+        <button
+          type="submit"
+          class="btn-submit"
+          [disabled]="cargando()"
+          [class.btn-submit--cargando]="cargando()"
+        >
+          @if (cargando()) {
+            <span class="btn-submit__spinner" aria-hidden="true"></span>
+            Iniciando sesión...
+          } @else {
+            Iniciar Sesión
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M6.75 15.75H3C2.17 15.75 1.5 15.08 1.5 14.25V3.75C1.5 2.92 2.17 2.25 3 2.25H6.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 12.75L16.5 9L12 5.25" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.5 9H6.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          }
+        </button>
+
+      </form>
+
+      <!-- Acceso seguro -->
+      <div class="acceso-seguro">
+        <span class="acceso-seguro__linea"></span>
+        <span class="acceso-seguro__texto">ACCESO SEGURO</span>
+        <span class="acceso-seguro__linea"></span>
+      </div>
+
+    </div>
+
+    <!-- Footer copyright -->
+    <p class="panel-form__footer">TOTAL WEIGHT © 2026</p>
+
+  </main>
+
+</div>
