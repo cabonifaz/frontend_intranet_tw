@@ -1,0 +1,116 @@
+// ─── Variables locales ────────────────────────────────────────────────────────
+$sidebar-width:       220px;
+$sidebar-collapsed:    68px;
+$sidebar-bg:          #131B2E;
+$item-hover-bg:       rgba(255, 255, 255, 0.06);
+$item-activo-bg:      rgba(37, 99, 235, 0.18);
+$item-activo-border:  #2563EB;
+$text-primario:       #FFFFFF;
+$text-secundario:     #94A3B8;
+$transition:          0.22s ease;
+
+// ─── Contenedor ──────────────────────────────────────────────────────────────
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: $sidebar-width;
+  min-width: $sidebar-width;
+  height: 100%;
+  background: $sidebar-bg;
+  overflow: hidden;
+  transition: width $transition, min-width $transition;
+
+  &--colapsado {
+    width: $sidebar-collapsed;
+    min-width: $sidebar-collapsed;
+  }
+}
+
+// ─── Logo ─────────────────────────────────────────────────────────────────────
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+
+  &-img {
+    height: 44px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  &-texto {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: $text-secundario;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+// ─── Nav ─────────────────────────────────────────────────────────────────────
+.sidebar__nav {
+  list-style: none;
+  padding: 12px 8px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+}
+
+// ─── Item ─────────────────────────────────────────────────────────────────────
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background $transition, border-color $transition;
+  cursor: pointer;
+
+  &:hover {
+    background: $item-hover-bg;
+  }
+
+  &--activo {
+    background: $item-activo-bg;
+    border-left-color: $item-activo-border;
+
+    .sidebar__icono { color: #60A5FA; }
+    .sidebar__etiqueta { color: $text-primario; font-weight: 600; }
+  }
+}
+
+// ─── Icono ────────────────────────────────────────────────────────────────────
+.sidebar__icono {
+  font-size: 20px;
+  color: $text-secundario;
+  flex-shrink: 0;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  transition: color $transition;
+}
+
+// ─── Etiqueta ────────────────────────────────────────────────────────────────
+.sidebar__etiqueta {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: $text-secundario;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color $transition;
+}

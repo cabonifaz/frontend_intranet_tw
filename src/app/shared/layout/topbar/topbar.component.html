@@ -1,0 +1,153 @@
+<header class="topbar">
+
+  <!-- Hamburguesa -->
+  <button class="topbar__hamburguesa" (click)="toggleSidebar.emit()" aria-label="Expandir / colapsar menú">
+    <span class="material-symbols-outlined">menu</span>
+  </button>
+
+  <!-- Search bar -->
+  <div class="topbar__search-ctn">
+    <span class="material-symbols-outlined topbar__search-icono">search</span>
+    <input
+      class="topbar__search-input"
+      type="text"
+      placeholder="Buscar requerimiento, cliente o RUC..."
+      aria-label="Buscar"
+    />
+  </div>
+
+  <!-- Acciones derecha -->
+  <div class="topbar__derecha">
+
+    <!-- Campana -->
+    <div class="topbar__accion topbar__notif-ctn">
+      <button
+        class="topbar__btn-icono"
+        (click)="toggleNotif()"
+        [class.topbar__btn-icono--activo]="panelNotifAbierto()"
+        aria-label="Notificaciones"
+      >
+        <span class="material-symbols-outlined">notifications</span>
+        @if (noLeidas() > 0) {
+          <span class="topbar__badge"></span>
+        }
+      </button>
+
+      @if (panelNotifAbierto()) {
+        <div class="topbar__panel topbar__panel--notif">
+
+          <!-- Header -->
+          <div class="topbar__panel-header">
+            <div class="topbar__notif-title-group">
+              <span class="topbar__panel-titulo">Notificaciones</span>
+              @if (noLeidas() > 0) {
+                <span class="topbar__badge-panel">{{ noLeidas() }}</span>
+              }
+            </div>
+            <button class="topbar__marcar-leidas" (click)="marcarLeidas()">Marcar leídas</button>
+          </div>
+
+          <!-- Lista -->
+          <ul class="topbar__notif-lista" role="list">
+            @for (n of notificaciones(); track n.idNotificacion) {
+              <li class="topbar__notif-item" [class.topbar__notif-item--no-leida]="!n.leida">
+                <div class="topbar__notif-fila">
+                  <div class="topbar__notif-izq">
+                    <span class="topbar__notif-dot" [style.background]="n.tipoDot"></span>
+                    <span class="topbar__notif-titulo">{{ n.titulo }}</span>
+                  </div>
+                  <span class="topbar__notif-tiempo">{{ n.tiempo }}</span>
+                </div>
+                <div class="topbar__notif-cuerpo">{{ n.cuerpo }}</div>
+              </li>
+            } @empty {
+              <li class="topbar__notif-vacio">Sin notificaciones</li>
+            }
+          </ul>
+
+          <!-- Footer -->
+          <div class="topbar__notif-footer">
+            <button class="topbar__notif-footer-link">Ver todo el historial de alertas</button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+    <!-- Divisor -->
+    <div class="topbar__divisor"></div>
+
+    <!-- Usuario -->
+    <div class="topbar__accion topbar__user-ctn">
+      <button
+        class="topbar__btn-usuario"
+        (click)="toggleUser()"
+        [class.topbar__btn-usuario--activo]="panelUserAbierto()"
+        aria-label="Menú de usuario"
+      >
+        <div class="topbar__user-info">
+          <span class="topbar__user-nombre">{{ usuario()?.nombre }} {{ usuario()?.apellido }}</span>
+          <span class="topbar__user-rol">{{ usuario()?.rolSistema }}</span>
+        </div>
+        <div class="topbar__avatar">
+          {{ usuario()?.nombre?.charAt(0) ?? '?' }}
+        </div>
+      </button>
+
+      @if (panelUserAbierto()) {
+        <div class="topbar__panel topbar__panel--user">
+
+          <!-- Header: datos del usuario -->
+          <div class="user-panel__header">
+            <div class="user-panel__row">
+              <div class="user-panel__avatar">
+                {{ usuario()?.nombre?.charAt(0) ?? '?' }}
+              </div>
+              <div class="user-panel__info">
+                <span class="user-panel__nombre">{{ usuario()?.nombre }} {{ usuario()?.apellido }}</span>
+                <span class="user-panel__correo">{{ usuario()?.correo }}</span>
+              </div>
+            </div>
+            <div class="user-panel__badges">
+              <span class="user-panel__rol-badge">{{ usuario()?.rolSistema }}</span>
+              <div class="user-panel__sede">
+                <span class="material-symbols-outlined user-panel__sede-icono">location_on</span>
+                <span class="user-panel__sede-texto">Lima Central</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Navegación -->
+          <div class="user-panel__nav">
+            <button class="topbar__menu-item">
+              <span class="material-symbols-outlined">person</span>
+              Mi Perfil
+            </button>
+            <button class="topbar__menu-item">
+              <span class="material-symbols-outlined">settings</span>
+              Configuración de Cuenta
+            </button>
+            <button class="topbar__menu-item">
+              <span class="material-symbols-outlined">tune</span>
+              Preferencias del Sistema
+            </button>
+            <button class="topbar__menu-item">
+              <span class="material-symbols-outlined">notifications</span>
+              Notificaciones y Alertas
+            </button>
+          </div>
+
+          <!-- Footer: cerrar sesión -->
+          <div class="user-panel__footer">
+            <button class="topbar__menu-item topbar__menu-item--peligro" (click)="cerrarSesion()">
+              <span class="material-symbols-outlined">logout</span>
+              Cerrar Sesión
+            </button>
+          </div>
+
+        </div>
+      }
+    </div>
+
+  </div>
+</header>

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { autenticacionGuard } from './core/guards/autenticacion.guard';
+import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
 
 export const routes: Routes = [
   {
@@ -15,12 +16,23 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'dashboard',
-    loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then(
-        m => m.DashboardComponent
-      ),
+    path: '',
+    component: AppLayoutComponent,
     canActivate: [autenticacionGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard.component').then(
+            m => m.DashboardComponent
+          ),
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+    ],
   },
   {
     path: '**',

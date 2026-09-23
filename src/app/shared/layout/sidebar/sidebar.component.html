@@ -1,0 +1,29 @@
+<nav class="sidebar" [class.sidebar--colapsado]="colapsado" aria-label="Navegación principal">
+
+  <!-- Logo -->
+  <div class="sidebar__logo">
+    <img src="/assets/images/totalweight-logo.png" alt="Total Weight" class="sidebar__logo-img" />
+  </div>
+
+  <!-- Nav items -->
+  <ul class="sidebar__nav" role="list">
+    @for (item of navItems; track item.ruta) {
+      <li>
+        <a
+          class="sidebar__item"
+          [routerLink]="item.ruta"
+          routerLinkActive="sidebar__item--activo"
+          [routerLinkActiveOptions]="{ exact: item.ruta === '/dashboard' }"
+          [title]="colapsado ? item.etiqueta : ''"
+          [attr.aria-label]="item.etiqueta"
+        >
+          <span class="material-symbols-outlined sidebar__icono">{{ item.icono }}</span>
+          @if (!colapsado) {
+            <span class="sidebar__etiqueta">{{ item.etiqueta }}</span>
+          }
+        </a>
+      </li>
+    }
+  </ul>
+
+</nav>
