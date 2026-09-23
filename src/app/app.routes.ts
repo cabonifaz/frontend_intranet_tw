@@ -28,6 +28,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'maestros/clientes',
+        loadComponent: () =>
+          import('./features/maestros/clientes/lista-clientes/lista-clientes.component').then(
+            m => m.ListaClientesComponent
+          ),
+      },
+      {
+        path: 'maestros/clientes/nuevo',
+        loadComponent: () =>
+          import('./features/maestros/clientes/ficha-cliente/ficha-cliente.component').then(
+            m => m.FichaClienteComponent
+          ),
+      },
+      {
+        path: 'maestros/clientes/:id',
+        loadComponent: () =>
+          import('./features/maestros/clientes/ficha-cliente/ficha-cliente.component').then(
+            m => m.FichaClienteComponent
+          ),
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

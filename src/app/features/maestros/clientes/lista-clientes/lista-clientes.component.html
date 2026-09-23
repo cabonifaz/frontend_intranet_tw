@@ -1,0 +1,141 @@
+<div class="clientes-page">
+
+  <div class="page-header">
+    <div class="page-header__izq">
+      <div class="page-header__icono-box">
+        <span class="material-symbols-outlined">corporate_fare</span>
+      </div>
+      <div>
+        <h1 class="page-header__titulo">Mantenimiento de Clientes</h1>
+        <p class="page-header__subtitulo">Gestión del directorio de clientes corporativos</p>
+      </div>
+    </div>
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Cliente
+    </button>
+  </div>
+
+  <div class="filtros-bar">
+    <div class="filtros-bar__busqueda">
+      <span class="material-symbols-outlined filtros-bar__icono">search</span>
+      <input
+        class="filtros-bar__input"
+        type="text"
+        placeholder="Buscar clientes, RUC, contactos o expedientes..."
+        [(ngModel)]="busqueda"
+        (keyup.enter)="cargar()"
+      />
+    </div>
+    <select class="filtros-bar__select" [(ngModel)]="estadoFiltro" (change)="cargar()">
+      <option value="">Todos los estados</option>
+      <option value="Activo">Activo</option>
+      <option value="Inactivo">Inactivo</option>
+    </select>
+    <button class="btn-buscar" type="button" (click)="cargar()">
+      <span class="material-symbols-outlined">search</span>
+      Buscar
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="estado-aviso estado-aviso--error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="estado-aviso">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando clientes...
+    </div>
+  } @else {
+    @if (clientes().length === 0) {
+      <div class="estado-aviso">
+        <span class="material-symbols-outlined">corporate_fare</span>
+        <p>No se encontraron clientes.</p>
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+          Registrar primer cliente
+        </button>
+      </div>
+    } @else {
+      <div class="tabla-wrapper">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Condición Fiscal</th>
+              <th>Estado</th>
+              <th class="tabla__th--acciones">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of clientes(); track c.idCliente) {
+              <tr class="tabla__fila" (click)="irAFicha(c.idCliente)">
+                <td class="tabla__td--cliente">
+                  <div class="cliente-info">
+                    <div class="cliente-info__nombre">
+                      {{ c.razonSocial }}
+                      @if (c.esVip) {
+                        <span class="badge-vip">VIP</span>
+                      }
+                    </div>
+                    <div class="cliente-info__ruc">{{ c.ruc }}</div>
+                    @if (c.nombreComercial) {
+                      <div class="cliente-info__comercial">{{ c.nombreComercial }}</div>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-tipo">{{ c.tipoCliente }}</span>
+                </td>
+                <td>
+                  <div class="condicion-badges">
+                    <span class="badge-fiscal" [class.badge-fiscal--activo]="c.condicionFiscal === 'Activo'">
+                      {{ c.condicionFiscal }}
+                    </span>
+                    <span class="badge-fiscal badge-fiscal--contribuyente"
+                          [class.badge-fiscal--habido]="c.condicionContribuyente === 'Habido'">
+                      {{ c.condicionContribuyente }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-estado" [class.badge-estado--activo]="c.estado === 'Activo'">
+                    <span class="badge-estado__dot"></span>
+                    {{ c.estado }}
+                  </span>
+                </td>
+                <td class="tabla__td--acciones">
+                  <button
+                    class="btn-accion btn-accion--editar"
+                    type="button"
+                    title="Editar ficha"
+                    (click)="irAFicha(c.idCliente); $event.stopPropagation()"
+                  >
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button
+                    class="btn-accion"
+                    [class.btn-accion--activar]="c.estado === 'Inactivo'"
+                    [class.btn-accion--desactivar]="c.estado === 'Activo'"
+                    type="button"
+                    [title]="c.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                    (click)="toggleEstado(c, $event)"
+                  >
+                    <span class="material-symbols-outlined">
+                      {{ c.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+</div>
