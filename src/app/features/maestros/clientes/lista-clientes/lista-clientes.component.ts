@@ -3,10 +3,11 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { ClienteListaItem } from '../../../../core/models/maestros.model';
+import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 
 @Component({
   selector: 'app-lista-clientes',
-  imports: [FormsModule],
+  imports: [FormsModule, BreadcrumbComponent],
   templateUrl: './lista-clientes.component.html',
   styleUrl: './lista-clientes.component.scss',
 })
@@ -17,6 +18,12 @@ export class ListaClientesComponent implements OnInit {
   readonly cargando  = signal(true);
   readonly error     = signal('');
   readonly clientes  = signal<ClienteListaItem[]>([]);
+
+  readonly breadcrumb: BreadcrumbItem[] = [
+    { label: 'Inicio',    ruta: '/dashboard' },
+    { label: 'Maestros' },
+    { label: 'Clientes' },
+  ];
 
   busqueda = '';
   estadoFiltro = '';

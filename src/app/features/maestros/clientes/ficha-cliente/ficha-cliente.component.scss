@@ -1,3 +1,192 @@
+// ── Wrapper ───────────────────────────────────────────────────────────────────
+
+.ficha-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: #F8FAFC;
+  min-height: 100%;
+}
+
+// ── Page header ───────────────────────────────────────────────────────────────
+
+.ficha-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+
+  &__item {
+    font-size: 12px;
+    color: #64748B;
+    text-decoration: none;
+
+    &--active {
+      font-weight: 600;
+      color: #2563EB;
+    }
+
+    &:hover:not(&--active) { color: #334155; }
+  }
+
+  &__sep {
+    font-size: 12px;
+    color: #CBD5E1;
+  }
+}
+
+.ficha-page-header {
+  padding: 20px 24px 16px;
+
+  &__cuerpo {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  &__titulo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0 0 4px;
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: #64748B;
+    margin: 0;
+    max-width: 480px;
+  }
+
+  &__der {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+}
+
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #C2410C;
+
+  .material-symbols-outlined { font-size: 14px; }
+}
+
+.btn-header-ghost {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover { background: #F1F5F9; }
+}
+
+.btn-header-secondary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover:not(:disabled) { background: #F8FAFC; border-color: #CBD5E1; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-header-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  background: #2563EB;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FFFFFF;
+  cursor: pointer;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover:not(:disabled) { background: #1D4ED8; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ── RUC row con botón Consultar ────────────────────────────────────────────────
+
+.campo__ruc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .campo__input-group { flex: 1; }
+}
+
+.btn-consultar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 34px;
+  background: #1E293B;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #FFFFFF;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover { background: #0F172A; }
+}
+
+// ── Footer secondary button ────────────────────────────────────────────────────
+
+.btn-footer-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover:not(:disabled) { background: #F8FAFC; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
 // ── Loading / Error states ─────────────────────────────────────────────────────
 
 .ficha-loading {
@@ -35,8 +224,6 @@
   gap: 24px;
   padding: 24px;
   padding-bottom: 88px;
-  background: #F8FAFC;
-  min-height: 100%;
 }
 
 // ── Sección genérica ──────────────────────────────────────────────────────────

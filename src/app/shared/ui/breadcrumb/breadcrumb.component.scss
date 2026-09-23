@@ -1,0 +1,29 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+
+  &__item {
+    font-size: 13px;
+    color: #64748B;
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:not(&--active):hover {
+      color: #1E293B;
+    }
+
+    &--active {
+      color: #1E293B;
+      font-weight: 500;
+      pointer-events: none;
+    }
+  }
+
+  &__sep {
+    font-size: 13px;
+    color: #94A3B8;
+    user-select: none;
+  }
+}

@@ -28,7 +28,7 @@ export class SidebarComponent {
     { icono: 'scale',             etiqueta: 'Metrología',           ruta: '/metrologia'     },
     { icono: 'receipt_long',      etiqueta: 'Facturación',          ruta: '/facturacion'    },
     { icono: 'analytics',         etiqueta: 'Reportes SLA',         ruta: '/reportes-sla'   },
-    { icono: 'settings',          etiqueta: 'Maestros',             ruta: '/maestros'       },
+    { icono: 'settings',          etiqueta: 'Maestros',             ruta: '/maestros/clientes' },
     { icono: 'headset_mic',       etiqueta: 'Helpdesk',             ruta: '/helpdesk'       },
     { icono: 'leaderboard',       etiqueta: 'Scorecard',            ruta: '/scorecard'      },
   ];

@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoClienteRequest,
+  CatalogoItem,
   ClienteDetalle,
   ClienteListaItem,
   GuardarClienteRequest,
@@ -41,6 +42,14 @@ export class MaestrosService {
     );
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
     return r.datos!;
+  }
+
+  async obtenerCatalogo(descripcion: string): Promise<CatalogoItem[]> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<CatalogoItem[]>>(`${this.base}/catalogos/${descripcion}`)
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
   }
 
   async cambiarEstadoCliente(dto: CambiarEstadoClienteRequest): Promise<void> {

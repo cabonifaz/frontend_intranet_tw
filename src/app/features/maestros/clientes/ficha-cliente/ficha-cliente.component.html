@@ -4,284 +4,342 @@
     Cargando ficha...
   </div>
 } @else {
-  <div class="ficha-cliente" [formGroup]="formulario">
+  <div class="ficha-wrapper">
 
-    @if (error()) {
-      <div class="ficha-error">
-        <span class="material-symbols-outlined">error</span>
-        {{ error() }}
-      </div>
-    }
+    <!-- ── Encabezado de página ───────────────────────────────────────────── -->
+    <div class="ficha-page-header">
+      <app-breadcrumb [items]="breadcrumb" />
 
-    <!-- ── Section 1: Datos Generales ────────────────────────────────────── -->
-    <section class="ficha-seccion">
-      <div class="ficha-seccion__header">
-        <div class="ficha-seccion__header-izq">
-          <div class="ficha-seccion__icono-box">
-            <span class="material-symbols-outlined">business</span>
-          </div>
-          <div>
-            <h2 class="ficha-seccion__titulo">Datos Generales del Cliente</h2>
-            <p class="ficha-seccion__subtitulo">Información fiscal y comercial registrada en SUNAT</p>
-          </div>
+      <div class="ficha-page-header__cuerpo">
+        <div class="ficha-page-header__izq">
+          <h1 class="ficha-page-header__titulo">Mantenimiento de Clientes - Ficha de Registro</h1>
+          <p class="ficha-page-header__desc">Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.</p>
         </div>
-      </div>
-
-      <div class="ficha-seccion__cuerpo">
-        <!-- Fila 1: Tipo Doc + RUC + Tipo Cliente -->
-        <div class="campo-trio">
-          <div class="campo">
-            <label class="campo__label">Tipo de Documento *</label>
-            <select class="campo__select campo__select--readonly" formControlName="tipoDocumento">
-              <option value="RUC">RUC</option>
-              <option value="DNI">DNI</option>
-              <option value="CE">CE</option>
-            </select>
+        <div class="ficha-page-header__der">
+          <div class="estado-badge">
+            <span class="material-symbols-outlined">article</span>
+            Estado: {{ estadoCliente() }}
           </div>
-          <div class="campo">
-            <label class="campo__label">Número de RUC *</label>
-            <div class="campo__input-group">
-              <input
-                class="campo__input"
-                type="text"
-                placeholder="20523456789"
-                formControlName="ruc"
-                maxlength="11"
-              />
-              <span class="badge-sunat">
-                <span class="badge-sunat__dot"></span>
-                Verificado
-              </span>
-            </div>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Tipo de Cliente *</label>
-            <select class="campo__select" formControlName="tipoCliente">
-              <option value="">Seleccionar...</option>
-              @for (t of tiposCliente; track t) {
-                <option [value]="t">{{ t }}</option>
-              }
-            </select>
-          </div>
+          <button class="btn-header-ghost" type="button" (click)="cancelar()">
+            Cancelar / Volver
+          </button>
+          <button
+            class="btn-header-secondary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">save</span>
+            Guardar Borrador
+          </button>
+          <button
+            class="btn-header-primary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">check</span>
+            {{ guardando() ? 'Guardando...' : 'Guardar y Registrar Cliente' }}
+          </button>
         </div>
-
-        <!-- Fila 2: Razón Social + Nombre Comercial -->
-        <div class="campo-2col">
-          <div class="campo">
-            <label class="campo__label">Razón Social Completa *</label>
-            <input
-              class="campo__input"
-              type="text"
-              placeholder="MINERA LAS BAMBAS S.A."
-              formControlName="razonSocial"
-            />
-          </div>
-          <div class="campo">
-            <label class="campo__label">Nombre Comercial</label>
-            <input
-              class="campo__input"
-              type="text"
-              placeholder="Las Bambas Mining Operation"
-              formControlName="nombreComercial"
-            />
-          </div>
-        </div>
-
-        <!-- Fila 3: Condición Fiscal + Condición Pago + Crédito + Teléfono -->
-        <div class="campo-cuarteto">
-          <div class="campo">
-            <label class="campo__label">Condición Fiscal SUNAT</label>
-            <div class="condicion-badges">
-              <span class="badge-fiscal" [class.badge-fiscal--activo]="formulario.get('condicionFiscal')?.value === 'Activo'">
-                <span class="badge-fiscal__dot"></span>
-                {{ formulario.get('condicionFiscal')?.value || 'Activo' }}
-              </span>
-              <span class="badge-fiscal" [class.badge-fiscal--habido]="formulario.get('condicionContribuyente')?.value === 'Habido'">
-                <span class="badge-fiscal__dot"></span>
-                {{ formulario.get('condicionContribuyente')?.value || 'Habido' }}
-              </span>
-            </div>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Condición de Pago Habitual</label>
-            <select class="campo__select" formControlName="condicionPago">
-              <option value="">Seleccionar...</option>
-              @for (c of condicionesPago; track c) {
-                <option [value]="c">{{ c }}</option>
-              }
-            </select>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Línea de Crédito Autorizada (USD)</label>
-            <div class="campo__input-prefix">
-              <span class="campo__prefix">$</span>
-              <input
-                class="campo__input campo__input--con-prefix"
-                type="number"
-                placeholder="0.00"
-                formControlName="lineaCreditoUsd"
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Teléfono Central / Recepción</label>
-            <input
-              class="campo__input"
-              type="text"
-              placeholder="+51 (01) 514-0000"
-              formControlName="telefonoCentral"
-            />
-          </div>
-        </div>
-
-        <!-- Fila 4: Domicilio Fiscal (full width) -->
-        <div class="campo">
-          <label class="campo__label">Domicilio Fiscal Principal (SUNAT)</label>
-          <input
-            class="campo__input"
-            type="text"
-            placeholder="Av. El Derby Nro. 055, Edificio Cronos, Torre 3, Piso 9, Santiago de Surco, Lima"
-            formControlName="domicilioFiscal"
-          />
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Section 2: Sedes (read-only en HU-79) ─────────────────────────── -->
-    <section class="ficha-seccion">
-      <div class="ficha-seccion__header">
-        <div class="ficha-seccion__header-izq">
-          <div class="ficha-seccion__icono-box">
-            <span class="material-symbols-outlined">location_city</span>
-          </div>
-          <div>
-            <h2 class="ficha-seccion__titulo">Sedes y Plantas Operativas</h2>
-            <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
-          </div>
-        </div>
-      </div>
-      <div class="ficha-seccion__vacio">
-        <span class="material-symbols-outlined">location_city</span>
-        <p>No hay sedes registradas para este cliente.</p>
-      </div>
-    </section>
-
-    <!-- ── Section 3: Contactos (read-only en HU-79) ─────────────────────── -->
-    <section class="ficha-seccion">
-      <div class="ficha-seccion__header">
-        <div class="ficha-seccion__header-izq">
-          <div class="ficha-seccion__icono-box">
-            <span class="material-symbols-outlined">contacts</span>
-          </div>
-          <div>
-            <h2 class="ficha-seccion__titulo">Personas de Contacto</h2>
-            <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
-          </div>
-        </div>
-      </div>
-      <div class="ficha-seccion__vacio">
-        <span class="material-symbols-outlined">contacts</span>
-        <p>No hay contactos registrados para este cliente.</p>
-      </div>
-    </section>
-
-    <!-- ── Section 4: SSOMA ───────────────────────────────────────────────── -->
-    <section class="ficha-seccion ficha-seccion--ssoma">
-      <div class="ficha-seccion__header">
-        <div class="ficha-seccion__header-izq">
-          <div class="ficha-seccion__icono-box">
-            <span class="material-symbols-outlined">health_and_safety</span>
-          </div>
-          <div>
-            <h2 class="ficha-seccion__titulo">Normativa SSOMA &amp; Requisitos Especiales</h2>
-          </div>
-        </div>
-        @if (esVip) {
-          <span class="link-regla-vip">Convenio VIP</span>
-        }
-      </div>
-
-      <div class="ssoma-grid">
-        @for (item of ssomaItems; track item.clave) {
-          <div class="ssoma-item">
-            <div class="ssoma-item__texto">
-              <span class="ssoma-item__nombre">{{ item.nombre }}</span>
-              <span class="ssoma-item__desc">{{ item.descripcion }}</span>
-            </div>
-            <input
-              class="ssoma-item__cb"
-              type="checkbox"
-              [formControlName]="item.clave"
-            />
-          </div>
-        }
-      </div>
-
-      <div class="ssoma-extras">
-        <div class="campo-2col">
-          <div class="campo">
-            <label class="campo__label">Descuento Convenio VIP (%)</label>
-            <div class="campo__input-suffix">
-              <input
-                class="campo__input campo__input--con-suffix"
-                type="number"
-                placeholder="0"
-                formControlName="descuentoVipPct"
-                min="0"
-                max="100"
-                step="0.01"
-              />
-              <span class="campo__suffix">%</span>
-            </div>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Patrón de Masas Asignado</label>
-            <select class="campo__select" formControlName="patronMasasAsignado">
-              <option value="">Seleccionar...</option>
-              @for (p of patronesMasas; track p) {
-                <option [value]="p">{{ p }}</option>
-              }
-            </select>
-          </div>
-        </div>
-
-        <div class="campo">
-          <label class="campo__label">Notas adicionales de seguridad</label>
-          <textarea
-            class="campo__textarea"
-            placeholder="Observaciones sobre requisitos especiales de seguridad..."
-            formControlName="ssomaNotas"
-            rows="3"
-          ></textarea>
-        </div>
-      </div>
-
-      <div class="ssoma-nota">
-        <span class="material-symbols-outlined ssoma-nota__icono">info</span>
-        <span>Los requisitos SSOMA seleccionados se aplicarán automáticamente a las órdenes de servicio programadas en este cliente.</span>
-      </div>
-    </section>
-
-    <!-- ── Footer sticky ──────────────────────────────────────────────────── -->
-    <div class="ficha-footer">
-      <span class="ficha-footer__nota">* Campos obligatorios para registro</span>
-      <div class="ficha-footer__acciones">
-        <button class="btn-footer-ghost" type="button" (click)="cancelar()">
-          Cancelar
-        </button>
-        <button
-          class="btn-footer-primary"
-          type="button"
-          [disabled]="formulario.invalid || guardando()"
-          (click)="guardar()"
-        >
-          <span class="material-symbols-outlined">check</span>
-          {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar Cliente' : 'Guardar Cambios') }}
-        </button>
       </div>
     </div>
 
+    <!-- ── Formulario ─────────────────────────────────────────────────────── -->
+    <div class="ficha-cliente" [formGroup]="formulario">
+
+      @if (error()) {
+        <div class="ficha-error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <!-- ── Section 1: Datos Generales ──────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">business</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">1. Información General y Validación SUNAT</h2>
+              <p class="ficha-seccion__subtitulo">Información fiscal y comercial registrada en SUNAT</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ficha-seccion__cuerpo">
+          <!-- Fila 1: Tipo Doc + RUC + Segmento/Industria -->
+          <div class="campo-trio">
+            <div class="campo">
+              <label class="campo__label">Tipo de Documento *</label>
+              <select class="campo__select campo__select--readonly" formControlName="tipoDocumento">
+                @for (t of tiposDocumento(); track t.id) {
+                  <option [value]="t.nombre">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Número de RUC *</label>
+              <div class="campo__ruc-row">
+                <div class="campo__input-group">
+                  <input
+                    class="campo__input"
+                    type="text"
+                    placeholder="20523456789"
+                    formControlName="ruc"
+                    maxlength="11"
+                  />
+                  <span class="badge-sunat">
+                    <span class="badge-sunat__dot"></span>
+                    Válido SUNAT
+                  </span>
+                </div>
+                <button class="btn-consultar" type="button">
+                  <span class="material-symbols-outlined">search</span>
+                  Consultar
+                </button>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Segmento / Industria *</label>
+              <select class="campo__select" formControlName="tipoCliente">
+                <option value="">Seleccionar...</option>
+                @for (t of tiposCliente(); track t.id) {
+                  <option [value]="t.nombre">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Fila 2: Razón Social + Nombre Comercial -->
+          <div class="campo-2col">
+            <div class="campo">
+              <label class="campo__label">Razón Social Completa *</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="MINERA LAS BAMBAS S.A."
+                formControlName="razonSocial"
+              />
+            </div>
+            <div class="campo">
+              <label class="campo__label">Nombre Comercial</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="Las Bambas Mining Operation"
+                formControlName="nombreComercial"
+              />
+            </div>
+          </div>
+
+          <!-- Fila 3: Condición Fiscal + Condición Pago + Crédito + Teléfono -->
+          <div class="campo-cuarteto">
+            <div class="campo">
+              <label class="campo__label">Condición Fiscal SUNAT</label>
+              <div class="condicion-badges">
+                <span class="badge-fiscal" [class.badge-fiscal--habido]="formulario.get('condicionContribuyente')?.value === 'Habido'">
+                  <span class="badge-fiscal__dot"></span>
+                  {{ formulario.get('condicionContribuyente')?.value || 'Habido' }}
+                </span>
+                <span class="badge-fiscal" [class.badge-fiscal--activo]="formulario.get('condicionFiscal')?.value === 'Activo'">
+                  <span class="badge-fiscal__dot"></span>
+                  {{ formulario.get('condicionFiscal')?.value || 'Activo' }}
+                </span>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Condición de Pago Habitual</label>
+              <select class="campo__select" formControlName="condicionPago">
+                <option value="">Seleccionar...</option>
+                @for (c of condicionesPago(); track c.id) {
+                  <option [value]="c.nombre">{{ c.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Línea de Crédito Autorizada (USD)</label>
+              <div class="campo__input-prefix">
+                <span class="campo__prefix">$</span>
+                <input
+                  class="campo__input campo__input--con-prefix"
+                  type="number"
+                  placeholder="0.00"
+                  formControlName="lineaCreditoUsd"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Teléfono Central / Recepción</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="+51 (01) 514-0000"
+                formControlName="telefonoCentral"
+              />
+            </div>
+          </div>
+
+          <!-- Fila 4: Domicilio Fiscal (full width) -->
+          <div class="campo">
+            <label class="campo__label">Domicilio Fiscal Principal (SUNAT)</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Av. El Derby Nro. 055, Edificio Cronos, Torre 3, Piso 9, Santiago de Surco, Lima"
+              formControlName="domicilioFiscal"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Section 2: Sedes ─────────────────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">location_city</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">2. Sedes y Plantas Operativas</h2>
+              <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-seccion__vacio">
+          <span class="material-symbols-outlined">location_city</span>
+          <p>No hay sedes registradas para este cliente.</p>
+        </div>
+      </section>
+
+      <!-- ── Section 3: Contactos ─────────────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">contacts</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">3. Personas de Contacto</h2>
+              <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
+            </div>
+          </div>
+        </div>
+        <div class="ficha-seccion__vacio">
+          <span class="material-symbols-outlined">contacts</span>
+          <p>No hay contactos registrados para este cliente.</p>
+        </div>
+      </section>
+
+      <!-- ── Section 4: SSOMA ─────────────────────────────────────────────── -->
+      <section class="ficha-seccion ficha-seccion--ssoma">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">health_and_safety</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">4. Normativa SSOMA &amp; Requisitos Especiales</h2>
+            </div>
+          </div>
+          @if (esVip) {
+            <span class="link-regla-vip">Convenio VIP</span>
+          }
+        </div>
+
+        <div class="ssoma-grid">
+          @for (item of ssomaItems; track item.clave) {
+            <div class="ssoma-item">
+              <div class="ssoma-item__texto">
+                <span class="ssoma-item__nombre">{{ item.nombre }}</span>
+                <span class="ssoma-item__desc">{{ item.descripcion }}</span>
+              </div>
+              <input
+                class="ssoma-item__cb"
+                type="checkbox"
+                [formControlName]="item.clave"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="ssoma-extras">
+          <div class="campo-2col">
+            <div class="campo">
+              <label class="campo__label">Descuento Convenio VIP (%)</label>
+              <div class="campo__input-suffix">
+                <input
+                  class="campo__input campo__input--con-suffix"
+                  type="number"
+                  placeholder="0"
+                  formControlName="descuentoVipPct"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                />
+                <span class="campo__suffix">%</span>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Patrón de Masas Asignado</label>
+              <select class="campo__select" formControlName="patronMasasAsignado">
+                <option value="">Seleccionar...</option>
+                @for (p of patronesMasas(); track p.id) {
+                  <option [value]="p.nombre">{{ p.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label class="campo__label">Notas adicionales de seguridad</label>
+            <textarea
+              class="campo__textarea"
+              placeholder="Observaciones sobre requisitos especiales de seguridad..."
+              formControlName="ssomaNotas"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="ssoma-nota">
+          <span class="material-symbols-outlined ssoma-nota__icono">info</span>
+          <span>Los requerimientos generados para este cliente activarán automáticamente la plantilla técnica del segmento asignado.</span>
+        </div>
+      </section>
+
+      <!-- ── Footer sticky ────────────────────────────────────────────────── -->
+      <div class="ficha-footer">
+        <span class="ficha-footer__nota">* Campos obligatorios para homologación técnica comercial</span>
+        <div class="ficha-footer__acciones">
+          <button class="btn-footer-ghost" type="button" (click)="cancelar()">
+            Descartar Cambios
+          </button>
+          <button
+            class="btn-footer-secondary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">save</span>
+            Guardar como Borrador
+          </button>
+          <button
+            class="btn-footer-primary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">check</span>
+            {{ guardando() ? 'Guardando...' : 'Registrar y Activar Cliente' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 }

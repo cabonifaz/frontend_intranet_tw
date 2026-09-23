@@ -1,3 +1,9 @@
+export interface CatalogoItem {
+  id: number;
+  nombre: string;
+  codigo: string | null;
+}
+
 export interface ClienteListaItem {
   idCliente: number;
   ruc: string;
@@ -27,10 +33,10 @@ export interface ClienteDetalle {
   reglaVip: string | null;
   descuentoVipPct: number | null;
   patronMasasAsignado: string | null;
-  ssomaPaseIngreso: boolean;
-  ssomaTrabajoAltura: boolean;
-  ssomaEspacioConfinado: boolean;
-  ssomaInduccionPrevia: boolean;
+  ssomaPolizaSctr: boolean;
+  ssomaCamioneta4x4: boolean;
+  ssomaInduccionSsoma: boolean;
+  ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
   estado: string;
 }
@@ -52,10 +58,10 @@ export interface GuardarClienteRequest {
   reglaVip: string | null;
   descuentoVipPct: number | null;
   patronMasasAsignado: string | null;
-  ssomaPaseIngreso: boolean;
-  ssomaTrabajoAltura: boolean;
-  ssomaEspacioConfinado: boolean;
-  ssomaInduccionPrevia: boolean;
+  ssomaPolizaSctr: boolean;
+  ssomaCamioneta4x4: boolean;
+  ssomaInduccionSsoma: boolean;
+  ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
 }
 
