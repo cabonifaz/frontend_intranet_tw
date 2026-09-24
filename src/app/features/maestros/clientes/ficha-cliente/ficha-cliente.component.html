@@ -70,8 +70,8 @@
         </div>
 
         <div class="ficha-seccion__cuerpo">
-          <!-- Fila 1: Tipo Doc + RUC + Segmento/Industria -->
-          <div class="campo-trio">
+          <!-- Fila 1: Tipo Doc + RUC + Segmento/Industria + Categoría -->
+          <div class="campo-cuarteto">
             <div class="campo">
               <label class="campo__label">Tipo de Documento *</label>
               <select class="campo__select campo__select--readonly" formControlName="tipoDocumento">
@@ -108,6 +108,15 @@
                 <option value="">Seleccionar...</option>
                 @for (t of tiposCliente(); track t.id) {
                   <option [value]="t.nombre">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Categoría</label>
+              <select class="campo__select" formControlName="categoria">
+                <option value="">Sin categoría</option>
+                @for (c of categoriasCliente(); track c.id) {
+                  <option [value]="c.nombre">{{ c.nombre }}</option>
                 }
               </select>
             </div>
@@ -209,19 +218,58 @@
               <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
             </div>
           </div>
-          @if (!esNuevo()) {
-            <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
+          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
               <span class="material-symbols-outlined">add</span>
               Agregar Nueva Sede
             </button>
-          }
         </div>
 
         @if (esNuevo()) {
-          <div class="ficha-seccion__vacio">
-            <span class="material-symbols-outlined">location_city</span>
-            <p>Guarda el cliente primero para poder agregar sedes.</p>
-          </div>
+          @if (sedesTemp().length === 0) {
+            <div class="ficha-seccion__vacio">
+              <span class="material-symbols-outlined">location_city</span>
+              <p>Agrega las sedes operativas de este cliente.</p>
+            </div>
+          } @else {
+            <div class="sedes-tabla-wrapper">
+              <table class="sedes-tabla">
+                <thead>
+                  <tr>
+                    <th>Sede / Operación</th>
+                    <th>Tipo</th>
+                    <th>Ubicación</th>
+                    <th>Dirección</th>
+                    <th class="sedes-tabla__th--acciones">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of sedesTemp(); track s.idSede) {
+                    <tr class="sedes-tabla__fila">
+                      <td>
+                        <div class="sede-nombre">{{ s.nombre }}</div>
+                        @if (s.urbanizacion) { <div class="sede-detalle">{{ s.urbanizacion }}</div> }
+                      </td>
+                      <td>
+                        @if (s.tipoInstalacion) {
+                          <span class="badge-tipo-sede">{{ s.tipoInstalacion }}</span>
+                        } @else { <span class="sede-detalle">—</span> }
+                      </td>
+                      <td>
+                        <div class="sede-nombre">{{ s.region }}</div>
+                        <div class="sede-detalle">{{ s.provincia }} — {{ s.distrito }}</div>
+                      </td>
+                      <td class="sede-detalle">{{ s.direccionExacta ?? '—' }}</td>
+                      <td class="sedes-tabla__td--acciones">
+                        <button class="btn-accion-sede btn-accion-sede--desactivar" type="button" title="Eliminar" (click)="eliminarSedeTemp(s.idSede)">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         } @else if (sedes().length === 0) {
           <div class="ficha-seccion__vacio">
             <span class="material-symbols-outlined">location_city</span>
@@ -271,12 +319,7 @@
                       </span>
                     </td>
                     <td class="sedes-tabla__td--acciones">
-                      <button
-                        class="btn-accion-sede btn-accion-sede--editar"
-                        type="button"
-                        title="Editar sede"
-                        (click)="abrirModalEditarSede(s)"
-                      >
+                      <button class="btn-accion-sede btn-accion-sede--editar" type="button" title="Editar sede" (click)="abrirModalEditarSede(s)">
                         <span class="material-symbols-outlined">edit</span>
                       </button>
                       <button
@@ -312,19 +355,90 @@
               <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
             </div>
           </div>
-          @if (!esNuevo()) {
-            <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
+          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
               <span class="material-symbols-outlined">person_add</span>
               + Contacto
             </button>
-          }
         </div>
 
         @if (esNuevo()) {
-          <div class="ficha-seccion__vacio">
-            <span class="material-symbols-outlined">contacts</span>
-            <p>Guarda el cliente primero para poder agregar contactos.</p>
-          </div>
+          @if (contactosTemp().length === 0) {
+            <div class="ficha-seccion__vacio">
+              <span class="material-symbols-outlined">contacts</span>
+              <p>Agrega los contactos clave de este cliente.</p>
+            </div>
+          } @else {
+            <div class="contactos-grid">
+              @for (c of contactosTemp(); track c.idContacto) {
+                <div class="contacto-card">
+                  <div class="contacto-card__cabecera">
+                    <div class="contacto-card__avatar">{{ iniciales(c.nombres) }}</div>
+                    <div class="contacto-card__info">
+                      <div class="contacto-card__nombre-row">
+                        <span class="contacto-card__nombre">{{ c.nombres }}</span>
+                        @if (c.esContactoPrincipal) {
+                          <span class="contacto-card__badge contacto-card__badge--principal">Principal</span>
+                        } @else if (c.area) {
+                          <span class="contacto-card__badge">{{ c.area }}</span>
+                        }
+                      </div>
+                      @if (c.cargo) { <div class="contacto-card__subtitulo">{{ c.cargo }}</div> }
+                      @if (c.idSede) {
+                        <div class="contacto-card__sede">
+                          <span class="material-symbols-outlined">location_on</span>
+                          {{ sedesParaModalContacto.find(s => s.idSede === c.idSede)?.nombre ?? '—' }}
+                        </div>
+                      }
+                    </div>
+                    <div class="contacto-card__acciones">
+                      <button class="btn-accion-sede btn-accion-sede--desactivar" type="button" title="Eliminar" (click)="eliminarContactoTemp(c.idContacto)">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                  @if (c.correo || c.telefonoMovil) {
+                    <div class="contacto-card__contacto">
+                      @if (c.correo) {
+                        <div class="contacto-card__contacto-item">
+                          <span class="material-symbols-outlined">mail</span><span>{{ c.correo }}</span>
+                        </div>
+                      }
+                      @if (c.telefonoMovil) {
+                        <div class="contacto-card__contacto-item">
+                          <span class="material-symbols-outlined">call</span><span>{{ c.telefonoMovil }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (c.autorizadoAprobarCotizaciones || c.recibeAlertasCalibracion || c.autorizadoRecepcionTecnica) {
+                    <div class="contacto-card__permisos">
+                      @if (c.autorizadoAprobarCotizaciones) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Autorizado para aprobar cotizaciones</span>
+                        </div>
+                      }
+                      @if (c.recibeAlertasCalibracion) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Recibe alertas de calibración vencida</span>
+                        </div>
+                      }
+                      @if (c.autorizadoRecepcionTecnica) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Autorizado para recepción técnica en campo</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="contactos-total">
+              Total: {{ contactosTemp().length }} contacto{{ contactosTemp().length !== 1 ? 's' : '' }} registrado{{ contactosTemp().length !== 1 ? 's' : '' }}
+            </div>
+          }
         } @else if (contactos().length === 0) {
           <div class="ficha-seccion__vacio">
             <span class="material-symbols-outlined">contacts</span>
@@ -538,6 +652,7 @@
     [idCliente]="idCliente"
     [sedeEditar]="sedeEditar()"
     (guardado)="onSedeGuardada()"
+    (guardadoLocal)="onSedeGuardadaLocal($event)"
     (cancelado)="cerrarModal()"
   />
 }
@@ -545,9 +660,10 @@
 @if (modalContactoOpen()) {
   <app-modal-contacto
     [idCliente]="idCliente"
-    [sedesCliente]="sedes()"
+    [sedesCliente]="sedesParaModalContacto"
     [contactoEditar]="contactoEditar()"
     (guardado)="onContactoGuardado()"
+    (guardadoLocal)="onContactoGuardadoLocal($event)"
     (cancelado)="cerrarModalContacto()"
   />
 }

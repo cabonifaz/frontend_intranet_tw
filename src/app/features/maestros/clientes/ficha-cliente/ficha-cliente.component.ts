@@ -7,7 +7,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { CatalogoItem, ContactoListaItem, GuardarClienteRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { CatalogoItem, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
 import { ModalContactoComponent } from '../modal-contacto/modal-contacto.component';
@@ -63,16 +63,21 @@ export class FichaClienteComponent implements OnInit {
   readonly sedes              = signal<SedeListaItem[]>([]);
   readonly modalSedeOpen      = signal(false);
   readonly sedeEditar         = signal<SedeListaItem | null>(null);
+  readonly sedesTemp          = signal<SedeListaItem[]>([]);
 
   readonly contactos          = signal<ContactoListaItem[]>([]);
   readonly modalContactoOpen  = signal(false);
   readonly contactoEditar     = signal<ContactoListaItem | null>(null);
+  readonly contactosTemp      = signal<ContactoListaItem[]>([]);
 
-  readonly ssomaItems      = SSOMA_ITEMS;
-  readonly tiposDocumento  = signal<CatalogoItem[]>([]);
-  readonly tiposCliente    = signal<CatalogoItem[]>([]);
-  readonly condicionesPago = signal<CatalogoItem[]>([]);
-  readonly patronesMasas   = signal<CatalogoItem[]>([]);
+  private _tempId = 0;
+
+  readonly ssomaItems       = SSOMA_ITEMS;
+  readonly tiposDocumento   = signal<CatalogoItem[]>([]);
+  readonly tiposCliente     = signal<CatalogoItem[]>([]);
+  readonly condicionesPago  = signal<CatalogoItem[]>([]);
+  readonly patronesMasas    = signal<CatalogoItem[]>([]);
+  readonly categoriasCliente = signal<CatalogoItem[]>([]);
 
   idCliente = 0;
 
@@ -97,6 +102,7 @@ export class FichaClienteComponent implements OnInit {
     ssomaInduccionSsoma:    [false],
     ssomaExamenMedico:      [false],
     ssomaNotas:             [''],
+    categoria:              [''],
   });
 
   async ngOnInit(): Promise<void> {
@@ -109,18 +115,20 @@ export class FichaClienteComponent implements OnInit {
       this.maestrosSvc.obtenerCatalogo('TIPO_CLIENTE'),
       this.maestrosSvc.obtenerCatalogo('CONDICION_PAGO'),
       this.maestrosSvc.obtenerCatalogo('PATRON_MASAS'),
+      this.maestrosSvc.obtenerCatalogo('CATEGORIA_CLIENTE'),
     ]);
 
     try {
       if (esNuevo) {
-        const [tiposDoc, tipos, condiciones, patrones] = await catalogsTask;
+        const [tiposDoc, tipos, condiciones, patrones, categorias] = await catalogsTask;
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
         this.patronesMasas.set(patrones);
+        this.categoriasCliente.set(categorias);
       } else {
         this.idCliente = Number(idParam);
-        const [[tiposDoc, tipos, condiciones, patrones], detalle] = await Promise.all([
+        const [[tiposDoc, tipos, condiciones, patrones, categorias], detalle] = await Promise.all([
           catalogsTask,
           this.maestrosSvc.obtenerClientePorId(this.idCliente),
         ]);
@@ -128,6 +136,7 @@ export class FichaClienteComponent implements OnInit {
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
         this.patronesMasas.set(patrones);
+        this.categoriasCliente.set(categorias);
 
         this.estadoCliente.set(detalle.estado);
 
@@ -159,6 +168,7 @@ export class FichaClienteComponent implements OnInit {
           ssomaInduccionSsoma:    detalle.ssomaInduccionSsoma,
           ssomaExamenMedico:      detalle.ssomaExamenMedico,
           ssomaNotas:             detalle.ssomaNotas ?? '',
+          categoria:              detalle.categoria ?? '',
         });
       }
     } catch (e: unknown) {
@@ -197,10 +207,67 @@ export class FichaClienteComponent implements OnInit {
         ssomaInduccionSsoma:    v.ssomaInduccionSsoma,
         ssomaExamenMedico:      v.ssomaExamenMedico,
         ssomaNotas:             v.ssomaNotas || null,
+        categoria:              v.categoria || null,
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);
-      this.router.navigate(['/maestros/clientes', id]);
+
+      // Guardar sedes temporales en cascada
+      if (this.sedesTemp().length > 0) {
+        await Promise.all(
+          this.sedesTemp().map(s => this.maestrosSvc.guardarSede({
+            idSede:          0,
+            idCliente:       id,
+            nombre:          s.nombre,
+            tipoInstalacion: s.tipoInstalacion,
+            region:          s.region,
+            provincia:       s.provincia,
+            distrito:        s.distrito,
+            urbanizacion:    s.urbanizacion,
+            direccionExacta: s.direccionExacta ?? '',
+          }))
+        );
+      }
+
+      // Guardar contactos temporales en cascada, resolviendo idSede temporal
+      if (this.contactosTemp().length > 0) {
+        let sedesReales: SedeListaItem[] = [];
+        if (this.sedesTemp().length > 0) {
+          sedesReales = await this.maestrosSvc.obtenerSedesPorCliente(id);
+        }
+        const sedeIdMap = new Map<number, number | null>();
+        this.sedesTemp().forEach(ts => {
+          const real = sedesReales.find(r => r.nombre === ts.nombre);
+          sedeIdMap.set(ts.idSede, real?.idSede ?? null);
+        });
+
+        await Promise.all(
+          this.contactosTemp().map(c => {
+            const resolvedSede = c.idSede != null && c.idSede < 0
+              ? (sedeIdMap.get(c.idSede) ?? null)
+              : c.idSede;
+            const req: GuardarContactoRequest = {
+              idContacto:                    0,
+              idCliente:                     id,
+              idSede:                        resolvedSede,
+              nombres:                       c.nombres,
+              documentoIdentidad:            c.documentoIdentidad,
+              cargo:                         c.cargo,
+              area:                          c.area,
+              correo:                        c.correo,
+              telefonoMovil:                 c.telefonoMovil,
+              telefonoAnexo:                 c.telefonoAnexo,
+              esContactoPrincipal:           c.esContactoPrincipal,
+              autorizadoAprobarCotizaciones: c.autorizadoAprobarCotizaciones,
+              recibeAlertasCalibracion:      c.recibeAlertasCalibracion,
+              autorizadoRecepcionTecnica:    c.autorizadoRecepcionTecnica,
+            };
+            return this.maestrosSvc.guardarContacto(req);
+          })
+        );
+      }
+
+      this.router.navigate(['/maestros/clientes']);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al guardar el cliente.');
     } finally {
@@ -210,6 +277,65 @@ export class FichaClienteComponent implements OnInit {
 
   cancelar(): void {
     this.router.navigate(['/maestros/clientes']);
+  }
+
+  get sedesDisplay(): SedeListaItem[] {
+    return this.esNuevo() ? this.sedesTemp() : this.sedes();
+  }
+
+  get contactosDisplay(): ContactoListaItem[] {
+    return this.esNuevo() ? this.contactosTemp() : this.contactos();
+  }
+
+  get sedesParaModalContacto(): SedeListaItem[] {
+    return this.esNuevo() ? this.sedesTemp() : this.sedes();
+  }
+
+  onSedeGuardadaLocal(dto: GuardarSedeRequest): void {
+    const item: SedeListaItem = {
+      idSede:          --this._tempId,
+      idCliente:       0,
+      nombre:          dto.nombre,
+      tipoInstalacion: dto.tipoInstalacion,
+      region:          dto.region,
+      provincia:       dto.provincia,
+      distrito:        dto.distrito,
+      urbanizacion:    dto.urbanizacion,
+      direccionExacta: dto.direccionExacta,
+      estado:          'Activo',
+    };
+    this.sedesTemp.update(list => [...list, item]);
+    this.cerrarModal();
+  }
+
+  onContactoGuardadoLocal(dto: GuardarContactoRequest): void {
+    const item: ContactoListaItem = {
+      idContacto:                    --this._tempId,
+      idCliente:                     0,
+      idSede:                        dto.idSede,
+      nombres:                       dto.nombres,
+      documentoIdentidad:            dto.documentoIdentidad,
+      cargo:                         dto.cargo,
+      area:                          dto.area,
+      correo:                        dto.correo,
+      telefonoMovil:                 dto.telefonoMovil,
+      telefonoAnexo:                 dto.telefonoAnexo,
+      esContactoPrincipal:           dto.esContactoPrincipal,
+      autorizadoAprobarCotizaciones: dto.autorizadoAprobarCotizaciones,
+      recibeAlertasCalibracion:      dto.recibeAlertasCalibracion,
+      autorizadoRecepcionTecnica:    dto.autorizadoRecepcionTecnica,
+      estado:                        'Activo',
+    };
+    this.contactosTemp.update(list => [...list, item]);
+    this.cerrarModalContacto();
+  }
+
+  eliminarSedeTemp(idSede: number): void {
+    this.sedesTemp.update(list => list.filter(s => s.idSede !== idSede));
+  }
+
+  eliminarContactoTemp(idContacto: number): void {
+    this.contactosTemp.update(list => list.filter(c => c.idContacto !== idContacto));
   }
 
   abrirModalNuevaSede(): void {

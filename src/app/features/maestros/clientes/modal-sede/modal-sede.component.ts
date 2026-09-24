@@ -16,8 +16,9 @@ export class ModalSedeComponent implements OnInit {
   readonly idCliente  = input.required<number>();
   readonly sedeEditar = input<SedeListaItem | null>(null);
 
-  readonly guardado  = output<void>();
-  readonly cancelado = output<void>();
+  readonly guardado       = output<void>();
+  readonly guardadoLocal  = output<GuardarSedeRequest>();
+  readonly cancelado      = output<void>();
 
   readonly guardando       = signal(false);
   readonly error           = signal('');
@@ -59,21 +60,27 @@ export class ModalSedeComponent implements OnInit {
   async guardar(): Promise<void> {
     if (this.formulario.invalid || this.guardando()) return;
 
+    const v = this.formulario.value;
+    const dto: GuardarSedeRequest = {
+      idSede:          this.sedeEditar()?.idSede ?? 0,
+      idCliente:       this.idCliente(),
+      nombre:          v.nombre,
+      tipoInstalacion: v.tipoInstalacion || null,
+      region:          v.region          || null,
+      provincia:       v.provincia       || null,
+      distrito:        v.distrito        || null,
+      urbanizacion:    v.urbanizacion    || null,
+      direccionExacta: v.direccionExacta,
+    };
+
+    if (this.idCliente() === 0) {
+      this.guardadoLocal.emit(dto);
+      return;
+    }
+
     this.guardando.set(true);
     this.error.set('');
     try {
-      const v = this.formulario.value;
-      const dto: GuardarSedeRequest = {
-        idSede:          this.sedeEditar()?.idSede ?? 0,
-        idCliente:       this.idCliente(),
-        nombre:          v.nombre,
-        tipoInstalacion: v.tipoInstalacion || null,
-        region:          v.region          || null,
-        provincia:       v.provincia       || null,
-        distrito:        v.distrito        || null,
-        urbanizacion:    v.urbanizacion    || null,
-        direccionExacta: v.direccionExacta,
-      };
       await this.maestrosSvc.guardarSede(dto);
       this.guardado.emit();
     } catch (e: unknown) {

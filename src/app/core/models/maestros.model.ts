@@ -38,6 +38,7 @@ export interface ClienteDetalle {
   ssomaInduccionSsoma: boolean;
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
+  categoria: string | null;
   estado: string;
 }
 
@@ -63,6 +64,7 @@ export interface GuardarClienteRequest {
   ssomaInduccionSsoma: boolean;
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
+  categoria: string | null;
 }
 
 export interface CambiarEstadoClienteRequest {

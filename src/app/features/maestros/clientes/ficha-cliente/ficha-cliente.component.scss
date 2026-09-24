@@ -438,7 +438,7 @@
 
 .campo-cuarteto {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 0.6fr 1.4fr 1fr 1fr;
   gap: 16px;
 }
 
@@ -574,18 +574,18 @@
   align-items: center;
   gap: 5px;
   padding: 7px 14px;
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #334155;
+  color: #2563EB;
   cursor: pointer;
   white-space: nowrap;
 
   .material-symbols-outlined { font-size: 14px; }
 
-  &:hover { background: #F8FAFC; border-color: #CBD5E1; }
+  &:hover { background: #DBEAFE; border-color: #93C5FD; }
 
   &--sm {
     margin-top: 8px;

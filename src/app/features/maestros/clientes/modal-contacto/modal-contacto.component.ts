@@ -17,8 +17,9 @@ export class ModalContactoComponent implements OnInit {
   readonly sedesCliente    = input<SedeListaItem[]>([]);
   readonly contactoEditar  = input<ContactoListaItem | null>(null);
 
-  readonly guardado  = output<void>();
-  readonly cancelado = output<void>();
+  readonly guardado       = output<void>();
+  readonly guardadoLocal  = output<GuardarContactoRequest>();
+  readonly cancelado      = output<void>();
 
   readonly guardando = signal(false);
   readonly error     = signal('');
@@ -65,27 +66,32 @@ export class ModalContactoComponent implements OnInit {
   async guardar(): Promise<void> {
     if (this.formulario.invalid || this.guardando()) return;
 
+    const v = this.formulario.value;
+    const dto: GuardarContactoRequest = {
+      idContacto:                    this.contactoEditar()?.idContacto ?? 0,
+      idCliente:                     this.idCliente(),
+      idSede:                        v.idSede || null,
+      nombres:                       v.nombres,
+      documentoIdentidad:            v.documentoIdentidad || null,
+      cargo:                         v.cargo              || null,
+      area:                          v.area               || null,
+      correo:                        v.correo             || null,
+      telefonoMovil:                 v.telefonoMovil      || null,
+      telefonoAnexo:                 v.telefonoAnexo      || null,
+      esContactoPrincipal:           v.esContactoPrincipal,
+      autorizadoAprobarCotizaciones: v.autorizadoAprobarCotizaciones,
+      recibeAlertasCalibracion:      v.recibeAlertasCalibracion,
+      autorizadoRecepcionTecnica:    v.autorizadoRecepcionTecnica,
+    };
+
+    if (this.idCliente() === 0) {
+      this.guardadoLocal.emit(dto);
+      return;
+    }
+
     this.guardando.set(true);
     this.error.set('');
-
     try {
-      const v = this.formulario.value;
-      const dto: GuardarContactoRequest = {
-        idContacto:                    this.contactoEditar()?.idContacto ?? 0,
-        idCliente:                     this.idCliente(),
-        idSede:                        v.idSede || null,
-        nombres:                       v.nombres,
-        documentoIdentidad:            v.documentoIdentidad || null,
-        cargo:                         v.cargo              || null,
-        area:                          v.area               || null,
-        correo:                        v.correo             || null,
-        telefonoMovil:                 v.telefonoMovil      || null,
-        telefonoAnexo:                 v.telefonoAnexo      || null,
-        esContactoPrincipal:           v.esContactoPrincipal,
-        autorizadoAprobarCotizaciones: v.autorizadoAprobarCotizaciones,
-        recibeAlertasCalibracion:      v.recibeAlertasCalibracion,
-        autorizadoRecepcionTecnica:    v.autorizadoRecepcionTecnica,
-      };
       await this.maestrosSvc.guardarContacto(dto);
       this.guardado.emit();
     } catch (e: unknown) {
