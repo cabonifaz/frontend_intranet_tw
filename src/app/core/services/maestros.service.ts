@@ -5,10 +5,13 @@ import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoClienteRequest,
+  CambiarEstadoSedeRequest,
   CatalogoItem,
   ClienteDetalle,
   ClienteListaItem,
   GuardarClienteRequest,
+  GuardarSedeRequest,
+  SedeListaItem,
 } from '../models/maestros.model';
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +53,32 @@ export class MaestrosService {
     );
     if (!r.datos) throw new Error(r.mensaje);
     return r.datos;
+  }
+
+  async obtenerSedesPorCliente(idCliente: number): Promise<SedeListaItem[]> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<SedeListaItem[]>>(`${this.base}/clientes/${idCliente}/sedes`)
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  async guardarSede(dto: GuardarSedeRequest): Promise<number> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<number>>(`${this.base}/sedes`, dto)
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+    return r.datos!;
+  }
+
+  async cambiarEstadoSede(dto: CambiarEstadoSedeRequest): Promise<void> {
+    const r = await firstValueFrom(
+      this.http.patch<RespuestaApi<null>>(
+        `${this.base}/sedes/${dto.idSede}/estado`,
+        dto
+      )
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
   }
 
   async cambiarEstadoCliente(dto: CambiarEstadoClienteRequest): Promise<void> {

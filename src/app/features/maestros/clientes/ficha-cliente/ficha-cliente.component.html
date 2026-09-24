@@ -209,11 +209,95 @@
               <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
             </div>
           </div>
+          @if (!esNuevo()) {
+            <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
+              <span class="material-symbols-outlined">add</span>
+              Agregar Nueva Sede
+            </button>
+          }
         </div>
-        <div class="ficha-seccion__vacio">
-          <span class="material-symbols-outlined">location_city</span>
-          <p>No hay sedes registradas para este cliente.</p>
-        </div>
+
+        @if (esNuevo()) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">location_city</span>
+            <p>Guarda el cliente primero para poder agregar sedes.</p>
+          </div>
+        } @else if (sedes().length === 0) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">location_city</span>
+            <p>No hay sedes registradas para este cliente.</p>
+            <button class="btn-agregar-sede btn-agregar-sede--sm" type="button" (click)="abrirModalNuevaSede()">
+              Agregar primera sede
+            </button>
+          </div>
+        } @else {
+          <div class="sedes-tabla-wrapper">
+            <table class="sedes-tabla">
+              <thead>
+                <tr>
+                  <th>Sede / Operación</th>
+                  <th>Tipo</th>
+                  <th>Ubicación</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                  <th class="sedes-tabla__th--acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of sedes(); track s.idSede) {
+                  <tr class="sedes-tabla__fila">
+                    <td>
+                      <div class="sede-nombre">{{ s.nombre }}</div>
+                      @if (s.urbanizacion) {
+                        <div class="sede-detalle">{{ s.urbanizacion }}</div>
+                      }
+                    </td>
+                    <td>
+                      @if (s.tipoInstalacion) {
+                        <span class="badge-tipo-sede">{{ s.tipoInstalacion }}</span>
+                      } @else {
+                        <span class="sede-detalle">—</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="sede-nombre">{{ s.region }}</div>
+                      <div class="sede-detalle">{{ s.provincia }} — {{ s.distrito }}</div>
+                    </td>
+                    <td class="sede-detalle">{{ s.direccionExacta ?? '—' }}</td>
+                    <td>
+                      <span class="badge-estado-sede" [class.badge-estado-sede--activo]="s.estado === 'Activo'">
+                        <span class="badge-estado-sede__dot"></span>
+                        {{ s.estado }}
+                      </span>
+                    </td>
+                    <td class="sedes-tabla__td--acciones">
+                      <button
+                        class="btn-accion-sede btn-accion-sede--editar"
+                        type="button"
+                        title="Editar sede"
+                        (click)="abrirModalEditarSede(s)"
+                      >
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button
+                        class="btn-accion-sede"
+                        [class.btn-accion-sede--activar]="s.estado === 'Inactivo'"
+                        [class.btn-accion-sede--desactivar]="s.estado === 'Activo'"
+                        type="button"
+                        [title]="s.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                        (click)="toggleEstadoSede(s)"
+                      >
+                        <span class="material-symbols-outlined">
+                          {{ s.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </section>
 
       <!-- ── Section 3: Contactos ─────────────────────────────────────────── -->
@@ -342,4 +426,13 @@
 
     </div>
   </div>
+}
+
+@if (modalSedeOpen()) {
+  <app-modal-sede
+    [idCliente]="idCliente"
+    [sedeEditar]="sedeEditar()"
+    (guardado)="onSedeGuardada()"
+    (cancelado)="cerrarModal()"
+  />
 }

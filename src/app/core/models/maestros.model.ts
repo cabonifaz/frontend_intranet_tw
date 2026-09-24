@@ -69,3 +69,33 @@ export interface CambiarEstadoClienteRequest {
   idCliente: number;
   estado: string;
 }
+
+export interface SedeListaItem {
+  idSede: number;
+  idCliente: number;
+  nombre: string;
+  tipoInstalacion: string | null;
+  region: string | null;
+  provincia: string | null;
+  distrito: string | null;
+  urbanizacion: string | null;
+  direccionExacta: string | null;
+  estado: string;
+}
+
+export interface GuardarSedeRequest {
+  idSede: number;
+  idCliente: number;
+  nombre: string;
+  tipoInstalacion: string | null;
+  region: string | null;
+  provincia: string | null;
+  distrito: string | null;
+  urbanizacion: string | null;
+  direccionExacta: string;
+}
+
+export interface CambiarEstadoSedeRequest {
+  idSede: number;
+  estado: string;
+}

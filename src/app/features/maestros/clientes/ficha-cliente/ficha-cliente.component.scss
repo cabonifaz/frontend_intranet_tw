@@ -567,6 +567,143 @@
   }
 }
 
+// ── Botón agregar sede ────────────────────────────────────────────────────────
+
+.btn-agregar-sede {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover { background: #F8FAFC; border-color: #CBD5E1; }
+
+  &--sm {
+    margin-top: 8px;
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+}
+
+// ── Tabla de sedes ────────────────────────────────────────────────────────────
+
+.sedes-tabla-wrapper {
+  overflow-x: auto;
+}
+
+.sedes-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+
+  thead tr {
+    background: rgba(248, 250, 252, 0.8);
+    border-bottom: 1px solid #E2E8F0;
+  }
+
+  th {
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748B;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  &__th--acciones { text-align: center; }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F1F5F9;
+    vertical-align: top;
+    color: #334155;
+  }
+
+  &__td--acciones {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  &__fila:last-child td { border-bottom: none; }
+  &__fila:hover td { background: rgba(248, 250, 252, 0.5); }
+}
+
+.sede-nombre {
+  font-weight: 600;
+  color: #1E293B;
+  font-size: 12px;
+}
+
+.sede-detalle {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.badge-tipo-sede {
+  display: inline-flex;
+  padding: 2px 8px;
+  background: #F1F5F9;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.badge-estado-sede {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #F1F5F9;
+  color: #64748B;
+
+  &--activo { background: #ECFDF5; color: #047857; }
+
+  &__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+}
+
+.btn-accion-sede {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #64748B;
+  margin: 0 2px;
+
+  .material-symbols-outlined { font-size: 15px; }
+
+  &:hover { background: #F8FAFC; }
+
+  &--editar:hover { color: #2563EB; border-color: #BFDBFE; }
+  &--activar:hover { color: #047857; border-color: #A7F3D0; }
+  &--desactivar:hover { color: #DC2626; border-color: #FECACA; }
+}
+
 // ── VIP badge ─────────────────────────────────────────────────────────────────
 
 .link-regla-vip {

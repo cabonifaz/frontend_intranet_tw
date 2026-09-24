@@ -1,0 +1,138 @@
+<div class="modal-overlay" (click)="cancelar()">
+  <div class="modal" (click)="$event.stopPropagation()" [formGroup]="formulario">
+
+    <!-- Cabecera -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-box">
+          <span class="material-symbols-outlined">location_city</span>
+        </div>
+        <div class="modal__titulo-wrap">
+          <div class="modal__titulo-row">
+            <h3 class="modal__titulo">{{ esEdicion ? 'Editar Sede Operativa' : 'Nueva Sede Operativa / Mina / Planta' }}</h3>
+            <span class="modal__badge">Configuración Técnica</span>
+          </div>
+          <p class="modal__subtitulo">Registrar una nueva ubicación o punto de servicio para el cliente</p>
+        </div>
+      </div>
+      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Cuerpo -->
+    <div class="modal__cuerpo">
+
+      @if (error()) {
+        <div class="modal__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <!-- Fila 1: Nombre + Tipo Instalación -->
+      <div class="modal-campo-2col">
+        <div class="campo">
+          <label class="campo__label">Nombre de la Sede / Operación *</label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Planta Concentradora Las Bambas - Sector Sulfuros"
+            formControlName="nombre"
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__label">Tipo de Instalación *</label>
+          <select class="campo__select" formControlName="tipoInstalacion">
+            <option value="">Seleccionar...</option>
+            @for (t of tiposInstalacion(); track t.id) {
+              <option [value]="t.nombre">{{ t.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Bloque ubicación geográfica -->
+      <div class="modal-ubigeo">
+        <div class="modal-ubigeo__header">
+          <div class="modal-ubigeo__titulo-row">
+            <span class="material-symbols-outlined modal-ubigeo__icono">location_on</span>
+            <span class="modal-ubigeo__titulo">UBICACIÓN GEOGRÁFICA</span>
+          </div>
+          <span class="modal-ubigeo__nota">Datos requeridos para logística técnica</span>
+        </div>
+
+        <div class="modal-campo-3col">
+          <div class="campo">
+            <label class="campo__label">Región / Departamento *</label>
+            <select class="campo__select" formControlName="region">
+              <option value="">Seleccionar...</option>
+              @for (r of regiones(); track r.id) {
+                <option [value]="r.nombre">{{ r.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label class="campo__label">Provincia *</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Cotabambas"
+              formControlName="provincia"
+            />
+          </div>
+          <div class="campo">
+            <label class="campo__label">Distrito *</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Challhuahuacho"
+              formControlName="distrito"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Fila 3: Urbanización + Dirección Exacta -->
+      <div class="modal-campo-2col">
+        <div class="campo">
+          <label class="campo__label">Urbanización / Zona Industrial</label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Parque Industrial Challhuahuacho"
+            formControlName="urbanizacion"
+          />
+        </div>
+        <div class="campo">
+          <label class="campo__label">Dirección Exacta *</label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Zona Industrial Sector Sulfuros Mz. B Lote 4"
+            formControlName="direccionExacta"
+          />
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pie -->
+    <div class="modal__footer">
+      <span class="modal__footer-nota">* Información requerida para operaciones de campo</span>
+      <div class="modal__footer-acciones">
+        <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
+        <button
+          class="modal__btn-guardar"
+          type="button"
+          [disabled]="formulario.invalid || guardando()"
+          (click)="guardar()"
+        >
+          <span class="material-symbols-outlined">check</span>
+          {{ guardando() ? 'Guardando...' : 'Guardar y Vincular Sede' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

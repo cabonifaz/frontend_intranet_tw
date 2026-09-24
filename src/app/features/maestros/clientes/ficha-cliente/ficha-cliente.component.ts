@@ -7,8 +7,9 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { CatalogoItem, GuardarClienteRequest } from '../../../../core/models/maestros.model';
+import { CatalogoItem, GuardarClienteRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
 
 interface SsomaItem {
   clave: 'ssomaPolizaSctr' | 'ssomaCamioneta4x4' | 'ssomaInduccionSsoma' | 'ssomaExamenMedico';
@@ -42,7 +43,7 @@ const SSOMA_ITEMS: SsomaItem[] = [
 
 @Component({
   selector: 'app-ficha-cliente',
-  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent],
+  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, ModalSedeComponent],
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
@@ -57,6 +58,10 @@ export class FichaClienteComponent implements OnInit {
   readonly error         = signal('');
   readonly esNuevo       = signal(false);
   readonly estadoCliente = signal('Borrador');
+
+  readonly sedes         = signal<SedeListaItem[]>([]);
+  readonly modalSedeOpen = signal(false);
+  readonly sedeEditar    = signal<SedeListaItem | null>(null);
 
   readonly ssomaItems      = SSOMA_ITEMS;
   readonly tiposDocumento  = signal<CatalogoItem[]>([]);
@@ -120,6 +125,10 @@ export class FichaClienteComponent implements OnInit {
         this.patronesMasas.set(patrones);
 
         this.estadoCliente.set(detalle.estado);
+
+        const listaSedes = await this.maestrosSvc.obtenerSedesPorCliente(this.idCliente);
+        this.sedes.set(listaSedes);
+
         this.formulario.patchValue({
           tipoDocumento:          detalle.tipoDocumento,
           ruc:                    detalle.ruc,
@@ -192,6 +201,40 @@ export class FichaClienteComponent implements OnInit {
 
   cancelar(): void {
     this.router.navigate(['/maestros/clientes']);
+  }
+
+  abrirModalNuevaSede(): void {
+    this.sedeEditar.set(null);
+    this.modalSedeOpen.set(true);
+  }
+
+  abrirModalEditarSede(sede: SedeListaItem): void {
+    this.sedeEditar.set(sede);
+    this.modalSedeOpen.set(true);
+  }
+
+  cerrarModal(): void {
+    this.modalSedeOpen.set(false);
+    this.sedeEditar.set(null);
+  }
+
+  async onSedeGuardada(): Promise<void> {
+    this.cerrarModal();
+    if (this.idCliente) {
+      const lista = await this.maestrosSvc.obtenerSedesPorCliente(this.idCliente);
+      this.sedes.set(lista);
+    }
+  }
+
+  async toggleEstadoSede(sede: SedeListaItem): Promise<void> {
+    const nuevoEstado = sede.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    try {
+      await this.maestrosSvc.cambiarEstadoSede({ idSede: sede.idSede, estado: nuevoEstado });
+      const lista = await this.maestrosSvc.obtenerSedesPorCliente(this.idCliente);
+      this.sedes.set(lista);
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Error al cambiar estado de sede.');
+    }
   }
 
   get esVip(): boolean {
