@@ -308,15 +308,120 @@
               <span class="material-symbols-outlined">contacts</span>
             </div>
             <div>
-              <h2 class="ficha-seccion__titulo">3. Personas de Contacto</h2>
+              <h2 class="ficha-seccion__titulo">3. Contactos Clave &amp; Aprobadores</h2>
               <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
             </div>
           </div>
+          @if (!esNuevo()) {
+            <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
+              <span class="material-symbols-outlined">person_add</span>
+              + Contacto
+            </button>
+          }
         </div>
-        <div class="ficha-seccion__vacio">
-          <span class="material-symbols-outlined">contacts</span>
-          <p>No hay contactos registrados para este cliente.</p>
-        </div>
+
+        @if (esNuevo()) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">contacts</span>
+            <p>Guarda el cliente primero para poder agregar contactos.</p>
+          </div>
+        } @else if (contactos().length === 0) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">contacts</span>
+            <p>No hay contactos registrados para este cliente.</p>
+            <button class="btn-agregar-sede btn-agregar-sede--sm" type="button" (click)="abrirModalNuevoContacto()">
+              Agregar primer contacto
+            </button>
+          </div>
+        } @else {
+          <div class="contactos-grid">
+            @for (c of contactos(); track c.idContacto) {
+              <div class="contacto-card" [class.contacto-card--inactivo]="c.estado === 'Inactivo'">
+                <div class="contacto-card__cabecera">
+                  <div class="contacto-card__avatar">{{ iniciales(c.nombres) }}</div>
+                  <div class="contacto-card__info">
+                    <div class="contacto-card__nombre-row">
+                      <span class="contacto-card__nombre">{{ c.nombres }}</span>
+                      @if (c.esContactoPrincipal) {
+                        <span class="contacto-card__badge contacto-card__badge--principal">Principal</span>
+                      } @else if (c.area) {
+                        <span class="contacto-card__badge">{{ c.area }}</span>
+                      }
+                    </div>
+                    @if (c.cargo) {
+                      <div class="contacto-card__subtitulo">{{ c.cargo }}</div>
+                    }
+                  </div>
+                  <div class="contacto-card__acciones">
+                    <button
+                      class="btn-accion-sede btn-accion-sede--editar"
+                      type="button"
+                      title="Editar contacto"
+                      (click)="abrirModalEditarContacto(c)"
+                    >
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      class="btn-accion-sede"
+                      [class.btn-accion-sede--activar]="c.estado === 'Inactivo'"
+                      [class.btn-accion-sede--desactivar]="c.estado === 'Activo'"
+                      type="button"
+                      [title]="c.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                      (click)="toggleEstadoContacto(c)"
+                    >
+                      <span class="material-symbols-outlined">
+                        {{ c.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                @if (c.correo || c.telefonoMovil) {
+                  <div class="contacto-card__contacto">
+                    @if (c.correo) {
+                      <div class="contacto-card__contacto-item">
+                        <span class="material-symbols-outlined">mail</span>
+                        <span>{{ c.correo }}</span>
+                      </div>
+                    }
+                    @if (c.telefonoMovil) {
+                      <div class="contacto-card__contacto-item">
+                        <span class="material-symbols-outlined">call</span>
+                        <span>{{ c.telefonoMovil }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (c.autorizadoAprobarCotizaciones || c.recibeAlertasCalibracion || c.autorizadoRecepcionTecnica) {
+                  <div class="contacto-card__permisos">
+                    @if (c.autorizadoAprobarCotizaciones) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Autorizado para aprobar cotizaciones</span>
+                      </div>
+                    }
+                    @if (c.recibeAlertasCalibracion) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Recibe alertas de calibración vencida</span>
+                      </div>
+                    }
+                    @if (c.autorizadoRecepcionTecnica) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Autorizado para recepción técnica en campo</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="contactos-total">
+            Total: {{ contactos().length }} contacto{{ contactos().length !== 1 ? 's' : '' }} registrado{{ contactos().length !== 1 ? 's' : '' }}
+          </div>
+        }
       </section>
 
       <!-- ── Section 4: SSOMA ─────────────────────────────────────────────── -->
@@ -434,5 +539,15 @@
     [sedeEditar]="sedeEditar()"
     (guardado)="onSedeGuardada()"
     (cancelado)="cerrarModal()"
+  />
+}
+
+@if (modalContactoOpen()) {
+  <app-modal-contacto
+    [idCliente]="idCliente"
+    [sedesCliente]="sedes()"
+    [contactoEditar]="contactoEditar()"
+    (guardado)="onContactoGuardado()"
+    (cancelado)="cerrarModalContacto()"
   />
 }

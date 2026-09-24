@@ -1,0 +1,219 @@
+<div class="modal-overlay" (click)="cancelado.emit()">
+  <div class="modal" [formGroup]="formulario" (click)="$event.stopPropagation()">
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-box">
+          <span class="material-symbols-outlined">contacts</span>
+        </div>
+        <div class="modal__titulo-wrap">
+          <div class="modal__titulo-row">
+            <h2 class="modal__titulo">{{ tituloModal }}</h2>
+            <span class="modal__badge">Directorio Comercial</span>
+          </div>
+          <p class="modal__subtitulo">Registrar persona autorizada para coordinaciones técnicas y comerciales</p>
+        </div>
+      </div>
+      <button class="modal__btn-cerrar" type="button" (click)="cancelado.emit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────────────────────── -->
+    <div class="modal__cuerpo">
+
+      @if (error()) {
+        <div class="modal__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <!-- 1. Datos Personales & Identificación -->
+      <div class="modal-bloque">
+        <div class="modal-bloque__cabecera">
+          <div class="modal-bloque__heading">
+            <span class="modal-bloque__dot"></span>
+            <span class="modal-bloque__titulo">1. DATOS PERSONALES &amp; IDENTIFICACIÓN</span>
+          </div>
+          <p class="modal-bloque__subtitulo">Información básica y filiación dentro de la empresa cliente</p>
+        </div>
+
+        <div class="modal-campo-2col">
+          <div class="campo">
+            <label class="campo__label">Nombres Completos *</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Ing. Carlos Mendoza Villalobos"
+              formControlName="nombres"
+            />
+          </div>
+          <div class="campo">
+            <label class="campo__label">Documento de Identidad (DNI / CE) *</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="44892310"
+              formControlName="documentoIdentidad"
+              maxlength="12"
+            />
+          </div>
+        </div>
+
+        <div class="modal-campo-2col">
+          <div class="campo">
+            <label class="campo__label">Cargo / Puesto *</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Superintendente de Planta y Metrología"
+              formControlName="cargo"
+            />
+          </div>
+          <div class="campo">
+            <label class="campo__label">Área / Departamento</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Mantenimiento Mecánico y Eléctrico"
+              formControlName="area"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Información de Contacto Directo -->
+      <div class="modal-bloque modal-bloque--separado">
+        <div class="modal-bloque__cabecera">
+          <div class="modal-bloque__heading">
+            <span class="modal-bloque__dot"></span>
+            <span class="modal-bloque__titulo">2. INFORMACIÓN DE CONTACTO DIRECTO</span>
+          </div>
+          <p class="modal-bloque__subtitulo">Canales oficiales para reportes, órdenes y coordinación operativa</p>
+        </div>
+
+        <div class="modal-campo-3col">
+          <div class="campo">
+            <label class="campo__label">Correo Electrónico *</label>
+            <div class="campo__con-icono">
+              <span class="material-symbols-outlined campo__icono-input">mail</span>
+              <input
+                class="campo__input campo__input--icono"
+                type="email"
+                placeholder="cmendoza@lasbambas.com"
+                formControlName="correo"
+              />
+            </div>
+          </div>
+          <div class="campo">
+            <label class="campo__label">Teléfono Móvil / WhatsApp *</label>
+            <div class="campo__con-icono">
+              <span class="material-symbols-outlined campo__icono-input">call</span>
+              <input
+                class="campo__input campo__input--icono"
+                type="tel"
+                placeholder="+51 987 654 321"
+                formControlName="telefonoMovil"
+              />
+            </div>
+          </div>
+          <div class="campo">
+            <label class="campo__label">Teléfono Anexo / Central</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Anexo 4102"
+              formControlName="telefonoAnexo"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Sede o Mina Asignada -->
+      <div class="modal-bloque modal-bloque--separado">
+        <div class="modal-bloque__cabecera">
+          <div class="modal-bloque__heading">
+            <span class="modal-bloque__dot"></span>
+            <span class="modal-bloque__titulo">3. SEDE O MINA ASIGNADA</span>
+          </div>
+          <p class="modal-bloque__subtitulo">Ubicación física donde opera este contacto y autoriza los trabajos</p>
+        </div>
+
+        <select class="campo__select" formControlName="idSede">
+          <option [ngValue]="null">— Sin sede específica —</option>
+          @for (s of sedesCliente(); track s.idSede) {
+            <option [ngValue]="s.idSede">{{ s.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- 4. Nivel de Jerarquía y Permisos Operativos -->
+      <div class="modal-bloque modal-bloque--separado">
+        <div class="modal-bloque__cabecera">
+          <div class="modal-bloque__heading">
+            <span class="modal-bloque__dot"></span>
+            <span class="modal-bloque__titulo">4. NIVEL DE JERARQUÍA Y PERMISOS OPERATIVOS</span>
+          </div>
+          <p class="modal-bloque__subtitulo">Facultades concedidas dentro del flujo de trabajo de Total Weight</p>
+        </div>
+
+        <div class="permisos-grid">
+          <label class="permiso-card">
+            <input class="permiso-card__cb" type="checkbox" formControlName="esContactoPrincipal" />
+            <div class="permiso-card__texto">
+              <span class="permiso-card__nombre">Contacto Principal de la Cuenta</span>
+              <span class="permiso-card__desc">Interlocutor primario para toda gestión comercial y contractual</span>
+            </div>
+          </label>
+
+          <label class="permiso-card">
+            <input class="permiso-card__cb" type="checkbox" formControlName="autorizadoAprobarCotizaciones" />
+            <div class="permiso-card__texto">
+              <span class="permiso-card__nombre">Autorizado para aprobar cotizaciones</span>
+              <span class="permiso-card__desc">Valida y firma órdenes de servicio técnico y calibración</span>
+            </div>
+          </label>
+
+          <label class="permiso-card">
+            <input class="permiso-card__cb" type="checkbox" formControlName="recibeAlertasCalibracion" />
+            <div class="permiso-card__texto">
+              <span class="permiso-card__nombre">Recibe alertas de calibración vencida</span>
+              <span class="permiso-card__desc">Notificaciones automáticas de certificados próximos a expirar</span>
+            </div>
+          </label>
+
+          <label class="permiso-card">
+            <input class="permiso-card__cb" type="checkbox" formControlName="autorizadoRecepcionTecnica" />
+            <div class="permiso-card__texto">
+              <span class="permiso-card__nombre">Autorizado para recepción técnica en campo</span>
+              <span class="permiso-card__desc">Firma de actas de conformidad y entrega de informes de contraste</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+    <div class="modal__footer">
+      <span class="modal__footer-nota">* Campos obligatorios</span>
+      <div class="modal__footer-acciones">
+        <button class="modal__btn-cancelar" type="button" (click)="cancelado.emit()">
+          Cancelar
+        </button>
+        <button
+          class="modal__btn-guardar"
+          type="button"
+          [disabled]="formulario.invalid || guardando()"
+          (click)="guardar()"
+        >
+          <span class="material-symbols-outlined">save</span>
+          {{ guardando() ? 'Guardando...' : 'Guardar y Vincular Contacto' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

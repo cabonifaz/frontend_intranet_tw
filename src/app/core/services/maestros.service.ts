@@ -5,11 +5,14 @@ import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoClienteRequest,
+  CambiarEstadoContactoRequest,
   CambiarEstadoSedeRequest,
   CatalogoItem,
   ClienteDetalle,
   ClienteListaItem,
+  ContactoListaItem,
   GuardarClienteRequest,
+  GuardarContactoRequest,
   GuardarSedeRequest,
   SedeListaItem,
 } from '../models/maestros.model';
@@ -75,6 +78,32 @@ export class MaestrosService {
     const r = await firstValueFrom(
       this.http.patch<RespuestaApi<null>>(
         `${this.base}/sedes/${dto.idSede}/estado`,
+        dto
+      )
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+  }
+
+  async obtenerContactosPorCliente(idCliente: number): Promise<ContactoListaItem[]> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<ContactoListaItem[]>>(`${this.base}/clientes/${idCliente}/contactos`)
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  async guardarContacto(dto: GuardarContactoRequest): Promise<number> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<number>>(`${this.base}/contactos`, dto)
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+    return r.datos!;
+  }
+
+  async cambiarEstadoContacto(dto: CambiarEstadoContactoRequest): Promise<void> {
+    const r = await firstValueFrom(
+      this.http.patch<RespuestaApi<null>>(
+        `${this.base}/contactos/${dto.idContacto}/estado`,
         dto
       )
     );

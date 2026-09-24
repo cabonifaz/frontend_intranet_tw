@@ -99,3 +99,43 @@ export interface CambiarEstadoSedeRequest {
   idSede: number;
   estado: string;
 }
+
+export interface ContactoListaItem {
+  idContacto: number;
+  idCliente: number;
+  idSede: number | null;
+  nombres: string;
+  documentoIdentidad: string | null;
+  cargo: string | null;
+  area: string | null;
+  correo: string | null;
+  telefonoMovil: string | null;
+  telefonoAnexo: string | null;
+  esContactoPrincipal: boolean;
+  autorizadoAprobarCotizaciones: boolean;
+  recibeAlertasCalibracion: boolean;
+  autorizadoRecepcionTecnica: boolean;
+  estado: string;
+}
+
+export interface GuardarContactoRequest {
+  idContacto: number;
+  idCliente: number;
+  idSede: number | null;
+  nombres: string;
+  documentoIdentidad: string | null;
+  cargo: string | null;
+  area: string | null;
+  correo: string | null;
+  telefonoMovil: string | null;
+  telefonoAnexo: string | null;
+  esContactoPrincipal: boolean;
+  autorizadoAprobarCotizaciones: boolean;
+  recibeAlertasCalibracion: boolean;
+  autorizadoRecepcionTecnica: boolean;
+}
+
+export interface CambiarEstadoContactoRequest {
+  idContacto: number;
+  estado: string;
+}

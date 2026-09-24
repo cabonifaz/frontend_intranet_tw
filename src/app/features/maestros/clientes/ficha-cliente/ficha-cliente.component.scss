@@ -704,6 +704,151 @@
   &--desactivar:hover { color: #DC2626; border-color: #FECACA; }
 }
 
+// ── Contactos — grid de cards ─────────────────────────────────────────────────
+
+.contactos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 24px 0;
+}
+
+.contacto-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #FFFFFF;
+
+  &--inactivo { opacity: 0.55; }
+
+  &__cabecera {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  &__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 9999px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #2563EB;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__nombre-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  &__nombre {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1E293B;
+  }
+
+  &__badge {
+    display: inline-flex;
+    padding: 1px 7px;
+    background: #F1F5F9;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #475569;
+
+    &--principal {
+      background: #FFF7ED;
+      border-color: #FED7AA;
+      color: #C2410C;
+    }
+  }
+
+  &__subtitulo {
+    font-size: 11px;
+    color: #64748B;
+    margin-top: 3px;
+  }
+
+  &__sede {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #94A3B8;
+    margin-top: 3px;
+
+    .material-symbols-outlined { font-size: 12px; }
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__contacto {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  &__contacto-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+
+    .material-symbols-outlined { font-size: 14px; color: #94A3B8; }
+  }
+
+  &__permisos {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 10px;
+    border-top: 1px solid #F1F5F9;
+  }
+
+  &__permiso {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #475569;
+  }
+
+  &__permiso-check {
+    font-size: 16px;
+    color: #2563EB;
+    flex-shrink: 0;
+  }
+}
+
+.contactos-total {
+  padding: 12px 24px 20px;
+  font-size: 11px;
+  color: #94A3B8;
+  text-align: right;
+}
+
 // ── VIP badge ─────────────────────────────────────────────────────────────────
 
 .link-regla-vip {

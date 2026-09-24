@@ -7,9 +7,10 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { CatalogoItem, GuardarClienteRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { CatalogoItem, ContactoListaItem, GuardarClienteRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
+import { ModalContactoComponent } from '../modal-contacto/modal-contacto.component';
 
 interface SsomaItem {
   clave: 'ssomaPolizaSctr' | 'ssomaCamioneta4x4' | 'ssomaInduccionSsoma' | 'ssomaExamenMedico';
@@ -43,7 +44,7 @@ const SSOMA_ITEMS: SsomaItem[] = [
 
 @Component({
   selector: 'app-ficha-cliente',
-  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, ModalSedeComponent],
+  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, ModalSedeComponent, ModalContactoComponent],
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
@@ -59,9 +60,13 @@ export class FichaClienteComponent implements OnInit {
   readonly esNuevo       = signal(false);
   readonly estadoCliente = signal('Borrador');
 
-  readonly sedes         = signal<SedeListaItem[]>([]);
-  readonly modalSedeOpen = signal(false);
-  readonly sedeEditar    = signal<SedeListaItem | null>(null);
+  readonly sedes              = signal<SedeListaItem[]>([]);
+  readonly modalSedeOpen      = signal(false);
+  readonly sedeEditar         = signal<SedeListaItem | null>(null);
+
+  readonly contactos          = signal<ContactoListaItem[]>([]);
+  readonly modalContactoOpen  = signal(false);
+  readonly contactoEditar     = signal<ContactoListaItem | null>(null);
 
   readonly ssomaItems      = SSOMA_ITEMS;
   readonly tiposDocumento  = signal<CatalogoItem[]>([]);
@@ -126,8 +131,12 @@ export class FichaClienteComponent implements OnInit {
 
         this.estadoCliente.set(detalle.estado);
 
-        const listaSedes = await this.maestrosSvc.obtenerSedesPorCliente(this.idCliente);
+        const [listaSedes, listaContactos] = await Promise.all([
+          this.maestrosSvc.obtenerSedesPorCliente(this.idCliente),
+          this.maestrosSvc.obtenerContactosPorCliente(this.idCliente),
+        ]);
         this.sedes.set(listaSedes);
+        this.contactos.set(listaContactos);
 
         this.formulario.patchValue({
           tipoDocumento:          detalle.tipoDocumento,
@@ -235,6 +244,46 @@ export class FichaClienteComponent implements OnInit {
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cambiar estado de sede.');
     }
+  }
+
+  abrirModalNuevoContacto(): void {
+    this.contactoEditar.set(null);
+    this.modalContactoOpen.set(true);
+  }
+
+  abrirModalEditarContacto(contacto: ContactoListaItem): void {
+    this.contactoEditar.set(contacto);
+    this.modalContactoOpen.set(true);
+  }
+
+  cerrarModalContacto(): void {
+    this.modalContactoOpen.set(false);
+    this.contactoEditar.set(null);
+  }
+
+  async onContactoGuardado(): Promise<void> {
+    this.cerrarModalContacto();
+    if (this.idCliente) {
+      const lista = await this.maestrosSvc.obtenerContactosPorCliente(this.idCliente);
+      this.contactos.set(lista);
+    }
+  }
+
+  async toggleEstadoContacto(contacto: ContactoListaItem): Promise<void> {
+    const nuevoEstado = contacto.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    try {
+      await this.maestrosSvc.cambiarEstadoContacto({ idContacto: contacto.idContacto, estado: nuevoEstado });
+      const lista = await this.maestrosSvc.obtenerContactosPorCliente(this.idCliente);
+      this.contactos.set(lista);
+    } catch (e: unknown) {
+      this.error.set(e instanceof Error ? e.message : 'Error al cambiar estado de contacto.');
+    }
+  }
+
+  iniciales(nombre: string): string {
+    const partes = nombre.trim().split(' ');
+    if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase();
+    return nombre.substring(0, 2).toUpperCase();
   }
 
   get esVip(): boolean {
