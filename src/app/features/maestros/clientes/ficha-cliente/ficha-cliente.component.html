@@ -12,26 +12,14 @@
 
       <div class="ficha-page-header__cuerpo">
         <div class="ficha-page-header__izq">
-          <h1 class="ficha-page-header__titulo">Mantenimiento de Clientes - Ficha de Registro</h1>
-          <p class="ficha-page-header__desc">Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.</p>
+          <h1 class="ficha-page-header__titulo">{{ esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente' }}</h1>
+          <p class="ficha-page-header__desc">{{ esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.' }}</p>
         </div>
         <div class="ficha-page-header__der">
           <div class="estado-badge">
             <span class="material-symbols-outlined">article</span>
             Estado: {{ estadoCliente() }}
           </div>
-          <button class="btn-header-ghost" type="button" (click)="cancelar()">
-            Cancelar / Volver
-          </button>
-          <button
-            class="btn-header-secondary"
-            type="button"
-            [disabled]="formulario.invalid || guardando()"
-            (click)="guardar()"
-          >
-            <span class="material-symbols-outlined">save</span>
-            Guardar Borrador
-          </button>
           <button
             class="btn-header-primary"
             type="button"
@@ -39,7 +27,7 @@
             (click)="guardar()"
           >
             <span class="material-symbols-outlined">check</span>
-            {{ guardando() ? 'Guardando...' : 'Guardar y Registrar Cliente' }}
+            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Guardar y Registrar Cliente' : 'Actualizar Cliente') }}
           </button>
         </div>
       </div>
@@ -620,16 +608,7 @@
         <span class="ficha-footer__nota">* Campos obligatorios para homologación técnica comercial</span>
         <div class="ficha-footer__acciones">
           <button class="btn-footer-ghost" type="button" (click)="cancelar()">
-            Descartar Cambios
-          </button>
-          <button
-            class="btn-footer-secondary"
-            type="button"
-            [disabled]="formulario.invalid || guardando()"
-            (click)="guardar()"
-          >
-            <span class="material-symbols-outlined">save</span>
-            Guardar como Borrador
+            Cancelar
           </button>
           <button
             class="btn-footer-primary"
@@ -638,7 +617,7 @@
             (click)="guardar()"
           >
             <span class="material-symbols-outlined">check</span>
-            {{ guardando() ? 'Guardando...' : 'Registrar y Activar Cliente' }}
+            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar Cliente' : 'Actualizar Cliente') }}
           </button>
         </div>
       </div>

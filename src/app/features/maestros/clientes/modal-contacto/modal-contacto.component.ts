@@ -17,9 +17,9 @@ export class ModalContactoComponent implements OnInit {
   readonly sedesCliente    = input<SedeListaItem[]>([]);
   readonly contactoEditar  = input<ContactoListaItem | null>(null);
 
-  readonly guardado       = output<void>();
-  readonly guardadoLocal  = output<GuardarContactoRequest>();
-  readonly cancelado      = output<void>();
+  readonly guardado      = output<void>();
+  readonly guardadoLocal = output<GuardarContactoRequest>();
+  readonly cancelado     = output<void>();
 
   readonly guardando = signal(false);
   readonly error     = signal('');

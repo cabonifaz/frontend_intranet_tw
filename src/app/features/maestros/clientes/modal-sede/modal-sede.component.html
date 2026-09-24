@@ -12,7 +12,7 @@
             <h3 class="modal__titulo">{{ esEdicion ? 'Editar Sede Operativa' : 'Nueva Sede Operativa / Mina / Planta' }}</h3>
             <span class="modal__badge">Configuración Técnica</span>
           </div>
-          <p class="modal__subtitulo">Registrar una nueva ubicación o punto de servicio para el cliente</p>
+          <p class="modal__subtitulo">{{ esEdicion ? 'Actualice los datos de la ubicación operativa.' : 'Registrar una nueva ubicación o punto de servicio para el cliente.' }}</p>
         </div>
       </div>
       <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
@@ -129,7 +129,7 @@
           (click)="guardar()"
         >
           <span class="material-symbols-outlined">check</span>
-          {{ guardando() ? 'Guardando...' : 'Guardar y Vincular Sede' }}
+          {{ guardando() ? 'Guardando...' : (esEdicion ? 'Actualizar Sede' : 'Guardar Sede') }}
         </button>
       </div>
     </div>
