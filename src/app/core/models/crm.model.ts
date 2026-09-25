@@ -1,7 +1,4 @@
-export interface CatalogoItem {
-  id:     number;
-  nombre: string;
-}
+export type { CatalogoItem } from './maestros.model';
 
 export interface CatalogosRequerimiento {
   origenes:   CatalogoItem[];
