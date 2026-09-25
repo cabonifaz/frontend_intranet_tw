@@ -1,4 +1,5 @@
-export type { CatalogoItem } from './maestros.model';
+import type { CatalogoItem } from './maestros.model';
+export type { CatalogoItem };
 
 export interface CatalogosRequerimiento {
   origenes:   CatalogoItem[];
