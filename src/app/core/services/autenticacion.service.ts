@@ -44,7 +44,10 @@ export class AutenticacionService {
       throw new Error(respuesta.mensaje);
     }
 
-    const storage = recordarme ? localStorage : sessionStorage;
+    const storage      = recordarme ? localStorage : sessionStorage;
+    const otroStorage  = recordarme ? sessionStorage : localStorage;
+    otroStorage.removeItem(TOKEN_KEY);
+    otroStorage.removeItem(USUARIO_KEY);
     const sesion: UsuarioSesion = {
       nombre:     respuesta.datos.nombre,
       apellido:   respuesta.datos.apellido,
