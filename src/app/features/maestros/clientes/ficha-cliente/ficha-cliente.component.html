@@ -1,0 +1,648 @@
+@if (cargando()) {
+  <div class="ficha-loading">
+    <span class="material-symbols-outlined spin">progress_activity</span>
+    Cargando ficha...
+  </div>
+} @else {
+  <div class="ficha-wrapper">
+
+    <!-- ── Encabezado de página ───────────────────────────────────────────── -->
+    <div class="ficha-page-header">
+      <app-breadcrumb [items]="breadcrumb" />
+
+      <div class="ficha-page-header__cuerpo">
+        <div class="ficha-page-header__izq">
+          <h1 class="ficha-page-header__titulo">{{ esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente' }}</h1>
+          <p class="ficha-page-header__desc">{{ esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.' }}</p>
+        </div>
+        <div class="ficha-page-header__der">
+          <div class="estado-badge">
+            <span class="material-symbols-outlined">article</span>
+            Estado: {{ estadoCliente() }}
+          </div>
+          <button
+            class="btn-header-primary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">check</span>
+            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Guardar y Registrar Cliente' : 'Actualizar Cliente') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Formulario ─────────────────────────────────────────────────────── -->
+    <div class="ficha-cliente" [formGroup]="formulario">
+
+      @if (error()) {
+        <div class="ficha-error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <!-- ── Section 1: Datos Generales ──────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">business</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">1. Información General y Validación SUNAT</h2>
+              <p class="ficha-seccion__subtitulo">Información fiscal y comercial registrada en SUNAT</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ficha-seccion__cuerpo">
+          <!-- Fila 1: Tipo Doc + RUC + Segmento/Industria + Categoría -->
+          <div class="campo-cuarteto">
+            <div class="campo">
+              <label class="campo__label">Tipo de Documento *</label>
+              <select class="campo__select campo__select--readonly" formControlName="tipoDocumento">
+                @for (t of tiposDocumento(); track t.id) {
+                  <option [value]="t.nombre">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Número de RUC *</label>
+              <div class="campo__ruc-row">
+                <div class="campo__input-group">
+                  <input
+                    class="campo__input"
+                    type="text"
+                    placeholder="20523456789"
+                    formControlName="ruc"
+                    maxlength="11"
+                  />
+                  <span class="badge-sunat">
+                    <span class="badge-sunat__dot"></span>
+                    Válido SUNAT
+                  </span>
+                </div>
+                <button class="btn-consultar" type="button">
+                  <span class="material-symbols-outlined">search</span>
+                  Consultar
+                </button>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Segmento / Industria *</label>
+              <select class="campo__select" formControlName="tipoCliente">
+                <option value="">Seleccionar...</option>
+                @for (t of tiposCliente(); track t.id) {
+                  <option [value]="t.nombre">{{ t.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Categoría</label>
+              <select class="campo__select" formControlName="categoria">
+                <option value="">Sin categoría</option>
+                @for (c of categoriasCliente(); track c.id) {
+                  <option [value]="c.nombre">{{ c.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Fila 2: Razón Social + Nombre Comercial -->
+          <div class="campo-2col">
+            <div class="campo">
+              <label class="campo__label">Razón Social Completa *</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="MINERA LAS BAMBAS S.A."
+                formControlName="razonSocial"
+              />
+            </div>
+            <div class="campo">
+              <label class="campo__label">Nombre Comercial</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="Las Bambas Mining Operation"
+                formControlName="nombreComercial"
+              />
+            </div>
+          </div>
+
+          <!-- Fila 3: Condición Fiscal + Condición Pago + Crédito + Teléfono -->
+          <div class="campo-cuarteto">
+            <div class="campo">
+              <label class="campo__label">Condición Fiscal SUNAT</label>
+              <div class="condicion-badges">
+                <span class="badge-fiscal" [class.badge-fiscal--habido]="formulario.get('condicionContribuyente')?.value === 'Habido'">
+                  <span class="badge-fiscal__dot"></span>
+                  {{ formulario.get('condicionContribuyente')?.value || 'Habido' }}
+                </span>
+                <span class="badge-fiscal" [class.badge-fiscal--activo]="formulario.get('condicionFiscal')?.value === 'Activo'">
+                  <span class="badge-fiscal__dot"></span>
+                  {{ formulario.get('condicionFiscal')?.value || 'Activo' }}
+                </span>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Condición de Pago Habitual</label>
+              <select class="campo__select" formControlName="condicionPago">
+                <option value="">Seleccionar...</option>
+                @for (c of condicionesPago(); track c.id) {
+                  <option [value]="c.nombre">{{ c.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Línea de Crédito Autorizada (USD)</label>
+              <div class="campo__input-prefix">
+                <span class="campo__prefix">$</span>
+                <input
+                  class="campo__input campo__input--con-prefix"
+                  type="number"
+                  placeholder="0.00"
+                  formControlName="lineaCreditoUsd"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Teléfono Central / Recepción</label>
+              <input
+                class="campo__input"
+                type="text"
+                placeholder="+51 (01) 514-0000"
+                formControlName="telefonoCentral"
+              />
+            </div>
+          </div>
+
+          <!-- Fila 4: Domicilio Fiscal (full width) -->
+          <div class="campo">
+            <label class="campo__label">Domicilio Fiscal Principal (SUNAT)</label>
+            <input
+              class="campo__input"
+              type="text"
+              placeholder="Av. El Derby Nro. 055, Edificio Cronos, Torre 3, Piso 9, Santiago de Surco, Lima"
+              formControlName="domicilioFiscal"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Section 2: Sedes ─────────────────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">location_city</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">2. Sedes y Plantas Operativas</h2>
+              <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
+            </div>
+          </div>
+          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
+              <span class="material-symbols-outlined">add</span>
+              Agregar Nueva Sede
+            </button>
+        </div>
+
+        @if (esNuevo()) {
+          @if (sedesTemp().length === 0) {
+            <div class="ficha-seccion__vacio">
+              <span class="material-symbols-outlined">location_city</span>
+              <p>Agrega las sedes operativas de este cliente.</p>
+            </div>
+          } @else {
+            <div class="sedes-tabla-wrapper">
+              <table class="sedes-tabla">
+                <thead>
+                  <tr>
+                    <th>Sede / Operación</th>
+                    <th>Tipo</th>
+                    <th>Ubicación</th>
+                    <th>Dirección</th>
+                    <th class="sedes-tabla__th--acciones">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of sedesTemp(); track s.idSede) {
+                    <tr class="sedes-tabla__fila">
+                      <td>
+                        <div class="sede-nombre">{{ s.nombre }}</div>
+                        @if (s.urbanizacion) { <div class="sede-detalle">{{ s.urbanizacion }}</div> }
+                      </td>
+                      <td>
+                        @if (s.tipoInstalacion) {
+                          <span class="badge-tipo-sede">{{ s.tipoInstalacion }}</span>
+                        } @else { <span class="sede-detalle">—</span> }
+                      </td>
+                      <td>
+                        <div class="sede-nombre">{{ s.region }}</div>
+                        <div class="sede-detalle">{{ s.provincia }} — {{ s.distrito }}</div>
+                      </td>
+                      <td class="sede-detalle">{{ s.direccionExacta ?? '—' }}</td>
+                      <td class="sedes-tabla__td--acciones">
+                        <button class="btn-accion-sede btn-accion-sede--desactivar" type="button" title="Eliminar" (click)="eliminarSedeTemp(s.idSede)">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        } @else if (sedes().length === 0) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">location_city</span>
+            <p>No hay sedes registradas para este cliente.</p>
+            <button class="btn-agregar-sede btn-agregar-sede--sm" type="button" (click)="abrirModalNuevaSede()">
+              Agregar primera sede
+            </button>
+          </div>
+        } @else {
+          <div class="sedes-tabla-wrapper">
+            <table class="sedes-tabla">
+              <thead>
+                <tr>
+                  <th>Sede / Operación</th>
+                  <th>Tipo</th>
+                  <th>Ubicación</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                  <th class="sedes-tabla__th--acciones">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of sedes(); track s.idSede) {
+                  <tr class="sedes-tabla__fila">
+                    <td>
+                      <div class="sede-nombre">{{ s.nombre }}</div>
+                      @if (s.urbanizacion) {
+                        <div class="sede-detalle">{{ s.urbanizacion }}</div>
+                      }
+                    </td>
+                    <td>
+                      @if (s.tipoInstalacion) {
+                        <span class="badge-tipo-sede">{{ s.tipoInstalacion }}</span>
+                      } @else {
+                        <span class="sede-detalle">—</span>
+                      }
+                    </td>
+                    <td>
+                      <div class="sede-nombre">{{ s.region }}</div>
+                      <div class="sede-detalle">{{ s.provincia }} — {{ s.distrito }}</div>
+                    </td>
+                    <td class="sede-detalle">{{ s.direccionExacta ?? '—' }}</td>
+                    <td>
+                      <span class="badge-estado-sede" [class.badge-estado-sede--activo]="s.estado === 'Activo'">
+                        <span class="badge-estado-sede__dot"></span>
+                        {{ s.estado }}
+                      </span>
+                    </td>
+                    <td class="sedes-tabla__td--acciones">
+                      <button class="btn-accion-sede btn-accion-sede--editar" type="button" title="Editar sede" (click)="abrirModalEditarSede(s)">
+                        <span class="material-symbols-outlined">edit</span>
+                      </button>
+                      <button
+                        class="btn-accion-sede"
+                        [class.btn-accion-sede--activar]="s.estado === 'Inactivo'"
+                        [class.btn-accion-sede--desactivar]="s.estado === 'Activo'"
+                        type="button"
+                        [title]="s.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                        (click)="toggleEstadoSede(s)"
+                      >
+                        <span class="material-symbols-outlined">
+                          {{ s.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- ── Section 3: Contactos ─────────────────────────────────────────── -->
+      <section class="ficha-seccion">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">contacts</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">3. Contactos Clave &amp; Aprobadores</h2>
+              <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
+            </div>
+          </div>
+          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
+              <span class="material-symbols-outlined">person_add</span>
+              + Contacto
+            </button>
+        </div>
+
+        @if (esNuevo()) {
+          @if (contactosTemp().length === 0) {
+            <div class="ficha-seccion__vacio">
+              <span class="material-symbols-outlined">contacts</span>
+              <p>Agrega los contactos clave de este cliente.</p>
+            </div>
+          } @else {
+            <div class="contactos-grid">
+              @for (c of contactosTemp(); track c.idContacto) {
+                <div class="contacto-card">
+                  <div class="contacto-card__cabecera">
+                    <div class="contacto-card__avatar">{{ iniciales(c.nombres) }}</div>
+                    <div class="contacto-card__info">
+                      <div class="contacto-card__nombre-row">
+                        <span class="contacto-card__nombre">{{ c.nombres }}</span>
+                        @if (c.esContactoPrincipal) {
+                          <span class="contacto-card__badge contacto-card__badge--principal">Principal</span>
+                        } @else if (c.area) {
+                          <span class="contacto-card__badge">{{ c.area }}</span>
+                        }
+                      </div>
+                      @if (c.cargo) { <div class="contacto-card__subtitulo">{{ c.cargo }}</div> }
+                      @if (c.idSede) {
+                        <div class="contacto-card__sede">
+                          <span class="material-symbols-outlined">location_on</span>
+                          {{ sedesParaModalContacto.find(s => s.idSede === c.idSede)?.nombre ?? '—' }}
+                        </div>
+                      }
+                    </div>
+                    <div class="contacto-card__acciones">
+                      <button class="btn-accion-sede btn-accion-sede--desactivar" type="button" title="Eliminar" (click)="eliminarContactoTemp(c.idContacto)">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                  @if (c.correo || c.telefonoMovil) {
+                    <div class="contacto-card__contacto">
+                      @if (c.correo) {
+                        <div class="contacto-card__contacto-item">
+                          <span class="material-symbols-outlined">mail</span><span>{{ c.correo }}</span>
+                        </div>
+                      }
+                      @if (c.telefonoMovil) {
+                        <div class="contacto-card__contacto-item">
+                          <span class="material-symbols-outlined">call</span><span>{{ c.telefonoMovil }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (c.autorizadoAprobarCotizaciones || c.recibeAlertasCalibracion || c.autorizadoRecepcionTecnica) {
+                    <div class="contacto-card__permisos">
+                      @if (c.autorizadoAprobarCotizaciones) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Autorizado para aprobar cotizaciones</span>
+                        </div>
+                      }
+                      @if (c.recibeAlertasCalibracion) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Recibe alertas de calibración vencida</span>
+                        </div>
+                      }
+                      @if (c.autorizadoRecepcionTecnica) {
+                        <div class="contacto-card__permiso">
+                          <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                          <span>Autorizado para recepción técnica en campo</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="contactos-total">
+              Total: {{ contactosTemp().length }} contacto{{ contactosTemp().length !== 1 ? 's' : '' }} registrado{{ contactosTemp().length !== 1 ? 's' : '' }}
+            </div>
+          }
+        } @else if (contactos().length === 0) {
+          <div class="ficha-seccion__vacio">
+            <span class="material-symbols-outlined">contacts</span>
+            <p>No hay contactos registrados para este cliente.</p>
+            <button class="btn-agregar-sede btn-agregar-sede--sm" type="button" (click)="abrirModalNuevoContacto()">
+              Agregar primer contacto
+            </button>
+          </div>
+        } @else {
+          <div class="contactos-grid">
+            @for (c of contactos(); track c.idContacto) {
+              <div class="contacto-card" [class.contacto-card--inactivo]="c.estado === 'Inactivo'">
+                <div class="contacto-card__cabecera">
+                  <div class="contacto-card__avatar">{{ iniciales(c.nombres) }}</div>
+                  <div class="contacto-card__info">
+                    <div class="contacto-card__nombre-row">
+                      <span class="contacto-card__nombre">{{ c.nombres }}</span>
+                      @if (c.esContactoPrincipal) {
+                        <span class="contacto-card__badge contacto-card__badge--principal">Principal</span>
+                      } @else if (c.area) {
+                        <span class="contacto-card__badge">{{ c.area }}</span>
+                      }
+                    </div>
+                    @if (c.cargo) {
+                      <div class="contacto-card__subtitulo">{{ c.cargo }}</div>
+                    }
+                  </div>
+                  <div class="contacto-card__acciones">
+                    <button
+                      class="btn-accion-sede btn-accion-sede--editar"
+                      type="button"
+                      title="Editar contacto"
+                      (click)="abrirModalEditarContacto(c)"
+                    >
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button
+                      class="btn-accion-sede"
+                      [class.btn-accion-sede--activar]="c.estado === 'Inactivo'"
+                      [class.btn-accion-sede--desactivar]="c.estado === 'Activo'"
+                      type="button"
+                      [title]="c.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                      (click)="toggleEstadoContacto(c)"
+                    >
+                      <span class="material-symbols-outlined">
+                        {{ c.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                @if (c.correo || c.telefonoMovil) {
+                  <div class="contacto-card__contacto">
+                    @if (c.correo) {
+                      <div class="contacto-card__contacto-item">
+                        <span class="material-symbols-outlined">mail</span>
+                        <span>{{ c.correo }}</span>
+                      </div>
+                    }
+                    @if (c.telefonoMovil) {
+                      <div class="contacto-card__contacto-item">
+                        <span class="material-symbols-outlined">call</span>
+                        <span>{{ c.telefonoMovil }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (c.autorizadoAprobarCotizaciones || c.recibeAlertasCalibracion || c.autorizadoRecepcionTecnica) {
+                  <div class="contacto-card__permisos">
+                    @if (c.autorizadoAprobarCotizaciones) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Autorizado para aprobar cotizaciones</span>
+                      </div>
+                    }
+                    @if (c.recibeAlertasCalibracion) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Recibe alertas de calibración vencida</span>
+                      </div>
+                    }
+                    @if (c.autorizadoRecepcionTecnica) {
+                      <div class="contacto-card__permiso">
+                        <span class="material-symbols-outlined contacto-card__permiso-check">check_box</span>
+                        <span>Autorizado para recepción técnica en campo</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+          <div class="contactos-total">
+            Total: {{ contactos().length }} contacto{{ contactos().length !== 1 ? 's' : '' }} registrado{{ contactos().length !== 1 ? 's' : '' }}
+          </div>
+        }
+      </section>
+
+      <!-- ── Section 4: SSOMA ─────────────────────────────────────────────── -->
+      <section class="ficha-seccion ficha-seccion--ssoma">
+        <div class="ficha-seccion__header">
+          <div class="ficha-seccion__header-izq">
+            <div class="ficha-seccion__icono-box">
+              <span class="material-symbols-outlined">health_and_safety</span>
+            </div>
+            <div>
+              <h2 class="ficha-seccion__titulo">4. Normativa SSOMA &amp; Requisitos Especiales</h2>
+            </div>
+          </div>
+          @if (esVip) {
+            <span class="link-regla-vip">Convenio VIP</span>
+          }
+        </div>
+
+        <div class="ssoma-grid">
+          @for (item of ssomaItems; track item.clave) {
+            <div class="ssoma-item">
+              <div class="ssoma-item__texto">
+                <span class="ssoma-item__nombre">{{ item.nombre }}</span>
+                <span class="ssoma-item__desc">{{ item.descripcion }}</span>
+              </div>
+              <input
+                class="ssoma-item__cb"
+                type="checkbox"
+                [formControlName]="item.clave"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="ssoma-extras">
+          <div class="campo-2col">
+            <div class="campo">
+              <label class="campo__label">Descuento Convenio VIP (%)</label>
+              <div class="campo__input-suffix">
+                <input
+                  class="campo__input campo__input--con-suffix"
+                  type="number"
+                  placeholder="0"
+                  formControlName="descuentoVipPct"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                />
+                <span class="campo__suffix">%</span>
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Patrón de Masas Asignado</label>
+              <select class="campo__select" formControlName="patronMasasAsignado">
+                <option value="">Seleccionar...</option>
+                @for (p of patronesMasas(); track p.id) {
+                  <option [value]="p.nombre">{{ p.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="campo">
+            <label class="campo__label">Notas adicionales de seguridad</label>
+            <textarea
+              class="campo__textarea"
+              placeholder="Observaciones sobre requisitos especiales de seguridad..."
+              formControlName="ssomaNotas"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="ssoma-nota">
+          <span class="material-symbols-outlined ssoma-nota__icono">info</span>
+          <span>Los requerimientos generados para este cliente activarán automáticamente la plantilla técnica del segmento asignado.</span>
+        </div>
+      </section>
+
+      <!-- ── Footer sticky ────────────────────────────────────────────────── -->
+      <div class="ficha-footer">
+        <span class="ficha-footer__nota">* Campos obligatorios para homologación técnica comercial</span>
+        <div class="ficha-footer__acciones">
+          <button class="btn-footer-ghost" type="button" (click)="cancelar()">
+            Cancelar
+          </button>
+          <button
+            class="btn-footer-primary"
+            type="button"
+            [disabled]="formulario.invalid || guardando()"
+            (click)="guardar()"
+          >
+            <span class="material-symbols-outlined">check</span>
+            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar Cliente' : 'Actualizar Cliente') }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+}
+
+@if (modalSedeOpen()) {
+  <app-modal-sede
+    [idCliente]="idCliente"
+    [sedeEditar]="sedeEditar()"
+    (guardado)="onSedeGuardada()"
+    (guardadoLocal)="onSedeGuardadaLocal($event)"
+    (cancelado)="cerrarModal()"
+  />
+}
+
+@if (modalContactoOpen()) {
+  <app-modal-contacto
+    [idCliente]="idCliente"
+    [sedesCliente]="sedesParaModalContacto"
+    [contactoEditar]="contactoEditar()"
+    (guardado)="onContactoGuardado()"
+    (guardadoLocal)="onContactoGuardadoLocal($event)"
+    (cancelado)="cerrarModalContacto()"
+  />
+}

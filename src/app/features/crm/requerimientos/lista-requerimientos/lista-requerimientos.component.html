@@ -1,0 +1,235 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────────── -->
+  <div class="pagina__header">
+    <div class="pagina__header-izq">
+      <app-breadcrumb [items]="breadcrumb" />
+      <h1 class="pagina__titulo">CRM / Requerimientos</h1>
+      <p class="pagina__subtitulo">Gestión centralizada de solicitudes comerciales y técnicas de clientes</p>
+    </div>
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Requerimiento
+    </button>
+  </div>
+
+  <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+
+    <!-- RQ Activos -->
+    <div class="kpi-card">
+      <div class="kpi-card__fila-sup">
+        <span class="kpi-card__label">RQ Activos</span>
+        <span class="kpi-card__badge kpi-card__badge--verde">+12%</span>
+      </div>
+      <div class="kpi-card__cuerpo">
+        <span class="kpi-card__numero">{{ kpis().rqActivos }}</span>
+        <div class="kpi-card__progreso">
+          <div class="kpi-card__progreso-fill" [style.width.%]="70"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sin propuesta -->
+    <div class="kpi-card">
+      <div class="kpi-card__fila-sup">
+        <span class="kpi-card__label">Sin propuesta</span>
+        <span class="material-symbols-outlined kpi-card__icono-aux">hourglass_empty</span>
+      </div>
+      <div class="kpi-card__cuerpo">
+        <span class="kpi-card__numero">{{ kpis().sinPropuesta }}</span>
+        <span class="kpi-card__subtitulo">Pendiente de validación técnica</span>
+      </div>
+    </div>
+
+    <!-- SLA Próximo Urgente -->
+    <div class="kpi-card kpi-card--borde-naranja">
+      <div class="kpi-card__fila-sup kpi-card__fila-sup--naranja">
+        <span class="kpi-card__label kpi-card__label--naranja">SLA PRÓXIMO URGENTE</span>
+        <span class="kpi-card__label-vertical kpi-card__label-vertical--naranja">|</span>
+      </div>
+      <div class="kpi-card__cuerpo">
+        <span class="kpi-card__numero">{{ kpis().slaUrgentes }}</span>
+        <span class="kpi-card__subtitulo">Vencen en las próximas 24h</span>
+      </div>
+    </div>
+
+    <!-- Bloqueados -->
+    <div class="kpi-card kpi-card--borde-rojo">
+      <div class="kpi-card__fila-sup">
+        <span class="kpi-card__label kpi-card__label--rojo">BLOQUEADOS</span>
+        <span class="material-symbols-outlined kpi-card__icono-aux kpi-card__icono-aux--rojo">block</span>
+      </div>
+      <div class="kpi-card__cuerpo">
+        <span class="kpi-card__numero">{{ kpis().bloqueados }}</span>
+        <span class="kpi-card__subtitulo">Requieren intervención Admin</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Filters Bar ─────────────────────────────────────────────────────────── -->
+  <div class="filtros-bar">
+    <div class="filtros-bar__izq">
+      <div class="filtros-bar__etiqueta">
+        <span class="material-symbols-outlined filtros-bar__icono">filter_list</span>
+        <span class="filtros-bar__texto">FILTROS</span>
+      </div>
+      <div class="filtros-bar__separador"></div>
+      <select class="filtros-bar__select" [(ngModel)]="estadoFiltro" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="nuevo">Nueva</option>
+        <option value="en_proceso">En proceso</option>
+        <option value="con_propuesta">Con propuesta</option>
+        <option value="cerrado">Cerrado</option>
+        <option value="anulado">Anulado</option>
+      </select>
+    </div>
+    <div class="filtros-bar__der">
+      <div class="campo__con-icono filtros-bar__busqueda">
+        <span class="material-symbols-outlined campo__icono-input">search</span>
+        <input
+          class="campo__input campo__input--icono filtros-bar__input"
+          type="text"
+          placeholder="Buscar por N.° RQ, cliente o RUC..."
+          [(ngModel)]="busqueda"
+          (keyup.enter)="aplicarFiltros()"
+        />
+      </div>
+      <button class="filtros-bar__btn-icon" type="button" title="Actualizar" (click)="aplicarFiltros()">
+        <span class="material-symbols-outlined">refresh</span>
+      </button>
+      <button class="filtros-bar__btn-icon" type="button" title="Exportar">
+        <span class="material-symbols-outlined">download</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="tabla-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────────────────────── -->
+  <div class="tabla-card">
+    <div class="tabla-card__scroll">
+      <table class="tabla">
+        <thead class="tabla__head">
+          <tr>
+            <th class="tabla__th">N.° RQ</th>
+            <th class="tabla__th">CLIENTE / RUC</th>
+            <th class="tabla__th">SEDE / CONTACTO</th>
+            <th class="tabla__th">TIPO</th>
+            <th class="tabla__th">ORG</th>
+            <th class="tabla__th">RESPONSABLE</th>
+            <th class="tabla__th">CREACIÓN</th>
+            <th class="tabla__th">ESTADO</th>
+            <th class="tabla__th">SLA</th>
+            <th class="tabla__th tabla__th--centro">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="10" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
+                Cargando requerimientos...
+              </td>
+            </tr>
+          } @else if (items().length === 0) {
+            <tr>
+              <td colspan="10" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined">inbox</span>
+                No se encontraron requerimientos con los filtros aplicados.
+              </td>
+            </tr>
+          } @else {
+            @for (item of items(); track item.idRequerimiento) {
+              <tr class="tabla__fila" (click)="irADetalle(item.idRequerimiento)">
+                <td class="tabla__td">
+                  <span class="tabla__numero-rq">{{ item.numero }}</span>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__cliente">
+                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__sede">
+                    <span class="tabla__sede-nombre">{{ item.nombreSede ?? '—' }}</span>
+                    <span class="tabla__sede-contacto">{{ item.nombreContacto ?? '—' }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__label">{{ item.tipoLabel ?? '—' }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__label tabla__label--secundario">{{ item.origenLabel ?? '—' }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__responsable">{{ item.responsable ?? '—' }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__fecha">{{ formatearFecha(item.fechaCreacion) }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge {{ estadoClase(item.estado) }}">{{ item.estadoLabel ?? item.estado }}</span>
+                </td>
+                <td class="tabla__td">
+                  <div class="sla {{ slaClase(item) }}">
+                    <span class="sla__dot"></span>
+                    <span class="sla__label">{{ item.prioridadLabel ?? '—' }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td tabla__td--centro" (click)="$event.stopPropagation()">
+                  <div class="tabla__acciones">
+                    <button class="tabla__btn-accion" type="button" title="Ver detalle"
+                            (click)="irADetalle(item.idRequerimiento)">
+                      <span class="material-symbols-outlined">visibility</span>
+                    </button>
+                    <button class="tabla__btn-accion" type="button" title="Editar"
+                            (click)="irAEditar(item.idRequerimiento)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (!cargando() && total() > 0) {
+      <div class="paginacion">
+        <span class="paginacion__info">
+          Mostrando {{ inicio() }}-{{ fin() }} de {{ total() }} requerimientos
+        </span>
+        <div class="paginacion__btns">
+          <button class="paginacion__btn" type="button"
+                  [disabled]="pagina() === 1"
+                  (click)="irPagina(pagina() - 1)">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          @for (p of paginas; track p) {
+            <button class="paginacion__btn"
+                    [class.paginacion__btn--activo]="p === pagina()"
+                    type="button"
+                    (click)="irPagina(p)">{{ p }}</button>
+          }
+          <button class="paginacion__btn" type="button"
+                  [disabled]="pagina() === totalPaginas()"
+                  (click)="irPagina(pagina() + 1)">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

@@ -1,0 +1,122 @@
+<div class="modal-overlay" (click)="cancelar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-bg">
+          <span class="material-symbols-outlined modal__icono">location_on</span>
+        </div>
+        <div>
+          <h2 class="modal__titulo">Seleccionar Sede</h2>
+          <p class="modal__subtitulo">Seleccione la sede o instalación del cliente</p>
+        </div>
+      </div>
+      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="modal__tabla-wrap">
+      <div class="modal__tabla-border">
+        <table class="modal__tabla">
+          <thead>
+            <tr class="modal__thead-row">
+              <th class="modal__th">NOMBRE</th>
+              <th class="modal__th">TIPO</th>
+              <th class="modal__th">REGIÓN</th>
+              <th class="modal__th">DIRECCIÓN</th>
+              <th class="modal__th modal__th--centro">ESTADO</th>
+              <th class="modal__th modal__th--der">ACCIÓN</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (cargando()) {
+              <tr>
+                <td colspan="6" class="modal__td--vacio">
+                  <span class="material-symbols-outlined modal__spinner">progress_activity</span>
+                  Cargando sedes...
+                </td>
+              </tr>
+            } @else if (sedes().length === 0) {
+              <tr>
+                <td colspan="6" class="modal__td--vacio">
+                  <span class="material-symbols-outlined">search_off</span>
+                  No hay sedes registradas para este cliente.
+                </td>
+              </tr>
+            } @else {
+              @for (s of sedes(); track s.idSede) {
+                <tr class="modal__fila"
+                    [class.modal__fila--seleccionada]="seleccionado()?.idSede === s.idSede"
+                    (click)="seleccionar(s)">
+
+                  <!-- Nombre -->
+                  <td class="modal__td">
+                    <div class="modal__nombre">{{ s.nombre }}</div>
+                  </td>
+
+                  <!-- Tipo -->
+                  <td class="modal__td">
+                    <span class="modal__area">{{ s.tipoInstalacion ?? '—' }}</span>
+                  </td>
+
+                  <!-- Región -->
+                  <td class="modal__td">
+                    <span class="modal__area">{{ s.region ?? '—' }}</span>
+                  </td>
+
+                  <!-- Dirección -->
+                  <td class="modal__td">
+                    <span class="modal__direccion">{{ s.direccionExacta ?? '—' }}</span>
+                  </td>
+
+                  <!-- Estado -->
+                  <td class="modal__td modal__td--centro">
+                    <span class="modal__badge"
+                          [class.modal__badge--activo]="s.estado === 'Activo'"
+                          [class.modal__badge--inactivo]="s.estado !== 'Activo'">
+                      <span class="modal__badge-dot"></span>
+                      {{ s.estado }}
+                    </span>
+                  </td>
+
+                  <!-- Acción -->
+                  <td class="modal__td modal__td--der">
+                    <button class="modal__btn-sel"
+                            [class.modal__btn-sel--activo]="seleccionado()?.idSede === s.idSede"
+                            type="button"
+                            (click)="$event.stopPropagation(); seleccionar(s)">
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal__footer">
+      <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
+      <div class="modal__footer-der">
+        @if (seleccionado()) {
+          <span class="modal__seleccionado-label">
+            Seleccionada: <strong>{{ seleccionado()!.nombre }}</strong>
+          </span>
+        }
+        <button class="modal__btn-confirmar"
+                type="button"
+                [disabled]="!seleccionado()"
+                (click)="confirmar()">
+          <span class="material-symbols-outlined">check</span>
+          Confirmar Selección
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

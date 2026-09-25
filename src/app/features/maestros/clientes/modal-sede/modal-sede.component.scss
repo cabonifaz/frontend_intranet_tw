@@ -1,0 +1,305 @@
+// ── Overlay ───────────────────────────────────────────────────────────────────
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 768px;
+  max-width: 100%;
+  max-height: 90vh;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: rgba(248, 250, 252, 0.5);
+    border-bottom: 1px solid #F1F5F9;
+    flex-shrink: 0;
+  }
+
+  &__header-izq {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__icono-box {
+    width: 36px;
+    height: 36px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563EB;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 18px; }
+  }
+
+  &__titulo-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__titulo-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__titulo {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+  }
+
+  &__badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #1D4ED8;
+  }
+
+  &__subtitulo {
+    font-size: 12px;
+    color: #64748B;
+    margin: 0;
+  }
+
+  &__btn-cerrar {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #94A3B8;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 18px; }
+
+    &:hover { background: #F1F5F9; color: #475569; }
+  }
+
+  &__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #FFF5F5;
+    border: 1px solid #FCA5A5;
+    border-radius: 8px;
+    color: #EF4444;
+    font-size: 12px;
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: #F8FAFC;
+    border-top: 1px solid #E2E8F0;
+    flex-shrink: 0;
+  }
+
+  &__footer-nota {
+    font-size: 11px;
+    font-weight: 700;
+    color: #EF4444;
+  }
+
+  &__footer-acciones {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__btn-cancelar {
+    padding: 8px 16px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+
+    &:hover { background: #F8FAFC; }
+  }
+
+  &__btn-guardar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #2563EB;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #FFFFFF;
+    cursor: pointer;
+    box-shadow: 0px 1px 2px rgba(59, 130, 246, 0.2);
+
+    .material-symbols-outlined { font-size: 14px; }
+
+    &:hover:not(:disabled) { background: #1D4ED8; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+}
+
+// ── Grids del modal ───────────────────────────────────────────────────────────
+
+.modal-campo-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.modal-campo-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+// ── Bloque Ubicación Geográfica ───────────────────────────────────────────────
+
+.modal-ubigeo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.6);
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__titulo-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__icono {
+    font-size: 12px;
+    color: #2563EB;
+  }
+
+  &__titulo {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1E293B;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  &__nota {
+    font-size: 11px;
+    font-weight: 500;
+    color: #94A3B8;
+  }
+}
+
+// ── Campos (reutiliza los del padre, pero los redefinimos por si el modal es standalone) ──
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  &__input {
+    height: 34px;
+    padding: 8px 12px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #334155;
+    box-sizing: border-box;
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: #93C5FD;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+    }
+
+    &::placeholder { color: #CBD5E1; }
+  }
+
+  &__select {
+    height: 34px;
+    padding: 8px 40px 8px 12px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #334155;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.35' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+    box-sizing: border-box;
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: #93C5FD;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+    }
+  }
+}

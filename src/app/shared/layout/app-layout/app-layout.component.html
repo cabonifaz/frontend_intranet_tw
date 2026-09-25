@@ -1,0 +1,10 @@
+<div class="shell" [class.shell--colapsado]="colapsado">
+  <app-sidebar [colapsado]="colapsado" />
+
+  <div class="shell__derecha">
+    <app-topbar (toggleSidebar)="toggleSidebar()" />
+    <main class="shell__main">
+      <router-outlet />
+    </main>
+  </div>
+</div>

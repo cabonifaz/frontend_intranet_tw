@@ -1,0 +1,161 @@
+<!-- Estado de carga -->
+@if (cargando()) {
+  <div class="dash-estado">
+    <div class="spinner"></div>
+    <p>Cargando dashboard…</p>
+  </div>
+}
+
+@if (!cargando() && error()) {
+  <div class="dash-estado dash-estado--error">
+    <span class="material-symbols-outlined">error_outline</span>
+    <p>{{ error() }}</p>
+  </div>
+}
+
+@if (!cargando() && !error() && kpis()) {
+  <div class="dash">
+
+    <!-- Encabezado -->
+    <div class="dash__header">
+      <div class="dash__header-textos">
+        <h1 class="dash__titulo">Dashboard General</h1>
+        <p class="dash__subtitulo">Resumen operativo de hoy • Actualizado hace 2 minutos</p>
+      </div>
+      <button class="btn-primario">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo Servicio
+      </button>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="kpi-grid">
+      @for (t of tarjetas(); track t.etiqueta) {
+        <div class="kpi-card" [ngClass]="'kpi-card--' + t.variante">
+          <div class="kpi-card__icono-ctn">
+            <span class="material-symbols-outlined kpi-card__icono">{{ t.icono }}</span>
+          </div>
+          <div class="kpi-card__contenido">
+            <span class="kpi-card__etiqueta">{{ t.etiqueta }}</span>
+            <span class="kpi-card__valor">{{ t.valor }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Alertas operativas -->
+    <div class="panel">
+      <div class="panel__header">
+        <span class="panel__barra"></span>
+        <h2 class="panel__titulo">Alertas Operativas</h2>
+        <a class="panel__link" href="#">Ver todas las alertas</a>
+      </div>
+
+      <div class="tabla-ctn">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Prioridad</th>
+              <th>N.º Expediente</th>
+              <th>Cliente</th>
+              <th>Tipo de Servicio</th>
+              <th>Área Resp.</th>
+              <th>Motivo de Alerta</th>
+              <th>Detenido</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of alertas(); track a.idAlerta) {
+              <tr [ngClass]="a.nivel === 'CRÍTICA' ? 'fila-critica' : ''">
+                <td>
+                  <span class="badge-pill" [ngClass]="nivelClase(a.nivel)">{{ a.nivel }}</span>
+                </td>
+                <td class="col-modulo">{{ a.numeroExpediente }}</td>
+                <td class="col-text">{{ a.cliente }}</td>
+                <td class="col-tipo">{{ a.tipoServicio }}</td>
+                <td class="col-gris">{{ a.areaResponsable }}</td>
+                <td class="col-desc">{{ a.motivoAlerta }}</td>
+                <td class="col-detenido">{{ a.tiempoDetenido }}</td>
+                <td>
+                  <span class="estado-dot" [ngClass]="estadoClase(a.estado)"></span>
+                  <span class="col-text">{{ a.estado }}</span>
+                </td>
+                <td>
+                  <button class="link-accion">{{ accion(a) }}</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9" class="tabla-vacio">Sin alertas activas</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bottom row: Carga por Zona + SLA oscuro -->
+    <div class="bottom-row">
+
+      <!-- Carga Operativa por Zona -->
+      <div class="panel zona-panel">
+        <div class="panel__header">
+          <span class="panel__barra"></span>
+          <h2 class="panel__titulo">Carga Operativa por Zona</h2>
+        </div>
+        <div class="zona-cuerpo">
+          <div class="zona-mapa">
+            <span class="material-symbols-outlined zona-mapa__icono">map</span>
+            <p class="zona-mapa__titulo">Visualización Geográfica de Técnicos en Tiempo Real</p>
+            <p class="zona-mapa__subtitulo">Ubicación actual: Lima Metropolitan Area</p>
+          </div>
+          <div class="zona-lista">
+            @for (z of zonas; track z.nombre) {
+              <div class="zona-item">
+                <div class="zona-item__header">
+                  <span class="zona-item__nombre">{{ z.nombre }}</span>
+                  <span class="zona-item__pct">{{ pctZona(z) }}%</span>
+                </div>
+                <div class="zona-item__barra-ctn">
+                  <div class="zona-item__barra-fill" [style.width.%]="pctZona(z)"></div>
+                </div>
+                <span class="zona-item__detalle">{{ z.servicios }} servicios · {{ z.tecnicos }} técnicos</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Cumplimiento SLA (oscuro) -->
+      <div class="sla-panel-oscuro">
+        <div class="sla-panel-oscuro__header">
+          <h2 class="sla-panel-oscuro__titulo">Cumplimiento SLA</h2>
+        </div>
+        <div class="sla-oscuro">
+          <span class="sla-oscuro__subtitulo">Rendimiento mensual acumulado</span>
+          <div class="sla-oscuro__centro">
+            <span class="sla-oscuro__pct">{{ kpis()!.cumplimientoSla }}%</span>
+            <div class="sla-oscuro__variacion-row">
+              <span class="material-symbols-outlined sla-oscuro__variacion-icono">trending_up</span>
+              <span class="sla-oscuro__variacion-texto"
+                [ngClass]="kpis()!.variacionSla >= 0 ? 'sla-oscuro__variacion-texto--exito' : 'sla-oscuro__variacion-texto--peligro'">
+                {{ kpis()!.variacionSla >= 0 ? '+' : '' }}{{ kpis()!.variacionSla }}% vs mes anterior
+              </span>
+            </div>
+          </div>
+          <div class="sla-oscuro__objetivo-ctn">
+            <div class="sla-oscuro__objetivo-header">
+              <span class="sla-oscuro__objetivo-label">Objetivo Corporativo</span>
+              <span class="sla-oscuro__objetivo-valor">98%</span>
+            </div>
+            <div class="sla-oscuro__barra-ctn">
+              <div class="sla-oscuro__barra-fill" [style.width.%]="kpis()!.cumplimientoSla"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+}
