@@ -7,6 +7,7 @@ export interface CatalogoItem {
 export interface ClienteListaItem {
   idCliente: number;
   ruc: string;
+  codigo: string;
   razonSocial: string;
   nombreComercial: string | null;
   tipoCliente: string;
@@ -14,6 +15,9 @@ export interface ClienteListaItem {
   condicionContribuyente: string;
   esVip: boolean;
   estado: string;
+  sedeNombre: string | null;
+  sedeRegion: string | null;
+  cantidadContactos: number;
 }
 
 export interface ClienteDetalle {
