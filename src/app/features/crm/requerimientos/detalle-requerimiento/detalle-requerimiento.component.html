@@ -24,10 +24,13 @@
       <!-- Header -->
       <div class="modal__header">
         <div class="modal__header-izq">
-          <span class="material-symbols-outlined modal__icono-doc">description</span>
+          <div class="modal__icono-wrap">
+            <span class="material-symbols-outlined modal__icono-doc">description</span>
+          </div>
           <div>
             <div class="modal__titulo-fila">
-              <h2 class="modal__titulo">Detalle del Requerimiento</h2>
+              <span class="modal__titulo-texto">Detalle del Requerimiento</span>
+              <span class="modal__titulo-sep">/</span>
               <span class="modal__numero">{{ f.numero }}</span>
               <span class="badge {{ estadoCls(f.estado) }}">{{ f.estadoLabel ?? f.estado }}</span>
             </div>
@@ -56,186 +59,220 @@
         <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'documentos'" (click)="tabActiva.set('documentos')">Documentos</button>
       </div>
 
-      <!-- ── Tab: Resumen ─────────────────────────────────────────────────────── -->
+      <!-- ── Tab: Resumen ──────────────────────────────────────────────────────── -->
       @if (tabActiva() === 'resumen') {
+        <div class="contenido">
 
-        <!-- KPIs -->
-        <div class="kpis-mini">
-          <div class="kpi-mini">
-            <span class="material-symbols-outlined kpi-mini__icono">business</span>
-            <div>
-              <div class="kpi-mini__label">CLIENTE</div>
-              <div class="kpi-mini__valor">{{ f.razonSocial }}</div>
+          <!-- KPIs -->
+          <div class="kpis-fila">
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">business</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">CLIENTE</div>
+                <div class="kpi-valor">{{ f.razonSocial }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">precision_manufacturing</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">TIPO SERVICIO</div>
+                <div class="kpi-valor">{{ f.areaLabel ?? '—' }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">RESPONSABLE</div>
+                <div class="kpi-valor">{{ f.responsable ?? '—' }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap kpi-icono-wrap--naranja">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">SLA</div>
+                <div class="kpi-valor">{{ calcularSla(f.fechaNecesidad) }}</div>
+              </div>
             </div>
           </div>
-          <div class="kpi-mini">
-            <span class="material-symbols-outlined kpi-mini__icono">precision_manufacturing</span>
-            <div>
-              <div class="kpi-mini__label">TIPO SERVICIO</div>
-              <div class="kpi-mini__valor">{{ f.areaLabel ?? '—' }}</div>
-            </div>
-          </div>
-          <div class="kpi-mini">
-            <span class="material-symbols-outlined kpi-mini__icono">person</span>
-            <div>
-              <div class="kpi-mini__label">RESPONSABLE</div>
-              <div class="kpi-mini__valor">{{ f.responsable ?? '—' }}</div>
-            </div>
-          </div>
-          <div class="kpi-mini">
-            <span class="material-symbols-outlined kpi-mini__icono">schedule</span>
-            <div>
-              <div class="kpi-mini__label">SLA</div>
-              <div class="kpi-mini__valor">{{ calcularSla(f.fechaNecesidad) }}</div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Body grid -->
-        <div class="body-grid">
+          <!-- Main grid -->
+          <div class="main-grid">
 
-          <!-- Columna izquierda -->
-          <div class="col-izq">
+            <!-- Columna izquierda -->
+            <div class="col-izq">
 
-            <!-- Info General -->
-            <div class="panel">
-              <div class="panel__titulo">
-                <span class="material-symbols-outlined">info</span>
-                Información General
-              </div>
-              <div class="info-grid">
-                <div class="info-item">
-                  <div class="info-label">N.° REQUERIMIENTO</div>
-                  <div class="info-valor info-valor--mono">{{ f.numero }}</div>
+              <!-- Info General -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">info</span>
+                  Información General
                 </div>
-                <div class="info-item">
-                  <div class="info-label">FECHA REGISTRO</div>
-                  <div class="info-valor">{{ formatearFecha(f.fechaCreacion) }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">ORIGEN / CANAL</div>
-                  <div class="info-valor">{{ f.origenLabel ?? '—' }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="info-label">ÁREA</div>
-                  <div class="info-valor">{{ f.areaLabel ?? '—' }}</div>
-                </div>
-              </div>
-              <div class="info-prioridad">
-                <div class="info-label">PRIORIDAD</div>
-                <span class="prioridad {{ prioridadCls(f.idPrioridad) }}">
-                  {{ f.prioridadLabel ?? '—' }}
-                </span>
-              </div>
-              <div class="info-desc">
-                <div class="info-label">DESCRIPCIÓN</div>
-                <p class="info-desc__texto">{{ f.descripcion }}</p>
-              </div>
-            </div>
-
-            <!-- Flujo de Proceso -->
-            <div class="panel">
-              <div class="panel__titulo">
-                <span class="material-symbols-outlined">account_tree</span>
-                Flujo de Proceso
-              </div>
-              <div class="flujo">
-                @for (paso of pasosFlujo; track paso.key; let i = $index; let last = $last) {
-                  <div class="flujo__paso {{ pasoCls(paso.key, f.estado) }}">
-                    <div class="flujo__circulo">
-                      @if (pasoCls(paso.key, f.estado) === 'paso--completado') {
-                        <span class="material-symbols-outlined flujo__check">check</span>
-                      } @else {
-                        {{ i + 1 }}
-                      }
-                    </div>
-                    <div class="flujo__label">{{ paso.label }}</div>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">N.° REQUERIMIENTO</div>
+                    <div class="info-valor info-valor--mono">{{ f.numero }}</div>
                   </div>
-                  @if (!last) {
-                    <div class="flujo__linea"
-                         [class.flujo__linea--activa]="pasoCls(paso.key, f.estado) !== 'paso--pendiente' && pasoCls(paso.key, f.estado) !== 'paso--gris'">
+                  <div class="info-item">
+                    <div class="info-label">FECHA REGISTRO</div>
+                    <div class="info-valor">{{ formatearFecha(f.fechaCreacion) }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">ORIGEN / CANAL</div>
+                    <div class="info-valor">{{ f.origenLabel ?? '—' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">ÁREA</div>
+                    <div class="info-valor">{{ f.areaLabel ?? '—' }}</div>
+                  </div>
+                </div>
+                <div class="info-prioridad">
+                  <div class="info-label">PRIORIDAD</div>
+                  <span class="prioridad {{ prioridadCls(f.idPrioridad) }}">
+                    {{ f.prioridadLabel ?? '—' }}
+                  </span>
+                </div>
+                <div class="info-desc">
+                  <div class="info-label">DESCRIPCIÓN</div>
+                  <p class="info-desc__texto">{{ f.descripcion }}</p>
+                </div>
+              </div>
+
+              <!-- Flujo de Proceso -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">account_tree</span>
+                  Flujo de Proceso
+                </div>
+                <div class="flujo">
+                  @for (paso of pasosFlujo; track paso.key) {
+                    <div class="flujo__paso {{ pasoCls(paso.key, f.estado) }}">
+                      <div class="flujo__circulo">
+                        @if (pasoCls(paso.key, f.estado) === 'paso--completado') {
+                          <span class="material-symbols-outlined flujo__icon">check</span>
+                        } @else if (pasoCls(paso.key, f.estado) === 'paso--actual') {
+                          <span class="material-symbols-outlined flujo__icon">play_arrow</span>
+                        } @else {
+                          <span class="material-symbols-outlined flujo__icon">radio_button_unchecked</span>
+                        }
+                      </div>
+                      <div class="flujo__label">{{ paso.label }}</div>
                     </div>
                   }
+                </div>
+                @if (f.estado === 'anulado') {
+                  <div class="flujo__anulado">
+                    <span class="material-symbols-outlined">cancel</span>
+                    Requerimiento anulado
+                  </div>
                 }
               </div>
-              @if (f.estado === 'anulado') {
-                <div class="flujo__anulado">
-                  <span class="material-symbols-outlined">cancel</span>
-                  Requerimiento anulado
+
+            </div>
+
+            <!-- Columna derecha -->
+            <div class="col-der">
+
+              <!-- Cliente y Contacto -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">person_pin</span>
+                  Cliente y Contacto
                 </div>
-              }
-            </div>
-
-            <!-- Línea de Tiempo -->
-            <div class="panel">
-              <div class="panel__titulo">
-                <span class="material-symbols-outlined">history</span>
-                Línea de Tiempo Reciente
-              </div>
-              <div class="timeline-vacio">
-                <span class="material-symbols-outlined timeline-vacio__icono">history_toggle_off</span>
-                <span>Sin actividad registrada</span>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Columna derecha -->
-          <div class="col-der">
-
-            <!-- Cliente y Contacto -->
-            <div class="panel">
-              <div class="panel__titulo">
-                <span class="material-symbols-outlined">person_pin</span>
-                Cliente y Contacto
-              </div>
-              <div class="cliente-bloque">
-                <div class="cliente-nombre">{{ f.razonSocial }}</div>
-                <div class="cliente-ruc">RUC: {{ f.ruc }}</div>
+                <div class="cliente-bloque">
+                  <div class="cliente-logo">
+                    <span class="material-symbols-outlined">domain</span>
+                  </div>
+                  <div>
+                    <div class="cliente-nombre">{{ f.razonSocial }}</div>
+                    <div class="cliente-ruc">RUC: {{ f.ruc }}</div>
+                  </div>
+                </div>
                 @if (f.nombreSede) {
                   <div class="cliente-sede">
                     <span class="material-symbols-outlined">location_on</span>
-                    Sede: {{ f.nombreSede }}
+                    {{ f.nombreSede }}
+                  </div>
+                }
+                @if (f.nombreContacto) {
+                  <div class="contacto-bloque">
+                    <span class="material-symbols-outlined contacto-icon">person</span>
+                    <div class="contacto-info">
+                      <div class="contacto-nombre">{{ f.nombreContacto }}</div>
+                    </div>
+                    <button class="btn-contactar" type="button" disabled>Contactar</button>
                   </div>
                 }
               </div>
-              @if (f.nombreContacto) {
-                <div class="contacto-bloque">
-                  <div class="contacto-nombre">{{ f.nombreContacto }}</div>
-                  <button class="btn-contactar" type="button" disabled>Contactar</button>
+
+              <!-- VIP / Reglas de Negocio -->
+              @if (f.notificarCorreo || f.requiereVisita || f.clienteDeuda) {
+                <div class="vip-card">
+                  <div class="vip-card__header">
+                    <div>
+                      <div class="vip-card__titulo">Perfil VIP Account</div>
+                      <div class="vip-card__subtitulo">Reglas de Negocio Aplicadas</div>
+                    </div>
+                    <span class="material-symbols-outlined vip-card__gear">settings</span>
+                  </div>
+                  <div class="vip-items">
+                    @if (f.notificarCorreo) {
+                      <div class="vip-item">
+                        <span class="material-symbols-outlined vip-item__icon">check_circle</span>
+                        Notificación por correo habilitada
+                      </div>
+                    }
+                    @if (f.requiereVisita) {
+                      <div class="vip-item">
+                        <span class="material-symbols-outlined vip-item__icon">check_circle</span>
+                        Requiere visita técnica
+                      </div>
+                    }
+                    @if (f.clienteDeuda) {
+                      <div class="vip-item vip-item--warn">
+                        <span class="material-symbols-outlined vip-item__warn-icon">warning</span>
+                        Cliente con deuda registrada
+                      </div>
+                    }
+                  </div>
                 </div>
               }
-            </div>
 
-            <!-- Reglas de Negocio -->
-            @if (f.notificarCorreo || f.requiereVisita || f.clienteDeuda) {
-              <div class="panel panel--reglas">
-                <div class="panel__titulo panel__titulo--reglas">
-                  <span class="material-symbols-outlined">verified</span>
-                  Reglas de Negocio Aplicadas
+              <!-- Próxima Acción -->
+              <div class="prox-accion">
+                <div class="prox-accion__titulo">
+                  <span class="material-symbols-outlined">calendar_month</span>
+                  PRÓXIMA ACCIÓN
                 </div>
-                @if (f.notificarCorreo) {
-                  <div class="regla-item">
-                    <span class="material-symbols-outlined regla-item__check">check_circle</span>
-                    Notificación por correo habilitada
-                  </div>
-                }
-                @if (f.requiereVisita) {
-                  <div class="regla-item">
-                    <span class="material-symbols-outlined regla-item__check">check_circle</span>
-                    Requiere visita técnica
-                  </div>
-                }
-                @if (f.clienteDeuda) {
-                  <div class="regla-item regla-item--alerta">
-                    <span class="material-symbols-outlined regla-item__warn">warning</span>
-                    Cliente con deuda registrada
-                  </div>
-                }
+                <p class="prox-accion__empty">Sin próximas acciones registradas.</p>
+                <button class="prox-accion__btn" type="button" disabled>
+                  <span class="material-symbols-outlined">history_edu</span>
+                  Registrar Actividad
+                </button>
               </div>
-            }
 
+            </div>
           </div>
+
+          <!-- Línea de Tiempo (full-width) -->
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">history</span>
+              Línea de Tiempo Reciente
+            </div>
+            <div class="timeline-vacio">
+              <span class="material-symbols-outlined timeline-vacio__icono">history_toggle_off</span>
+              <span>Sin actividad registrada</span>
+            </div>
+          </div>
+
         </div>
       }
 
@@ -257,9 +294,6 @@
         </button>
         <div class="modal__footer-der">
           <button class="btn-secundario" type="button" (click)="cerrar.emit()">Cerrar</button>
-          <button class="btn-secundario" type="button" disabled title="Próximamente">
-            Abrir Expediente
-          </button>
           <button class="btn-primario" type="button" (click)="editar.emit(f.idRequerimiento)">
             <span class="material-symbols-outlined">edit</span>
             Editar Requerimiento

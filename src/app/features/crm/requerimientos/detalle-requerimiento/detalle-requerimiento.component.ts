@@ -22,11 +22,20 @@ export class DetalleRequerimientoComponent implements OnInit {
   readonly tabActiva = signal<'resumen' | 'cliente' | 'comercial' | 'actividad' | 'documentos'>('resumen');
 
   readonly pasosFlujo = [
-    { key: 'nuevo',         label: 'NUEVO'         },
-    { key: 'en_proceso',    label: 'EN PROCESO'    },
-    { key: 'con_propuesta', label: 'CON PROPUESTA' },
-    { key: 'cerrado',       label: 'CERRADO'       },
+    { key: 'rq',          label: 'RQ'          },
+    { key: 'propuesta',   label: 'PROPUESTA'   },
+    { key: 'vb',          label: 'VB'          },
+    { key: 'envio',       label: 'ENVÍO'       },
+    { key: 'seguimiento', label: 'SEGUIMIENTO' },
+    { key: 'aceptacion',  label: 'ACEPTACIÓN'  },
   ];
+
+  private readonly estadoAStep: Record<string, string> = {
+    nuevo:         'rq',
+    en_proceso:    'propuesta',
+    con_propuesta: 'envio',
+    cerrado:       'aceptacion',
+  };
 
   async ngOnInit(): Promise<void> {
     try {
@@ -45,8 +54,10 @@ export class DetalleRequerimientoComponent implements OnInit {
 
   pasoCls(pasoKey: string, estadoActual: string): string {
     if (estadoActual === 'anulado') return 'paso--gris';
-    const idxActual = this.pasoIndice(estadoActual);
-    const idxPaso   = this.pasoIndice(pasoKey);
+    const stepActual = this.estadoAStep[estadoActual] ?? estadoActual;
+    const idxActual  = this.pasoIndice(stepActual);
+    if (idxActual < 0) return 'paso--pendiente';
+    const idxPaso = this.pasoIndice(pasoKey);
     if (idxPaso < idxActual)   return 'paso--completado';
     if (idxPaso === idxActual) return 'paso--actual';
     return 'paso--pendiente';
