@@ -1,0 +1,130 @@
+<div class="modal-overlay" (click)="cancelar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-bg">
+          <span class="material-symbols-outlined modal__icono">person_search</span>
+        </div>
+        <div>
+          <h2 class="modal__titulo">Seleccionar Contacto</h2>
+          <p class="modal__subtitulo">Seleccione el contacto directo asociado al cliente</p>
+        </div>
+      </div>
+      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="modal__tabla-wrap">
+      <div class="modal__tabla-border">
+        <table class="modal__tabla">
+          <thead>
+            <tr class="modal__thead-row">
+              <th class="modal__th">NOMBRE / CARGO</th>
+              <th class="modal__th">ÁREA</th>
+              <th class="modal__th">CORREO</th>
+              <th class="modal__th">TELÉFONO</th>
+              <th class="modal__th modal__th--centro">ESTADO</th>
+              <th class="modal__th modal__th--der">ACCIÓN</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (cargando()) {
+              <tr>
+                <td colspan="6" class="modal__td--vacio">
+                  <span class="material-symbols-outlined modal__spinner">progress_activity</span>
+                  Cargando contactos...
+                </td>
+              </tr>
+            } @else if (contactos().length === 0) {
+              <tr>
+                <td colspan="6" class="modal__td--vacio">
+                  <span class="material-symbols-outlined">search_off</span>
+                  No hay contactos registrados para este cliente.
+                </td>
+              </tr>
+            } @else {
+              @for (c of contactos(); track c.idContacto) {
+                <tr class="modal__fila"
+                    [class.modal__fila--seleccionada]="seleccionado()?.idContacto === c.idContacto"
+                    (click)="seleccionar(c)">
+
+                  <!-- Nombre / Cargo -->
+                  <td class="modal__td">
+                    <div class="modal__nombre">
+                      {{ c.nombres }}
+                      @if (c.esContactoPrincipal) {
+                        <span class="modal__badge-principal">Principal</span>
+                      }
+                    </div>
+                    @if (c.cargo) {
+                      <div class="modal__subtext">{{ c.cargo }}</div>
+                    }
+                  </td>
+
+                  <!-- Área -->
+                  <td class="modal__td">
+                    <span class="modal__area">{{ c.area ?? '—' }}</span>
+                  </td>
+
+                  <!-- Correo -->
+                  <td class="modal__td">
+                    <span class="modal__correo">{{ c.correo ?? '—' }}</span>
+                  </td>
+
+                  <!-- Teléfono -->
+                  <td class="modal__td">
+                    <span class="modal__telefono">{{ c.telefonoMovil ?? '—' }}</span>
+                  </td>
+
+                  <!-- Estado -->
+                  <td class="modal__td modal__td--centro">
+                    <span class="modal__badge"
+                          [class.modal__badge--activo]="c.estado === 'Activo'"
+                          [class.modal__badge--inactivo]="c.estado !== 'Activo'">
+                      <span class="modal__badge-dot"></span>
+                      {{ c.estado }}
+                    </span>
+                  </td>
+
+                  <!-- Acción -->
+                  <td class="modal__td modal__td--der">
+                    <button class="modal__btn-sel"
+                            [class.modal__btn-sel--activo]="seleccionado()?.idContacto === c.idContacto"
+                            type="button"
+                            (click)="$event.stopPropagation(); seleccionar(c)">
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal__footer">
+      <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
+      <div class="modal__footer-der">
+        @if (seleccionado()) {
+          <span class="modal__seleccionado-label">
+            Seleccionado: <strong>{{ seleccionado()!.nombres }}</strong>
+          </span>
+        }
+        <button class="modal__btn-confirmar"
+                type="button"
+                [disabled]="!seleccionado()"
+                (click)="confirmar()">
+          <span class="material-symbols-outlined">check</span>
+          Confirmar Selección
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

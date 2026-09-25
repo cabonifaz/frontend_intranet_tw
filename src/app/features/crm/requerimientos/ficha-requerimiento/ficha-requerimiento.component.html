@@ -1,0 +1,540 @@
+@if (cargando()) {
+  <div class="ficha-rq__cargando">
+    <span class="material-symbols-outlined ficha-rq__spin">progress_activity</span>
+    Cargando requerimiento...
+  </div>
+} @else {
+  <div class="ficha-rq__wrapper">
+
+    <!-- Breadcrumb -->
+    <div class="ficha-rq__breadcrumb-row">
+      <app-breadcrumb [items]="breadcrumb" />
+    </div>
+
+    <!-- Page header: Nuevo vs Editar -->
+    @if (esNuevo()) {
+      <div class="ficha-rq__titulo-card">
+        <div class="ficha-rq__titulo-card-izq">
+          <h1 class="ficha-rq__titulo">Nuevo Requerimiento</h1>
+          <p class="ficha-rq__subtitulo">Registrar una nueva necesidad comercial u operativa</p>
+        </div>
+      </div>
+    } @else {
+      <div class="ficha-rq__cabecera-edicion">
+        <div class="ficha-rq__cab-izq">
+          <div class="ficha-rq__numero-row">
+            <span class="ficha-rq__numero">{{ ficha()?.numero }}</span>
+            <span class="ficha-rq__estado-badge">{{ ficha()?.estadoLabel ?? ficha()?.estado }}</span>
+          </div>
+          <p class="ficha-rq__cab-meta">
+            Fecha necesidad: {{ ficha()?.fechaNecesidad | date:'dd/MM/yyyy' }}
+          </p>
+        </div>
+        <div class="ficha-rq__cab-der">
+          <div class="ficha-rq__cliente-summary">
+            <span class="ficha-rq__cs-nombre">{{ ficha()?.razonSocial }}</span>
+            <span class="ficha-rq__cs-ruc">RUC: {{ ficha()?.ruc }}</span>
+          </div>
+          <span class="ficha-rq__vip-badge">
+            <span class="material-symbols-outlined">star</span>
+            Cliente VIP
+          </span>
+        </div>
+      </div>
+    }
+
+    <!-- Body -->
+    <div class="ficha-rq__body">
+
+      <!-- Main column -->
+      <div class="ficha-rq__main" [formGroup]="formulario">
+
+        @if (error()) {
+          <div class="ficha-rq__error">
+            <span class="material-symbols-outlined">error</span>
+            {{ error() }}
+          </div>
+        }
+
+        <!-- ── Sección 1: Información del Requerimiento ── -->
+        <section class="seccion">
+          <div class="seccion__header">
+            <div class="seccion__header-izq">
+              <div class="seccion__icono-box">
+                <span class="material-symbols-outlined">article</span>
+              </div>
+              <div>
+                <h2 class="seccion__titulo">Información del Requerimiento</h2>
+                <p class="seccion__subtitulo">Datos principales del servicio solicitado</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="seccion__body">
+
+            <!-- Origen + Área -->
+            <div class="campo-duo">
+              <div class="campo">
+                <label class="campo__label">ORIGEN DEL REQUERIMIENTO</label>
+                <select class="campo__select" formControlName="idOrigen">
+                  <option value="">Seleccionar origen...</option>
+                  @for (o of origenes(); track o.id) {
+                    <option [value]="o.id">{{ o.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div class="campo">
+                <label class="campo__label">ÁREA DE SERVICIO</label>
+                <select class="campo__select" formControlName="idArea">
+                  <option value="">Seleccionar área...</option>
+                  @for (a of areas(); track a.id) {
+                    <option [value]="a.id">{{ a.nombre }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Prioridad + Fecha -->
+            <div class="campo-duo">
+              <div class="campo">
+                <label class="campo__label">GRADO DE NECESIDAD</label>
+                <div class="prioridad-grupo">
+                  @for (p of prioridades(); track p.id) {
+                    <label class="prioridad-opcion"
+                           [class.prioridad-opcion--activa]="formulario.get('idPrioridad')?.value == p.id"
+                           [class.prioridad-opcion--alta]="p.nombre === 'Alta'"
+                           [class.prioridad-opcion--media]="p.nombre === 'Media'"
+                           [class.prioridad-opcion--baja]="p.nombre === 'Baja'">
+                      <input type="radio" class="prioridad-radio"
+                             formControlName="idPrioridad"
+                             [value]="p.id" />
+                      <span class="prioridad-circle"></span>
+                      <span class="prioridad-text">{{ p.nombre }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+              <div class="campo">
+                <label class="campo__label">FECHA REQUERIDA</label>
+                <input class="campo__input" type="date" formControlName="fechaNecesidad" />
+              </div>
+            </div>
+
+            <!-- Descripción -->
+            <div class="campo">
+              <label class="campo__label">DESCRIPCIÓN DE LA NECESIDAD</label>
+              <textarea class="campo__textarea" rows="4"
+                        placeholder="Describa el problema o necesidad detalladamente..."
+                        formControlName="descripcion"></textarea>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Sección 2: Contacto y Cliente ── -->
+        <section class="seccion">
+          <div class="seccion__header">
+            <div class="seccion__header-izq">
+              <div class="seccion__icono-box">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <div>
+                <h2 class="seccion__titulo">Contacto y Cliente</h2>
+              </div>
+            </div>
+            <button class="btn-seleccionar-cliente" type="button"
+                    (click)="mostrarModalCliente.set(true)">
+              <span class="material-symbols-outlined">business</span>
+              {{ cliente() ? 'CAMBIAR CLIENTE' : 'SELECCIONAR CLIENTE' }}
+            </button>
+          </div>
+
+          <div class="seccion__body">
+
+            <!-- Cliente + Sede + Contacto cards -->
+            <div class="campo-trio">
+
+              <!-- CLIENTE -->
+              <div class="cliente-card">
+                <span class="cliente-card__label">CLIENTE PRINCIPAL</span>
+                @if (cliente()) {
+                  <div class="cliente-card__filled">
+                    <div class="cliente-card__icon-bg">
+                      <span class="material-symbols-outlined">domain</span>
+                    </div>
+                    <div>
+                      <div class="cliente-card__nombre">{{ cliente()!.razonSocial }}</div>
+                      <div class="cliente-card__ruc">RUC: {{ cliente()!.ruc }}</div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="cliente-card__vacio">
+                    <span class="material-symbols-outlined">add_business</span>
+                    No se ha seleccionado un cliente
+                  </div>
+                }
+              </div>
+
+              <!-- SEDE -->
+              <div class="cliente-card"
+                   [class.cliente-card--seleccionable]="!!(cliente() && !sede())"
+                   (click)="cliente() && !sede() ? mostrarModalSede.set(true) : null">
+                <span class="cliente-card__label">SEDE / INSTALACIÓN</span>
+                @if (sede()) {
+                  <div class="cliente-card__filled">
+                    <div class="cliente-card__icon-bg">
+                      <span class="material-symbols-outlined">location_on</span>
+                    </div>
+                    <div>
+                      <div class="cliente-card__nombre">{{ sede()!.nombre }}</div>
+                      @if (sede()!.region) {
+                        <div class="cliente-card__ruc">{{ sede()!.region }}</div>
+                      }
+                    </div>
+                    @if (cliente()) {
+                      <button class="cliente-card__btn-cambiar" type="button"
+                              (click)="$event.stopPropagation(); mostrarModalSede.set(true)">
+                        Cambiar
+                      </button>
+                    }
+                  </div>
+                } @else if (cliente()) {
+                  <div class="cliente-card__placeholder">
+                    <span class="material-symbols-outlined">add_location</span>
+                    <span>Seleccionar Sede</span>
+                  </div>
+                } @else {
+                  <div class="cliente-card__vacio">
+                    <span class="material-symbols-outlined">location_off</span>
+                    Seleccione primero un cliente
+                  </div>
+                }
+              </div>
+
+              <!-- CONTACTO -->
+              <div class="cliente-card"
+                   [class.cliente-card--seleccionable]="!!(cliente() && !contacto())"
+                   (click)="cliente() && !contacto() ? mostrarModalContacto.set(true) : null">
+                <span class="cliente-card__label">CONTACTO DIRECTO</span>
+                @if (contacto()) {
+                  <div class="cliente-card__filled">
+                    <div class="cliente-card__icon-bg">
+                      <span class="material-symbols-outlined">person</span>
+                    </div>
+                    <div>
+                      <div class="cliente-card__nombre">{{ contacto()!.nombres }}</div>
+                      @if (contacto()!.cargo) {
+                        <div class="cliente-card__ruc">{{ contacto()!.cargo }}</div>
+                      }
+                    </div>
+                    @if (cliente()) {
+                      <button class="cliente-card__btn-cambiar" type="button"
+                              (click)="$event.stopPropagation(); mostrarModalContacto.set(true)">
+                        Cambiar
+                      </button>
+                    }
+                  </div>
+                } @else if (cliente()) {
+                  <div class="cliente-card__placeholder">
+                    <span class="material-symbols-outlined">person_search</span>
+                    <span>Seleccionar Contacto</span>
+                  </div>
+                } @else {
+                  <div class="cliente-card__vacio">
+                    <span class="material-symbols-outlined">person_search</span>
+                    Seleccione primero un cliente
+                  </div>
+                }
+              </div>
+
+            </div>
+
+            <!-- Checkboxes fila 1 -->
+            <div class="checks-row">
+              <label class="check-item">
+                <input type="checkbox" class="check-item__input" formControlName="notificarCorreo" />
+                <span class="check-item__box"></span>
+                <span class="check-item__label">Notificar por correo al contacto</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" class="check-item__input" formControlName="requiereVisita" />
+                <span class="check-item__box"></span>
+                <span class="check-item__label">Requiere visita técnica previa</span>
+              </label>
+            </div>
+
+            <!-- Checkboxes fila 2 -->
+            <div class="checks-row">
+              <label class="check-item">
+                <input type="checkbox" class="check-item__input" formControlName="clienteDeuda" />
+                <span class="check-item__box"></span>
+                <span class="check-item__label">Cliente con deuda pendiente</span>
+              </label>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ── Sección 3: Reglas Automáticas (VIP) ── -->
+        <section class="seccion seccion--reglas">
+          <div class="seccion__header">
+            <div class="seccion__header-izq">
+              <div class="seccion__icono-box seccion__icono-box--blue">
+                <span class="material-symbols-outlined">bolt</span>
+              </div>
+              <div>
+                <h2 class="seccion__titulo">
+                  Reglas Automáticas Aplicadas
+                  <span class="badge-vip">VIP</span>
+                </h2>
+              </div>
+            </div>
+          </div>
+          <div class="seccion__body">
+            <div class="regla-item">
+              <div class="regla-item__icon">
+                <span class="material-symbols-outlined">check_circle</span>
+              </div>
+              <div>
+                <div class="regla-item__nombre">Asignación Directa</div>
+                <div class="regla-item__desc">Asigna automáticamente al Área de Metrología</div>
+              </div>
+            </div>
+            <div class="regla-item">
+              <div class="regla-item__icon">
+                <span class="material-symbols-outlined">check_circle</span>
+              </div>
+              <div>
+                <div class="regla-item__nombre">Descuento Corporativo Automático</div>
+                <div class="regla-item__desc">Se aplica un 15% de descuento en la propuesta según convenio vigente</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Sección 4: Documentos Relacionados ── -->
+        <section class="seccion">
+          <div class="seccion__header">
+            <div class="seccion__header-izq">
+              <div class="seccion__icono-box">
+                <span class="material-symbols-outlined">folder_open</span>
+              </div>
+              <div>
+                <h2 class="seccion__titulo">Documentos Relacionados</h2>
+              </div>
+            </div>
+          </div>
+          <div class="seccion__body">
+            @if (!esNuevo()) {
+              <div class="doc-item">
+                <span class="material-symbols-outlined">description</span>
+                <div>
+                  <div class="doc-item__nombre">Propuesta PROP-002581v3</div>
+                  <div class="doc-item__meta">PDF · 2.1 MB</div>
+                </div>
+                <div class="doc-item__acciones">
+                  <button class="doc-item__btn" type="button">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  <button class="doc-item__btn" type="button">
+                    <span class="material-symbols-outlined">download</span>
+                  </button>
+                </div>
+              </div>
+            }
+            <div class="upload-area">
+              <span class="material-symbols-outlined">upload_file</span>
+              <p>Click o arrastra para adjuntar documentos</p>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /main -->
+
+      <!-- ── Sidebar ── -->
+      <div class="ficha-rq__sidebar">
+
+        <!-- Card: Resumen del Estado + Progreso SLA (combinados) -->
+        <div class="panel">
+          <div class="panel__header panel__header--split">
+            RESUMEN DEL ESTADO
+            <span class="material-symbols-outlined">assignment</span>
+          </div>
+          <div class="panel__body">
+            @if (esNuevo()) {
+              <div class="panel__placeholder">
+                <span class="material-symbols-outlined">pending_actions</span>
+                <p>El flujo de trabajo se activará al guardar el registro.</p>
+              </div>
+            } @else {
+              <div class="timeline">
+                <div class="timeline__item timeline__item--done">
+                  <div class="timeline__dot"></div>
+                  <div>
+                    <div class="timeline__label">Requerimiento Creado</div>
+                    <div class="timeline__meta">25/10/2024</div>
+                  </div>
+                </div>
+                <div class="timeline__item timeline__item--done">
+                  <div class="timeline__dot"></div>
+                  <div>
+                    <div class="timeline__label">Visita Técnica Aprobada</div>
+                    <div class="timeline__meta">28/10/2024</div>
+                  </div>
+                </div>
+                <div class="timeline__item timeline__item--activo">
+                  <div class="timeline__dot"></div>
+                  <div>
+                    <div class="timeline__label">Propuesta Enviada</div>
+                    <div class="timeline__meta">En curso</div>
+                  </div>
+                </div>
+                <div class="timeline__item">
+                  <div class="timeline__dot"></div>
+                  <div>
+                    <div class="timeline__label">Venta Confirmada</div>
+                    <div class="timeline__meta">Pendiente</div>
+                  </div>
+                </div>
+                <div class="timeline__item">
+                  <div class="timeline__dot"></div>
+                  <div>
+                    <div class="timeline__label">Servicio Finalizado</div>
+                    <div class="timeline__meta">Pendiente</div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <div class="panel__sep"></div>
+
+            <div class="panel__sla-fila">
+              <span class="panel__sla-etiq">PROGRESO SLA</span>
+              @if (esNuevo()) {
+                <span class="panel__sla-pct">0%</span>
+              } @else {
+                <span class="panel__sla-pct">77%</span>
+              }
+            </div>
+            <div class="sla__barra">
+              @if (!esNuevo()) {
+                <div class="sla__fill" style="width: 77%"></div>
+              }
+            </div>
+            @if (esNuevo()) {
+              <p class="panel__sla-meta">Pendiente de inicio</p>
+            } @else {
+              <p class="panel__sla-meta">3 días restantes</p>
+            }
+          </div>
+        </div>
+
+        <!-- Panel: Historial Reciente -->
+        <div class="panel">
+          <div class="panel__header panel__header--split">
+            HISTORIAL RECIENTE
+            <span class="material-symbols-outlined">history</span>
+          </div>
+          <div class="panel__body">
+            @if (esNuevo()) {
+              <p class="panel__vacio-txt">No hay actividad reciente</p>
+            } @else {
+              <div class="historial">
+                <div class="historial__item">
+                  <div class="historial__icon">
+                    <span class="material-symbols-outlined">edit_note</span>
+                  </div>
+                  <div class="historial__cuerpo">
+                    <div class="historial__desc">AT: Validaste y cambió el origen de "Correo" a "WhatsApp"</div>
+                    <div class="historial__meta">Hace 2 horas</div>
+                  </div>
+                </div>
+                <div class="historial__item">
+                  <div class="historial__icon">
+                    <span class="material-symbols-outlined">upload</span>
+                  </div>
+                  <div class="historial__cuerpo">
+                    <div class="historial__desc">Bot TotalWeight adjuntó la versión 3 de la propuesta</div>
+                    <div class="historial__meta">Hace 1 día</div>
+                  </div>
+                </div>
+              </div>
+              <a class="panel__ver-todo" href="#">VER TODO EL LOG</a>
+            }
+          </div>
+        </div>
+
+        <!-- Card: Tip de Productividad -->
+        <div class="panel">
+          <div class="panel__body">
+            <div class="panel__tip">
+              <div class="panel__tip-cabeza">
+                <div class="panel__tip-icon">
+                  <span class="material-symbols-outlined">tips_and_updates</span>
+                </div>
+                <p class="panel__tip-titulo">Tip de Productividad</p>
+              </div>
+              <p class="panel__tip-texto">
+                Puedes duplicar este requerimiento para generar uno similar en otro campamento
+                de Antamina usando el botón "Acciones Rápidas" en la vista de detalle.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar -->
+    </div><!-- /body -->
+
+    <!-- Footer -->
+    <div class="ficha-rq__footer">
+      <button class="btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
+      <div class="ficha-rq__footer-der">
+        @if (!esNuevo()) {
+          <a class="btn-ver-detalle"
+             [routerLink]="['/crm/requerimientos', idRequerimiento]">
+            <span class="material-symbols-outlined">visibility</span>
+            Ver detalle
+          </a>
+        }
+        <button class="btn-borrador" type="button"
+                [disabled]="!puedeGuardar || guardando()"
+                (click)="guardar(false)">
+          {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Guardar Borrador' : 'Guardar cambios') }}
+        </button>
+        <button class="btn-continuar" type="button"
+                [disabled]="!puedeGuardar || guardando()"
+                (click)="guardar(true)">
+          Guardar y continuar
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /wrapper -->
+
+  <!-- Modal Seleccionar Cliente -->
+  @if (mostrarModalCliente()) {
+    <app-seleccionar-cliente
+      (confirmado)="onClienteConfirmado($event)"
+      (cancelado)="mostrarModalCliente.set(false)"
+    />
+  }
+
+  <!-- Modal Seleccionar Sede -->
+  @if (mostrarModalSede() && cliente()) {
+    <app-seleccionar-sede
+      [idCliente]="cliente()!.idCliente"
+      (confirmado)="onSedeConfirmada($event)"
+      (cancelado)="mostrarModalSede.set(false)"
+    />
+  }
+
+  <!-- Modal Seleccionar Contacto -->
+  @if (mostrarModalContacto() && cliente()) {
+    <app-seleccionar-contacto
+      [idCliente]="cliente()!.idCliente"
+      (confirmado)="onContactoConfirmado($event)"
+      (cancelado)="mostrarModalContacto.set(false)"
+    />
+  }
+}

@@ -1,0 +1,188 @@
+<div class="modal-overlay" (click)="cancelar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-bg">
+          <span class="material-symbols-outlined modal__icono">business</span>
+        </div>
+        <div>
+          <h2 class="modal__titulo">Seleccionar Cliente</h2>
+          <p class="modal__subtitulo">Busque y seleccione una empresa o razón social registrada en el sistema o cree una nueva</p>
+        </div>
+      </div>
+      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Controls Bar -->
+    <div class="modal__controls">
+      <div class="campo__con-icono modal__busqueda">
+        <span class="material-symbols-outlined campo__icono-input">search</span>
+        <input
+          class="campo__input campo__input--icono"
+          type="text"
+          placeholder="Buscar empresa o razón social..."
+          [(ngModel)]="busqueda"
+          (keyup.enter)="cargar()"
+        />
+      </div>
+      <select class="modal__select" [(ngModel)]="estadoFiltro" (change)="cargar()">
+        <option value="Activo">Activos</option>
+        <option value="Inactivo">Inactivos</option>
+        <option value="">Todos</option>
+      </select>
+      <button class="modal__btn-nuevo" type="button">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo Cliente
+      </button>
+    </div>
+
+    <!-- Table -->
+    <div class="modal__tabla-wrap">
+      <div class="modal__tabla-border">
+        <table class="modal__tabla">
+          <thead>
+            <tr class="modal__thead-row">
+              <th class="modal__th">CLIENTE / RAZÓN SOCIAL</th>
+              <th class="modal__th">RUC &amp; CÓDIGO</th>
+              <th class="modal__th">SEDE / UBICACIÓN</th>
+              <th class="modal__th">SEGMENTO</th>
+              <th class="modal__th modal__th--centro">CONTACTOS</th>
+              <th class="modal__th modal__th--centro">ESTADO</th>
+              <th class="modal__th modal__th--der">ACCIÓN</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (cargando()) {
+              <tr>
+                <td colspan="7" class="modal__td--vacio">
+                  <span class="material-symbols-outlined modal__spinner">progress_activity</span>
+                  Cargando clientes...
+                </td>
+              </tr>
+            } @else if (clientes().length === 0) {
+              <tr>
+                <td colspan="7" class="modal__td--vacio">
+                  <span class="material-symbols-outlined">search_off</span>
+                  No se encontraron clientes.
+                </td>
+              </tr>
+            } @else {
+              @for (cliente of clientesPagina(); track cliente.idCliente) {
+                <tr class="modal__fila"
+                    [class.modal__fila--seleccionada]="seleccionado()?.idCliente === cliente.idCliente"
+                    (click)="seleccionar(cliente)">
+
+                  <!-- Nombre -->
+                  <td class="modal__td">
+                    <div class="modal__cliente-nombre">{{ cliente.razonSocial }}</div>
+                    @if (cliente.nombreComercial) {
+                      <div class="modal__cliente-subtext">{{ cliente.nombreComercial }}</div>
+                    }
+                  </td>
+
+                  <!-- RUC & Código -->
+                  <td class="modal__td">
+                    <div class="modal__ruc">{{ cliente.ruc }}</div>
+                    <span class="modal__codigo-badge">{{ cliente.codigo }}</span>
+                  </td>
+
+                  <!-- Sede / Ubicación -->
+                  <td class="modal__td">
+                    @if (cliente.sedeRegion || cliente.sedeNombre) {
+                      <div class="modal__sede-ciudad">{{ cliente.sedeRegion ?? '—' }}</div>
+                      <div class="modal__sede-nombre">{{ cliente.sedeNombre ?? '—' }}</div>
+                    } @else {
+                      <span class="modal__sede-vacio">Sin sede</span>
+                    }
+                  </td>
+
+                  <!-- Segmento -->
+                  <td class="modal__td">
+                    @if (cliente.esVip) {
+                      <span class="modal__segmento modal__segmento--vip">
+                        <span class="material-symbols-outlined">bolt</span>
+                        {{ cliente.tipoCliente }}
+                      </span>
+                    } @else {
+                      <span class="modal__segmento">{{ cliente.tipoCliente }}</span>
+                    }
+                  </td>
+
+                  <!-- Contactos -->
+                  <td class="modal__td modal__td--centro">
+                    <span class="modal__contactos">{{ cliente.cantidadContactos }} registrados</span>
+                  </td>
+
+                  <!-- Estado -->
+                  <td class="modal__td modal__td--centro">
+                    <span class="modal__badge"
+                          [class.modal__badge--activo]="cliente.estado === 'Activo'"
+                          [class.modal__badge--inactivo]="cliente.estado !== 'Activo'">
+                      <span class="modal__badge-dot"></span>
+                      {{ cliente.estado }}
+                    </span>
+                  </td>
+
+                  <!-- Acción -->
+                  <td class="modal__td modal__td--der">
+                    <button class="modal__btn-sel"
+                            [class.modal__btn-sel--activo]="seleccionado()?.idCliente === cliente.idCliente"
+                            type="button"
+                            (click)="$event.stopPropagation(); seleccionar(cliente)">
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Paginación -->
+    @if (!cargando() && clientes().length > 0) {
+      <div class="modal__paginacion">
+        <span class="modal__pag-info">
+          Mostrando {{ inicio }} – {{ fin }} de {{ clientes().length }} clientes registrados
+        </span>
+        <div class="modal__pag-btns">
+          <button class="modal__pag-btn" type="button"
+                  [disabled]="pagina() === 1"
+                  (click)="irPagina(pagina() - 1)">
+            Anterior
+          </button>
+          <button class="modal__pag-btn" type="button"
+                  [disabled]="pagina() >= totalPaginas()"
+                  (click)="irPagina(pagina() + 1)">
+            Siguiente
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Footer -->
+    <div class="modal__footer">
+      <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
+      <div class="modal__footer-der">
+        @if (seleccionado()) {
+          <span class="modal__seleccionado-label">
+            Seleccionado: <strong>{{ seleccionado()!.razonSocial }}</strong>
+          </span>
+        }
+        <button class="modal__btn-confirmar"
+                type="button"
+                [disabled]="!seleccionado()"
+                (click)="confirmar()">
+          <span class="material-symbols-outlined">check</span>
+          Confirmar Selección
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

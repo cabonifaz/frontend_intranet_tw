@@ -49,6 +49,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/requerimientos',
+        loadComponent: () =>
+          import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(
+            m => m.ListaRequerimientosComponent
+          ),
+      },
+      {
+        path: 'crm/requerimientos/nuevo',
+        loadComponent: () =>
+          import('./features/crm/requerimientos/ficha-requerimiento/ficha-requerimiento.component').then(
+            m => m.FichaRequerimientoComponent
+          ),
+      },
+      {
+        path: 'crm/requerimientos/:id/editar',
+        loadComponent: () =>
+          import('./features/crm/requerimientos/ficha-requerimiento/ficha-requerimiento.component').then(
+            m => m.FichaRequerimientoComponent
+          ),
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full',

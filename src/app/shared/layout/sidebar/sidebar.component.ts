@@ -18,7 +18,7 @@ export class SidebarComponent {
 
   readonly navItems: NavItem[] = [
     { icono: 'dashboard',         etiqueta: 'Dashboard',            ruta: '/dashboard'      },
-    { icono: 'support_agent',     etiqueta: 'CRM / Requerimientos', ruta: '/crm'            },
+    { icono: 'support_agent',     etiqueta: 'CRM / Requerimientos', ruta: '/crm/requerimientos' },
     { icono: 'folder_open',       etiqueta: 'Expediente Digital',   ruta: '/expedientes'    },
     { icono: 'calendar_month',    etiqueta: 'Programación',         ruta: '/programacion'   },
     { icono: 'health_and_safety', etiqueta: 'SSOMA',                ruta: '/ssoma'          },
