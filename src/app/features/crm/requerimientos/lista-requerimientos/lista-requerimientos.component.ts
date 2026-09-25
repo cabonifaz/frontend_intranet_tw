@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { CrmService } from '../../../../core/services/crm.service';
 import { KpisRequerimientos, RequerimientoListaItem } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-requerimiento.component';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent],
+  imports: [FormsModule, BreadcrumbComponent, DetalleRequerimientoComponent],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })
@@ -21,6 +22,8 @@ export class ListaRequerimientosComponent implements OnInit {
   readonly kpis  = signal<KpisRequerimientos>({ rqActivos: 0, sinPropuesta: 0, slaUrgentes: 0, bloqueados: 0 });
   readonly items = signal<RequerimientoListaItem[]>([]);
   readonly total = signal(0);
+
+  readonly detalleIdAbierto = signal<number | null>(null);
 
   readonly pagina    = signal(1);
   readonly porPagina = signal(10);
@@ -78,7 +81,7 @@ export class ListaRequerimientosComponent implements OnInit {
   }
 
   irADetalle(id: number): void {
-    this.router.navigate(['/crm/requerimientos', id]);
+    this.detalleIdAbierto.set(id);
   }
 
   irAEditar(id: number): void {

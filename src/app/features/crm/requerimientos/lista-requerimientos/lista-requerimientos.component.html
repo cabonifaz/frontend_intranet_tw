@@ -233,3 +233,13 @@
   </div>
 
 </div>
+
+<!-- ── Modal Detalle ────────────────────────────────────────────────────────── -->
+@if (detalleIdAbierto() !== null) {
+  <app-detalle-requerimiento
+    [id]="detalleIdAbierto()!"
+    (cerrar)="detalleIdAbierto.set(null)"
+    (editar)="irAEditar($event); detalleIdAbierto.set(null)"
+    (anular)="detalleIdAbierto.set(null)"
+  />
+}

@@ -1,0 +1,272 @@
+<div class="overlay" (click)="cerrar.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- ── Cargando ──────────────────────────────────────────────────────────── -->
+    @if (cargando()) {
+      <div class="modal__cargando">
+        <span class="material-symbols-outlined modal__spin">progress_activity</span>
+        Cargando requerimiento...
+      </div>
+    }
+
+    <!-- ── Error ─────────────────────────────────────────────────────────────── -->
+    @else if (error()) {
+      <div class="modal__error">
+        <span class="material-symbols-outlined">error</span>
+        {{ error() }}
+        <button class="btn-secundario" (click)="cerrar.emit()">Cerrar</button>
+      </div>
+    }
+
+    <!-- ── Contenido ─────────────────────────────────────────────────────────── -->
+    @else if (ficha(); as f) {
+
+      <!-- Header -->
+      <div class="modal__header">
+        <div class="modal__header-izq">
+          <span class="material-symbols-outlined modal__icono-doc">description</span>
+          <div>
+            <div class="modal__titulo-fila">
+              <h2 class="modal__titulo">Detalle del Requerimiento</h2>
+              <span class="modal__numero">{{ f.numero }}</span>
+              <span class="badge {{ estadoCls(f.estado) }}">{{ f.estadoLabel ?? f.estado }}</span>
+            </div>
+            <p class="modal__creador">
+              Creado por <strong>{{ f.responsable ?? 'Sistema' }}</strong>
+              el {{ formatearFechaHora(f.fechaCreacion) }}
+            </p>
+          </div>
+        </div>
+        <div class="modal__header-der">
+          <button class="btn-editar-header" type="button" (click)="editar.emit(f.idRequerimiento)">
+            <span class="material-symbols-outlined">edit</span> Editar
+          </button>
+          <button class="modal__cerrar" type="button" (click)="cerrar.emit()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'resumen'"    (click)="tabActiva.set('resumen')">Resumen</button>
+        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'cliente'"    (click)="tabActiva.set('cliente')">Cliente</button>
+        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'comercial'"  (click)="tabActiva.set('comercial')">Comercial</button>
+        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'actividad'"  (click)="tabActiva.set('actividad')">Actividad</button>
+        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'documentos'" (click)="tabActiva.set('documentos')">Documentos</button>
+      </div>
+
+      <!-- ── Tab: Resumen ─────────────────────────────────────────────────────── -->
+      @if (tabActiva() === 'resumen') {
+
+        <!-- KPIs -->
+        <div class="kpis-mini">
+          <div class="kpi-mini">
+            <span class="material-symbols-outlined kpi-mini__icono">business</span>
+            <div>
+              <div class="kpi-mini__label">CLIENTE</div>
+              <div class="kpi-mini__valor">{{ f.razonSocial }}</div>
+            </div>
+          </div>
+          <div class="kpi-mini">
+            <span class="material-symbols-outlined kpi-mini__icono">precision_manufacturing</span>
+            <div>
+              <div class="kpi-mini__label">TIPO SERVICIO</div>
+              <div class="kpi-mini__valor">{{ f.areaLabel ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="kpi-mini">
+            <span class="material-symbols-outlined kpi-mini__icono">person</span>
+            <div>
+              <div class="kpi-mini__label">RESPONSABLE</div>
+              <div class="kpi-mini__valor">{{ f.responsable ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="kpi-mini">
+            <span class="material-symbols-outlined kpi-mini__icono">schedule</span>
+            <div>
+              <div class="kpi-mini__label">SLA</div>
+              <div class="kpi-mini__valor">{{ calcularSla(f.fechaNecesidad) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Body grid -->
+        <div class="body-grid">
+
+          <!-- Columna izquierda -->
+          <div class="col-izq">
+
+            <!-- Info General -->
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">info</span>
+                Información General
+              </div>
+              <div class="info-grid">
+                <div class="info-item">
+                  <div class="info-label">N.° REQUERIMIENTO</div>
+                  <div class="info-valor info-valor--mono">{{ f.numero }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">FECHA REGISTRO</div>
+                  <div class="info-valor">{{ formatearFecha(f.fechaCreacion) }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">ORIGEN / CANAL</div>
+                  <div class="info-valor">{{ f.origenLabel ?? '—' }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="info-label">ÁREA</div>
+                  <div class="info-valor">{{ f.areaLabel ?? '—' }}</div>
+                </div>
+              </div>
+              <div class="info-prioridad">
+                <div class="info-label">PRIORIDAD</div>
+                <span class="prioridad {{ prioridadCls(f.idPrioridad) }}">
+                  {{ f.prioridadLabel ?? '—' }}
+                </span>
+              </div>
+              <div class="info-desc">
+                <div class="info-label">DESCRIPCIÓN</div>
+                <p class="info-desc__texto">{{ f.descripcion }}</p>
+              </div>
+            </div>
+
+            <!-- Flujo de Proceso -->
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">account_tree</span>
+                Flujo de Proceso
+              </div>
+              <div class="flujo">
+                @for (paso of pasosFlujo; track paso.key; let i = $index; let last = $last) {
+                  <div class="flujo__paso {{ pasoCls(paso.key, f.estado) }}">
+                    <div class="flujo__circulo">
+                      @if (pasoCls(paso.key, f.estado) === 'paso--completado') {
+                        <span class="material-symbols-outlined flujo__check">check</span>
+                      } @else {
+                        {{ i + 1 }}
+                      }
+                    </div>
+                    <div class="flujo__label">{{ paso.label }}</div>
+                  </div>
+                  @if (!last) {
+                    <div class="flujo__linea"
+                         [class.flujo__linea--activa]="pasoCls(paso.key, f.estado) !== 'paso--pendiente' && pasoCls(paso.key, f.estado) !== 'paso--gris'">
+                    </div>
+                  }
+                }
+              </div>
+              @if (f.estado === 'anulado') {
+                <div class="flujo__anulado">
+                  <span class="material-symbols-outlined">cancel</span>
+                  Requerimiento anulado
+                </div>
+              }
+            </div>
+
+            <!-- Línea de Tiempo -->
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">history</span>
+                Línea de Tiempo Reciente
+              </div>
+              <div class="timeline-vacio">
+                <span class="material-symbols-outlined timeline-vacio__icono">history_toggle_off</span>
+                <span>Sin actividad registrada</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Columna derecha -->
+          <div class="col-der">
+
+            <!-- Cliente y Contacto -->
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">person_pin</span>
+                Cliente y Contacto
+              </div>
+              <div class="cliente-bloque">
+                <div class="cliente-nombre">{{ f.razonSocial }}</div>
+                <div class="cliente-ruc">RUC: {{ f.ruc }}</div>
+                @if (f.nombreSede) {
+                  <div class="cliente-sede">
+                    <span class="material-symbols-outlined">location_on</span>
+                    Sede: {{ f.nombreSede }}
+                  </div>
+                }
+              </div>
+              @if (f.nombreContacto) {
+                <div class="contacto-bloque">
+                  <div class="contacto-nombre">{{ f.nombreContacto }}</div>
+                  <button class="btn-contactar" type="button" disabled>Contactar</button>
+                </div>
+              }
+            </div>
+
+            <!-- Reglas de Negocio -->
+            @if (f.notificarCorreo || f.requiereVisita || f.clienteDeuda) {
+              <div class="panel panel--reglas">
+                <div class="panel__titulo panel__titulo--reglas">
+                  <span class="material-symbols-outlined">verified</span>
+                  Reglas de Negocio Aplicadas
+                </div>
+                @if (f.notificarCorreo) {
+                  <div class="regla-item">
+                    <span class="material-symbols-outlined regla-item__check">check_circle</span>
+                    Notificación por correo habilitada
+                  </div>
+                }
+                @if (f.requiereVisita) {
+                  <div class="regla-item">
+                    <span class="material-symbols-outlined regla-item__check">check_circle</span>
+                    Requiere visita técnica
+                  </div>
+                }
+                @if (f.clienteDeuda) {
+                  <div class="regla-item regla-item--alerta">
+                    <span class="material-symbols-outlined regla-item__warn">warning</span>
+                    Cliente con deuda registrada
+                  </div>
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+      }
+
+      <!-- ── Placeholder tabs ──────────────────────────────────────────────────── -->
+      @else {
+        <div class="placeholder-tab">
+          <span class="material-symbols-outlined placeholder-tab__icono">construction</span>
+          <p>Esta sección estará disponible próximamente.</p>
+        </div>
+      }
+
+      <!-- Footer -->
+      <div class="modal__footer">
+        <button class="btn-anular" type="button"
+                [disabled]="f.estado === 'cerrado' || f.estado === 'anulado'"
+                (click)="anular.emit(f.idRequerimiento)">
+          <span class="material-symbols-outlined">cancel</span>
+          Anular Requerimiento
+        </button>
+        <div class="modal__footer-der">
+          <button class="btn-secundario" type="button" (click)="cerrar.emit()">Cerrar</button>
+          <button class="btn-secundario" type="button" disabled title="Próximamente">
+            Abrir Expediente
+          </button>
+          <button class="btn-primario" type="button" (click)="editar.emit(f.idRequerimiento)">
+            <span class="material-symbols-outlined">edit</span>
+            Editar Requerimiento
+          </button>
+        </div>
+      </div>
+
+    }
+  </div>
+</div>

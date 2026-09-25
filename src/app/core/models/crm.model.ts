@@ -17,6 +17,8 @@ export interface RequerimientoFicha {
   idSede:          number | null;
   nombreContacto:  string | null;
   nombreSede:      string | null;
+  responsable:     string | null;
+  fechaCreacion:   string;
   idOrigen:        number;
   origenLabel:     string | null;
   idArea:          number;
