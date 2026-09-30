@@ -4,6 +4,13 @@ export interface CatalogoItem {
   codigo: string | null;
 }
 
+export interface ClientesPaginado {
+  items: ClienteListaItem[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+}
+
 export interface ClienteListaItem {
   idCliente: number;
   ruc: string;
@@ -42,7 +49,8 @@ export interface ClienteDetalle {
   ssomaInduccionSsoma: boolean;
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
-  categoria: string | null;
+  idCategoria: number | null;
+  nombreCategoria: string | null;
   estado: string;
 }
 
@@ -68,7 +76,7 @@ export interface GuardarClienteRequest {
   ssomaInduccionSsoma: boolean;
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
-  categoria: string | null;
+  idCategoria: number | null;
 }
 
 export interface CambiarEstadoClienteRequest {
@@ -143,5 +151,29 @@ export interface GuardarContactoRequest {
 
 export interface CambiarEstadoContactoRequest {
   idContacto: number;
+  estado: string;
+}
+
+export interface CategoriaCliente {
+  idCategoria: number;
+  nombre: string;
+  descripcion: string | null;
+  prioridadAtencion: number | null;
+  pctGananciaMin: number | null;
+  pctGananciaMax: number | null;
+  estado: string;
+}
+
+export interface GuardarCategoriaRequest {
+  idCategoria: number;
+  nombre: string;
+  descripcion: string | null;
+  prioridadAtencion: number | null;
+  pctGananciaMin: number | null;
+  pctGananciaMax: number | null;
+}
+
+export interface CambiarEstadoCategoriaRequest {
+  idCategoria: number;
   estado: string;
 }

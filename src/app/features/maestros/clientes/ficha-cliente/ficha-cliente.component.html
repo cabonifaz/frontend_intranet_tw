@@ -1,37 +1,18 @@
-@if (cargando()) {
-  <div class="ficha-loading">
-    <span class="material-symbols-outlined spin">progress_activity</span>
-    Cargando ficha...
-  </div>
-} @else {
   <div class="ficha-wrapper">
 
-    <!-- ── Encabezado de página ───────────────────────────────────────────── -->
-    <div class="ficha-page-header">
-      <app-breadcrumb [items]="breadcrumb" />
+    <app-breadcrumb [items]="breadcrumb" />
 
-      <div class="ficha-page-header__cuerpo">
-        <div class="ficha-page-header__izq">
-          <h1 class="ficha-page-header__titulo">{{ esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente' }}</h1>
-          <p class="ficha-page-header__desc">{{ esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.' }}</p>
-        </div>
-        <div class="ficha-page-header__der">
-          <div class="estado-badge">
-            <span class="material-symbols-outlined">article</span>
-            Estado: {{ estadoCliente() }}
-          </div>
-          <button
-            class="btn-header-primary"
-            type="button"
-            [disabled]="formulario.invalid || guardando()"
-            (click)="guardar()"
-          >
-            <span class="material-symbols-outlined">check</span>
-            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Guardar y Registrar Cliente' : 'Actualizar Cliente') }}
-          </button>
-        </div>
-      </div>
-    </div>
+    @if (cargando()) {
+      <app-estado-vacio variante="cargando" mensaje="Cargando ficha..." />
+    } @else {
+
+    <app-hero-header
+      [titulo]="esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente'"
+      [descripcion]="esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.'"
+      [badgeTexto]="'Estado: ' + estadoCliente()"
+      badgeVariant="azul"
+      (volver)="cancelar()"
+    />
 
     <!-- ── Formulario ─────────────────────────────────────────────────────── -->
     <div class="ficha-cliente" [formGroup]="formulario">
@@ -44,19 +25,11 @@
       }
 
       <!-- ── Section 1: Datos Generales ──────────────────────────────────── -->
-      <section class="ficha-seccion">
-        <div class="ficha-seccion__header">
-          <div class="ficha-seccion__header-izq">
-            <div class="ficha-seccion__icono-box">
-              <span class="material-symbols-outlined">business</span>
-            </div>
-            <div>
-              <h2 class="ficha-seccion__titulo">1. Información General y Validación SUNAT</h2>
-              <p class="ficha-seccion__subtitulo">Información fiscal y comercial registrada en SUNAT</p>
-            </div>
-          </div>
-        </div>
-
+      <app-seccion
+        icono="business"
+        titulo="1. Información General y Validación SUNAT"
+        subtitulo="Información fiscal y comercial registrada en SUNAT"
+      >
         <div class="ficha-seccion__cuerpo">
           <!-- Fila 1: Tipo Doc + RUC + Segmento/Industria + Categoría -->
           <div class="campo-cuarteto">
@@ -89,6 +62,15 @@
                   Consultar
                 </button>
               </div>
+              @if (formulario.get('ruc')?.touched) {
+                @if (formulario.get('ruc')?.hasError('required')) {
+                  <span class="campo__error">El RUC es obligatorio.</span>
+                } @else if (formulario.get('ruc')?.hasError('minlength') || formulario.get('ruc')?.hasError('maxlength')) {
+                  <span class="campo__error">El RUC debe tener exactamente 11 dígitos.</span>
+                } @else if (formulario.get('ruc')?.hasError('rucInvalido')) {
+                  <span class="campo__error">El RUC no es válido según SUNAT.</span>
+                }
+              }
             </div>
             <div class="campo">
               <label class="campo__label">Segmento / Industria *</label>
@@ -98,13 +80,16 @@
                   <option [value]="t.nombre">{{ t.nombre }}</option>
                 }
               </select>
+              @if (formulario.get('tipoCliente')?.invalid && formulario.get('tipoCliente')?.touched) {
+                <span class="campo__error">Seleccione el segmento / industria.</span>
+              }
             </div>
             <div class="campo">
               <label class="campo__label">Categoría</label>
-              <select class="campo__select" formControlName="categoria">
-                <option value="">Sin categoría</option>
-                @for (c of categoriasCliente(); track c.id) {
-                  <option [value]="c.nombre">{{ c.nombre }}</option>
+              <select class="campo__select" formControlName="idCategoria">
+                <option value="">Seleccionar...</option>
+                @for (c of categoriasCliente(); track c.idCategoria) {
+                  <option [value]="c.idCategoria">{{ c.nombre }}</option>
                 }
               </select>
             </div>
@@ -120,6 +105,9 @@
                 placeholder="MINERA LAS BAMBAS S.A."
                 formControlName="razonSocial"
               />
+              @if (formulario.get('razonSocial')?.invalid && formulario.get('razonSocial')?.touched) {
+                <span class="campo__error">La razón social es obligatoria.</span>
+              }
             </div>
             <div class="campo">
               <label class="campo__label">Nombre Comercial</label>
@@ -192,25 +180,18 @@
             />
           </div>
         </div>
-      </section>
+      </app-seccion>
 
       <!-- ── Section 2: Sedes ─────────────────────────────────────────────── -->
-      <section class="ficha-seccion">
-        <div class="ficha-seccion__header">
-          <div class="ficha-seccion__header-izq">
-            <div class="ficha-seccion__icono-box">
-              <span class="material-symbols-outlined">location_city</span>
-            </div>
-            <div>
-              <h2 class="ficha-seccion__titulo">2. Sedes y Plantas Operativas</h2>
-              <p class="ficha-seccion__subtitulo">Ubicaciones del cliente donde se prestan servicios de calibración</p>
-            </div>
-          </div>
-          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
-              <span class="material-symbols-outlined">add</span>
-              Agregar Nueva Sede
-            </button>
-        </div>
+      <app-seccion
+        icono="location_city"
+        titulo="2. Sedes y Plantas Operativas"
+        subtitulo="Ubicaciones del cliente donde se prestan servicios de calibración"
+      >
+        <button headerActions class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
+          <span class="material-symbols-outlined">add</span>
+          Agregar Nueva Sede
+        </button>
 
         @if (esNuevo()) {
           @if (sedesTemp().length === 0) {
@@ -329,25 +310,18 @@
             </table>
           </div>
         }
-      </section>
+      </app-seccion>
 
       <!-- ── Section 3: Contactos ─────────────────────────────────────────── -->
-      <section class="ficha-seccion">
-        <div class="ficha-seccion__header">
-          <div class="ficha-seccion__header-izq">
-            <div class="ficha-seccion__icono-box">
-              <span class="material-symbols-outlined">contacts</span>
-            </div>
-            <div>
-              <h2 class="ficha-seccion__titulo">3. Contactos Clave &amp; Aprobadores</h2>
-              <p class="ficha-seccion__subtitulo">Interlocutores autorizados para gestión comercial y técnica</p>
-            </div>
-          </div>
-          <button class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
-              <span class="material-symbols-outlined">person_add</span>
-              + Contacto
-            </button>
-        </div>
+      <app-seccion
+        icono="contacts"
+        titulo="3. Contactos Clave & Aprobadores"
+        subtitulo="Interlocutores autorizados para gestión comercial y técnica"
+      >
+        <button headerActions class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
+          <span class="material-symbols-outlined">person_add</span>
+          + Contacto
+        </button>
 
         @if (esNuevo()) {
           @if (contactosTemp().length === 0) {
@@ -524,23 +498,16 @@
             Total: {{ contactos().length }} contacto{{ contactos().length !== 1 ? 's' : '' }} registrado{{ contactos().length !== 1 ? 's' : '' }}
           </div>
         }
-      </section>
+      </app-seccion>
 
       <!-- ── Section 4: SSOMA ─────────────────────────────────────────────── -->
-      <section class="ficha-seccion ficha-seccion--ssoma">
-        <div class="ficha-seccion__header">
-          <div class="ficha-seccion__header-izq">
-            <div class="ficha-seccion__icono-box">
-              <span class="material-symbols-outlined">health_and_safety</span>
-            </div>
-            <div>
-              <h2 class="ficha-seccion__titulo">4. Normativa SSOMA &amp; Requisitos Especiales</h2>
-            </div>
-          </div>
-          @if (esVip) {
-            <span class="link-regla-vip">Convenio VIP</span>
-          }
-        </div>
+      <app-seccion
+        icono="health_and_safety"
+        titulo="4. Normativa SSOMA & Requisitos Especiales"
+      >
+        @if (esVip) {
+          <span headerActions class="link-regla-vip">Convenio VIP</span>
+        }
 
         <div class="ssoma-grid">
           @for (item of ssomaItems; track item.clave) {
@@ -601,30 +568,26 @@
           <span class="material-symbols-outlined ssoma-nota__icono">info</span>
           <span>Los requerimientos generados para este cliente activarán automáticamente la plantilla técnica del segmento asignado.</span>
         </div>
-      </section>
+      </app-seccion>
 
-      <!-- ── Footer sticky ────────────────────────────────────────────────── -->
-      <div class="ficha-footer">
-        <span class="ficha-footer__nota">* Campos obligatorios para homologación técnica comercial</span>
-        <div class="ficha-footer__acciones">
-          <button class="btn-footer-ghost" type="button" (click)="cancelar()">
-            Cancelar
-          </button>
-          <button
-            class="btn-footer-primary"
-            type="button"
-            [disabled]="formulario.invalid || guardando()"
-            (click)="guardar()"
-          >
-            <span class="material-symbols-outlined">check</span>
-            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar Cliente' : 'Actualizar Cliente') }}
-          </button>
-        </div>
-      </div>
+      <app-form-footer
+        cancelarTexto="Cancelar"
+        (cancelar)="cancelar()"
+      >
+        <app-button
+          variant="primary"
+          icono="check"
+          [disabled]="formulario.invalid || guardando()"
+          [cargando]="guardando()"
+          (clic)="guardar()"
+        >
+          {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar Cliente' : 'Actualizar Cliente') }}
+        </app-button>
+      </app-form-footer>
 
     </div>
+    }
   </div>
-}
 
 @if (modalSedeOpen()) {
   <app-modal-sede

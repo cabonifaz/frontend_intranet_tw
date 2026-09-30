@@ -4,13 +4,17 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
+  CambiarEstadoCategoriaRequest,
   CambiarEstadoClienteRequest,
   CambiarEstadoContactoRequest,
   CambiarEstadoSedeRequest,
   CatalogoItem,
+  CategoriaCliente,
   ClienteDetalle,
   ClienteListaItem,
+  ClientesPaginado,
   ContactoListaItem,
+  GuardarCategoriaRequest,
   GuardarClienteRequest,
   GuardarContactoRequest,
   GuardarSedeRequest,
@@ -22,13 +26,21 @@ export class MaestrosService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/api/maestros`;
 
-  async obtenerClientes(busqueda?: string, estado?: string): Promise<ClienteListaItem[]> {
-    const params: Record<string, string> = {};
+  async obtenerClientes(
+    busqueda?: string,
+    estado?: string,
+    pagina = 1,
+    porPagina = 20,
+  ): Promise<ClientesPaginado> {
+    const params: Record<string, string> = {
+      pagina:    pagina.toString(),
+      porPagina: porPagina.toString(),
+    };
     if (busqueda) params['busqueda'] = busqueda;
     if (estado)   params['estado']   = estado;
 
     const r = await firstValueFrom(
-      this.http.get<RespuestaApi<ClienteListaItem[]>>(`${this.base}/clientes`, { params })
+      this.http.get<RespuestaApi<ClientesPaginado>>(`${this.base}/clientes`, { params })
     );
     if (!r.datos) throw new Error(r.mensaje);
     return r.datos;
@@ -114,6 +126,32 @@ export class MaestrosService {
     const r = await firstValueFrom(
       this.http.patch<RespuestaApi<null>>(
         `${this.base}/clientes/${dto.idCliente}/estado`,
+        dto
+      )
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+  }
+
+  async obtenerCategorias(): Promise<CategoriaCliente[]> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<CategoriaCliente[]>>(`${this.base}/categorias`)
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  async guardarCategoria(dto: GuardarCategoriaRequest): Promise<number> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<number>>(`${this.base}/categorias`, dto)
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+    return r.datos!;
+  }
+
+  async cambiarEstadoCategoria(dto: CambiarEstadoCategoriaRequest): Promise<void> {
+    const r = await firstValueFrom(
+      this.http.patch<RespuestaApi<null>>(
+        `${this.base}/categorias/${dto.idCategoria}/estado`,
         dto
       )
     );

@@ -1,16 +1,25 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { CatalogoItem, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
+import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
+import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
+import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
+import { ButtonComponent }     from '../../../../shared/ui/button/button.component';
 import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
 import { ModalContactoComponent } from '../modal-contacto/modal-contacto.component';
+import { ESTADO } from '../../../../core/constants/estados';
+import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
 interface SsomaItem {
   clave: 'ssomaPolizaSctr' | 'ssomaCamioneta4x4' | 'ssomaInduccionSsoma' | 'ssomaExamenMedico';
@@ -41,10 +50,19 @@ const SSOMA_ITEMS: SsomaItem[] = [
   },
 ];
 
+function validarRuc(control: AbstractControl): ValidationErrors | null {
+  const ruc = (control.value as string) ?? '';
+  if (ruc.length !== 11 || !/^\d{11}$/.test(ruc)) return null;
+  const factores = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const suma = factores.reduce((acc, f, i) => acc + f * parseInt(ruc[i]), 0);
+  const residuo = suma % 11;
+  const digito = residuo === 0 ? 1 : residuo === 1 ? 0 : 11 - residuo;
+  return digito === parseInt(ruc[10]) ? null : { rucInvalido: true };
+}
 
 @Component({
   selector: 'app-ficha-cliente',
-  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, ModalSedeComponent, ModalContactoComponent],
+  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalSedeComponent, ModalContactoComponent],
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
@@ -77,17 +95,17 @@ export class FichaClienteComponent implements OnInit {
   readonly tiposCliente     = signal<CatalogoItem[]>([]);
   readonly condicionesPago  = signal<CatalogoItem[]>([]);
   readonly patronesMasas    = signal<CatalogoItem[]>([]);
-  readonly categoriasCliente = signal<CatalogoItem[]>([]);
+  readonly categoriasCliente = signal<CategoriaCliente[]>([]);
 
   idCliente = 0;
 
   formulario: FormGroup = this.fb.group({
     tipoDocumento:          ['RUC'],
-    ruc:                    ['', [Validators.required, Validators.minLength(11), Validators.maxLength(11)]],
+    ruc:                    ['', [Validators.required, Validators.minLength(11), Validators.maxLength(11), validarRuc]],
     tipoCliente:            ['', Validators.required],
     razonSocial:            ['', Validators.required],
     nombreComercial:        [''],
-    condicionFiscal:        ['Activo'],
+    condicionFiscal:        [ESTADO.ACTIVO],
     condicionContribuyente: ['Habido'],
     condicionPago:          [''],
     lineaCreditoUsd:        [null],
@@ -102,7 +120,7 @@ export class FichaClienteComponent implements OnInit {
     ssomaInduccionSsoma:    [false],
     ssomaExamenMedico:      [false],
     ssomaNotas:             [''],
-    categoria:              [''],
+    idCategoria:            [''],
   });
 
   async ngOnInit(): Promise<void> {
@@ -115,7 +133,7 @@ export class FichaClienteComponent implements OnInit {
       this.maestrosSvc.obtenerCatalogo('TIPO_CLIENTE'),
       this.maestrosSvc.obtenerCatalogo('CONDICION_PAGO'),
       this.maestrosSvc.obtenerCatalogo('PATRON_MASAS'),
-      this.maestrosSvc.obtenerCatalogo('CATEGORIA_CLIENTE'),
+      this.maestrosSvc.obtenerCategorias(),
     ]);
 
     try {
@@ -168,7 +186,7 @@ export class FichaClienteComponent implements OnInit {
           ssomaInduccionSsoma:    detalle.ssomaInduccionSsoma,
           ssomaExamenMedico:      detalle.ssomaExamenMedico,
           ssomaNotas:             detalle.ssomaNotas ?? '',
-          categoria:              detalle.categoria ?? '',
+          idCategoria:            detalle.idCategoria ?? '',
         });
       }
     } catch (e: unknown) {
@@ -207,7 +225,7 @@ export class FichaClienteComponent implements OnInit {
         ssomaInduccionSsoma:    v.ssomaInduccionSsoma,
         ssomaExamenMedico:      v.ssomaExamenMedico,
         ssomaNotas:             v.ssomaNotas || null,
-        categoria:              v.categoria || null,
+        idCategoria:            v.idCategoria ? Number(v.idCategoria) : null,
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);
@@ -302,7 +320,7 @@ export class FichaClienteComponent implements OnInit {
       distrito:        dto.distrito,
       urbanizacion:    dto.urbanizacion,
       direccionExacta: dto.direccionExacta,
-      estado:          'Activo',
+      estado:          ESTADO.ACTIVO,
     };
     this.sedesTemp.update(list => [...list, item]);
     this.cerrarModal();
@@ -324,7 +342,7 @@ export class FichaClienteComponent implements OnInit {
       autorizadoAprobarCotizaciones: dto.autorizadoAprobarCotizaciones,
       recibeAlertasCalibracion:      dto.recibeAlertasCalibracion,
       autorizadoRecepcionTecnica:    dto.autorizadoRecepcionTecnica,
-      estado:                        'Activo',
+      estado:                        ESTADO.ACTIVO,
     };
     this.contactosTemp.update(list => [...list, item]);
     this.cerrarModalContacto();
@@ -362,7 +380,7 @@ export class FichaClienteComponent implements OnInit {
   }
 
   async toggleEstadoSede(sede: SedeListaItem): Promise<void> {
-    const nuevoEstado = sede.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    const nuevoEstado = sede.estado === ESTADO.ACTIVO ? ESTADO.INACTIVO : ESTADO.ACTIVO;
     try {
       await this.maestrosSvc.cambiarEstadoSede({ idSede: sede.idSede, estado: nuevoEstado });
       const lista = await this.maestrosSvc.obtenerSedesPorCliente(this.idCliente);
@@ -396,7 +414,7 @@ export class FichaClienteComponent implements OnInit {
   }
 
   async toggleEstadoContacto(contacto: ContactoListaItem): Promise<void> {
-    const nuevoEstado = contacto.estado === 'Activo' ? 'Inactivo' : 'Activo';
+    const nuevoEstado = contacto.estado === ESTADO.ACTIVO ? ESTADO.INACTIVO : ESTADO.ACTIVO;
     try {
       await this.maestrosSvc.cambiarEstadoContacto({ idContacto: contacto.idContacto, estado: nuevoEstado });
       const lista = await this.maestrosSvc.obtenerContactosPorCliente(this.idCliente);
@@ -417,11 +435,9 @@ export class FichaClienteComponent implements OnInit {
   }
 
   get breadcrumb(): BreadcrumbItem[] {
-    return [
-      { label: 'Inicio',    ruta: '/dashboard' },
-      { label: 'Maestros' },
-      { label: 'Clientes',  ruta: '/maestros/clientes' },
-      { label: this.esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente' },
-    ];
+    return breadcrumbMaestros(
+      { label: 'Clientes', ruta: '/maestros/clientes' },
+      this.esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente',
+    );
   }
 }

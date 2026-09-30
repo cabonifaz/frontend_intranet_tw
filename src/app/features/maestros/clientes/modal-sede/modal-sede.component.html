@@ -1,138 +1,102 @@
-<div class="modal-overlay" (click)="cancelar()">
-  <div class="modal" (click)="$event.stopPropagation()" [formGroup]="formulario">
+<app-modal
+  [titulo]="esEdicion ? 'Editar Sede Operativa' : 'Nueva Sede Operativa / Mina / Planta'"
+  ancho="lg"
+  (cerrar)="cancelar()"
+>
+  <div [formGroup]="formulario" class="modal-sede-form">
 
-    <!-- Cabecera -->
-    <div class="modal__header">
-      <div class="modal__header-izq">
-        <div class="modal__icono-box">
-          <span class="material-symbols-outlined">location_city</span>
-        </div>
-        <div class="modal__titulo-wrap">
-          <div class="modal__titulo-row">
-            <h3 class="modal__titulo">{{ esEdicion ? 'Editar Sede Operativa' : 'Nueva Sede Operativa / Mina / Planta' }}</h3>
-            <span class="modal__badge">Configuración Técnica</span>
-          </div>
-          <p class="modal__subtitulo">{{ esEdicion ? 'Actualice los datos de la ubicación operativa.' : 'Registrar una nueva ubicación o punto de servicio para el cliente.' }}</p>
-        </div>
+    @if (error()) {
+      <div class="modal-error">
+        <span class="material-symbols-outlined">error</span>
+        {{ error() }}
       </div>
-      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+    }
+
+    <p class="modal-desc">
+      {{ esEdicion ? 'Actualice los datos de la ubicación operativa.' : 'Registrar una nueva ubicación o punto de servicio para el cliente.' }}
+    </p>
+
+    <!-- Fila 1: Nombre + Tipo Instalación -->
+    <div class="grid-2">
+      <app-campo
+        label="Nombre de la Sede / Operación *"
+        [error]="formulario.get('nombre')?.invalid && formulario.get('nombre')?.touched ? 'El nombre de la sede es obligatorio.' : ''"
+      >
+        <input type="text" placeholder="Planta Concentradora Las Bambas - Sector Sulfuros" formControlName="nombre" />
+      </app-campo>
+      <app-campo label="Tipo de Instalación *">
+        <select formControlName="tipoInstalacion">
+          <option value="">Seleccionar...</option>
+          @for (t of tiposInstalacion(); track t.id) {
+            <option [value]="t.nombre">{{ t.nombre }}</option>
+          }
+        </select>
+      </app-campo>
     </div>
 
-    <!-- Cuerpo -->
-    <div class="modal__cuerpo">
+    <!-- Bloque ubicación geográfica -->
+    <div class="ubigeo">
+      <div class="ubigeo__header">
+        <span class="material-symbols-outlined ubigeo__icono">location_on</span>
+        <span class="ubigeo__titulo">UBICACIÓN GEOGRÁFICA</span>
+        <span class="ubigeo__nota">Datos requeridos para logística técnica</span>
+      </div>
 
-      @if (error()) {
-        <div class="modal__error">
-          <span class="material-symbols-outlined">error</span>
-          {{ error() }}
-        </div>
-      }
-
-      <!-- Fila 1: Nombre + Tipo Instalación -->
-      <div class="modal-campo-2col">
-        <div class="campo">
-          <label class="campo__label">Nombre de la Sede / Operación *</label>
-          <input
-            class="campo__input"
-            type="text"
-            placeholder="Planta Concentradora Las Bambas - Sector Sulfuros"
-            formControlName="nombre"
-          />
-        </div>
-        <div class="campo">
-          <label class="campo__label">Tipo de Instalación *</label>
-          <select class="campo__select" formControlName="tipoInstalacion">
+      <div class="grid-3">
+        <app-campo
+          label="Región / Departamento *"
+          [error]="formulario.get('region')?.invalid && formulario.get('region')?.touched ? 'Seleccione la región.' : ''"
+        >
+          <select formControlName="region">
             <option value="">Seleccionar...</option>
-            @for (t of tiposInstalacion(); track t.id) {
-              <option [value]="t.nombre">{{ t.nombre }}</option>
+            @for (r of regiones(); track r.id) {
+              <option [value]="r.nombre">{{ r.nombre }}</option>
             }
           </select>
-        </div>
+        </app-campo>
+        <app-campo
+          label="Provincia *"
+          [error]="formulario.get('provincia')?.invalid && formulario.get('provincia')?.touched ? 'La provincia es obligatoria.' : ''"
+        >
+          <input type="text" placeholder="Cotabambas" formControlName="provincia" />
+        </app-campo>
+        <app-campo
+          label="Distrito *"
+          [error]="formulario.get('distrito')?.invalid && formulario.get('distrito')?.touched ? 'El distrito es obligatorio.' : ''"
+        >
+          <input type="text" placeholder="Challhuahuacho" formControlName="distrito" />
+        </app-campo>
       </div>
-
-      <!-- Bloque ubicación geográfica -->
-      <div class="modal-ubigeo">
-        <div class="modal-ubigeo__header">
-          <div class="modal-ubigeo__titulo-row">
-            <span class="material-symbols-outlined modal-ubigeo__icono">location_on</span>
-            <span class="modal-ubigeo__titulo">UBICACIÓN GEOGRÁFICA</span>
-          </div>
-          <span class="modal-ubigeo__nota">Datos requeridos para logística técnica</span>
-        </div>
-
-        <div class="modal-campo-3col">
-          <div class="campo">
-            <label class="campo__label">Región / Departamento *</label>
-            <select class="campo__select" formControlName="region">
-              <option value="">Seleccionar...</option>
-              @for (r of regiones(); track r.id) {
-                <option [value]="r.nombre">{{ r.nombre }}</option>
-              }
-            </select>
-          </div>
-          <div class="campo">
-            <label class="campo__label">Provincia *</label>
-            <input
-              class="campo__input"
-              type="text"
-              placeholder="Cotabambas"
-              formControlName="provincia"
-            />
-          </div>
-          <div class="campo">
-            <label class="campo__label">Distrito *</label>
-            <input
-              class="campo__input"
-              type="text"
-              placeholder="Challhuahuacho"
-              formControlName="distrito"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Fila 3: Urbanización + Dirección Exacta -->
-      <div class="modal-campo-2col">
-        <div class="campo">
-          <label class="campo__label">Urbanización / Zona Industrial</label>
-          <input
-            class="campo__input"
-            type="text"
-            placeholder="Parque Industrial Challhuahuacho"
-            formControlName="urbanizacion"
-          />
-        </div>
-        <div class="campo">
-          <label class="campo__label">Dirección Exacta *</label>
-          <input
-            class="campo__input"
-            type="text"
-            placeholder="Zona Industrial Sector Sulfuros Mz. B Lote 4"
-            formControlName="direccionExacta"
-          />
-        </div>
-      </div>
-
     </div>
 
-    <!-- Pie -->
-    <div class="modal__footer">
-      <span class="modal__footer-nota">* Información requerida para operaciones de campo</span>
-      <div class="modal__footer-acciones">
-        <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
-        <button
-          class="modal__btn-guardar"
-          type="button"
-          [disabled]="formulario.invalid || guardando()"
-          (click)="guardar()"
-        >
-          <span class="material-symbols-outlined">check</span>
-          {{ guardando() ? 'Guardando...' : (esEdicion ? 'Actualizar Sede' : 'Guardar Sede') }}
-        </button>
-      </div>
+    <!-- Fila 3: Urbanización + Dirección Exacta -->
+    <div class="grid-2">
+      <app-campo label="Urbanización / Zona Industrial">
+        <input type="text" placeholder="Parque Industrial Challhuahuacho" formControlName="urbanizacion" />
+      </app-campo>
+      <app-campo
+        label="Dirección Exacta *"
+        [error]="formulario.get('direccionExacta')?.invalid && formulario.get('direccionExacta')?.touched ? 'La dirección exacta es obligatoria.' : ''"
+      >
+        <input type="text" placeholder="Zona Industrial Sector Sulfuros Mz. B Lote 4" formControlName="direccionExacta" />
+      </app-campo>
     </div>
 
   </div>
-</div>
+
+  <div modalFooter class="modal-footer">
+    <span class="modal-nota">* Información requerida para operaciones de campo</span>
+    <div class="modal-footer__acciones">
+      <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+      <app-button
+        variant="primary"
+        icono="check"
+        [disabled]="formulario.invalid"
+        [cargando]="guardando()"
+        (clic)="guardar()"
+      >
+        {{ guardando() ? 'Guardando...' : (esEdicion ? 'Actualizar Sede' : 'Guardar Sede') }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

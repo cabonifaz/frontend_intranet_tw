@@ -2,10 +2,13 @@ import { Component, OnInit, inject, input, output, signal } from '@angular/core'
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { CatalogoItem, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 
 @Component({
   selector: 'app-modal-sede',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ModalComponent, ButtonComponent, CampoComponent],
   templateUrl: './modal-sede.component.html',
   styleUrl: './modal-sede.component.scss',
 })

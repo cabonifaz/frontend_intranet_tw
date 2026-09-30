@@ -2,10 +2,13 @@ import { Component, OnInit, inject, input, output, signal } from '@angular/core'
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { ContactoListaItem, GuardarContactoRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 
 @Component({
   selector: 'app-modal-contacto',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ModalComponent, ButtonComponent, CampoComponent],
   templateUrl: './modal-contacto.component.html',
   styleUrl: './modal-contacto.component.scss',
 })
@@ -30,7 +33,7 @@ export class ModalContactoComponent implements OnInit {
     cargo:                          [''],
     area:                           [''],
     idSede:                         [null],
-    correo:                         [''],
+    correo:                         ['', [Validators.email]],
     telefonoMovil:                  [''],
     telefonoAnexo:                  [''],
     esContactoPrincipal:            [false],
@@ -41,6 +44,10 @@ export class ModalContactoComponent implements OnInit {
 
   get tituloModal(): string {
     return this.contactoEditar() ? 'Editar Contacto' : 'Nuevo Contacto Clave & Aprobador';
+  }
+
+  cancelar(): void {
+    this.cancelado.emit();
   }
 
   ngOnInit(): void {
