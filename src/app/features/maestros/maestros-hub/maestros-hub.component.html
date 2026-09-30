@@ -1,0 +1,43 @@
+<div class="hub-wrapper">
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <div class="hub-header">
+    <div class="hub-header__icono-box">
+      <span class="material-symbols-outlined">settings</span>
+    </div>
+    <div>
+      <h1 class="hub-header__titulo">Maestros</h1>
+      <p class="hub-header__desc">Gestión de tablas base del sistema: clientes, categorías, tarifas y catálogos operativos.</p>
+    </div>
+  </div>
+
+  <div class="hub-grid">
+    @for (m of maestros; track m.titulo) {
+      @if (m.ruta) {
+        <a class="hub-card" [routerLink]="m.ruta">
+          <div class="hub-card__icono-box">
+            <span class="material-symbols-outlined">{{ m.icono }}</span>
+          </div>
+          <div class="hub-card__cuerpo">
+            <span class="hub-card__titulo">{{ m.titulo }}</span>
+            <span class="hub-card__desc">{{ m.descripcion }}</span>
+          </div>
+          <span class="material-symbols-outlined hub-card__arrow">arrow_forward</span>
+        </a>
+      } @else {
+        <div class="hub-card hub-card--proximamente">
+          <div class="hub-card__icono-box">
+            <span class="material-symbols-outlined">{{ m.icono }}</span>
+          </div>
+          <div class="hub-card__cuerpo">
+            <div class="hub-card__titulo-row">
+              <span class="hub-card__titulo">{{ m.titulo }}</span>
+              <span class="hub-card__badge">Próximamente</span>
+            </div>
+            <span class="hub-card__desc">{{ m.descripcion }}</span>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,203 @@
+<div class="categorias-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="category"
+    titulo="Categorías de Cliente"
+    subtitulo="Clasificación comercial de clientes: nivel de prioridad, reglas de rentabilidad y convenios VIP."
+  >
+    <button class="btn-nuevo" type="button" (click)="abrirModal()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Categoría
+    </button>
+  </app-page-header>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando categorías..." />
+  } @else {
+    @if (categorias().length === 0) {
+      <app-estado-vacio icono="category" mensaje="No hay categorías registradas.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="abrirModal()">
+          <span class="material-symbols-outlined">add</span>
+          Crear primera categoría
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th class="tabla__th--center">Prioridad</th>
+            <th class="tabla__th--center">% Ganancia Mín.</th>
+            <th class="tabla__th--center">% Ganancia Máx.</th>
+            <th class="tabla__th--center">Estado</th>
+            <th class="tabla__th--acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cat of categorias(); track cat.idCategoria) {
+            <tr [class.fila-inactiva]="cat.estado === 'Inactivo'">
+              <td>
+                <span class="cat-nombre">{{ cat.nombre }}</span>
+              </td>
+              <td class="cat-desc">{{ cat.descripcion ?? '—' }}</td>
+              <td class="tabla__td--center">
+                @if (cat.prioridadAtencion !== null) {
+                  <span class="badge-prioridad">{{ cat.prioridadAtencion }}</span>
+                } @else {
+                  <span class="cat-vacio">—</span>
+                }
+              </td>
+              <td class="tabla__td--center">
+                @if (cat.pctGananciaMin !== null) {
+                  {{ cat.pctGananciaMin }} %
+                } @else {
+                  <span class="cat-vacio">—</span>
+                }
+              </td>
+              <td class="tabla__td--center">
+                @if (cat.pctGananciaMax !== null) {
+                  {{ cat.pctGananciaMax }} %
+                } @else {
+                  <span class="cat-vacio">—</span>
+                }
+              </td>
+              <td class="tabla__td--center">
+                <app-badge-estado [estado]="cat.estado" />
+              </td>
+              <td class="tabla__td--acciones">
+                <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(cat)">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="btn-accion"
+                  [class.btn-accion--activar]="cat.estado === 'Inactivo'"
+                  [class.btn-accion--desactivar]="cat.estado === 'Activo'"
+                  type="button"
+                  [title]="cat.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                  (click)="toggleEstado(cat, $event)"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ cat.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+    }
+  }
+
+</div>
+
+<!-- ── Modal crear / editar ───────────────────────────────────────────────── -->
+@if (modalOpen()) {
+  <div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()" [formGroup]="formulario">
+
+      <div class="modal__header">
+        <h2 class="modal__titulo">
+          {{ editandoId() ? 'Editar Categoría' : 'Nueva Categoría' }}
+        </h2>
+        <button class="modal__cerrar" type="button" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (error()) {
+        <div class="modal__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <div class="modal__cuerpo">
+
+        <div class="campo">
+          <label class="campo__label">Nombre *</label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Ej. Gold, Platino, Estándar…"
+            formControlName="nombre"
+          />
+        </div>
+
+        <div class="campo">
+          <label class="campo__label">Descripción</label>
+          <textarea
+            class="campo__textarea"
+            placeholder="Breve descripción del nivel de categoría…"
+            formControlName="descripcion"
+            rows="2"
+          ></textarea>
+        </div>
+
+        <div class="campo-trio">
+          <div class="campo">
+            <label class="campo__label">Prioridad de Atención</label>
+            <input
+              class="campo__input"
+              type="number"
+              placeholder="1"
+              formControlName="prioridadAtencion"
+              min="1"
+            />
+          </div>
+          <div class="campo">
+            <label class="campo__label">% Ganancia Mín.</label>
+            <div class="campo__input-suffix">
+              <input
+                class="campo__input campo__input--con-suffix"
+                type="number"
+                placeholder="0"
+                formControlName="pctGananciaMin"
+                min="0"
+                max="100"
+                step="0.01"
+              />
+              <span class="campo__suffix">%</span>
+            </div>
+          </div>
+          <div class="campo">
+            <label class="campo__label">% Ganancia Máx.</label>
+            <div class="campo__input-suffix">
+              <input
+                class="campo__input campo__input--con-suffix"
+                type="number"
+                placeholder="0"
+                formControlName="pctGananciaMax"
+                min="0"
+                max="100"
+                step="0.01"
+              />
+              <span class="campo__suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn-ghost" type="button" (click)="cerrarModal()">Cancelar</button>
+        <button
+          class="btn-primary"
+          type="button"
+          [disabled]="formulario.invalid || guardando()"
+          (click)="guardar()"
+        >
+          <span class="material-symbols-outlined">check</span>
+          {{ guardando() ? 'Guardando...' : (editandoId() ? 'Actualizar' : 'Registrar') }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
