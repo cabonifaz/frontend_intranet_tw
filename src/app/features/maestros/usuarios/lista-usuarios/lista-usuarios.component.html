@@ -1,0 +1,263 @@
+<div class="usuarios-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="group"
+    titulo="Mantenimiento de Usuarios"
+    subtitulo="Gestión de accesos, roles, estados y suplencias del personal interno"
+  >
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">person_add</span>
+      Nuevo Usuario
+    </button>
+  </app-page-header>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs">
+    <button
+      class="tabs__item"
+      [class.tabs__item--activo]="tabActivo() === 'usuarios'"
+      type="button"
+      (click)="cambiarTab('usuarios')"
+    >
+      <span class="material-symbols-outlined">group</span>
+      Usuarios
+    </button>
+    <button
+      class="tabs__item"
+      [class.tabs__item--activo]="tabActivo() === 'suplentes'"
+      type="button"
+      (click)="cambiarTab('suplentes')"
+    >
+      <span class="material-symbols-outlined">supervisor_account</span>
+      Suplentes
+    </button>
+  </div>
+
+  <!-- ── Filtros según tab ── -->
+  @if (tabActivo() === 'usuarios') {
+    <app-filtros-bar
+      [(busqueda)]="busqueda"
+      placeholder="Buscar por nombre, apellido o correo..."
+      (buscar)="cargar(true)"
+    >
+      <select [(ngModel)]="rolFiltro" (change)="cargar(true)">
+        @for (opt of rolOpciones; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      <select [(ngModel)]="estadoFiltro" (change)="cargar(true)">
+        @for (opt of estadoOpciones; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </app-filtros-bar>
+  } @else {
+    <app-filtros-bar
+      [(busqueda)]="busqueda"
+      placeholder="Filtrar por titular o suplente..."
+      (buscar)="cargar(true)"
+    >
+      <select [(ngModel)]="estadoFiltro" (change)="cargar(true)">
+        @for (opt of estadoOpciones; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </app-filtros-bar>
+  }
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" [mensaje]="tabActivo() === 'usuarios' ? 'Cargando usuarios...' : 'Cargando suplencias...'" />
+  } @else {
+
+    <!-- ═══ TAB USUARIOS ═══════════════════════════════════════════ -->
+    @if (tabActivo() === 'usuarios') {
+      @if (usuarios().length === 0) {
+        <app-estado-vacio icono="group_off" mensaje="No se encontraron usuarios con los filtros aplicados.">
+          <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+            Registrar primer usuario
+          </button>
+        </app-estado-vacio>
+      } @else {
+        <app-tabla-maestro>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Área</th>
+              <th>Último Acceso</th>
+              <th>Estado</th>
+              <th class="tabla__th--acciones">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of usuarios(); track u.idUsuario) {
+              <tr (click)="irAFicha(u.idUsuario)">
+                <td>
+                  <div class="usuario-info">
+                    <div class="usuario-info__avatar">{{ iniciales(u.nombre, u.apellido) }}</div>
+                    <div class="usuario-info__texto">
+                      <div class="usuario-info__nombre">{{ u.nombre }} {{ u.apellido }}</div>
+                      <div class="usuario-info__correo">{{ u.correo }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-rol">{{ u.rolSistemaLabel }}</span>
+                </td>
+                <td>
+                  <span class="area-texto">{{ u.areaComercial ?? '—' }}</span>
+                </td>
+                <td>
+                  <span class="ultimo-acceso">{{ formatearUltimoAcceso(u.ultimoAcceso) }}</span>
+                </td>
+                <td>
+                  <app-badge-estado [estado]="u.estado" />
+                </td>
+                <td class="tabla__td--acciones">
+                  <button
+                    class="btn-accion btn-accion--editar"
+                    type="button"
+                    title="Editar usuario"
+                    (click)="irAFicha(u.idUsuario); $event.stopPropagation()"
+                  >
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button
+                    class="btn-accion"
+                    [class.btn-accion--activar]="u.estado === 'Inactivo'"
+                    [class.btn-accion--desactivar]="u.estado === 'Activo'"
+                    type="button"
+                    [title]="u.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                    (click)="toggleEstadoUsuario(u, $event)"
+                  >
+                    <span class="material-symbols-outlined">
+                      {{ u.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-maestro>
+
+        <app-paginacion
+          [pagina]="pagina()"
+          [total]="total()"
+          [porPagina]="porPagina"
+          etiqueta="usuarios"
+          (cambioPagina)="irAPagina($event)"
+        />
+      }
+    }
+
+    <!-- ═══ TAB SUPLENTES ═══════════════════════════════════════════ -->
+    @if (tabActivo() === 'suplentes') {
+      @if (suplentes().length === 0) {
+        <app-estado-vacio icono="supervisor_account" mensaje="No hay asignaciones de suplentes registradas.">
+          <span class="hint-vacio">Puedes crear una asignación desde la ficha de cualquier usuario.</span>
+        </app-estado-vacio>
+      } @else {
+        <app-tabla-maestro>
+          <thead>
+            <tr>
+              <th>Titular (Comercial Principal)</th>
+              <th>Suplente Asignado</th>
+              <th>Fecha Inicio</th>
+              <th>Fecha Fin</th>
+              <th>Estado</th>
+              <th class="tabla__th--acciones">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of suplentes(); track s.idAsignacion) {
+              <tr (click)="irAFichaTitular(s.idTitular)">
+                <td>
+                  <div class="usuario-info">
+                    <div class="usuario-info__avatar usuario-info__avatar--titular">
+                      {{ iniciales(s.titularNombre, s.titularApellido) }}
+                    </div>
+                    <div class="usuario-info__texto">
+                      <div class="usuario-info__nombre">{{ s.titularNombre }} {{ s.titularApellido }}</div>
+                      @if (s.titularCargo) {
+                        <div class="usuario-info__correo">{{ s.titularCargo }}</div>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="usuario-info">
+                    <div class="usuario-info__avatar usuario-info__avatar--suplente">
+                      {{ iniciales(s.suplenteNombre, s.suplenteApellido) }}
+                    </div>
+                    <div class="usuario-info__texto">
+                      <div class="usuario-info__nombre">{{ s.suplenteNombre }} {{ s.suplenteApellido }}</div>
+                      @if (s.suplenteCargo) {
+                        <div class="usuario-info__correo">{{ s.suplenteCargo }}</div>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="fecha">
+                    <span class="material-symbols-outlined fecha__icono">calendar_today</span>
+                    {{ formatearFecha(s.fechaInicio) }}
+                  </div>
+                </td>
+                <td>
+                  @if (s.fechaFin) {
+                    <div class="fecha">
+                      <span class="material-symbols-outlined fecha__icono">event</span>
+                      {{ formatearFecha(s.fechaFin) }}
+                    </div>
+                  } @else {
+                    <span class="sin-limite">Sin límite</span>
+                  }
+                </td>
+                <td>
+                  <app-badge-estado [estado]="s.estado" />
+                </td>
+                <td class="tabla__td--acciones">
+                  <button
+                    class="btn-accion btn-accion--editar"
+                    type="button"
+                    title="Editar desde ficha del titular"
+                    (click)="irAFichaTitular(s.idTitular); $event.stopPropagation()"
+                  >
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                  <button
+                    class="btn-accion"
+                    [class.btn-accion--activar]="s.estado === 'Inactivo'"
+                    [class.btn-accion--desactivar]="s.estado === 'Activo'"
+                    type="button"
+                    [title]="s.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                    (click)="toggleEstadoSuplente(s, $event)"
+                  >
+                    <span class="material-symbols-outlined">
+                      {{ s.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                    </span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-maestro>
+
+        <app-paginacion
+          [pagina]="pagina()"
+          [total]="total()"
+          [porPagina]="porPagina"
+          etiqueta="asignaciones"
+          (cambioPagina)="irAPagina($event)"
+        />
+      }
+    }
+  }
+
+</div>

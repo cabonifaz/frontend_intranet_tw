@@ -1,0 +1,621 @@
+<div class="ficha-usuario">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando datos..." />
+  } @else {
+
+    <app-hero-header
+      [titulo]="esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema'"
+      descripcion="Complete la información para dar de alta una cuenta institucional y configurar permisos de acceso corporativos."
+      [badgeTexto]="esNuevo() ? 'Modo Creación' : ''"
+      badgeVariant="verde-dot"
+      (volver)="cancelar()"
+    >
+      <div class="tenant-block">
+        <span class="tenant-block__label">TENANT ID</span>
+        <span class="tenant-block__code">TW-PE-CORP-01</span>
+      </div>
+      <button type="button" class="protocolo-btn">
+        <span class="material-symbols-outlined">shield</span>
+        Protocolo ISO/IEC 17025
+      </button>
+    </app-hero-header>
+
+    <div class="fu-grid" [formGroup]="formulario">
+
+      <!-- ═══ MAIN ══════════════════════════════════════════════════ -->
+      <div class="fu-main">
+
+        @if (error()) {
+          <div class="form-error">
+            <span class="material-symbols-outlined">error</span>
+            {{ error() }}
+          </div>
+        }
+
+        <!-- SECCIÓN 01 -->
+        <app-seccion
+          numero="01"
+          titulo="Información Personal y Credenciales Básicas"
+          subtitulo="Datos de filiación oficial, documento nacional de identidad y contacto de la empresa."
+          badgeTexto="* CAMPOS OBLIGATORIOS"
+          badgeVariant="rojo"
+        >
+          <div class="campo-duo">
+            <div class="campo">
+              <label class="campo__label">Nombres Completos *</label>
+              <input class="campo__input" type="text" placeholder="Ej. Carlos Eduardo" formControlName="nombre" />
+              @if (formulario.get('nombre')?.touched && formulario.get('nombre')?.hasError('required')) {
+                <span class="campo__error">Los nombres son obligatorios.</span>
+              }
+            </div>
+            <div class="campo">
+              <label class="campo__label">Apellidos Completos *</label>
+              <input class="campo__input" type="text" placeholder="Ej. Mendoza Alva" formControlName="apellido" />
+              @if (formulario.get('apellido')?.touched && formulario.get('apellido')?.hasError('required')) {
+                <span class="campo__error">Los apellidos son obligatorios.</span>
+              }
+            </div>
+          </div>
+
+          <div class="campo-duo">
+            <div class="campo">
+              <label class="campo__label">Tipo y N° de Documento *</label>
+              <div class="campo-doc">
+                <select class="campo__select campo__select--sm" formControlName="tipoDocumento">
+                  @for (t of tipoDocOpciones; track t) {
+                    <option [value]="t">{{ t }}</option>
+                  }
+                </select>
+                <input class="campo__input" type="text" placeholder="Ej. 45892134" formControlName="numeroDocumento" />
+              </div>
+              @if (formulario.get('numeroDocumento')?.touched && formulario.get('numeroDocumento')?.hasError('required')) {
+                <span class="campo__error">El número de documento es obligatorio.</span>
+              }
+            </div>
+            <div class="campo">
+              <label class="campo__label">Correo Corporativo *</label>
+              <div class="campo-correo">
+                <input class="campo__input" type="text" placeholder="cmendoza" formControlName="correo" />
+                <span class="campo-correo__suffix">&#64;totalweight.pe</span>
+              </div>
+              @if (formulario.get('correo')?.touched && formulario.get('correo')?.hasError('required')) {
+                <span class="campo__error">El correo es obligatorio.</span>
+              }
+            </div>
+          </div>
+
+          <div class="campo-duo">
+            <div class="campo">
+              <label class="campo__label">Teléfono / Celular Flota *</label>
+              <div class="campo-icono">
+                <span class="material-symbols-outlined campo-icono__glyph">call</span>
+                <input class="campo__input campo__input--pl" type="tel" placeholder="Ej. +51 984 123 456" formControlName="telefono" />
+              </div>
+            </div>
+            <div class="campo">
+              <label class="campo__label">Cargo / Puesto Interno *</label>
+              <div class="campo-icono">
+                <span class="material-symbols-outlined campo-icono__glyph">work</span>
+                <input class="campo__input campo__input--pl" type="text" placeholder="Ej. Técnico Metrólogo Senior" formControlName="cargo" />
+              </div>
+              @if (formulario.get('cargo')?.touched && formulario.get('cargo')?.hasError('required')) {
+                <span class="campo__error">El cargo es obligatorio.</span>
+              }
+            </div>
+          </div>
+        </app-seccion>
+
+        <!-- SECCIÓN 02 -->
+        <app-seccion
+          numero="02"
+          titulo="Asignación Operativa y Rol de Sistema"
+          subtitulo="Defina el nivel jerárquico, privilegios de acceso y unidades operativas autorizadas."
+        >
+          <div class="campo-duo">
+            <div class="campo">
+              <label class="campo__label">Rol Principal en la Plataforma *</label>
+              <select class="campo__select" formControlName="rolSistema">
+                <option value="">Seleccionar rol de sistema...</option>
+                @for (rol of rolOpciones; track rol.value) {
+                  <option [value]="rol.value">{{ rol.label }}</option>
+                }
+              </select>
+              @if (formulario.get('rolSistema')?.touched && formulario.get('rolSistema')?.hasError('required')) {
+                <span class="campo__error">Debes seleccionar un rol.</span>
+              }
+            </div>
+            <div class="campo">
+              <label class="campo__label">Base Operativa Principal *</label>
+              <select class="campo__select" formControlName="baseOperativa">
+                <option value="">Seleccione sede operativa principal...</option>
+                @for (b of basesOperativas; track b) {
+                  <option [value]="b">{{ b }}</option>
+                }
+              </select>
+              @if (formulario.get('baseOperativa')?.touched && formulario.get('baseOperativa')?.hasError('required')) {
+                <span class="campo__error">Debes seleccionar una base.</span>
+              }
+            </div>
+          </div>
+
+          <div class="campo">
+            <label class="campo__label">Supervisor Directo a Reportar *</label>
+            <select class="campo__select" formControlName="idSupervisorDirecto">
+              <option [ngValue]="null">Seleccione jefatura directa o supervisor...</option>
+              @for (jefe of jefes(); track jefe.idUsuario) {
+                <option [ngValue]="jefe.idUsuario">
+                  {{ jefe.nombre }} {{ jefe.apellido }} · {{ jefe.rolSistemaLabel }}
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="campo">
+            <div class="campo-header-flex">
+              <label class="campo__label">Sedes y Unidades Mineras Autorizadas *</label>
+              <span class="campo__hint">Habilita acceso a expedientes técnicos y protocolos en campo</span>
+            </div>
+            <div class="campo-sedes">
+              <div class="campo-sedes__chips">
+                @if (sedesSeleccionadas().length === 0) {
+                  <span class="campo-sedes__placeholder">Seleccione sedes autorizadas para este usuario...</span>
+                } @else {
+                  @for (s of sedesSeleccionadas(); track s.idSede) {
+                    <span class="chip">
+                      <span class="material-symbols-outlined chip__icono">location_on</span>
+                      {{ s.nombre }}
+                      <button type="button" class="chip__quitar" (click)="quitarSede(s.idSede)" title="Quitar">
+                        <span class="material-symbols-outlined">close</span>
+                      </button>
+                    </span>
+                  }
+                }
+              </div>
+              <button type="button" class="btn-asignar" (click)="abrirModalSedes()">
+                <span class="material-symbols-outlined">add</span>
+                Asignar sede
+              </button>
+            </div>
+          </div>
+
+          @if (esRolComercial()) {
+            <div class="campo">
+              <label class="campo__label">Área comercial</label>
+              <input class="campo__input" type="text" placeholder="Ej. Comercial Minería, Comercial Industrial" formControlName="areaComercial" />
+            </div>
+          }
+        </app-seccion>
+
+        <!-- SECCIÓN 03 -->
+        <app-seccion
+          numero="03"
+          titulo="Credenciales de Certificación Técnica"
+          subtitulo="Acreditaciones oficiales para calibración de básculas industriales e informes oficiales."
+          badgeTexto="INACAL DA-DA-01"
+          badgeVariant="dark"
+        >
+          <div class="toggle-row">
+            <div class="toggle-row__texto">
+              <div class="toggle-row__titulo-row">
+                <span class="toggle-row__titulo">Habilitado para firma de Certificados de Calibración INACAL</span>
+                <app-badge texto="Validez Oficial" variant="verde" tamano="sm" />
+              </div>
+              <span class="toggle-row__desc">Permite estampar firma digital criptográfica validada en informes metrológicos oficiales entregados a clientes.</span>
+            </div>
+            <app-toggle formControlName="habilitadoFirmaInacal" />
+          </div>
+
+          @if (formulario.get('habilitadoFirmaInacal')?.value) {
+            <div class="campo-duo">
+              <div class="campo">
+                <label class="campo__label">Número de Registro / Acreditación INACAL</label>
+                <input class="campo__input" type="text" placeholder="Ej. MET-2024-0891" formControlName="numeroRegistroInacal" />
+              </div>
+              <div class="campo">
+                <label class="campo__label">Fecha de Expiración Certificación</label>
+                <input class="campo__input" type="date" formControlName="fechaExpiracionCertificacion" />
+              </div>
+            </div>
+          }
+
+          <div class="toggle-row">
+            <div class="toggle-row__texto">
+              <span class="toggle-row__titulo">Requiere inducción y validación SCTR para ingreso a mina</span>
+              <span class="toggle-row__desc">Bloquea asignación a órdenes de servicio en socavón o tajo abierto si la póliza está vencida.</span>
+            </div>
+            <app-toggle formControlName="requiereInduccionSctr" />
+          </div>
+        </app-seccion>
+
+        <!-- SECCIÓN 04 -->
+        <app-seccion
+          numero="04"
+          titulo="Seguridad y Notificación de Alta"
+          subtitulo="Parámetros de acceso inicial, políticas de robustez de claves y autenticación MFA."
+        >
+          <div class="campo">
+            <div class="campo-header-flex">
+              <label class="campo__label">Contraseña Temporal Generada</label>
+              <span class="campo__hint campo__hint--verde">
+                <span class="material-symbols-outlined">check_circle</span>
+                Cumple política de complejidad TW-SEC
+              </span>
+            </div>
+            <div class="campo-pass">
+              <input
+                class="campo__input campo__input--mono"
+                type="text"
+                readonly
+                formControlName="contrasenaTemporal"
+              />
+              <button type="button" class="btn-icono" (click)="copiarContrasena()">
+                <span class="material-symbols-outlined">{{ copiado() ? 'check' : 'content_copy' }}</span>
+                {{ copiado() ? 'Copiado' : 'Copiar' }}
+              </button>
+              <button type="button" class="btn-icono btn-icono--sq" (click)="regenerarContrasena()" title="Regenerar">
+                <span class="material-symbols-outlined">refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" formControlName="forzarCambioContrasena" />
+            <span class="check-row__box"></span>
+            <span class="check-row__texto">
+              <span class="check-row__titulo">Forzar cambio obligatorio de contraseña en el primer inicio de sesión del usuario.</span>
+            </span>
+          </label>
+
+          <label class="check-row">
+            <input type="checkbox" formControlName="enviarCredencialesCorreo" />
+            <span class="check-row__box"></span>
+            <span class="check-row__texto">
+              <span class="check-row__titulo">Enviar credenciales y enlace de activación por correo electrónico institucional</span>
+              <span class="check-row__desc">Se remitirá una notificación cifrada a la dirección configurada con la guía de inicio rápido y enrolamiento corporativo.</span>
+            </span>
+          </label>
+
+          <div class="toggle-row">
+            <div class="toggle-row__texto">
+              <div class="toggle-row__titulo-row">
+                <span class="toggle-row__titulo">Autenticación en dos pasos (2FA) obligatoria</span>
+                <app-badge texto="Recomendado" variant="verde" tamano="sm" />
+              </div>
+              <span class="toggle-row__desc">Exige enrolamiento de Microsoft Authenticator o Google Authenticator previo al primer acceso.</span>
+            </div>
+            <app-toggle formControlName="autenticacion2fa" />
+          </div>
+        </app-seccion>
+
+        <!-- SECCIÓN 05: SUPLENCIAS (solo edición) -->
+        @if (!esNuevo()) {
+          <app-seccion
+            numero="05"
+            titulo="Suplencias y Delegación Comercial"
+            subtitulo="Gestiona quién cubre a este usuario y a quién este usuario suple. Las asignaciones activas otorgan permisos operativos temporales."
+          >
+            <!-- Sub-lista 1: Suplentes que lo cubren (user es titular) -->
+            <div class="sup-block">
+              <div class="sup-block__header">
+                <span class="material-symbols-outlined sup-block__icono">shield_person</span>
+                <div class="sup-block__titulo-wrap">
+                  <span class="sup-block__titulo">Suplentes que lo cubren</span>
+                  <span class="sup-block__subtitulo">Personas que asumen sus responsabilidades durante ausencias.</span>
+                </div>
+                <span class="sup-block__contador">{{ suplenciasComoTitular().length }}</span>
+              </div>
+
+              @if (suplenciasComoTitular().length === 0) {
+                <div class="sup-vacio">
+                  <span class="material-symbols-outlined">supervisor_account</span>
+                  <p>Aún no hay suplentes asignados a este usuario.</p>
+                </div>
+              } @else {
+                <ul class="sup-lista">
+                  @for (s of suplenciasComoTitular(); track s.idAsignacion) {
+                    <li class="sup-item">
+                      <div class="sup-item__persona">
+                        <div class="sup-item__avatar sup-item__avatar--suplente">
+                          {{ iniciales(s.suplenteNombre, s.suplenteApellido) }}
+                        </div>
+                        <div class="sup-item__texto">
+                          <div class="sup-item__nombre">{{ s.suplenteNombre }} {{ s.suplenteApellido }}</div>
+                          @if (s.suplenteCargo) {
+                            <div class="sup-item__cargo">{{ s.suplenteCargo }}</div>
+                          }
+                        </div>
+                      </div>
+                      <div class="sup-item__vigencia">
+                        <span class="material-symbols-outlined">event</span>
+                        {{ formatearFechaCorta(s.fechaInicio) }} — {{ formatearFechaCorta(s.fechaFin) }}
+                      </div>
+                      <div class="sup-item__estado">
+                        <app-badge-estado [estado]="s.estado" />
+                      </div>
+                      <button
+                        class="sup-item__toggle"
+                        type="button"
+                        [class.sup-item__toggle--activar]="s.estado === 'Inactivo'"
+                        [class.sup-item__toggle--desactivar]="s.estado === 'Activo'"
+                        [title]="s.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                        (click)="toggleSuplencia(s)"
+                      >
+                        <span class="material-symbols-outlined">
+                          {{ s.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <!-- Form inline: asignar nuevo -->
+              @if (!formSuplenteAbierto()) {
+                <button class="sup-btn-agregar" type="button" (click)="abrirFormSuplente()">
+                  <span class="material-symbols-outlined">add</span>
+                  Asignar nuevo suplente
+                </button>
+              } @else {
+                <div class="sup-form" [formGroup]="formSuplente">
+                  <div class="sup-form__header">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span class="sup-form__titulo">Nueva asignación de suplente</span>
+                    <button type="button" class="sup-form__cerrar" (click)="cerrarFormSuplente()">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+
+                  @if (errorSuplente()) {
+                    <div class="sup-form__error">
+                      <span class="material-symbols-outlined">error</span>
+                      {{ errorSuplente() }}
+                    </div>
+                  }
+
+                  <div class="sup-form__cuerpo">
+                    <app-campo
+                      label="Suplente (Comercial Asignado) *"
+                      hint="Solo comerciales activos, excluyendo este usuario."
+                      [error]="formSuplente.get('idSuplente')?.invalid && formSuplente.get('idSuplente')?.touched ? 'Selecciona un comercial suplente.' : ''"
+                    >
+                      <select formControlName="idSuplente">
+                        <option [ngValue]="null">Selecciona un comercial suplente...</option>
+                        @for (c of comerciales(); track c.idUsuario) {
+                          <option [ngValue]="c.idUsuario">{{ c.nombre }} {{ c.apellido }} · {{ c.rolSistemaLabel }}</option>
+                        }
+                      </select>
+                    </app-campo>
+
+                    <div class="sup-form__fechas">
+                      <app-campo
+                        label="Fecha de inicio *"
+                        [error]="formSuplente.get('fechaInicio')?.invalid && formSuplente.get('fechaInicio')?.touched ? 'La fecha de inicio es obligatoria.' : ''"
+                      >
+                        <input type="date" formControlName="fechaInicio" />
+                      </app-campo>
+                      <app-campo label="Fecha de fin (Opcional)">
+                        <input
+                          type="date"
+                          formControlName="fechaFin"
+                          [attr.disabled]="formSuplente.get('sinFechaFin')?.value ? true : null"
+                        />
+                      </app-campo>
+                    </div>
+
+                    <label class="sup-form__check" (click)="onToggleSinFechaFinSuplente()">
+                      <input type="checkbox" formControlName="sinFechaFin" />
+                      <span class="sup-form__check-box"></span>
+                      <span class="sup-form__check-texto">Sin fecha de fin (vigencia indefinida)</span>
+                    </label>
+
+                    <div class="sup-form__estado">
+                      <div class="sup-form__estado-texto">
+                        <span class="sup-form__estado-titulo">Activar asignación</span>
+                        <span class="sup-form__estado-desc">Habilita los permisos al suplente inmediatamente al guardar.</span>
+                      </div>
+                      <app-toggle formControlName="activo" />
+                    </div>
+                  </div>
+
+                  <div class="sup-form__footer">
+                    <app-button variant="ghost" tamano="sm" (clic)="cerrarFormSuplente()">Cancelar</app-button>
+                    <app-button
+                      variant="primary"
+                      icono="check"
+                      tamano="sm"
+                      [disabled]="formSuplente.invalid"
+                      [cargando]="guardandoSuplente()"
+                      (clic)="guardarNuevoSuplente()"
+                    >
+                      {{ guardandoSuplente() ? 'Guardando...' : 'Guardar asignación' }}
+                    </app-button>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Sub-lista 2: Personas a las que suple (user es suplente) -->
+            <div class="sup-block">
+              <div class="sup-block__header">
+                <span class="material-symbols-outlined sup-block__icono">group_add</span>
+                <div class="sup-block__titulo-wrap">
+                  <span class="sup-block__titulo">Personas a las que suple</span>
+                  <span class="sup-block__subtitulo">Titulares para los que este usuario asume responsabilidades temporales.</span>
+                </div>
+                <span class="sup-block__contador">{{ suplenciasComoSuplente().length }}</span>
+              </div>
+
+              @if (suplenciasComoSuplente().length === 0) {
+                <div class="sup-vacio">
+                  <span class="material-symbols-outlined">badge</span>
+                  <p>Este usuario no está cubriendo a nadie actualmente.</p>
+                </div>
+              } @else {
+                <ul class="sup-lista">
+                  @for (s of suplenciasComoSuplente(); track s.idAsignacion) {
+                    <li class="sup-item sup-item--readonly">
+                      <div class="sup-item__persona">
+                        <div class="sup-item__avatar sup-item__avatar--titular">
+                          {{ iniciales(s.titularNombre, s.titularApellido) }}
+                        </div>
+                        <div class="sup-item__texto">
+                          <div class="sup-item__nombre">{{ s.titularNombre }} {{ s.titularApellido }}</div>
+                          @if (s.titularCargo) {
+                            <div class="sup-item__cargo">{{ s.titularCargo }}</div>
+                          }
+                        </div>
+                      </div>
+                      <div class="sup-item__vigencia">
+                        <span class="material-symbols-outlined">event</span>
+                        {{ formatearFechaCorta(s.fechaInicio) }} — {{ formatearFechaCorta(s.fechaFin) }}
+                      </div>
+                      <div class="sup-item__estado">
+                        <app-badge-estado [estado]="s.estado" />
+                      </div>
+                      <span class="sup-item__readonly-hint" title="Se gestiona desde la ficha del titular">
+                        <span class="material-symbols-outlined">lock</span>
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </app-seccion>
+        }
+
+        <!-- Footer -->
+        <app-form-footer
+          cancelarTexto="Cancelar y volver al listado"
+          (cancelar)="cancelar()"
+        >
+          <app-button
+            variant="secondary"
+            icono="save"
+            [disabled]="guardando() || guardandoBorrador()"
+            [cargando]="guardandoBorrador()"
+            (clic)="guardar(true)"
+          >
+            {{ guardandoBorrador() ? 'Guardando...' : 'Guardar como Borrador' }}
+          </app-button>
+          <app-button
+            variant="primary"
+            iconoDer="arrow_forward"
+            [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
+            [cargando]="guardando()"
+            (clic)="guardar(false)"
+          >
+            {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar y Activar Usuario' : 'Guardar Cambios') }}
+          </app-button>
+        </app-form-footer>
+
+      </div>
+
+      <!-- ═══ SIDEBAR ══════════════════════════════════════════════ -->
+      <aside class="fu-sidebar">
+
+        <div class="card-perfil">
+          <div class="card-perfil__head">
+            <div class="card-perfil__avatar">
+              <span class="material-symbols-outlined">person</span>
+              <button type="button" class="card-perfil__avatar-cam" title="Cambiar foto">
+                <span class="material-symbols-outlined">photo_camera</span>
+              </button>
+            </div>
+          </div>
+          <div class="card-perfil__body">
+            <p class="card-perfil__nombre">{{ nombreCompleto() }}</p>
+            <p class="card-perfil__cargo">{{ formulario.get('cargo')?.value || 'Cargo por asignar' }}</p>
+
+            <div class="card-perfil__pills">
+              <app-badge [texto]="rolLabelActual()" variant="gris" tamano="sm" />
+              <app-badge texto="Pendiente de registro" variant="ambar" tamano="sm" />
+            </div>
+
+            <div class="card-perfil__grid">
+              <div>
+                <p class="card-perfil__mini-label">CÓDIGO INTERNO</p>
+                <p class="card-perfil__mini-valor">TW-USR-<br>(Autogenerado)</p>
+              </div>
+              <div>
+                <p class="card-perfil__mini-label">SEDE PRINCIPAL</p>
+                <p class="card-perfil__mini-valor">{{ formulario.get('baseOperativa')?.value || 'Por asignar' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-licencias">
+          <div class="card-licencias__header">
+            <span class="card-licencias__titulo">Licencias Asignadas</span>
+            <app-badge texto="38 / 50" variant="azul" tamano="sm" [mono]="true" />
+          </div>
+          <div class="card-licencias__barra">
+            <div class="card-licencias__fill" style="width: 76%"></div>
+          </div>
+          <p class="card-licencias__desc">
+            Quedan <strong>12 asientos</strong> disponibles en el plan Enterprise para este período.
+          </p>
+        </div>
+
+        <div class="card-requisitos">
+          <div class="card-requisitos__header">
+            <span class="card-requisitos__titulo">REQUISITOS DE ALTA</span>
+            <app-badge
+              [texto]="requisitosCumplidos() + ' de ' + requisitos().length + ' listos'"
+              [variant]="requisitosOk() ? 'verde' : 'azul'"
+              tamano="sm"
+            />
+          </div>
+          <ul class="card-requisitos__lista">
+            @for (r of requisitos(); track r.clave) {
+              <li class="requisito" [class.requisito--ok]="r.cumplido">
+                <span class="material-symbols-outlined">{{ r.cumplido ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                {{ r.label }}
+              </li>
+            }
+          </ul>
+          <div class="card-requisitos__aviso">
+            <span class="material-symbols-outlined">info</span>
+            El usuario recibirá un correo con el token de activación con validez estricta de <strong>48 horas</strong>.
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+  }
+
+</div>
+
+<!-- Modal Sedes -->
+@if (modalSedesOpen()) {
+  <app-modal titulo="Asignar Sedes y Unidades Mineras" ancho="sm" (cerrar)="cerrarModalSedes()">
+    <p class="modal-desc">Selecciona una o más sedes donde el usuario está autorizado a operar.</p>
+    <ul class="lista-sedes">
+      @for (s of sedes(); track s.idSede) {
+        <li class="lista-sedes__item"
+            [class.lista-sedes__item--activo]="estaSedeSeleccionada(s.idSede)"
+            (click)="toggleSede(s.idSede)">
+          <div class="lista-sedes__check">
+            @if (estaSedeSeleccionada(s.idSede)) {
+              <span class="material-symbols-outlined">check</span>
+            }
+          </div>
+          <div class="lista-sedes__info">
+            <span class="lista-sedes__nombre">{{ s.nombre }}</span>
+            <span class="lista-sedes__meta">{{ s.tipo }} · {{ s.ubicacion }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+    <div class="modal-footer" modalFooter>
+      <button class="btn-primary" type="button" (click)="cerrarModalSedes()">
+        <span class="material-symbols-outlined">check</span>
+        Confirmar ({{ sedesSeleccionadas().length }})
+      </button>
+    </div>
+  </app-modal>
+}
