@@ -1,0 +1,405 @@
+<div class="ficha-tb">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando datos..." />
+  } @else {
+
+    <app-hero-header
+      [titulo]="esNuevo() ? 'Nuevo Texto Base' : 'Editar Texto Base'"
+      descripcion="Creación y parametrización de cláusulas estándar, textos rectores y condiciones operativas para el dossier técnico."
+      [badgeTexto]="esNuevo() ? 'Modo Creación' : 'Modo Edición'"
+      [badgeVariant]="esNuevo() ? 'ambar-dot' : 'verde-dot'"
+      (volver)="cancelar()"
+    >
+      <app-button variant="ghost" icono="arrow_back" tamano="sm" (clic)="cancelar()">
+        Volver a Textos Base
+      </app-button>
+      <app-button
+        variant="secondary"
+        icono="save"
+        tamano="sm"
+        [disabled]="guardando() || guardandoBorrador()"
+        [cargando]="guardandoBorrador()"
+        (clic)="guardar(true)"
+      >
+        Guardar Borrador
+      </app-button>
+      <app-button
+        variant="primary"
+        icono="check"
+        [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
+        [cargando]="guardando()"
+        (clic)="guardar(false)"
+      >
+        Guardar Texto Base
+      </app-button>
+    </app-hero-header>
+
+    <div class="tb-grid" [formGroup]="formulario">
+
+      <!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
+      <div class="tb-main">
+
+        @if (error()) {
+          <div class="form-error">
+            <span class="material-symbols-outlined">error</span>
+            {{ error() }}
+          </div>
+        }
+
+        <!-- SECCIÓN 01: Identificación y Clasificación -->
+        <app-seccion
+          numero="01"
+          titulo="Identificación y Clasificación"
+          [badgeTexto]="'ID: ' + codigoBadge()"
+          badgeVariant="dark"
+        >
+          <app-campo
+            label="Tipo de Texto Base / Categoría *"
+            [error]="formulario.get('tipoCategoria')?.invalid && formulario.get('tipoCategoria')?.touched ? 'Selecciona una categoría.' : ''"
+          >
+            <select formControlName="tipoCategoria">
+              <option value="">Selecciona un tipo / categoría...</option>
+              @for (c of categoriasOpciones; track c.value) {
+                <option [value]="c.value">{{ c.label }}</option>
+              }
+            </select>
+          </app-campo>
+
+          <app-campo
+            label="Nombre / Referencia Clave *"
+            hint="Nombre descriptivo con el que identificarás rápidamente esta cláusula al añadir la propuesta."
+            [error]="formulario.get('nombre')?.invalid && formulario.get('nombre')?.touched ? 'Ingresa un nombre de al menos 3 caracteres.' : ''"
+          >
+            <input type="text" placeholder="Ej. Disponibilidad de energía trifásica e hidrógeno en sitio" formControlName="nombre" />
+          </app-campo>
+
+          <div class="grid-2">
+            <app-campo label="Código Corto / Nemotécnico">
+              <input type="text" placeholder="Autogenerado si se deja en blanco" formControlName="codigoCorto" />
+            </app-campo>
+            <app-campo
+              label="Sección Asignada en Dossier *"
+              [error]="formulario.get('seccionDossier')?.invalid && formulario.get('seccionDossier')?.touched ? 'Selecciona una sección.' : ''"
+            >
+              <select formControlName="seccionDossier">
+                <option value="">Selecciona un capítulo...</option>
+                @for (s of seccionesOpciones; track s.value) {
+                  <option [value]="s.value">{{ s.label }}</option>
+                }
+              </select>
+            </app-campo>
+          </div>
+        </app-seccion>
+
+        <!-- SECCIÓN 02: Contenido del Texto / Cláusula -->
+        <app-seccion
+          numero="02"
+          titulo="Contenido del Texto / Cláusula"
+          badgeTexto="Soporte contenedor dinámico"
+          badgeVariant="azul"
+        >
+          <div class="editor-toolbar">
+            <span class="editor-toolbar__label">INSERTAR:</span>
+            @for (v of variables; track v.token) {
+              <button type="button" class="editor-var" (click)="insertarVariable(v.token)" [title]="v.descripcion">
+                {{ v.token }}
+              </button>
+            }
+          </div>
+
+          <textarea
+            #textareaClausula
+            class="editor-textarea"
+            formControlName="textoClausula"
+            rows="8"
+            placeholder="Redacta el contenido de la cláusula. Usa los botones superiores para insertar variables dinámicas."
+          ></textarea>
+
+          <div class="editor-footer">
+            <span class="editor-footer__hint">Las variables entre corchetes se sustituirán en la generación del PDF.</span>
+            <span class="editor-footer__count">{{ caracteresCount() }} caracteres</span>
+          </div>
+          @if (formulario.get('textoClausula')?.invalid && formulario.get('textoClausula')?.touched) {
+            <span class="editor-error">El contenido de la cláusula es obligatorio (mínimo 10 caracteres).</span>
+          }
+        </app-seccion>
+
+        <!-- SECCIÓN 03: Formato y Reglas de Impresión PDF -->
+        <app-seccion
+          numero="03"
+          titulo="Formato y Reglas de Impresión PDF"
+        >
+          <div class="opciones-grid">
+            <label class="opcion-card">
+              <input type="checkbox" formControlName="esNegritaPorDefecto" />
+              <div class="opcion-card__box"></div>
+              <div class="opcion-card__texto">
+                <span class="opcion-card__titulo">Texto en Negrita por Defecto</span>
+                <span class="opcion-card__desc">Flag Negrita = 1. Aplica la negrita en el renderizado siempre que se incluya en el formato final PDF.</span>
+              </div>
+            </label>
+
+            <label class="opcion-card">
+              <input type="checkbox" formControlName="esPredeterminado" />
+              <div class="opcion-card__box"></div>
+              <div class="opcion-card__texto">
+                <span class="opcion-card__titulo">Marcar como Predeterminado</span>
+                <span class="opcion-card__desc">Predet = S. Se añadirá automáticamente en todas las nuevas propuestas por defecto.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <app-campo
+              label="Orden de Aparición / Secuencia"
+              hint="Determina el orden correlativo dentro del bloque asignado."
+            >
+              <input type="number" min="1" formControlName="ordenAparicion" />
+            </app-campo>
+            <app-campo
+              label="Nivel de Sangría / Jerarquía"
+              hint="Ajusta el estilo tipográfico para el pie de reporte."
+            >
+              <select formControlName="nivelSangria">
+                @for (n of nivelesSangria; track n.value) {
+                  <option [value]="n.value">{{ n.label }}</option>
+                }
+              </select>
+            </app-campo>
+          </div>
+        </app-seccion>
+
+        <!-- Footer -->
+        <app-form-footer cancelarTexto="Cancelar" (cancelar)="cancelar()">
+          <app-button variant="secondary" icono="bookmark" (clic)="guardar(true)" [cargando]="guardandoBorrador()">
+            Guardar como Plantilla
+          </app-button>
+          <app-button variant="secondary" icono="visibility" (clic)="abrirModalPreview()">
+            Vista Previa en PDF
+          </app-button>
+          <app-button
+            variant="primary"
+            icono="check"
+            iconoDer="arrow_forward"
+            [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
+            [cargando]="guardando()"
+            (clic)="guardar(false)"
+          >
+            {{ esNuevo() ? 'Guardar y Activar Texto Base' : 'Guardar Cambios' }}
+          </app-button>
+        </app-form-footer>
+      </div>
+
+      <!-- ═══ SIDEBAR ══════════════════════════════════════════════════ -->
+      <aside class="tb-sidebar">
+
+        <!-- Card 1: Parámetros de Aplicabilidad -->
+        <div class="card-aplicabilidad">
+          <div class="card-aplicabilidad__header">
+            <div>
+              <p class="card-aplicabilidad__titulo">Parámetros de Aplicabilidad</p>
+              <p class="card-aplicabilidad__desc">
+                Define bajo qué condiciones este texto base será mostrado y utilizado en los técnicos y asistentes.
+              </p>
+            </div>
+            <div class="card-aplicabilidad__toggle">
+              <span class="card-aplicabilidad__toggle-label" [class.card-aplicabilidad__toggle-label--activo]="formulario.get('activo')?.value">
+                {{ formulario.get('activo')?.value ? 'Activo' : 'Inactivo' }}
+              </span>
+              <app-toggle formControlName="activo" />
+            </div>
+          </div>
+
+          <div class="card-aplicabilidad__grupo">
+            <p class="card-aplicabilidad__grupo-titulo">Servicios Aplicables:</p>
+
+            <label class="check-simple" (click)="toggleTodosServicios()">
+              <input type="checkbox" formControlName="aplicaTodosServicios" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Aplica a Todos los Servicios</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="aplicaCalibracionLab" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Calibración en Laboratorio</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="aplicaCalibracionPlanta" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Calibración en Planta / Camiones</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="aplicaMantenimiento" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Mantenimiento Preventivo &amp; Correctivo</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="aplicaVentaSuministros" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Venta e Instalación de Suministros</span>
+            </label>
+          </div>
+
+          <div class="card-aplicabilidad__grupo">
+            <p class="card-aplicabilidad__grupo-titulo">Visibilidad por Perfil de Usuario:</p>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="visibleGestoresComerciales" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Gestores Comerciales</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="visibleTecnicosMetrologos" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Técnicos Metrólogos</span>
+            </label>
+
+            <label class="check-simple">
+              <input type="checkbox" formControlName="visibleSupervisores" />
+              <span class="check-simple__box"></span>
+              <span class="check-simple__texto">Supervisores &amp; Administradores Generales</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Card 2: Vista Previa PDF Simulado -->
+        <div class="card-preview">
+          <div class="card-preview__header">
+            <span class="card-preview__titulo">Vista Previa en PDF Simulado</span>
+            <button type="button" class="card-preview__render-btn" (click)="toggleRenderPreview()">
+              <span class="material-symbols-outlined">refresh</span>
+              Render Dinámico
+            </button>
+          </div>
+
+          <div class="pdf-preview">
+            <div class="pdf-preview__brand">
+              <div class="pdf-preview__brand-logo">TW</div>
+              <div>
+                <div class="pdf-preview__brand-nombre">TOTAL WEIGHT S.A.C.</div>
+                <div class="pdf-preview__brand-tag">Industrial Precision · RUC 20512345678</div>
+              </div>
+            </div>
+
+            <div class="pdf-preview__title">
+              CLÁUSULA · {{ categoriaLabelSel().toUpperCase() }}
+            </div>
+
+            <div
+              class="pdf-preview__content"
+              [class.pdf-preview__content--negrita]="formulario.get('esNegritaPorDefecto')?.value"
+              [innerHTML]="textoRenderizado()"
+            ></div>
+
+            <div class="pdf-preview__footer">
+              <span>Ref: {{ codigoBadge() }}</span>
+            </div>
+          </div>
+
+          <div class="card-preview__meta">
+            <div class="card-preview__meta-row">
+              <span class="card-preview__meta-label">Registrado por:</span>
+              <span class="card-preview__meta-valor">Admin TW (Ana Torres)</span>
+            </div>
+            <div class="card-preview__meta-row">
+              <span class="card-preview__meta-label">Fecha y Hora:</span>
+              <span class="card-preview__meta-valor">29 Sep 2026 · 10:42 AM</span>
+            </div>
+            <div class="card-preview__meta-row">
+              <span class="card-preview__meta-label">Impacto en Cotizaciones:</span>
+              <span class="card-preview__meta-valor">
+                {{ propuestasAsociadas() }} propuestas asociadas {{ esNuevo() ? '(Nuevo)' : '' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+
+  }
+
+</div>
+
+<!-- ═══ Modal Vista Previa PDF Fullscreen ═══════════════════════════════ -->
+@if (modalPreviewOpen()) {
+  <app-modal titulo="Vista Previa · Cláusula en PDF" ancho="xl" (cerrar)="cerrarModalPreview()">
+    <div class="preview-modal">
+      <div class="preview-modal__meta">
+        <div class="preview-modal__meta-item">
+          <span class="preview-modal__meta-label">Referencia</span>
+          <span class="preview-modal__meta-valor">{{ codigoBadge() }}</span>
+        </div>
+        <div class="preview-modal__meta-item">
+          <span class="preview-modal__meta-label">Categoría</span>
+          <span class="preview-modal__meta-valor">{{ categoriaLabelSel() }}</span>
+        </div>
+        <div class="preview-modal__meta-item">
+          <span class="preview-modal__meta-label">Variables detectadas</span>
+          <span class="preview-modal__meta-valor">Cliente · RUC · Fecha · Propuesta</span>
+        </div>
+      </div>
+
+      <div class="pdf-doc">
+        <div class="pdf-doc__header">
+          <div class="pdf-doc__logo">TW</div>
+          <div class="pdf-doc__brand">
+            <div class="pdf-doc__brand-nombre">TOTAL WEIGHT S.A.C.</div>
+            <div class="pdf-doc__brand-desc">
+              Industrial Precision · RUC 20512345678<br>
+              Av. Los Constructores 1200, La Molina — Lima, Perú
+            </div>
+          </div>
+          <div class="pdf-doc__meta">
+            <div><strong>Ref:</strong> {{ codigoBadge() }}</div>
+            <div><strong>Fecha:</strong> 29/09/2026</div>
+          </div>
+        </div>
+
+        <div class="pdf-doc__title">
+          CLÁUSULA · {{ categoriaLabelSel().toUpperCase() }}
+        </div>
+
+        <div class="pdf-doc__subtitle">
+          <strong>Nombre:</strong> {{ formulario.get('nombre')?.value || '(Sin nombre)' }}
+        </div>
+
+        <div
+          class="pdf-doc__content"
+          [class.pdf-doc__content--negrita]="formulario.get('esNegritaPorDefecto')?.value"
+          [class.pdf-doc__content--sangria1]="formulario.get('nivelSangria')?.value === 'primer_nivel'"
+          [class.pdf-doc__content--sangria2]="formulario.get('nivelSangria')?.value === 'segundo_nivel'"
+          [class.pdf-doc__content--vineta]="formulario.get('nivelSangria')?.value === 'vineta'"
+          [innerHTML]="textoRenderizado()"
+        ></div>
+
+        <div class="pdf-doc__footer">
+          <div class="pdf-doc__footer-left">
+            <div><strong>Generado desde:</strong> Total Weight Digital Suite</div>
+            <div><strong>Categoría:</strong> {{ categoriaLabelSel() }}</div>
+          </div>
+          <div class="pdf-doc__footer-right">Página 1 de 1</div>
+        </div>
+      </div>
+    </div>
+
+    <div modalFooter class="preview-modal__footer">
+      <span class="preview-modal__footer-hint">
+        Las variables entre corchetes se muestran resueltas con datos de ejemplo (ACEROS AREQUIPA S.A.).
+      </span>
+      <div class="preview-modal__footer-acciones">
+        <app-button variant="ghost" (clic)="cerrarModalPreview()">Cerrar</app-button>
+        <app-button variant="secondary" icono="print" (clic)="imprimirPreview()">Imprimir</app-button>
+      </div>
+    </div>
+  </app-modal>
+}

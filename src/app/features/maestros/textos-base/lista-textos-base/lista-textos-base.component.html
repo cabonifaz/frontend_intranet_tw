@@ -1,0 +1,133 @@
+<div class="textos-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="article"
+    titulo="Mantenimiento de Textos Base"
+    subtitulo="Gestión y estandarización de cláusulas, condiciones comerciales, saludos y recomendaciones del dossier técnico"
+  >
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Texto Base
+    </button>
+  </app-page-header>
+
+  <app-filtros-bar
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por ID, nombre, texto, cláusula o pie..."
+    (buscar)="cargar(true)"
+  >
+    <select [(ngModel)]="tipoCategoriaFiltro" (change)="cargar(true)">
+      <option value="">Tipo / Categoría: Todos</option>
+      @for (opt of categoriasOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+    <select [(ngModel)]="estadoFiltro" (change)="cargar(true)">
+      @for (opt of estadoOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+  </app-filtros-bar>
+
+  <!-- Nota + checkbox de predeterminados -->
+  <div class="pre-nota">
+    <label class="check-pre">
+      <input type="checkbox" [(ngModel)]="soloPredeterminados" (change)="cargar(true)" />
+      <span class="check-pre__box"></span>
+      <span class="check-pre__texto">Solo cláusulas predeterminadas para propuestas automáticas</span>
+    </label>
+    <span class="pre-nota__contador">{{ total() }} registros mostrados</span>
+  </div>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando textos base..." />
+  } @else {
+    @if (textos().length === 0) {
+      <app-estado-vacio icono="description" mensaje="No hay textos base registrados con los filtros aplicados.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+          <span class="material-symbols-outlined">add</span>
+          Crear primer texto base
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th>TIPO</th>
+            <th>NOMBRE</th>
+            <th class="th-texto">TEXTO / CLÁUSULA</th>
+            <th class="th-centro">ESTADO</th>
+            <th class="th-centro">PREDET</th>
+            <th class="th-centro">NEGRITA</th>
+            <th class="tabla__th--acciones th-acciones">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of textos(); track t.idTextoBase) {
+            <tr (click)="irAEditar(t.idTextoBase)">
+              <td class="td-id">{{ t.idTextoBase }}</td>
+              <td>
+                <span class="badge-tipo badge-tipo--{{ t.tipoCategoria }}">
+                  {{ t.tipoCategoriaLabel }}
+                </span>
+              </td>
+              <td class="td-nombre">{{ t.nombre }}</td>
+              <td class="td-texto">{{ truncar(t.textoClausula) }}</td>
+              <td class="td-centro">
+                <app-badge-estado [estado]="t.estado" />
+              </td>
+              <td class="td-centro">
+                <span class="badge-mini" [class.badge-mini--si]="t.esPredeterminado">
+                  {{ t.esPredeterminado ? 'S' : 'N' }}
+                </span>
+              </td>
+              <td class="td-centro">
+                <span class="badge-mini" [class.badge-mini--si]="t.esNegritaPorDefecto">
+                  {{ t.esNegritaPorDefecto ? 'S' : 'N' }}
+                </span>
+              </td>
+              <td class="tabla__td--acciones">
+                <button
+                  class="btn-accion btn-accion--editar"
+                  type="button"
+                  title="Editar texto base"
+                  (click)="irAEditar(t.idTextoBase); $event.stopPropagation()"
+                >
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="btn-accion"
+                  [class.btn-accion--activar]="t.estado === 'Inactivo'"
+                  [class.btn-accion--desactivar]="t.estado === 'Activo'"
+                  type="button"
+                  [title]="t.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                  (click)="toggleEstado(t, $event)"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ t.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+
+      <app-paginacion
+        [pagina]="pagina()"
+        [total]="total()"
+        [porPagina]="porPagina"
+        etiqueta="textos base"
+        (cambioPagina)="irAPagina($event)"
+      />
+    }
+  }
+
+</div>

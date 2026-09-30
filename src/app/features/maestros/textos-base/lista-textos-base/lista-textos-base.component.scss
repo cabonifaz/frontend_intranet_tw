@@ -1,0 +1,191 @@
+.textos-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
+}
+
+// ── Botón "Nuevo" (homologado con las demás vistas de mantenimiento) ──────
+.btn-nuevo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0px 1px 2px rgba(59, 130, 246, 0.2);
+  transition: background 0.15s;
+
+  &:hover { background: #1D4ED8; }
+
+  &--sm {
+    font-size: 12px;
+    padding: 6px 12px;
+    margin-top: 8px;
+  }
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+// ── Checkbox predeterminadas + contador ────────────────────────────────────
+.pre-nota {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+
+  &__contador {
+    font-size: 11px;
+    color: #64748B;
+  }
+}
+
+.check-pre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+  &__box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid #93C5FD;
+    background: #FFFFFF;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 1px;
+      left: 4px;
+      width: 4px;
+      height: 8px;
+      border: solid #FFFFFF;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      opacity: 0;
+    }
+  }
+
+  input:checked + &__box {
+    background: #2563EB;
+    border-color: #2563EB;
+    &::after { opacity: 1; }
+  }
+
+  &__texto {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1D4ED8;
+  }
+}
+
+// ── Columnas tabla ─────────────────────────────────────────────────────────
+.th-id       { width: 48px; }
+.th-texto    { min-width: 240px; }
+.th-centro   { text-align: center; width: 80px; }
+.th-acciones { width: 90px; white-space: nowrap; }
+
+.td-id {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  color: #64748B;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.td-nombre {
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.td-texto {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.td-centro { text-align: center; }
+
+// ── Badge tipo (por categoría) ─────────────────────────────────────────────
+.badge-tipo {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+
+  &--servicio_saludo   { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+  &--comercial_saludo  { background: #FAF5FF; color: #7E22CE; border-color: #E9D5FF; }
+  &--propuesta         { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+  &--recomendaciones   { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+  &--condiciones       { background: #FEF2F2; color: #DC2626; border-color: #FECACA; }
+  &--garantia          { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+  &--legal             { background: #F1F5F9; color: #475569; border-color: #CBD5E1; }
+  &--firma_pie         { background: #F8FAFC; color: #64748B; border-color: #E2E8F0; }
+}
+
+// ── Badge mini S/N (Predet, Negrita) ──────────────────────────────────────
+.badge-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #94A3B8;
+
+  &--si {
+    background: #DBEAFE;
+    color: #1D4ED8;
+  }
+}
+
+// ── Botones acción ─────────────────────────────────────────────────────────
+.btn-accion {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  color: #94A3B8;
+  transition: background 0.12s, color 0.12s;
+  margin-left: 4px;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover { background: #F1F5F9; color: #475569; }
+
+  &--editar:hover { background: #EFF6FF; color: #2563EB; }
+  &--activar { color: #10B981; }
+  &--activar:hover { background: #ECFDF5; }
+  &--desactivar { color: #F59E0B; }
+  &--desactivar:hover { background: #FFFBEB; }
+}
