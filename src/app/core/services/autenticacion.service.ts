@@ -13,12 +13,13 @@ import {
 const TOKEN_KEY   = 'tw_token';
 const USUARIO_KEY = 'tw_usuario';
 
-// TODO: quitar cuando el backend esté disponible en staging
-const USAR_MOCK = true;
+// Cambiar a true SOLO para debug local sin backend. En staging/prod debe ir en false.
+// Con el back vivo, dejar true genera un rebound al login: el token mock cae en 401 al primer llamado real.
+const USAR_MOCK = false;
 const MOCK_CREDENCIALES = [
-  { correo: 'admin@totalweight.com',     contrasena: 'TW@Admin2026',    nombre: 'Admin',    apellido: 'TW',           rol: 'Admin'                 },
-  { correo: 'gestor@totalweight.com',    contrasena: 'TW@Gestor2026',   nombre: 'Gestor',   apellido: 'Comercial',    rol: 'Gestor Comercial'      },
-  { correo: 'jefe@totalweight.com',      contrasena: 'TW@Jefe2026',     nombre: 'Jefe',     apellido: 'Operaciones',  rol: 'Jefe de Operaciones'   },
+  { correo: 'adminmock@totalweight.com',  contrasena: 'TW@Admin2026',    nombre: 'Admin',    apellido: 'Mock',         rol: 'Admin'                 },
+  { correo: 'gestormock@totalweight.com', contrasena: 'TW@Gestor2026',   nombre: 'Gestor',   apellido: 'Mock',         rol: 'Gestor Comercial'      },
+  { correo: 'jefemock@totalweight.com',   contrasena: 'TW@Jefe2026',     nombre: 'Jefe',     apellido: 'Mock',         rol: 'Jefe de Operaciones'   },
 ];
 
 @Injectable({ providedIn: 'root' })
