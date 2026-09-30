@@ -1,0 +1,372 @@
+<div class="ficha-page">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  <app-page-header
+    icono="inventory_2"
+    [titulo]="esNuevo() ? 'Nuevo Registro de Catálogo Técnico / Comercial' : 'Editar Suministro'"
+    subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios"
+  >
+    <span class="badge-codigo">{{ codigoBadge() }}</span>
+  </app-page-header>
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando suministro..." />
+  } @else if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  } @else {
+
+    <form [formGroup]="formulario" (ngSubmit)="guardar(false)" class="ficha-grid">
+
+      <!-- ═════════════════════════════ COLUMNA MAIN ═════════════════════════════ -->
+      <div class="ficha-main">
+
+        <!-- ── SECCIÓN 01 — Identificación ─────────────────────────────────── -->
+        <app-seccion numero="01" icono="fingerprint" titulo="Identificación y Clasificación Primaria"
+                     subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios">
+
+          <div class="grid-cols-2">
+            <app-campo label="ID de Registro">
+              <div class="lectura">
+                <span>{{ esNuevo() ? '—' : idSuministro }}</span>
+                <span class="chip-auto">AUTO</span>
+              </div>
+            </app-campo>
+
+            <app-campo label="Estado Operativo">
+              <div class="toggle-linea">
+                <app-toggle formControlName="esActivoEnCatalogo" />
+                <span>Activo en Catálogo</span>
+              </div>
+            </app-campo>
+
+            <app-campo label="Clase Principal" [error]="formulario.get('clase')?.touched && formulario.get('clase')?.invalid ? 'Selecciona una clase' : ''">
+              <select formControlName="clase">
+                <option value="">Selecciona…</option>
+                @for (opt of clasesOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <div></div>
+
+            <app-campo label="Tipo" [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''">
+              <select formControlName="tipo">
+                <option value="">Selecciona…</option>
+                @for (opt of tiposOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Sub-Tipo" [error]="formulario.get('subtipo')?.touched && formulario.get('subtipo')?.invalid ? 'Selecciona un subtipo' : ''">
+              <select formControlName="subtipo">
+                <option value="">Selecciona…</option>
+                @for (opt of subtiposOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Marca" [error]="formulario.get('marca')?.touched && formulario.get('marca')?.invalid ? 'Selecciona una marca' : ''">
+              <div class="input-con-boton">
+                <select formControlName="marca">
+                  <option value="">Selecciona…</option>
+                  @for (opt of marcasSignal(); track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <button class="btn-inline" type="button" (click)="abrirModalMarca()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nueva Marca
+                </button>
+              </div>
+            </app-campo>
+
+            <app-campo label="Modelo" [error]="formulario.get('modelo')?.touched && formulario.get('modelo')?.invalid ? 'Selecciona un modelo' : ''">
+              <div class="input-con-boton">
+                <select formControlName="modelo">
+                  <option value="">Selecciona…</option>
+                  @for (opt of modelosSignal(); track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <button class="btn-inline" type="button" (click)="abrirModalModelo()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nuevo Modelo
+                </button>
+              </div>
+            </app-campo>
+          </div>
+
+        </app-seccion>
+
+        <!-- ── SECCIÓN 02 — Descripciones y Logística ──────────────────────── -->
+        <app-seccion numero="02" icono="description" titulo="Descripciones Técnicas y Logística">
+
+          <app-campo label="Descripción Generada Automática" hint="Concatenación de clase + tipo + subtipo + marca + modelo">
+            <div class="input-con-boton">
+              <input type="text" formControlName="descripcionAuto" readonly placeholder="Se genera al pulsar el botón…" />
+              <button class="btn-inline btn-inline--ia" type="button" (click)="generarDescripcionAuto()">
+                <span class="material-symbols-outlined">auto_awesome</span>
+                Generar con IA
+              </button>
+            </div>
+          </app-campo>
+
+          <app-campo label="Descripción Manual / Comercial Ampliada"
+                     [error]="formulario.get('descripcionManual')?.touched && formulario.get('descripcionManual')?.invalid ? 'Mínimo 10 caracteres' : ''">
+            <textarea formControlName="descripcionManual" rows="4"
+                      placeholder="Descripción comercial extendida, uso, aplicaciones, condiciones especiales…"></textarea>
+          </app-campo>
+
+          <app-campo label="Alcance / Rango Operativo de Medida y Capacidad">
+            <div class="tags-input">
+              @for (rango of rangoOperativo().controls; track $index; let i = $index) {
+                <span class="tag">
+                  {{ rango.value }}
+                  <button type="button" class="tag__x" (click)="quitarRango(i)" title="Quitar">×</button>
+                </span>
+              }
+              <input type="text" formControlName="nuevoRango" placeholder="Ej: Hasta 250 °C · Enter para agregar"
+                     (keydown.enter)="$event.preventDefault(); agregarRango()" />
+            </div>
+          </app-campo>
+
+          <div class="grid-cols-4">
+            <app-campo label="Unidad">
+              <select formControlName="unidad">
+                @for (opt of unidadesOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Cta. Contable">
+              <input type="text" formControlName="ctaContable" placeholder="Ej: 7811109" />
+            </app-campo>
+
+            <app-campo label="Procedencia">
+              <select formControlName="procedencia">
+                @for (opt of procedenciasOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Cuenta / Stock">
+              <div class="input-doble">
+                <input type="text" formControlName="cuenta" placeholder="Cuenta" />
+                <input type="number" formControlName="stock" min="0" placeholder="Stock" />
+              </div>
+            </app-campo>
+          </div>
+
+        </app-seccion>
+
+        <!-- ── SECCIÓN 03 — Parámetros de Cotización y Propuestas ──────────── -->
+        <app-seccion numero="03" icono="request_quote" titulo="Parámetros de Cotización y Propuestas">
+
+          <div class="panel-toggle">
+            <div class="panel-toggle__left">
+              <app-toggle formControlName="usarEnPropuestas" />
+              <div>
+                <div class="panel-toggle__titulo">Usar en lista de Suministros/Servicios de Propuestas</div>
+                <div class="panel-toggle__hint">Cuando está activo, este suministro aparece disponible al armar propuestas comerciales.</div>
+              </div>
+            </div>
+            <span class="chip-panel" [class.chip-panel--activo]="formulario.get('usarEnPropuestas')?.value">
+              {{ formulario.get('usarEnPropuestas')?.value ? 'PANEL ACTIVO' : 'PANEL INACTIVO' }}
+            </span>
+          </div>
+
+          <div class="grid-cols-2">
+            <app-campo label="Código Estándar UNSPSC (Catálogo)">
+              <input type="text" formControlName="codigoUnspsc" placeholder="Ej: 41111702" />
+            </app-campo>
+
+            <app-campo label="Precio Mínimo de Referencia (S/)">
+              <input type="number" formControlName="precioMinReferencia" min="0" step="0.01" placeholder="0.00" />
+            </app-campo>
+          </div>
+
+          <app-campo label="Escalas de Tarifa / Niveles de Precio (S/)">
+            <div class="grid-cols-3">
+              <div class="escala-card">
+                <div class="escala-card__label">NIVEL 1 · ESTÁNDAR</div>
+                <input type="number" formControlName="escalaEstandar" min="0" step="0.01" />
+              </div>
+              <div class="escala-card">
+                <div class="escala-card__label">NIVEL 2 · VOLUMEN</div>
+                <input type="number" formControlName="escalaVolumen" min="0" step="0.01" />
+              </div>
+              <div class="escala-card">
+                <div class="escala-card__label">NIVEL 3 · CORPORATIVO ALTO</div>
+                <input type="number" formControlName="escalaCorporativoAlto" min="0" step="0.01" />
+              </div>
+            </div>
+          </app-campo>
+
+          <app-campo label="Áreas Operativas de Ejecución Asignables">
+            <div class="checks-row">
+              <label class="check-op">
+                <input type="checkbox" formControlName="aplicaComercial" />
+                <span class="check-op__box"></span>
+                <span class="check-op__texto">Comercial / Ventas</span>
+              </label>
+              <label class="check-op">
+                <input type="checkbox" formControlName="aplicaServicioTecnico" />
+                <span class="check-op__box"></span>
+                <span class="check-op__texto">Servicio Técnico en Campo</span>
+              </label>
+              <label class="check-op">
+                <input type="checkbox" formControlName="aplicaLaboratorioMetrologia" />
+                <span class="check-op__box"></span>
+                <span class="check-op__texto">Laboratorio de Metrología</span>
+              </label>
+            </div>
+          </app-campo>
+
+          @if (procedimientosAsociados().length > 0) {
+            <app-campo label="Procedimientos Asociados" hint="Referenciados desde el maestro de procedimientos (HU-87)">
+              <ul class="proc-list">
+                @for (p of procedimientosAsociados(); track p.codigo) {
+                  <li>
+                    <span class="proc-list__codigo">{{ p.codigo }}</span>
+                    <span class="proc-list__nombre">{{ p.nombre }}</span>
+                  </li>
+                }
+              </ul>
+            </app-campo>
+          }
+
+        </app-seccion>
+
+      </div>
+
+      <!-- ═════════════════════════════ SIDEBAR ═════════════════════════════ -->
+      <aside class="ficha-sidebar">
+
+        <div class="side-card">
+          <div class="side-card__header">
+            <span class="material-symbols-outlined">photo_camera</span>
+            <span>FOTO TÉCNICA DEL ACTIVO</span>
+          </div>
+          <div class="foto-preview">
+            <span class="material-symbols-outlined foto-preview__icono">inventory_2</span>
+            <span class="foto-preview__hint">Sin foto cargada</span>
+          </div>
+          <div class="side-card__acciones">
+            <button type="button" class="btn-side" (click)="onSubirFoto()">
+              <span class="material-symbols-outlined">upload</span>
+              Subir
+            </button>
+            <button type="button" class="btn-side" (click)="onVerHdFoto()">
+              <span class="material-symbols-outlined">visibility</span>
+              Ver HD
+            </button>
+            <button type="button" class="btn-side" (click)="onReemplazarFoto()">
+              <span class="material-symbols-outlined">sync</span>
+              Reemplazar
+            </button>
+          </div>
+        </div>
+
+        <div class="side-card side-card--traz">
+          <div class="side-card__header">
+            <span class="material-symbols-outlined">verified</span>
+            <span>TRAZABILIDAD & AUDITORÍA</span>
+          </div>
+          <dl class="traz-list">
+            <div>
+              <dt>Usuario Registro</dt>
+              <dd>{{ usuarioRegistro() || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Fecha Registro</dt>
+              <dd>{{ fechaRegistro() ? (fechaRegistro() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+            </div>
+            <div>
+              <dt>Fecha Modificación</dt>
+              <dd>{{ fechaModificacion() ? (fechaModificacion() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+            </div>
+            <div>
+              <dt>N.º Total ediciones</dt>
+              <dd>{{ totalEdiciones() }}</dd>
+            </div>
+            <div>
+              <dt>Firma Digital</dt>
+              <dd class="firma">{{ firmaDigital() || '—' }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="side-card side-card--manual">
+          <div class="side-card__header">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+            <span>MANUAL & CERTIFICADOS</span>
+          </div>
+          <p class="side-card__hint">Adjunta la ficha técnica y certificados en PDF para consulta desde propuestas y expedientes.</p>
+          <button type="button" class="btn-side btn-side--pdf" (click)="onAdjuntarManual()">
+            <span class="material-symbols-outlined">attach_file</span>
+            Adjuntar Ficha Técnica PDF
+          </button>
+        </div>
+
+      </aside>
+
+      <!-- ═════════════════════════════ FOOTER ═════════════════════════════ -->
+      <div class="ficha-footer">
+        <app-form-footer cancelarTexto="Volver al Listado" (cancelar)="cancelar()">
+          <app-button variant="ghost" icono="cleaning_services" (clic)="limpiarFormulario()">
+            Limpiar Formulario
+          </app-button>
+          <app-button variant="secondary" icono="content_copy" [disabled]="esNuevo()" (clic)="duplicarComoPlantilla()">
+            Duplicar como Plantilla
+          </app-button>
+          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardar(true)">
+            Guardar Borrador
+          </app-button>
+          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar(false)">
+            {{ esNuevo() ? 'Guardar y Publicar Registro' : 'Guardar Cambios' }}
+          </app-button>
+        </app-form-footer>
+      </div>
+
+    </form>
+  }
+
+</div>
+
+<!-- ═════════════════ MODAL: Nueva Marca ═════════════════ -->
+@if (modalMarcaOpen()) {
+  <app-modal titulo="Registrar Nueva Marca" ancho="sm" (cerrar)="cerrarModalMarca()">
+    <div class="modal-body">
+      <p class="modal-hint">La marca quedará disponible en el catálogo maestro para todos los suministros.</p>
+      <label class="modal-label">Nombre de la marca</label>
+      <input type="text" class="modal-input" [(ngModel)]="nuevaMarcaNombre" [ngModelOptions]="{ standalone: true }"
+             placeholder="Ej: OHAUS" (keydown.enter)="guardarNuevaMarca()" />
+    </div>
+    <div modalFooter class="modal-footer">
+      <app-button variant="ghost" (clic)="cerrarModalMarca()">Cancelar</app-button>
+      <app-button variant="primary" icono="check" (clic)="guardarNuevaMarca()">Guardar Marca</app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ═════════════════ MODAL: Nuevo Modelo ═════════════════ -->
+@if (modalModeloOpen()) {
+  <app-modal titulo="Registrar Nuevo Modelo" ancho="sm" (cerrar)="cerrarModalModelo()">
+    <div class="modal-body">
+      <p class="modal-hint">El modelo quedará asociado a la marca seleccionada.</p>
+      <label class="modal-label">Nombre del modelo</label>
+      <input type="text" class="modal-input" [(ngModel)]="nuevoModeloNombre" [ngModelOptions]="{ standalone: true }"
+             placeholder="Ej: TW-M2" (keydown.enter)="guardarNuevoModelo()" />
+    </div>
+    <div modalFooter class="modal-footer">
+      <app-button variant="ghost" (clic)="cerrarModalModelo()">Cancelar</app-button>
+      <app-button variant="primary" icono="check" (clic)="guardarNuevoModelo()">Guardar Modelo</app-button>
+    </div>
+  </app-modal>
+}

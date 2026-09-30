@@ -105,6 +105,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'maestros/suministros',
+        loadComponent: () =>
+          import('./features/maestros/suministros/lista-suministros/lista-suministros.component').then(
+            m => m.ListaSuministrosComponent
+          ),
+      },
+      {
+        path: 'maestros/suministros/nuevo',
+        loadComponent: () =>
+          import('./features/maestros/suministros/ficha-suministro/ficha-suministro.component').then(
+            m => m.FichaSuministroComponent
+          ),
+      },
+      {
+        path: 'maestros/suministros/:id',
+        loadComponent: () =>
+          import('./features/maestros/suministros/ficha-suministro/ficha-suministro.component').then(
+            m => m.FichaSuministroComponent
+          ),
+      },
+      {
         path: 'crm/requerimientos',
         loadComponent: () =>
           import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(

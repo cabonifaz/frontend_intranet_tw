@@ -46,5 +46,11 @@ export class MaestrosHubComponent {
       descripcion: 'Catálogo maestro de cláusulas, saludos y recomendaciones reutilizables en propuestas comerciales.',
       ruta:        '/maestros/textos-base',
     },
+    {
+      icono:       'inventory_2',
+      titulo:      'Suministros',
+      descripcion: 'Catálogo técnico-comercial de suministros, insumos, repuestos, equipos y servicios asignables a propuestas.',
+      ruta:        '/maestros/suministros',
+    },
   ];
 }

@@ -1,0 +1,134 @@
+<div class="suministros-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="inventory_2"
+    titulo="Mantenimiento de Suministros"
+    subtitulo="Gestión centralizada del catálogo de suministros, insumos, repuestos y bienes"
+  >
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Suministro
+    </button>
+  </app-page-header>
+
+  <app-filtros-bar
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por ID, descripción, tipo, marca o código..."
+    (buscar)="cargar(true)"
+  >
+    <select [(ngModel)]="claseFiltro" (change)="cargar(true)">
+      <option value="">Clase: Todas</option>
+      @for (opt of clasesOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+    <select [(ngModel)]="tipoFiltro" (change)="cargar(true)">
+      <option value="">Tipo / Subtipo: Todos</option>
+      @for (opt of tiposOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+    <select [(ngModel)]="estadoFiltro" (change)="cargar(true)">
+      @for (opt of estadoOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+  </app-filtros-bar>
+
+  <div class="pre-nota">
+    <label class="check-pre">
+      <input type="checkbox" [(ngModel)]="soloEnPropuestas" (change)="cargar(true)" />
+      <span class="check-pre__box"></span>
+      <span class="check-pre__texto">Solo habilitados para propuestas comerciales (UNSPSC activo)</span>
+    </label>
+    <span class="pre-nota__contador">{{ total() }} suministros registrados</span>
+  </div>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando suministros..." />
+  } @else {
+    @if (items().length === 0) {
+      <app-estado-vacio icono="inventory_2" mensaje="No hay suministros registrados con los filtros aplicados.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+          <span class="material-symbols-outlined">add</span>
+          Crear primer suministro
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th class="th-tipo">TIPO / SUBTIPO</th>
+            <th class="th-desc">DESCRIPCIÓN</th>
+            <th class="th-marca">MARCA Y MODELO</th>
+            <th class="th-cta">CTA. CONTABLE</th>
+            <th class="th-proc">PROCEDENCIA</th>
+            <th class="th-centro">ESTADO</th>
+            <th class="tabla__th--acciones th-acciones">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of items(); track s.idSuministro) {
+            <tr (click)="irAEditar(s.idSuministro)">
+              <td class="td-id">{{ s.idSuministro }}</td>
+              <td class="td-tipo">
+                <span class="tipo-principal">{{ s.tipoLabel }}</span>
+                <span class="tipo-sub">{{ s.subtipoLabel }}</span>
+              </td>
+              <td class="td-desc">{{ truncar(s.descripcion) }}</td>
+              <td class="td-marca">
+                <span class="marca-linea">{{ marcaLabel(s) }}</span>
+                <span class="modelo-linea">{{ modeloLabel(s) }}</span>
+              </td>
+              <td class="td-cta">{{ s.ctaContable || '—' }}</td>
+              <td class="td-proc">
+                <span class="badge-proc badge-proc--{{ s.procedencia }}">{{ s.procedenciaLabel }}</span>
+              </td>
+              <td class="td-centro">
+                <app-badge-estado [estado]="s.estado" />
+              </td>
+              <td class="tabla__td--acciones">
+                <button
+                  class="btn-accion btn-accion--editar"
+                  type="button"
+                  title="Editar suministro"
+                  (click)="irAEditar(s.idSuministro); $event.stopPropagation()"
+                >
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="btn-accion"
+                  [class.btn-accion--activar]="s.estado === 'Inactivo'"
+                  [class.btn-accion--desactivar]="s.estado === 'Activo'"
+                  type="button"
+                  [title]="s.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                  (click)="toggleEstado(s, $event)"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ s.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+
+      <app-paginacion
+        [pagina]="pagina()"
+        [total]="total()"
+        [porPagina]="porPagina"
+        etiqueta="suministros"
+        (cambioPagina)="irAPagina($event)"
+      />
+    }
+  }
+
+</div>
