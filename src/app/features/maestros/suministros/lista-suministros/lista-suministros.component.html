@@ -78,7 +78,7 @@
           @for (s of items(); track s.idSuministro) {
             <tr (click)="irAEditar(s.idSuministro)">
               <td>
-                <span class="badge-clase badge-clase--{{ s.clase }}">{{ s.claseLabel }}</span>
+                <span class="badge-clase">{{ s.claseLabel }}</span>
               </td>
               <td class="td-tipo">
                 <span class="tipo-principal">{{ s.tipoLabel }}</span>
@@ -94,7 +94,7 @@
                 }
               </td>
               <td class="td-proc">
-                <span class="badge-proc badge-proc--{{ s.procedencia }}">{{ s.procedenciaLabel }}</span>
+                <span class="badge-proc">{{ s.procedenciaLabel }}</span>
               </td>
               <td class="td-centro">
                 <span class="badge-mini" [class.badge-mini--si]="s.usarEnPropuestas">

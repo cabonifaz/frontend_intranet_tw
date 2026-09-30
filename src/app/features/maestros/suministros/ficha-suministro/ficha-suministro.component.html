@@ -25,18 +25,12 @@
         <app-seccion numero="01" icono="fingerprint" titulo="Identificación y Clasificación Primaria"
                      subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios">
 
-          <div class="grid-cols-2">
+          <!-- Fila 1: ID · Clase · Estado -->
+          <div class="grid-cols-3">
             <app-campo label="ID de Registro">
               <div class="lectura">
                 <span>{{ esNuevo() ? '—' : idSuministro }}</span>
                 <span class="chip-auto">AUTO</span>
-              </div>
-            </app-campo>
-
-            <app-campo label="Estado Operativo">
-              <div class="toggle-linea">
-                <app-toggle formControlName="esActivoEnCatalogo" />
-                <span>Activo en Catálogo</span>
               </div>
             </app-campo>
 
@@ -49,8 +43,16 @@
               </select>
             </app-campo>
 
-            <div></div>
+            <app-campo label="Estado Operativo">
+              <div class="toggle-linea">
+                <app-toggle formControlName="esActivoEnCatalogo" />
+                <span>Activo en Catálogo</span>
+              </div>
+            </app-campo>
+          </div>
 
+          <!-- Fila 2+: Tipo · SubTipo · Marca · Modelo -->
+          <div class="grid-cols-2">
             <app-campo label="Tipo" [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''">
               <select formControlName="tipo">
                 <option value="">Selecciona…</option>
