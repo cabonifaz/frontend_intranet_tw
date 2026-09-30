@@ -2,8 +2,10 @@
 .dash {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  max-width: 1400px;
+  gap: 16px;
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
 
   &__header {
     display: flex;
@@ -49,7 +51,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid #E5E7EB;
-  border-top-color: #004AC6;
+  border-top-color: #2563EB;
   border-radius: 50%;
   animation: girar 0.7s linear infinite;
 }
@@ -190,7 +192,7 @@
   &__barra {
     width: 4px;
     height: 24px;
-    background: #004AC6;
+    background: #2563EB;
     border-radius: 9999px;
     flex-shrink: 0;
   }
@@ -208,7 +210,7 @@
     font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 13px;
-    color: #004AC6;
+    color: #2563EB;
     text-decoration: none;
     white-space: nowrap;
     &:hover { text-decoration: underline; }
@@ -254,7 +256,7 @@
 // ─── Columnas tabla ───────────────────────────────────────────────────────────
 .col-modulo {
   font-weight: 700;
-  color: #004AC6;
+  color: #2563EB;
   white-space: nowrap;
 }
 
@@ -310,7 +312,7 @@
   font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 13px;
-  color: #004AC6;
+  color: #2563EB;
   cursor: pointer;
   border: none;
   background: none;
@@ -465,12 +467,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 14px 24px 24px;
+  padding: 0;
 
   &__subtitulo {
     font-family: 'Inter', sans-serif;
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
+    color: #64748B;
     text-align: left;
     margin-bottom: 0;
   }
@@ -529,19 +531,19 @@
   &__objetivo-label {
     font-family: 'Inter', sans-serif;
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
+    color: #94A3B8;
   }
 
   &__objetivo-valor {
     font-family: 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
+    color: #475569;
   }
 
   &__barra-ctn {
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: #F1F5F9;
     border-radius: 9999px;
     overflow: hidden;
   }

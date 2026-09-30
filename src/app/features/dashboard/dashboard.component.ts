@@ -3,12 +3,17 @@ import { NgClass } from '@angular/common';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { AutenticacionService } from '../../core/services/autenticacion.service';
 import { AlertaOperativa, KpisDashboard } from '../../core/models/dashboard.model';
+import { HeroHeaderComponent } from '../../shared/ui/hero-header/hero-header.component';
+import { SeccionComponent }    from '../../shared/ui/seccion/seccion.component';
+import { ButtonComponent }     from '../../shared/ui/button/button.component';
+import { EstadoVacioComponent } from '../../shared/ui/estado-vacio/estado-vacio.component';
+import { KpiCardComponent }    from '../../shared/ui/kpi-card/kpi-card.component';
 
 interface TarjetaKpi {
   etiqueta: string;
   valor:    number;
   icono:    string;
-  variante: 'normal' | 'alerta' | 'peligro' | 'exito';
+  variante: 'azul' | 'verde' | 'ambar' | 'rojo';
 }
 
 interface ZonaOperativa {
@@ -20,7 +25,7 @@ interface ZonaOperativa {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [NgClass],
+  imports: [NgClass, HeroHeaderComponent, SeccionComponent, ButtonComponent, EstadoVacioComponent, KpiCardComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -60,14 +65,14 @@ export class DashboardComponent implements OnInit {
 
   private construirTarjetas(k: KpisDashboard): TarjetaKpi[] {
     return [
-      { etiqueta: 'SERVICIOS PROGRAMADOS',  valor: k.serviciosProgramados,  icono: 'calendar_month',    variante: 'normal'  },
-      { etiqueta: 'EN EJECUCIÓN',            valor: k.serviciosEnEjecucion,  icono: 'play_circle',       variante: 'normal'  },
-      { etiqueta: 'EXPEDIENTES BLOQUEADOS',  valor: k.expedientesBloqueados, icono: 'lock',              variante: 'peligro' },
-      { etiqueta: 'PENDIENTES SSOMA',        valor: k.pendientesSsoma,       icono: 'health_and_safety', variante: 'alerta'  },
-      { etiqueta: 'PENDIENTES CONFORMIDAD',  valor: k.pendientesConformidad, icono: 'pending_actions',   variante: 'alerta'  },
-      { etiqueta: 'LISTOS PARA FACTURAR',    valor: k.listosFacturar,        icono: 'receipt_long',      variante: 'exito'   },
-      { etiqueta: 'SLA VENCIDOS',            valor: k.slaVencidos,           icono: 'timer_off',         variante: 'peligro' },
-      { etiqueta: 'TÉCNICOS EN RUTA',        valor: k.tecnicosEnRuta,        icono: 'location_on',       variante: 'normal'  },
+      { etiqueta: 'SERVICIOS PROGRAMADOS',  valor: k.serviciosProgramados,  icono: 'calendar_month',    variante: 'azul'  },
+      { etiqueta: 'EN EJECUCIÓN',            valor: k.serviciosEnEjecucion,  icono: 'play_circle',       variante: 'azul'  },
+      { etiqueta: 'EXPEDIENTES BLOQUEADOS',  valor: k.expedientesBloqueados, icono: 'lock',              variante: 'rojo'  },
+      { etiqueta: 'PENDIENTES SSOMA',        valor: k.pendientesSsoma,       icono: 'health_and_safety', variante: 'ambar' },
+      { etiqueta: 'PENDIENTES CONFORMIDAD',  valor: k.pendientesConformidad, icono: 'pending_actions',   variante: 'ambar' },
+      { etiqueta: 'LISTOS PARA FACTURAR',    valor: k.listosFacturar,        icono: 'receipt_long',      variante: 'verde' },
+      { etiqueta: 'SLA VENCIDOS',            valor: k.slaVencidos,           icono: 'timer_off',         variante: 'rojo'  },
+      { etiqueta: 'TÉCNICOS EN RUTA',        valor: k.tecnicosEnRuta,        icono: 'location_on',       variante: 'azul'  },
     ];
   }
 

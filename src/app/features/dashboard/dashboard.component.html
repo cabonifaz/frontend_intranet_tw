@@ -1,56 +1,37 @@
-<!-- Estado de carga -->
 @if (cargando()) {
-  <div class="dash-estado">
-    <div class="spinner"></div>
-    <p>Cargando dashboard…</p>
-  </div>
+  <app-estado-vacio variante="cargando" mensaje="Cargando dashboard..." />
 }
 
 @if (!cargando() && error()) {
-  <div class="dash-estado dash-estado--error">
-    <span class="material-symbols-outlined">error_outline</span>
-    <p>{{ error() }}</p>
-  </div>
+  <app-estado-vacio variante="error" [mensaje]="error()" />
 }
 
 @if (!cargando() && !error() && kpis()) {
   <div class="dash">
 
-    <!-- Encabezado -->
-    <div class="dash__header">
-      <div class="dash__header-textos">
-        <h1 class="dash__titulo">Dashboard General</h1>
-        <p class="dash__subtitulo">Resumen operativo de hoy • Actualizado hace 2 minutos</p>
-      </div>
-      <button class="btn-primario">
-        <span class="material-symbols-outlined">add</span>
-        Nuevo Servicio
-      </button>
-    </div>
+    <app-hero-header
+      titulo="Dashboard General"
+      descripcion="Resumen operativo de hoy • Actualizado hace 2 minutos"
+      [mostrarBack]="false"
+    >
+      <app-button variant="primary" icono="add">Nuevo Servicio</app-button>
+    </app-hero-header>
 
     <!-- KPI Grid -->
     <div class="kpi-grid">
       @for (t of tarjetas(); track t.etiqueta) {
-        <div class="kpi-card" [ngClass]="'kpi-card--' + t.variante">
-          <div class="kpi-card__icono-ctn">
-            <span class="material-symbols-outlined kpi-card__icono">{{ t.icono }}</span>
-          </div>
-          <div class="kpi-card__contenido">
-            <span class="kpi-card__etiqueta">{{ t.etiqueta }}</span>
-            <span class="kpi-card__valor">{{ t.valor }}</span>
-          </div>
-        </div>
+        <app-kpi-card
+          [icono]="t.icono"
+          [etiqueta]="t.etiqueta"
+          [valor]="t.valor"
+          [variante]="t.variante"
+        />
       }
     </div>
 
     <!-- Alertas operativas -->
-    <div class="panel">
-      <div class="panel__header">
-        <span class="panel__barra"></span>
-        <h2 class="panel__titulo">Alertas Operativas</h2>
-        <a class="panel__link" href="#">Ver todas las alertas</a>
-      </div>
-
+    <app-seccion icono="notifications_active" titulo="Alertas Operativas">
+      <a headerActions class="panel__link" href="#">Ver todas las alertas</a>
       <div class="tabla-ctn">
         <table class="tabla">
           <thead>
@@ -92,17 +73,13 @@
           </tbody>
         </table>
       </div>
-    </div>
+    </app-seccion>
 
-    <!-- Bottom row: Carga por Zona + SLA oscuro -->
+    <!-- Bottom row: Carga por Zona + SLA -->
     <div class="bottom-row">
 
       <!-- Carga Operativa por Zona -->
-      <div class="panel zona-panel">
-        <div class="panel__header">
-          <span class="panel__barra"></span>
-          <h2 class="panel__titulo">Carga Operativa por Zona</h2>
-        </div>
+      <app-seccion icono="map" titulo="Carga Operativa por Zona">
         <div class="zona-cuerpo">
           <div class="zona-mapa">
             <span class="material-symbols-outlined zona-mapa__icono">map</span>
@@ -124,13 +101,10 @@
             }
           </div>
         </div>
-      </div>
+      </app-seccion>
 
-      <!-- Cumplimiento SLA (oscuro) -->
-      <div class="sla-panel-oscuro">
-        <div class="sla-panel-oscuro__header">
-          <h2 class="sla-panel-oscuro__titulo">Cumplimiento SLA</h2>
-        </div>
+      <!-- Cumplimiento SLA -->
+      <app-seccion icono="verified" titulo="Cumplimiento SLA">
         <div class="sla-oscuro">
           <span class="sla-oscuro__subtitulo">Rendimiento mensual acumulado</span>
           <div class="sla-oscuro__centro">
@@ -153,7 +127,7 @@
             </div>
           </div>
         </div>
-      </div>
+      </app-seccion>
 
     </div>
 
