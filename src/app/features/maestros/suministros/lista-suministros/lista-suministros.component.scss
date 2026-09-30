@@ -94,21 +94,13 @@
 }
 
 // ── Columnas tabla ────────────────────────────────────────────────────────
-.th-id       { width: 60px; }
+.th-clase    { width: 110px; }
 .th-tipo     { width: 160px; }
 .th-desc     { min-width: 260px; }
 .th-marca    { width: 180px; }
-.th-cta      { width: 100px; }
 .th-proc     { width: 120px; }
-.th-centro   { text-align: center; width: 80px; }
+.th-centro   { text-align: center; width: 100px; }
 .th-acciones { width: 90px; white-space: nowrap; }
-
-.td-id {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  color: #64748B;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .td-tipo {
   display: flex;
@@ -128,16 +120,49 @@
 
   .marca-linea  { font-size: 12px; font-weight: 700; color: #0F172A; letter-spacing: 0.3px; }
   .modelo-linea { font-size: 11px; color: #64748B; }
-}
-
-.td-cta {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  color: #475569;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
+  .marca-vacia  { font-size: 12px; color: #CBD5E1; font-weight: 500; }
 }
 
 .td-proc, .td-centro { text-align: center; }
+
+// ── Badge de Clase Principal ──────────────────────────────────────────────
+.badge-clase {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+
+  &--servicio    { background: #EDE9FE; color: #6D28D9; border-color: #C4B5FD; }
+  &--equipo      { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+  &--pesa        { background: #FFFBEB; color: #B45309; border-color: #FDE68A; }
+  &--instrumento { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+}
+
+// ── Badge mini S/N (En Propuestas) ────────────────────────────────────────
+.badge-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #94A3B8;
+
+  &--si {
+    background: #DBEAFE;
+    color: #1D4ED8;
+  }
+}
 
 // ── Badge Procedencia ─────────────────────────────────────────────────────
 .badge-proc {

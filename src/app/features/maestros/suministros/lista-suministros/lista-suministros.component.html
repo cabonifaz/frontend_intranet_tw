@@ -64,12 +64,12 @@
       <app-tabla-maestro>
         <thead>
           <tr>
-            <th class="th-id">ID</th>
+            <th class="th-clase">CLASE</th>
             <th class="th-tipo">TIPO / SUBTIPO</th>
             <th class="th-desc">DESCRIPCIÓN</th>
             <th class="th-marca">MARCA Y MODELO</th>
-            <th class="th-cta">CTA. CONTABLE</th>
             <th class="th-proc">PROCEDENCIA</th>
+            <th class="th-centro">EN PROPUESTAS</th>
             <th class="th-centro">ESTADO</th>
             <th class="tabla__th--acciones th-acciones">ACCIONES</th>
           </tr>
@@ -77,19 +77,29 @@
         <tbody>
           @for (s of items(); track s.idSuministro) {
             <tr (click)="irAEditar(s.idSuministro)">
-              <td class="td-id">{{ s.idSuministro }}</td>
+              <td>
+                <span class="badge-clase badge-clase--{{ s.clase }}">{{ s.claseLabel }}</span>
+              </td>
               <td class="td-tipo">
                 <span class="tipo-principal">{{ s.tipoLabel }}</span>
                 <span class="tipo-sub">{{ s.subtipoLabel }}</span>
               </td>
               <td class="td-desc">{{ truncar(s.descripcion) }}</td>
               <td class="td-marca">
-                <span class="marca-linea">{{ marcaLabel(s) }}</span>
-                <span class="modelo-linea">{{ modeloLabel(s) }}</span>
+                @if (s.clase === 'servicio') {
+                  <span class="marca-vacia">—</span>
+                } @else {
+                  <span class="marca-linea">{{ marcaLabel(s) }}</span>
+                  <span class="modelo-linea">{{ modeloLabel(s) }}</span>
+                }
               </td>
-              <td class="td-cta">{{ s.ctaContable || '—' }}</td>
               <td class="td-proc">
                 <span class="badge-proc badge-proc--{{ s.procedencia }}">{{ s.procedenciaLabel }}</span>
+              </td>
+              <td class="td-centro">
+                <span class="badge-mini" [class.badge-mini--si]="s.usarEnPropuestas">
+                  {{ s.usarEnPropuestas ? 'S' : 'N' }}
+                </span>
               </td>
               <td class="td-centro">
                 <app-badge-estado [estado]="s.estado" />
