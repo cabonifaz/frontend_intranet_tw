@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, signal, input, output } from '@angular/core';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { ContactoListaItem } from '../../../../core/models/maestros.model';
+import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 export interface ContactoSeleccionado {
   idContacto: number;
@@ -10,7 +12,7 @@ export interface ContactoSeleccionado {
 
 @Component({
   selector: 'app-seleccionar-contacto',
-  imports: [],
+  imports: [ModalComponent, ButtonComponent],
   templateUrl: './seleccionar-contacto.component.html',
   styleUrl: './seleccionar-contacto.component.scss',
 })

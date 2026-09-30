@@ -1,0 +1,129 @@
+<div class="overlay" (click)="cerrar.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal__header">
+      <div class="modal__header-izq">
+        <div class="modal__icono-wrap">
+          <span class="material-symbols-outlined modal__icono">warning</span>
+        </div>
+        <span class="modal__titulo">Anular Requerimiento</span>
+      </div>
+      <button class="modal__cerrar" type="button" (click)="cerrar.emit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal__body">
+
+      <!-- Tarjeta resumen -->
+      <div class="resumen-card">
+        <div class="resumen-grid">
+          <div class="resumen-item">
+            <div class="resumen-label">IDENTIFICADOR</div>
+            <div class="resumen-valor resumen-valor--azul">{{ numero }}</div>
+          </div>
+          <div class="resumen-item">
+            <div class="resumen-label">CLIENTE CUENTA</div>
+            <div class="resumen-valor">{{ razonSocial }}</div>
+          </div>
+          <div class="resumen-item">
+            <div class="resumen-label">CATEGORÍA</div>
+            <div class="resumen-valor">{{ categoria ?? '—' }}</div>
+          </div>
+          <div class="resumen-item">
+            <div class="resumen-label">DOCUMENTOS LIGADOS</div>
+            <div class="resumen-valor">0 documentos</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advertencia de impacto -->
+      <div class="impacto-warn">
+        <div class="impacto-warn__header">
+          <span class="material-symbols-outlined impacto-warn__icono">error</span>
+          <span class="impacto-warn__titulo">ADVERTENCIA DE IMPACTO</span>
+        </div>
+        <p class="impacto-warn__texto">
+          Esta acción detiene todos los procesos asociados a este requerimiento.
+          Las propuestas, órdenes de servicio y documentos ligados quedarán
+          suspendidos y no podrán retomarse. La acción <strong>no puede revertirse</strong>.
+        </p>
+      </div>
+
+      <!-- Motivo -->
+      <div class="form-group">
+        <label class="form-label" for="motivo">MOTIVO <span class="form-requerido">*</span></label>
+        <select
+          id="motivo"
+          class="form-select"
+          [ngModel]="idMotivo()"
+          (ngModelChange)="idMotivo.set($event)"
+        >
+          <option [value]="0">Seleccione un motivo...</option>
+          @for (m of motivos; track m.id) {
+            <option [value]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Justificación -->
+      <div class="form-group">
+        <label class="form-label" for="justificacion">JUSTIFICACIÓN <span class="form-requerido">*</span></label>
+        <textarea
+          id="justificacion"
+          class="form-textarea"
+          rows="4"
+          placeholder="Explique brevemente el motivo de la anulación (mín. 10 caracteres)..."
+          [ngModel]="justificacion()"
+          (ngModelChange)="justificacion.set($event)"
+        ></textarea>
+      </div>
+
+      <!-- Confirmación -->
+      <label class="checkbox-confirm">
+        <input
+          type="checkbox"
+          class="checkbox-confirm__input"
+          [ngModel]="confirmado()"
+          (ngModelChange)="confirmado.set($event)"
+        />
+        <span class="checkbox-confirm__texto">
+          Confirmo que he revisado el requerimiento <strong>{{ numero }}</strong> y
+          comprendo que esta acción es irreversible.
+        </span>
+      </label>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal__footer">
+      <div class="footer-auditoria">
+        <span class="footer-punto"></span>
+        <span class="footer-audit-texto">
+          AUDITORÍA: <strong>{{ nombreUsuario }}</strong> &bull; {{ fechaHoy }}
+        </span>
+      </div>
+      <div class="footer-btns">
+        <button class="btn-cancelar" type="button" (click)="cerrar.emit()" [disabled]="guardando()">
+          Cancelar
+        </button>
+        <button
+          class="btn-anular"
+          type="button"
+          [disabled]="!habilitado()"
+          (click)="confirmar()"
+        >
+          @if (guardando()) {
+            <span class="material-symbols-outlined btn-anular__spin">progress_activity</span>
+          } @else {
+            <span class="material-symbols-outlined">cancel</span>
+          }
+          Anular Requerimiento
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

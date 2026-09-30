@@ -1,14 +1,21 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { CrmService } from '../../../../core/services/crm.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import {
   CatalogoItem,
   RequerimientoFicha,
   GuardarRequerimientoComando,
 } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
+import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
+import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
+import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
+import { ButtonComponent }     from '../../../../shared/ui/button/button.component';
+import { ESTADO_RQ } from '../../../../core/constants/estados';
 import {
   SeleccionarClienteComponent,
   ClienteSeleccionado,
@@ -24,15 +31,16 @@ import {
 
 @Component({
   selector: 'app-ficha-requerimiento',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, BreadcrumbComponent, SeleccionarClienteComponent, SeleccionarSedeComponent, SeleccionarContactoComponent],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, SeleccionarClienteComponent, SeleccionarSedeComponent, SeleccionarContactoComponent],
   templateUrl: './ficha-requerimiento.component.html',
   styleUrl: './ficha-requerimiento.component.scss',
 })
 export class FichaRequerimientoComponent implements OnInit {
-  private readonly fb     = inject(FormBuilder);
-  private readonly crmSvc = inject(CrmService);
-  private readonly route  = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  private readonly fb       = inject(FormBuilder);
+  private readonly crmSvc   = inject(CrmService);
+  private readonly toastSvc = inject(ToastService);
+  private readonly route    = inject(ActivatedRoute);
+  private readonly router   = inject(Router);
 
   readonly cargando    = signal(true);
   readonly guardando   = signal(false);
@@ -49,7 +57,96 @@ export class FichaRequerimientoComponent implements OnInit {
   readonly sede       = signal<SedeSeleccionada | null>(null);
   readonly contacto   = signal<ContactoSeleccionado | null>(null);
 
+  readonly esSoloLectura = computed(() => {
+    const estado = this.ficha()?.estado;
+    return estado === ESTADO_RQ.ANULADO || estado === ESTADO_RQ.CERRADO;
+  });
+
   idRequerimiento = 0;
+
+  readonly pasosFlujo = [
+    { key: 'rq',          label: 'Requerimiento' },
+    { key: 'propuesta',   label: 'Propuesta'     },
+    { key: 'vb',          label: 'Visto Bueno'   },
+    { key: 'envio',       label: 'Envío'         },
+    { key: 'seguimiento', label: 'Seguimiento'   },
+    { key: 'aceptacion',  label: 'Aceptación'    },
+  ];
+
+  protected readonly ESTADO_RQ = ESTADO_RQ;
+
+  private readonly estadoAStep: Record<string, string> = {
+    [ESTADO_RQ.NUEVO]:         'rq',
+    [ESTADO_RQ.EN_PROCESO]:    'propuesta',
+    [ESTADO_RQ.CON_PROPUESTA]: 'envio',
+    [ESTADO_RQ.CERRADO]:       'aceptacion',
+  };
+
+  pasoIndice(key: string): number {
+    return this.pasosFlujo.findIndex(p => p.key === key);
+  }
+
+  pasoCls(pasoKey: string, estadoActual: string): string {
+    if (estadoActual === ESTADO_RQ.ANULADO) return 'timeline__item--gris';
+    const stepActual = this.estadoAStep[estadoActual] ?? estadoActual;
+    const idxActual  = this.pasoIndice(stepActual);
+    if (idxActual < 0) return '';
+    const idxPaso = this.pasoIndice(pasoKey);
+    if (idxPaso < idxActual)   return 'timeline__item--done';
+    if (idxPaso === idxActual) return 'timeline__item--activo';
+    return '';
+  }
+
+  calcularFlujoPct(): number {
+    const f = this.ficha();
+    if (!f) return 0;
+    const stepActual = this.estadoAStep[f.estado] ?? f.estado;
+    const idx = this.pasoIndice(stepActual);
+    if (idx < 0) return 0;
+    return Math.round(((idx + 1) / this.pasosFlujo.length) * 100);
+  }
+
+  calcularSlaPct(): number {
+    const f = this.ficha();
+    if (!f?.fechaNecesidad) return 0;
+    const inicio = new Date(f.fechaCreacion).getTime();
+    const fin    = new Date(f.fechaNecesidad);
+    fin.setHours(23, 59, 59, 999);
+    const total  = fin.getTime() - inicio;
+    if (total <= 0) return 100;
+    return Math.min(100, Math.max(0, Math.round(((Date.now() - inicio) / total) * 100)));
+  }
+
+  calcularSlaTexto(): string {
+    const f = this.ficha();
+    if (!f?.fechaNecesidad) return 'Sin fecha límite';
+    const dias = Math.ceil((new Date(f.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
+    if (dias < 0)   return `${Math.abs(dias)} días vencido`;
+    if (dias === 0) return 'Vence hoy';
+    return `${dias} días restantes`;
+  }
+
+  slaBarraCls(): string {
+    const f = this.ficha();
+    if (!f?.fechaNecesidad) return '';
+    const dias = Math.ceil((new Date(f.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
+    if (dias <= 0) return 'sla__fill--rojo';
+    if (dias <= 3) return 'sla__fill--naranja';
+    return '';
+  }
+
+  formatearFechaRelativa(fecha: string): string {
+    const utc   = fecha.endsWith('Z') || fecha.includes('+') ? fecha : fecha + 'Z';
+    const diff  = Date.now() - new Date(utc).getTime();
+    if (diff < 0) return 'Ahora mismo';
+    const mins  = Math.floor(diff / 60_000);
+    const horas = Math.floor(diff / 3_600_000);
+    const dias  = Math.floor(diff / 86_400_000);
+    if (mins  < 1)  return 'Ahora mismo';
+    if (mins  < 60) return `Hace ${mins} min`;
+    if (horas < 24) return `Hace ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+    return `Hace ${dias} ${dias === 1 ? 'día' : 'días'}`;
+  }
 
   readonly formulario: FormGroup = this.fb.group({
     idOrigen:        ['',  Validators.required],
@@ -94,6 +191,9 @@ export class FichaRequerimientoComponent implements OnInit {
           requiereVisita:  f.requiereVisita,
           clienteDeuda:    f.clienteDeuda,
         });
+        if (this.esSoloLectura()) {
+          this.formulario.disable();
+        }
       }
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar.');
@@ -120,7 +220,7 @@ export class FichaRequerimientoComponent implements OnInit {
     this.mostrarModalContacto.set(false);
   }
 
-  async guardar(continuar = false): Promise<void> {
+  async guardar(): Promise<void> {
     if (this.formulario.invalid || !this.cliente() || this.guardando()) return;
     this.guardando.set(true);
     this.error.set('');
@@ -140,14 +240,16 @@ export class FichaRequerimientoComponent implements OnInit {
         requiereVisita:  v.requiereVisita,
         clienteDeuda:    v.clienteDeuda,
       };
-      const id = await this.crmSvc.guardarRequerimiento(cmd);
-      if (continuar) {
-        this.router.navigate(['/crm/requerimientos', id, 'editar']);
-      } else {
-        this.router.navigate(['/crm/requerimientos']);
-      }
+      await this.crmSvc.guardarRequerimiento(cmd);
+      const msg = this.esNuevo()
+        ? 'Requerimiento creado exitosamente.'
+        : 'Cambios guardados correctamente.';
+      this.toastSvc.exito(msg);
+      this.router.navigate(['/crm/requerimientos']);
     } catch (e: unknown) {
-      this.error.set(e instanceof Error ? e.message : 'Error al guardar el requerimiento.');
+      const msg = e instanceof Error ? e.message : 'Error al guardar el requerimiento.';
+      this.error.set(msg);
+      this.toastSvc.error(msg);
     } finally {
       this.guardando.set(false);
     }
@@ -158,7 +260,7 @@ export class FichaRequerimientoComponent implements OnInit {
   }
 
   get puedeGuardar(): boolean {
-    return this.formulario.valid && !!this.cliente();
+    return this.formulario.valid && !!this.cliente() && !this.esSoloLectura();
   }
 
   get breadcrumb(): BreadcrumbItem[] {

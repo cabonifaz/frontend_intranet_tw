@@ -167,7 +167,7 @@
                     </div>
                   }
                 </div>
-                @if (f.estado === 'anulado') {
+                @if (f.estado === ESTADO_RQ.ANULADO) {
                   <div class="flujo__anulado">
                     <span class="material-symbols-outlined">cancel</span>
                     Requerimiento anulado
@@ -276,18 +276,274 @@
         </div>
       }
 
-      <!-- ── Placeholder tabs ──────────────────────────────────────────────────── -->
-      @else {
-        <div class="placeholder-tab">
-          <span class="material-symbols-outlined placeholder-tab__icono">construction</span>
-          <p>Esta sección estará disponible próximamente.</p>
+      <!-- ── Tab: Cliente ─────────────────────────────────────────────────────── -->
+      @else if (tabActiva() === 'cliente') {
+        <div class="contenido">
+          <div class="main-grid">
+
+            <div class="col-izq">
+
+              <!-- Datos de la Empresa -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">business</span>
+                  Datos de la Empresa
+                </div>
+                <div class="empresa-header">
+                  <div class="empresa-logo">
+                    <span class="material-symbols-outlined">domain</span>
+                  </div>
+                  <div>
+                    <div class="empresa-nombre">{{ f.razonSocial }}</div>
+                    <div class="empresa-ruc">RUC {{ f.ruc }}</div>
+                  </div>
+                </div>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">RAZÓN SOCIAL</div>
+                    <div class="info-valor">{{ f.razonSocial }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">RUC</div>
+                    <div class="info-valor info-valor--mono">{{ f.ruc }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sede de Servicio -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">location_on</span>
+                  Sede de Servicio
+                </div>
+                @if (f.nombreSede) {
+                  <div class="sede-card">
+                    <div class="sede-icono-wrap">
+                      <span class="material-symbols-outlined">warehouse</span>
+                    </div>
+                    <div>
+                      <div class="sede-nombre">{{ f.nombreSede }}</div>
+                      <div class="sede-tipo">Sede registrada</div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="tab-vacio-inline">
+                    <span class="material-symbols-outlined">location_off</span>
+                    Sin sede asignada
+                  </div>
+                }
+              </div>
+
+            </div>
+
+            <div class="col-der">
+
+              <!-- Contacto Principal -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">contact_page</span>
+                  Contacto Principal
+                </div>
+                @if (f.nombreContacto) {
+                  <div class="contacto-card-lg">
+                    <div class="contacto-avatar">{{ iniciales(f.nombreContacto) }}</div>
+                    <div>
+                      <div class="contacto-nombre-lg">{{ f.nombreContacto }}</div>
+                      <div class="contacto-rol">Contacto del cliente</div>
+                    </div>
+                  </div>
+                  <div class="contacto-acciones">
+                    <button class="contacto-btn" type="button" disabled>
+                      <span class="material-symbols-outlined">call</span>
+                      Llamar
+                    </button>
+                    <button class="contacto-btn" type="button" disabled>
+                      <span class="material-symbols-outlined">mail</span>
+                      Correo
+                    </button>
+                  </div>
+                } @else {
+                  <div class="tab-vacio-inline">
+                    <span class="material-symbols-outlined">person_off</span>
+                    Sin contacto asignado
+                  </div>
+                }
+              </div>
+
+              <!-- Configuración del Cliente -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">tune</span>
+                  Configuración del Cliente
+                </div>
+                <div class="reglas-lista">
+                  <div class="regla-item" [class.regla-item--on]="f.notificarCorreo">
+                    <div class="regla-icono" [class.regla-icono--on]="f.notificarCorreo">
+                      <span class="material-symbols-outlined">mail</span>
+                    </div>
+                    <div class="regla-texto">
+                      <div class="regla-nombre">Notificación por correo</div>
+                      <div class="regla-desc">Recibe alertas automáticas por email</div>
+                    </div>
+                    <span class="regla-estado" [class.regla-estado--on]="f.notificarCorreo">
+                      {{ f.notificarCorreo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+                  <div class="regla-item" [class.regla-item--on]="f.requiereVisita">
+                    <div class="regla-icono" [class.regla-icono--on]="f.requiereVisita">
+                      <span class="material-symbols-outlined">engineering</span>
+                    </div>
+                    <div class="regla-texto">
+                      <div class="regla-nombre">Requiere visita técnica</div>
+                      <div class="regla-desc">Debe coordinarse atención in-situ</div>
+                    </div>
+                    <span class="regla-estado" [class.regla-estado--on]="f.requiereVisita">
+                      {{ f.requiereVisita ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+                  <div class="regla-item" [class.regla-item--warn]="f.clienteDeuda">
+                    <div class="regla-icono" [class.regla-icono--warn]="f.clienteDeuda">
+                      <span class="material-symbols-outlined">credit_card_off</span>
+                    </div>
+                    <div class="regla-texto">
+                      <div class="regla-nombre">Estado de cuenta</div>
+                      <div class="regla-desc">Deuda registrada en el sistema</div>
+                    </div>
+                    <span class="regla-estado"
+                          [class.regla-estado--on]="!f.clienteDeuda"
+                          [class.regla-estado--warn]="f.clienteDeuda">
+                      {{ f.clienteDeuda ? 'Con deuda' : 'Al día' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Tab: Comercial ────────────────────────────────────────────────────── -->
+      @else if (tabActiva() === 'comercial') {
+        <div class="contenido">
+          <div class="panel tab-vacio-panel">
+            <div class="tab-vacio">
+              <div class="tab-vacio__icono-wrap">
+                <span class="material-symbols-outlined">request_quote</span>
+              </div>
+              <div class="tab-vacio__titulo">Sin propuestas registradas</div>
+              <p class="tab-vacio__desc">Aún no se han generado propuestas o cotizaciones para este requerimiento.</p>
+              <button class="tab-vacio__btn" type="button" disabled>
+                <span class="material-symbols-outlined">add</span>
+                Nueva Propuesta
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ── Tab: Actividad ────────────────────────────────────────────────────── -->
+      @else if (tabActiva() === 'actividad') {
+        <div class="contenido">
+
+          <!-- KPIs dinámicos -->
+          <div class="kpis-fila">
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">history_edu</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">INTERACCIONES</div>
+                <div class="kpi-valor">
+                  {{ f.historial.length }} {{ f.historial.length === 1 ? 'registrada' : 'registradas' }}
+                </div>
+              </div>
+            </div>
+            @if (f.historial.length > 0) {
+              <div class="kpi-card">
+                <div class="kpi-icono-wrap kpi-icono-wrap--naranja">
+                  <span class="material-symbols-outlined">schedule</span>
+                </div>
+                <div class="kpi-texto">
+                  <div class="kpi-label">ÚLTIMA ACTIVIDAD</div>
+                  <div class="kpi-valor">{{ formatearFecha(f.historial[0].fecha) }}</div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Timeline -->
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">history</span>
+              Historial de Actividades
+              <button class="panel__titulo-btn" type="button" style="margin-left:auto" disabled>
+                <span class="material-symbols-outlined">add</span>
+                Registrar
+              </button>
+            </div>
+            @if (f.historial.length === 0) {
+              <div class="timeline-vacio">
+                <span class="material-symbols-outlined timeline-vacio__icono">history_toggle_off</span>
+                <span>Sin actividad registrada</span>
+              </div>
+            } @else {
+              <div class="act-timeline">
+                @for (a of f.historial; track a.idHistorial; let isLast = $last) {
+                  <div class="act-item">
+                    <div class="act-item__izq">
+                      <div class="act-item__icono-wrap {{ actividadCls(a.tipo) }}">
+                        <span class="material-symbols-outlined">{{ a.icono ?? 'history_edu' }}</span>
+                      </div>
+                      @if (!isLast) {
+                        <div class="act-item__conector"></div>
+                      }
+                    </div>
+                    <div class="act-item__contenido">
+                      <div class="act-item__header">
+                        <span class="act-item__tipo">{{ a.tipoLabel ?? a.tipo }}</span>
+                        <span class="act-item__fecha">{{ formatearFechaHora(a.fecha) }}</span>
+                      </div>
+                      <p class="act-item__desc">{{ a.descripcion }}</p>
+                      @if (a.usuario) {
+                        <div class="act-item__footer">
+                          <span class="material-symbols-outlined act-item__user-icon">person</span>
+                          {{ a.usuario }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+        </div>
+      }
+
+      <!-- ── Tab: Documentos ───────────────────────────────────────────────────── -->
+      @else if (tabActiva() === 'documentos') {
+        <div class="contenido">
+          <div class="panel tab-vacio-panel">
+            <div class="tab-vacio">
+              <div class="tab-vacio__icono-wrap">
+                <span class="material-symbols-outlined">folder_open</span>
+              </div>
+              <div class="tab-vacio__titulo">Sin documentos adjuntos</div>
+              <p class="tab-vacio__desc">Los contratos, cotizaciones y archivos relacionados aparecerán aquí.</p>
+              <button class="tab-vacio__btn" type="button" disabled>
+                <span class="material-symbols-outlined">upload_file</span>
+                Adjuntar Documento
+              </button>
+            </div>
+          </div>
         </div>
       }
 
       <!-- Footer -->
       <div class="modal__footer">
         <button class="btn-anular" type="button"
-                [disabled]="f.estado === 'cerrado' || f.estado === 'anulado'"
+                [disabled]="f.estado === ESTADO_RQ.CERRADO || f.estado === ESTADO_RQ.ANULADO"
                 (click)="anular.emit(f.idRequerimiento)">
           <span class="material-symbols-outlined">cancel</span>
           Anular Requerimiento

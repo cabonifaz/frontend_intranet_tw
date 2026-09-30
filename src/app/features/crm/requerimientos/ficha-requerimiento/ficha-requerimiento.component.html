@@ -1,24 +1,18 @@
-@if (cargando()) {
-  <div class="ficha-rq__cargando">
-    <span class="material-symbols-outlined ficha-rq__spin">progress_activity</span>
-    Cargando requerimiento...
-  </div>
-} @else {
   <div class="ficha-rq__wrapper">
 
-    <!-- Breadcrumb -->
-    <div class="ficha-rq__breadcrumb-row">
-      <app-breadcrumb [items]="breadcrumb" />
-    </div>
+    <app-breadcrumb [items]="breadcrumb" />
+
+    @if (cargando()) {
+      <app-estado-vacio variante="cargando" mensaje="Cargando requerimiento..." />
+    } @else {
 
     <!-- Page header: Nuevo vs Editar -->
     @if (esNuevo()) {
-      <div class="ficha-rq__titulo-card">
-        <div class="ficha-rq__titulo-card-izq">
-          <h1 class="ficha-rq__titulo">Nuevo Requerimiento</h1>
-          <p class="ficha-rq__subtitulo">Registrar una nueva necesidad comercial u operativa</p>
-        </div>
-      </div>
+      <app-hero-header
+        titulo="Nuevo Requerimiento"
+        descripcion="Registrar una nueva necesidad comercial u operativa."
+        (volver)="cancelar()"
+      />
     } @else {
       <div class="ficha-rq__cabecera-edicion">
         <div class="ficha-rq__cab-izq">
@@ -49,6 +43,13 @@
       <!-- Main column -->
       <div class="ficha-rq__main" [formGroup]="formulario">
 
+        @if (esSoloLectura()) {
+          <div class="ficha-rq__aviso-lectura">
+            <span class="material-symbols-outlined">lock</span>
+            Este requerimiento está {{ ficha()?.estado === ESTADO_RQ.ANULADO ? 'anulado' : 'cerrado' }} y no puede ser editado. Solo lectura.
+          </div>
+        }
+
         @if (error()) {
           <div class="ficha-rq__error">
             <span class="material-symbols-outlined">error</span>
@@ -57,19 +58,11 @@
         }
 
         <!-- ── Sección 1: Información del Requerimiento ── -->
-        <section class="seccion">
-          <div class="seccion__header">
-            <div class="seccion__header-izq">
-              <div class="seccion__icono-box">
-                <span class="material-symbols-outlined">article</span>
-              </div>
-              <div>
-                <h2 class="seccion__titulo">Información del Requerimiento</h2>
-                <p class="seccion__subtitulo">Datos principales del servicio solicitado</p>
-              </div>
-            </div>
-          </div>
-
+        <app-seccion
+          icono="article"
+          titulo="Información del Requerimiento"
+          subtitulo="Datos principales del servicio solicitado"
+        >
           <div class="seccion__body">
 
             <!-- Origen + Área -->
@@ -82,6 +75,9 @@
                     <option [value]="o.id">{{ o.nombre }}</option>
                   }
                 </select>
+                @if (formulario.get('idOrigen')?.invalid && formulario.get('idOrigen')?.touched) {
+                  <span class="campo__error">Seleccione el origen del requerimiento.</span>
+                }
               </div>
               <div class="campo">
                 <label class="campo__label">ÁREA DE SERVICIO</label>
@@ -91,6 +87,9 @@
                     <option [value]="a.id">{{ a.nombre }}</option>
                   }
                 </select>
+                @if (formulario.get('idArea')?.invalid && formulario.get('idArea')?.touched) {
+                  <span class="campo__error">Seleccione el área de servicio.</span>
+                }
               </div>
             </div>
 
@@ -126,28 +125,30 @@
               <textarea class="campo__textarea" rows="4"
                         placeholder="Describa el problema o necesidad detalladamente..."
                         formControlName="descripcion"></textarea>
+              @if (formulario.get('descripcion')?.touched) {
+                @if (formulario.get('descripcion')?.hasError('required')) {
+                  <span class="campo__error">La descripción es obligatoria.</span>
+                } @else if (formulario.get('descripcion')?.hasError('minlength')) {
+                  <span class="campo__error">La descripción debe tener al menos 10 caracteres.</span>
+                }
+              }
             </div>
 
           </div>
-        </section>
+        </app-seccion>
 
         <!-- ── Sección 2: Contacto y Cliente ── -->
-        <section class="seccion">
-          <div class="seccion__header">
-            <div class="seccion__header-izq">
-              <div class="seccion__icono-box">
-                <span class="material-symbols-outlined">person</span>
-              </div>
-              <div>
-                <h2 class="seccion__titulo">Contacto y Cliente</h2>
-              </div>
-            </div>
-            <button class="btn-seleccionar-cliente" type="button"
+        <app-seccion
+          icono="person"
+          titulo="Contacto y Cliente"
+        >
+          @if (!esSoloLectura()) {
+            <button headerActions class="btn-seleccionar-cliente" type="button"
                     (click)="mostrarModalCliente.set(true)">
               <span class="material-symbols-outlined">business</span>
               {{ cliente() ? 'CAMBIAR CLIENTE' : 'SELECCIONAR CLIENTE' }}
             </button>
-          </div>
+          }
 
           <div class="seccion__body">
 
@@ -273,81 +274,20 @@
             </div>
 
           </div>
-        </section>
+        </app-seccion>
 
-        <!-- ── Sección 3: Reglas Automáticas (VIP) ── -->
-        <section class="seccion seccion--reglas">
-          <div class="seccion__header">
-            <div class="seccion__header-izq">
-              <div class="seccion__icono-box seccion__icono-box--blue">
-                <span class="material-symbols-outlined">bolt</span>
-              </div>
-              <div>
-                <h2 class="seccion__titulo">
-                  Reglas Automáticas Aplicadas
-                  <span class="badge-vip">VIP</span>
-                </h2>
-              </div>
-            </div>
-          </div>
+        <!-- ── Sección 3: Documentos Relacionados ── -->
+        <app-seccion
+          icono="folder_open"
+          titulo="Documentos Relacionados"
+        >
           <div class="seccion__body">
-            <div class="regla-item">
-              <div class="regla-item__icon">
-                <span class="material-symbols-outlined">check_circle</span>
-              </div>
-              <div>
-                <div class="regla-item__nombre">Asignación Directa</div>
-                <div class="regla-item__desc">Asigna automáticamente al Área de Metrología</div>
-              </div>
-            </div>
-            <div class="regla-item">
-              <div class="regla-item__icon">
-                <span class="material-symbols-outlined">check_circle</span>
-              </div>
-              <div>
-                <div class="regla-item__nombre">Descuento Corporativo Automático</div>
-                <div class="regla-item__desc">Se aplica un 15% de descuento en la propuesta según convenio vigente</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ── Sección 4: Documentos Relacionados ── -->
-        <section class="seccion">
-          <div class="seccion__header">
-            <div class="seccion__header-izq">
-              <div class="seccion__icono-box">
-                <span class="material-symbols-outlined">folder_open</span>
-              </div>
-              <div>
-                <h2 class="seccion__titulo">Documentos Relacionados</h2>
-              </div>
-            </div>
-          </div>
-          <div class="seccion__body">
-            @if (!esNuevo()) {
-              <div class="doc-item">
-                <span class="material-symbols-outlined">description</span>
-                <div>
-                  <div class="doc-item__nombre">Propuesta PROP-002581v3</div>
-                  <div class="doc-item__meta">PDF · 2.1 MB</div>
-                </div>
-                <div class="doc-item__acciones">
-                  <button class="doc-item__btn" type="button">
-                    <span class="material-symbols-outlined">visibility</span>
-                  </button>
-                  <button class="doc-item__btn" type="button">
-                    <span class="material-symbols-outlined">download</span>
-                  </button>
-                </div>
-              </div>
-            }
             <div class="upload-area">
               <span class="material-symbols-outlined">upload_file</span>
               <p>Click o arrastra para adjuntar documentos</p>
             </div>
           </div>
-        </section>
+        </app-seccion>
 
       </div><!-- /main -->
 
@@ -368,64 +308,52 @@
               </div>
             } @else {
               <div class="timeline">
-                <div class="timeline__item timeline__item--done">
-                  <div class="timeline__dot"></div>
-                  <div>
-                    <div class="timeline__label">Requerimiento Creado</div>
-                    <div class="timeline__meta">25/10/2024</div>
+                @for (paso of pasosFlujo; track paso.key) {
+                  <div class="timeline__item {{ pasoCls(paso.key, ficha()!.estado) }}">
+                    <div class="timeline__dot"></div>
+                    <div>
+                      <div class="timeline__label">{{ paso.label }}</div>
+                      <div class="timeline__meta">
+                        @if (pasoCls(paso.key, ficha()!.estado) === 'timeline__item--done') { Completado }
+                        @else if (pasoCls(paso.key, ficha()!.estado) === 'timeline__item--activo') { En curso }
+                        @else if (ficha()!.estado === ESTADO_RQ.ANULADO) { Anulado }
+                        @else { Pendiente }
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="timeline__item timeline__item--done">
-                  <div class="timeline__dot"></div>
-                  <div>
-                    <div class="timeline__label">Visita Técnica Aprobada</div>
-                    <div class="timeline__meta">28/10/2024</div>
-                  </div>
-                </div>
-                <div class="timeline__item timeline__item--activo">
-                  <div class="timeline__dot"></div>
-                  <div>
-                    <div class="timeline__label">Propuesta Enviada</div>
-                    <div class="timeline__meta">En curso</div>
-                  </div>
-                </div>
-                <div class="timeline__item">
-                  <div class="timeline__dot"></div>
-                  <div>
-                    <div class="timeline__label">Venta Confirmada</div>
-                    <div class="timeline__meta">Pendiente</div>
-                  </div>
-                </div>
-                <div class="timeline__item">
-                  <div class="timeline__dot"></div>
-                  <div>
-                    <div class="timeline__label">Servicio Finalizado</div>
-                    <div class="timeline__meta">Pendiente</div>
-                  </div>
-                </div>
+                }
               </div>
             }
 
             <div class="panel__sep"></div>
 
             <div class="panel__sla-fila">
-              <span class="panel__sla-etiq">PROGRESO SLA</span>
-              @if (esNuevo()) {
-                <span class="panel__sla-pct">0%</span>
-              } @else {
-                <span class="panel__sla-pct">77%</span>
-              }
+              <span class="panel__sla-etiq">AVANCE DEL FLUJO</span>
+              <span class="panel__sla-pct">{{ esNuevo() ? '0' : calcularFlujoPct() }}%</span>
             </div>
             <div class="sla__barra">
               @if (!esNuevo()) {
-                <div class="sla__fill" style="width: 77%"></div>
+                <div class="sla__fill" [style.width.%]="calcularFlujoPct()"></div>
               }
             </div>
-            @if (esNuevo()) {
-              <p class="panel__sla-meta">Pendiente de inicio</p>
-            } @else {
-              <p class="panel__sla-meta">3 días restantes</p>
-            }
+            <p class="panel__sla-meta">
+              {{ esNuevo() ? 'Pendiente de inicio' : (ficha()?.estadoLabel ?? ficha()?.estado) }}
+            </p>
+
+            <div class="panel__sep"></div>
+
+            <div class="panel__sla-fila">
+              <span class="panel__sla-etiq">RIESGO SLA</span>
+              <span class="panel__sla-pct">{{ esNuevo() ? '—' : calcularSlaTexto() }}</span>
+            </div>
+            <div class="sla__barra">
+              @if (!esNuevo() && ficha()?.fechaNecesidad) {
+                <div class="sla__fill {{ slaBarraCls() }}" [style.width.%]="calcularSlaPct()"></div>
+              }
+            </div>
+            <p class="panel__sla-meta">
+              {{ esNuevo() ? 'Sin fecha límite asignada' : (ficha()?.fechaNecesidad ? '' : 'Sin fecha límite') }}
+            </p>
           </div>
         </div>
 
@@ -436,30 +364,22 @@
             <span class="material-symbols-outlined">history</span>
           </div>
           <div class="panel__body">
-            @if (esNuevo()) {
+            @if (esNuevo() || (ficha()?.historial?.length ?? 0) === 0) {
               <p class="panel__vacio-txt">No hay actividad reciente</p>
             } @else {
               <div class="historial">
-                <div class="historial__item">
-                  <div class="historial__icon">
-                    <span class="material-symbols-outlined">edit_note</span>
+                @for (h of (ficha()?.historial ?? []).slice(0, 3); track h.idHistorial) {
+                  <div class="historial__item">
+                    <div class="historial__icon">
+                      <span class="material-symbols-outlined">{{ h.icono ?? 'history_edu' }}</span>
+                    </div>
+                    <div class="historial__cuerpo">
+                      <div class="historial__desc">{{ h.descripcion }}</div>
+                      <div class="historial__meta">{{ formatearFechaRelativa(h.fecha) }}</div>
+                    </div>
                   </div>
-                  <div class="historial__cuerpo">
-                    <div class="historial__desc">AT: Validaste y cambió el origen de "Correo" a "WhatsApp"</div>
-                    <div class="historial__meta">Hace 2 horas</div>
-                  </div>
-                </div>
-                <div class="historial__item">
-                  <div class="historial__icon">
-                    <span class="material-symbols-outlined">upload</span>
-                  </div>
-                  <div class="historial__cuerpo">
-                    <div class="historial__desc">Bot TotalWeight adjuntó la versión 3 de la propuesta</div>
-                    <div class="historial__meta">Hace 1 día</div>
-                  </div>
-                </div>
+                }
               </div>
-              <a class="panel__ver-todo" href="#">VER TODO EL LOG</a>
             }
           </div>
         </div>
@@ -485,31 +405,31 @@
       </div><!-- /sidebar -->
     </div><!-- /body -->
 
-    <!-- Footer -->
-    <div class="ficha-rq__footer">
-      <button class="btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
-      <div class="ficha-rq__footer-der">
-        @if (!esNuevo()) {
-          <a class="btn-ver-detalle"
-             [routerLink]="['/crm/requerimientos', idRequerimiento]">
-            <span class="material-symbols-outlined">visibility</span>
-            Ver detalle
-          </a>
-        }
-        <button class="btn-borrador" type="button"
-                [disabled]="!puedeGuardar || guardando()"
-                (click)="guardar(false)">
-          {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Guardar Borrador' : 'Guardar cambios') }}
-        </button>
-        <button class="btn-continuar" type="button"
-                [disabled]="!puedeGuardar || guardando()"
-                (click)="guardar(true)">
-          Guardar y continuar
-          <span class="material-symbols-outlined">arrow_forward</span>
-        </button>
-      </div>
-    </div>
+    <app-form-footer
+      cancelarTexto="Cancelar"
+      (cancelar)="cancelar()"
+    >
+      @if (!esNuevo()) {
+        <a class="btn-ver-detalle"
+           [routerLink]="['/crm/requerimientos', idRequerimiento]">
+          <span class="material-symbols-outlined">visibility</span>
+          Ver detalle
+        </a>
+      }
+      @if (!esSoloLectura()) {
+        <app-button
+          variant="primary"
+          icono="save"
+          [disabled]="!puedeGuardar || guardando()"
+          [cargando]="guardando()"
+          (clic)="guardar()"
+        >
+          {{ guardando() ? 'Guardando...' : 'Guardar Cambios' }}
+        </app-button>
+      }
+    </app-form-footer>
 
+    }
   </div><!-- /wrapper -->
 
   <!-- Modal Seleccionar Cliente -->
@@ -537,4 +457,3 @@
       (cancelado)="mostrarModalContacto.set(false)"
     />
   }
-}

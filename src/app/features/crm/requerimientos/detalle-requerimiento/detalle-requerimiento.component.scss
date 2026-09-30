@@ -1,5 +1,5 @@
 // ── Variables ────────────────────────────────────────────────────────────────
-$azul:        #004AC6;
+$azul:        #2563EB;
 $azul-bg:     #EFF4FF;
 $verde:       #059669;
 $verde-check: #85F8C4;
@@ -92,7 +92,7 @@ $step-pend:   #D3E4FE;
 .modal__icono-wrap {
   width: 48px;
   height: 48px;
-  background: rgba(0, 74, 198, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -661,21 +661,532 @@ $step-pend:   #D3E4FE;
 
 .timeline-vacio__icono { font-size: 20px; }
 
-// ── Placeholder Tabs ──────────────────────────────────────────────────────────
-.placeholder-tab {
+// ── Tab Cliente: Empresa ──────────────────────────────────────────────────────
+.empresa-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background: $azul-bg;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.empresa-logo {
+  width: 56px;
+  height: 56px;
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 28px; color: $gris-claro; }
+}
+
+.empresa-nombre {
+  font-size: 16px;
+  font-weight: 700;
+  color: $texto-osc;
+}
+
+.empresa-ruc {
+  font-size: 13px;
+  color: $gris-texto;
+  margin-top: 2px;
+  font-family: monospace;
+}
+
+// ── Tab Cliente: Sede ─────────────────────────────────────────────────────────
+.sede-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: $gris-bg;
+  border: 1px solid $gris-borde;
+  border-radius: 10px;
+}
+
+.sede-icono-wrap {
+  width: 40px;
+  height: 40px;
+  background: $azul-bg;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 20px; color: $azul; }
+}
+
+.sede-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: $texto-osc;
+}
+
+.sede-tipo {
+  font-size: 12px;
+  color: $gris-texto;
+  margin-top: 2px;
+}
+
+// ── Tab Cliente: Contacto ─────────────────────────────────────────────────────
+.contacto-card-lg {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.contacto-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: $azul-bg;
+  color: $azul;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contacto-nombre-lg {
+  font-size: 15px;
+  font-weight: 700;
+  color: $texto-osc;
+}
+
+.contacto-rol {
+  font-size: 13px;
+  color: $gris-texto;
+  margin-top: 2px;
+}
+
+.contacto-acciones {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid $gris-borde;
+  padding-top: 16px;
+}
+
+.contacto-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid $gris-borde;
+  border-radius: 8px;
+  background: $blanco;
+  color: $gris-texto;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
+  &:disabled { opacity: 0.45; cursor: default; }
+}
+
+// ── Tab Cliente: Reglas ───────────────────────────────────────────────────────
+.tab-vacio-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: $gris-claro;
+  font-size: 14px;
+  padding: 8px 0;
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+.reglas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.regla-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: $gris-bg;
+  border: 1px solid $gris-borde;
+  border-radius: 8px;
+  transition: border-color 0.15s, background 0.15s;
+
+  &--on   { border-color: #BFDBFE; background: rgba(239, 244, 255, 0.5); }
+  &--warn { border-color: #FECACA; background: rgba(254, 226, 226, 0.3); }
+}
+
+.regla-icono {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 18px; color: $gris-claro; }
+
+  &--on   { background: $azul-bg;  .material-symbols-outlined { color: $azul;  } }
+  &--warn { background: $rojo-bg;  .material-symbols-outlined { color: $rojo;  } }
+}
+
+.regla-texto { flex: 1; min-width: 0; }
+
+.regla-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: $texto-osc;
+}
+
+.regla-desc {
+  font-size: 12px;
+  color: $gris-texto;
+  margin-top: 1px;
+}
+
+.regla-estado {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  background: #F3F4F6;
+  color: $gris-texto;
+
+  &--on   { background: $verde-bg; color: $verde; }
+  &--warn { background: $rojo-bg;  color: $rojo;  }
+}
+
+// ── Panel Título Botón ────────────────────────────────────────────────────────
+.panel__titulo-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1px solid $gris-borde;
+  border-radius: 8px;
+  background: $blanco;
+  color: $gris-texto;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  .material-symbols-outlined { font-size: 14px; }
+  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+// ── Tab Comercial: Propuestas ─────────────────────────────────────────────────
+.prop-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid $gris-borde;
+  border-radius: 10px;
+  background: $gris-bg;
+  transition: border-color 0.15s, background 0.15s;
+  &:hover { border-color: #BFDBFE; background: $azul-bg; }
+}
+
+.prop-item__izq {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.prop-item__icono-wrap {
+  width: 36px;
+  height: 36px;
+  background: $azul-bg;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 18px; color: $azul; }
+}
+
+.prop-item__numero {
+  font-size: 14px;
+  font-weight: 700;
+  color: $texto-osc;
+}
+
+.prop-item__meta {
+  font-size: 12px;
+  color: $gris-texto;
+  margin-top: 2px;
+}
+
+.prop-item__der {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.prop-item__monto {
+  font-size: 15px;
+  font-weight: 900;
+  color: $verde;
+  letter-spacing: -0.3px;
+}
+
+.prop-item__btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid $gris-borde;
+  border-radius: 6px;
+  background: $blanco;
+  color: $gris-texto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+// ── Tab Actividad: Timeline ───────────────────────────────────────────────────
+.act-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.act-item {
+  display: flex;
+  gap: 16px;
+}
+
+.act-item__izq {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 60px 24px;
-  background: $gris-bg;
-  color: $gris-claro;
-  font-size: 14px;
-  flex: 1;
+  flex-shrink: 0;
 }
 
-.placeholder-tab__icono { font-size: 40px; }
+.act-item__icono-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 18px; }
+
+  &--creacion      { background: $azul-bg;    .material-symbols-outlined { color: $azul;    } }
+  &--edicion       { background: #EDE9FE;     .material-symbols-outlined { color: #7C3AED;  } }
+  &--cambio_estado { background: $naranja-bg; .material-symbols-outlined { color: $naranja; } }
+  &--llamada       { background: $verde-bg;   .material-symbols-outlined { color: $verde;   } }
+  &--visita        { background: $naranja-bg; .material-symbols-outlined { color: $naranja; } }
+  &--correo        { background: $azul-bg;    .material-symbols-outlined { color: $azul;    } }
+  &--nota          { background: #EDE9FE;     .material-symbols-outlined { color: #7C3AED;  } }
+}
+
+.act-item__conector {
+  width: 2px;
+  flex: 1;
+  min-height: 20px;
+  background: $gris-borde;
+  margin-top: 4px;
+}
+
+.act-item__contenido {
+  flex: 1;
+  padding-bottom: 28px;
+  min-width: 0;
+}
+
+.act-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.act-item__tipo {
+  font-size: 14px;
+  font-weight: 700;
+  color: $texto-osc;
+}
+
+.act-item__fecha {
+  font-size: 12px;
+  color: $gris-claro;
+}
+
+.act-item__desc {
+  font-size: 14px;
+  color: $texto-osc;
+  line-height: 1.6;
+  margin: 0 0 10px;
+  opacity: 0.85;
+}
+
+.act-item__footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: $gris-texto;
+}
+
+.act-item__user-icon { font-size: 14px; color: $gris-claro; }
+
+// ── Tab Documentos: Lista ─────────────────────────────────────────────────────
+.doc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid $gris-borde;
+  border-radius: 10px;
+  background: $gris-bg;
+  transition: border-color 0.15s, background 0.15s;
+  &:hover { border-color: #BFDBFE; background: $azul-bg; }
+}
+
+.doc-item__icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 22px; }
+
+  &--pdf   { background: $rojo-bg;  .material-symbols-outlined { color: $rojo;        } }
+  &--excel { background: $verde-bg; .material-symbols-outlined { color: $verde;        } }
+  &--word  { background: $azul-bg;  .material-symbols-outlined { color: $azul;         } }
+}
+
+.doc-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-item__nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: $texto-osc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-item__meta {
+  font-size: 12px;
+  color: $gris-texto;
+  margin-top: 3px;
+}
+
+.doc-item__btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid $gris-borde;
+  border-radius: 8px;
+  background: $blanco;
+  color: $gris-texto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  .material-symbols-outlined { font-size: 18px; }
+  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+// ── Tab Vacío (fallback) ──────────────────────────────────────────────────────
+.tab-vacio-panel {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.tab-vacio__icono-wrap {
+  width: 72px;
+  height: 72px;
+  background: $azul-bg;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .material-symbols-outlined { font-size: 36px; color: $azul; }
+}
+
+.tab-vacio__titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: $texto-osc;
+  margin-top: 4px;
+}
+
+.tab-vacio__desc {
+  font-size: 14px;
+  color: $gris-texto;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tab-vacio__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: 1px solid $azul;
+  border-radius: 8px;
+  background: $blanco;
+  color: $azul;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 8px;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover:not(:disabled) { background: $azul; color: $blanco; }
+  &:disabled { border-color: $gris-borde; color: $gris-claro; cursor: default; opacity: 0.6; }
+}
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 .modal__footer {

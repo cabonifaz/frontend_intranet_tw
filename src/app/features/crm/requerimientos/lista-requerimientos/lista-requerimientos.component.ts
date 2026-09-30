@@ -2,13 +2,16 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CrmService } from '../../../../core/services/crm.service';
-import { KpisRequerimientos, RequerimientoListaItem } from '../../../../core/models/crm.model';
+import { KpisRequerimientos, RequerimientoListaItem, CatalogoItem } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
 import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-requerimiento.component';
+import { AnularRequerimientoComponent } from '../anular-requerimiento/anular-requerimiento.component';
+import { ESTADO_RQ } from '../../../../core/constants/estados';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, DetalleRequerimientoComponent],
+  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })
@@ -24,6 +27,13 @@ export class ListaRequerimientosComponent implements OnInit {
   readonly total = signal(0);
 
   readonly detalleIdAbierto = signal<number | null>(null);
+
+  readonly anularId       = signal<number | null>(null);
+  readonly anularNumero   = signal('');
+  readonly anularCliente  = signal('');
+  readonly anularCategoria = signal<string | null>(null);
+  readonly motivos        = signal<CatalogoItem[]>([]);
+  readonly estadosRq      = signal<CatalogoItem[]>([]);
 
   readonly pagina    = signal(1);
   readonly porPagina = signal(10);
@@ -43,6 +53,11 @@ export class ListaRequerimientosComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
+    try {
+      const cat = await this.crmSvc.obtenerCatalogos();
+      this.estadosRq.set(cat.estadosRq);
+      this.motivos.set(cat.motivos);
+    } catch { /* silencioso */ }
   }
 
   async cargar(): Promise<void> {
@@ -84,29 +99,49 @@ export class ListaRequerimientosComponent implements OnInit {
     this.detalleIdAbierto.set(id);
   }
 
+  async abrirAnular(id: number): Promise<void> {
+    const item = this.items().find(i => i.idRequerimiento === id);
+    this.anularId.set(id);
+    this.anularNumero.set(item?.numero ?? '');
+    this.anularCliente.set(item?.razonSocial ?? '');
+    this.anularCategoria.set(item?.tipoLabel ?? null);
+
+  }
+
+  async onAnulado(): Promise<void> {
+    this.anularId.set(null);
+    await this.cargar();
+  }
+
   irAEditar(id: number): void {
     this.router.navigate(['/crm/requerimientos', id, 'editar']);
   }
 
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
-      nuevo:         'badge--azul',
-      en_proceso:    'badge--naranja',
-      con_propuesta: 'badge--verde',
-      cerrado:       'badge--gris',
-      anulado:       'badge--rojo',
+      [ESTADO_RQ.NUEVO]:         'badge--azul',
+      [ESTADO_RQ.EN_PROCESO]:    'badge--naranja',
+      [ESTADO_RQ.CON_PROPUESTA]: 'badge--verde',
+      [ESTADO_RQ.CERRADO]:       'badge--gris',
+      [ESTADO_RQ.ANULADO]:       'badge--rojo',
     };
     return mapa[estado] ?? '';
   }
 
   slaClase(item: RequerimientoListaItem): string {
-    const diasDesdeCreacion = Math.floor(
-      (Date.now() - new Date(item.fechaCreacion).getTime()) / 86400000
-    );
-    if (item.idPrioridad === 1 && diasDesdeCreacion >= 7)  return 'sla--urgente';
-    if (item.idPrioridad === 1 && diasDesdeCreacion >= 3)  return 'sla--advertencia';
-    if (item.idPrioridad === 2 && diasDesdeCreacion >= 14) return 'sla--advertencia';
+    if (!item.fechaNecesidad) return 'sla--normal';
+    const dias = Math.ceil((new Date(item.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
+    if (dias <= 0) return 'sla--urgente';
+    if (dias <= 3) return 'sla--advertencia';
     return 'sla--normal';
+  }
+
+  calcularSlaTexto(item: RequerimientoListaItem): string {
+    if (!item.fechaNecesidad) return 'Sin fecha';
+    const dias = Math.ceil((new Date(item.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
+    if (dias < 0)   return `${Math.abs(dias)}d vencido`;
+    if (dias === 0) return 'Vence hoy';
+    return `${dias}d restantes`;
   }
 
   formatearFecha(fecha: string): string {

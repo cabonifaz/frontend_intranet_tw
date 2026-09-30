@@ -1,122 +1,76 @@
-<div class="modal-overlay" (click)="cancelar()">
-  <div class="modal" (click)="$event.stopPropagation()">
+<app-modal titulo="Seleccionar Sede" ancho="lg" (cerrar)="cancelar()">
+  <p class="sc-desc">Seleccione la sede o instalación del cliente.</p>
 
-    <!-- Header -->
-    <div class="modal__header">
-      <div class="modal__header-izq">
-        <div class="modal__icono-bg">
-          <span class="material-symbols-outlined modal__icono">location_on</span>
-        </div>
-        <div>
-          <h2 class="modal__titulo">Seleccionar Sede</h2>
-          <p class="modal__subtitulo">Seleccione la sede o instalación del cliente</p>
-        </div>
-      </div>
-      <button class="modal__btn-cerrar" type="button" (click)="cancelar()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <!-- Table -->
-    <div class="modal__tabla-wrap">
-      <div class="modal__tabla-border">
-        <table class="modal__tabla">
-          <thead>
-            <tr class="modal__thead-row">
-              <th class="modal__th">NOMBRE</th>
-              <th class="modal__th">TIPO</th>
-              <th class="modal__th">REGIÓN</th>
-              <th class="modal__th">DIRECCIÓN</th>
-              <th class="modal__th modal__th--centro">ESTADO</th>
-              <th class="modal__th modal__th--der">ACCIÓN</th>
+  <div class="sc-tabla-wrap">
+    <table class="sc-tabla">
+      <thead>
+        <tr>
+          <th>NOMBRE</th>
+          <th>TIPO</th>
+          <th>REGIÓN</th>
+          <th>DIRECCIÓN</th>
+          <th class="sc-th--centro">ESTADO</th>
+          <th class="sc-th--der">ACCIÓN</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="6" class="sc-td--vacio">
+              <span class="material-symbols-outlined sc-spin">progress_activity</span>
+              Cargando sedes...
+            </td>
+          </tr>
+        } @else if (sedes().length === 0) {
+          <tr>
+            <td colspan="6" class="sc-td--vacio">
+              <span class="material-symbols-outlined">search_off</span>
+              No hay sedes registradas para este cliente.
+            </td>
+          </tr>
+        } @else {
+          @for (s of sedes(); track s.idSede) {
+            <tr class="sc-fila"
+                [class.sc-fila--seleccionada]="seleccionado()?.idSede === s.idSede"
+                (click)="seleccionar(s)">
+              <td><div class="sc-nombre">{{ s.nombre }}</div></td>
+              <td><span class="sc-area">{{ s.tipoInstalacion ?? '—' }}</span></td>
+              <td><span class="sc-area">{{ s.region ?? '—' }}</span></td>
+              <td><span class="sc-direccion">{{ s.direccionExacta ?? '—' }}</span></td>
+              <td class="sc-td--centro">
+                <span class="sc-badge"
+                      [class.sc-badge--activo]="s.estado === 'Activo'"
+                      [class.sc-badge--inactivo]="s.estado !== 'Activo'">
+                  <span class="sc-badge-dot"></span>
+                  {{ s.estado }}
+                </span>
+              </td>
+              <td class="sc-td--der">
+                <button class="sc-btn-sel"
+                        [class.sc-btn-sel--activo]="seleccionado()?.idSede === s.idSede"
+                        type="button"
+                        (click)="$event.stopPropagation(); seleccionar(s)">
+                  Seleccionar
+                </button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            @if (cargando()) {
-              <tr>
-                <td colspan="6" class="modal__td--vacio">
-                  <span class="material-symbols-outlined modal__spinner">progress_activity</span>
-                  Cargando sedes...
-                </td>
-              </tr>
-            } @else if (sedes().length === 0) {
-              <tr>
-                <td colspan="6" class="modal__td--vacio">
-                  <span class="material-symbols-outlined">search_off</span>
-                  No hay sedes registradas para este cliente.
-                </td>
-              </tr>
-            } @else {
-              @for (s of sedes(); track s.idSede) {
-                <tr class="modal__fila"
-                    [class.modal__fila--seleccionada]="seleccionado()?.idSede === s.idSede"
-                    (click)="seleccionar(s)">
-
-                  <!-- Nombre -->
-                  <td class="modal__td">
-                    <div class="modal__nombre">{{ s.nombre }}</div>
-                  </td>
-
-                  <!-- Tipo -->
-                  <td class="modal__td">
-                    <span class="modal__area">{{ s.tipoInstalacion ?? '—' }}</span>
-                  </td>
-
-                  <!-- Región -->
-                  <td class="modal__td">
-                    <span class="modal__area">{{ s.region ?? '—' }}</span>
-                  </td>
-
-                  <!-- Dirección -->
-                  <td class="modal__td">
-                    <span class="modal__direccion">{{ s.direccionExacta ?? '—' }}</span>
-                  </td>
-
-                  <!-- Estado -->
-                  <td class="modal__td modal__td--centro">
-                    <span class="modal__badge"
-                          [class.modal__badge--activo]="s.estado === 'Activo'"
-                          [class.modal__badge--inactivo]="s.estado !== 'Activo'">
-                      <span class="modal__badge-dot"></span>
-                      {{ s.estado }}
-                    </span>
-                  </td>
-
-                  <!-- Acción -->
-                  <td class="modal__td modal__td--der">
-                    <button class="modal__btn-sel"
-                            [class.modal__btn-sel--activo]="seleccionado()?.idSede === s.idSede"
-                            type="button"
-                            (click)="$event.stopPropagation(); seleccionar(s)">
-                      Seleccionar
-                    </button>
-                  </td>
-                </tr>
-              }
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="modal__footer">
-      <button class="modal__btn-cancelar" type="button" (click)="cancelar()">Cancelar</button>
-      <div class="modal__footer-der">
-        @if (seleccionado()) {
-          <span class="modal__seleccionado-label">
-            Seleccionada: <strong>{{ seleccionado()!.nombre }}</strong>
-          </span>
+          }
         }
-        <button class="modal__btn-confirmar"
-                type="button"
-                [disabled]="!seleccionado()"
-                (click)="confirmar()">
-          <span class="material-symbols-outlined">check</span>
-          Confirmar Selección
-        </button>
-      </div>
-    </div>
-
+      </tbody>
+    </table>
   </div>
-</div>
+
+  <div modalFooter class="modal-footer">
+    <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+    <div class="modal-footer__der">
+      @if (seleccionado()) {
+        <span class="sc-seleccionado-label">
+          Seleccionada: <strong>{{ seleccionado()!.nombre }}</strong>
+        </span>
+      }
+      <app-button variant="primary" icono="check" [disabled]="!seleccionado()" (clic)="confirmar()">
+        Confirmar Selección
+      </app-button>
+    </div>
+  </div>
+</app-modal>

@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '@angular/core';
 import { CrmService } from '../../../../core/services/crm.service';
 import { RequerimientoFicha } from '../../../../core/models/crm.model';
+import { ESTADO_RQ } from '../../../../core/constants/estados';
 
 @Component({
   selector: 'app-detalle-requerimiento',
@@ -30,11 +31,13 @@ export class DetalleRequerimientoComponent implements OnInit {
     { key: 'aceptacion',  label: 'ACEPTACIÓN'  },
   ];
 
+  protected readonly ESTADO_RQ = ESTADO_RQ;
+
   private readonly estadoAStep: Record<string, string> = {
-    nuevo:         'rq',
-    en_proceso:    'propuesta',
-    con_propuesta: 'envio',
-    cerrado:       'aceptacion',
+    [ESTADO_RQ.NUEVO]:         'rq',
+    [ESTADO_RQ.EN_PROCESO]:    'propuesta',
+    [ESTADO_RQ.CON_PROPUESTA]: 'envio',
+    [ESTADO_RQ.CERRADO]:       'aceptacion',
   };
 
   async ngOnInit(): Promise<void> {
@@ -53,7 +56,7 @@ export class DetalleRequerimientoComponent implements OnInit {
   }
 
   pasoCls(pasoKey: string, estadoActual: string): string {
-    if (estadoActual === 'anulado') return 'paso--gris';
+    if (estadoActual === ESTADO_RQ.ANULADO) return 'paso--gris';
     const stepActual = this.estadoAStep[estadoActual] ?? estadoActual;
     const idxActual  = this.pasoIndice(stepActual);
     if (idxActual < 0) return 'paso--pendiente';
@@ -70,11 +73,11 @@ export class DetalleRequerimientoComponent implements OnInit {
 
   estadoCls(estado: string): string {
     const mapa: Record<string, string> = {
-      nuevo:         'badge--azul',
-      en_proceso:    'badge--naranja',
-      con_propuesta: 'badge--verde',
-      cerrado:       'badge--gris',
-      anulado:       'badge--rojo',
+      [ESTADO_RQ.NUEVO]:         'badge--azul',
+      [ESTADO_RQ.EN_PROCESO]:    'badge--naranja',
+      [ESTADO_RQ.CON_PROPUESTA]: 'badge--verde',
+      [ESTADO_RQ.CERRADO]:       'badge--gris',
+      [ESTADO_RQ.ANULADO]:       'badge--rojo',
     };
     return mapa[estado] ?? '';
   }
@@ -98,5 +101,27 @@ export class DetalleRequerimientoComponent implements OnInit {
     const f = d.toLocaleDateString('es-PE', { day: '2-digit', month: 'long', year: 'numeric' });
     const h = d.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
     return `${f} • ${h}`;
+  }
+
+  actividadCls(tipo: string): string {
+    const mapa: Record<string, string> = {
+      creacion:      'act-item__icono-wrap--creacion',
+      edicion:       'act-item__icono-wrap--edicion',
+      cambio_estado: 'act-item__icono-wrap--cambio_estado',
+      llamada:       'act-item__icono-wrap--llamada',
+      visita:        'act-item__icono-wrap--visita',
+      correo:        'act-item__icono-wrap--correo',
+      nota:          'act-item__icono-wrap--nota',
+    };
+    return mapa[tipo] ?? 'act-item__icono-wrap--nota';
+  }
+
+  iniciales(nombre: string): string {
+    return nombre
+      .split(' ')
+      .filter(p => p.length > 0)
+      .slice(0, 2)
+      .map(p => p[0].toUpperCase())
+      .join('');
   }
 }

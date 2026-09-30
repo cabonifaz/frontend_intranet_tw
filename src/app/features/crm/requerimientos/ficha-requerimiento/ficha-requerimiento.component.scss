@@ -1,7 +1,7 @@
 $azul:       #2563EB;
 $azul-suave: #EFF6FF;
 $azul-input: #EFF4FF;
-$azul-real:  #004AC6;
+$azul-real:  #2563EB;
 $verde:      #059669;
 $verde-bg:   #D1FAE5;
 $gris-borde: #E2E8F0;
@@ -40,9 +40,33 @@ $blanco:     #FFFFFF;
 .ficha-rq__wrapper {
   display: flex;
   flex-direction: column;
+  gap: 16px;
   background: $gris-bg;
   min-height: 100%;
-  padding-bottom: 80px; // espacio para el footer fijo
+  padding: 24px;
+}
+
+// btn-primary del design system (usado en app-form-footer)
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  height: 40px;
+  border-radius: 8px;
+  border: none;
+  background: $azul;
+  color: $blanco;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0px 1px 2px rgba(59, 130, 246, 0.25);
+  transition: background 0.15s;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover:not(:disabled) { background: #1D4ED8; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 // ── Breadcrumb row ─────────────────────────────────────────────────────────────
@@ -204,6 +228,21 @@ $blanco:     #FFFFFF;
   .material-symbols-outlined { font-size: 18px; }
 }
 
+.ficha-rq__aviso-lectura {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400E;
+  margin-bottom: 16px;
+
+  .material-symbols-outlined { font-size: 18px; }
+}
+
 // ── Secciones ──────────────────────────────────────────────────────────────────
 
 .seccion {
@@ -214,8 +253,8 @@ $blanco:     #FFFFFF;
 }
 
 .seccion--reglas {
-  background: rgba(0, 74, 198, 0.05);
-  border: 2px solid rgba(0, 74, 198, 0.2);
+  background: rgba(37, 99, 235, 0.05);
+  border: 2px solid rgba(37, 99, 235, 0.2);
 }
 
 .seccion__header {
@@ -227,7 +266,7 @@ $blanco:     #FFFFFF;
 }
 
 .seccion--reglas .seccion__header {
-  border-bottom-color: rgba(0, 74, 198, 0.2);
+  border-bottom-color: rgba(37, 99, 235, 0.2);
 }
 
 .seccion__header-izq {
@@ -250,7 +289,7 @@ $blanco:     #FFFFFF;
 }
 
 .seccion__icono-box--blue {
-  background: rgba(0, 74, 198, 0.1);
+  background: rgba(37, 99, 235, 0.1);
 
   .material-symbols-outlined { color: $azul-real; }
 }
@@ -293,8 +332,8 @@ $blanco:     #FFFFFF;
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  background: rgba(0, 74, 198, 0.1);
-  border: 1px solid rgba(0, 74, 198, 0.2);
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   border-radius: 9999px;
   font-size: 10px;
   font-weight: 700;
@@ -640,7 +679,7 @@ $p-baja:  #10B981;
   gap: 12px;
   padding: 12px;
   background: $blanco;
-  border: 1px solid rgba(0, 74, 198, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.1);
   box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
   border-radius: 8px;
 }
@@ -877,8 +916,12 @@ $p-baja:  #10B981;
 
 .sla__fill {
   height: 100%;
-  background: linear-gradient(90deg, #F59E0B, #EF4444);
+  background: linear-gradient(90deg, #10B981, #6EE7B7);
   border-radius: 9999px;
+  transition: width 0.4s ease;
+
+  &--naranja { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  &--rojo    { background: linear-gradient(90deg, #F59E0B, #EF4444); }
 }
 
 .sla__meta {

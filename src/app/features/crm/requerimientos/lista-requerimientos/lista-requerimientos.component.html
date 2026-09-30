@@ -15,57 +15,30 @@
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
   <div class="kpi-grid">
-
-    <!-- RQ Activos -->
-    <div class="kpi-card">
-      <div class="kpi-card__fila-sup">
-        <span class="kpi-card__label">RQ Activos</span>
-        <span class="kpi-card__badge kpi-card__badge--verde">+12%</span>
-      </div>
-      <div class="kpi-card__cuerpo">
-        <span class="kpi-card__numero">{{ kpis().rqActivos }}</span>
-        <div class="kpi-card__progreso">
-          <div class="kpi-card__progreso-fill" [style.width.%]="70"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sin propuesta -->
-    <div class="kpi-card">
-      <div class="kpi-card__fila-sup">
-        <span class="kpi-card__label">Sin propuesta</span>
-        <span class="material-symbols-outlined kpi-card__icono-aux">hourglass_empty</span>
-      </div>
-      <div class="kpi-card__cuerpo">
-        <span class="kpi-card__numero">{{ kpis().sinPropuesta }}</span>
-        <span class="kpi-card__subtitulo">Pendiente de validación técnica</span>
-      </div>
-    </div>
-
-    <!-- SLA Próximo Urgente -->
-    <div class="kpi-card kpi-card--borde-naranja">
-      <div class="kpi-card__fila-sup kpi-card__fila-sup--naranja">
-        <span class="kpi-card__label kpi-card__label--naranja">SLA PRÓXIMO URGENTE</span>
-        <span class="kpi-card__label-vertical kpi-card__label-vertical--naranja">|</span>
-      </div>
-      <div class="kpi-card__cuerpo">
-        <span class="kpi-card__numero">{{ kpis().slaUrgentes }}</span>
-        <span class="kpi-card__subtitulo">Vencen en las próximas 24h</span>
-      </div>
-    </div>
-
-    <!-- Bloqueados -->
-    <div class="kpi-card kpi-card--borde-rojo">
-      <div class="kpi-card__fila-sup">
-        <span class="kpi-card__label kpi-card__label--rojo">BLOQUEADOS</span>
-        <span class="material-symbols-outlined kpi-card__icono-aux kpi-card__icono-aux--rojo">block</span>
-      </div>
-      <div class="kpi-card__cuerpo">
-        <span class="kpi-card__numero">{{ kpis().bloqueados }}</span>
-        <span class="kpi-card__subtitulo">Requieren intervención Admin</span>
-      </div>
-    </div>
-
+    <app-kpi-card
+      icono="assignment"
+      etiqueta="RQ ACTIVOS"
+      [valor]="kpis().rqActivos"
+      variante="azul"
+    />
+    <app-kpi-card
+      icono="hourglass_empty"
+      etiqueta="SIN PROPUESTA"
+      [valor]="kpis().sinPropuesta"
+      variante="azul"
+    />
+    <app-kpi-card
+      icono="schedule"
+      etiqueta="SLA PRÓXIMO URGENTE"
+      [valor]="kpis().slaUrgentes"
+      variante="ambar"
+    />
+    <app-kpi-card
+      icono="block"
+      etiqueta="BLOQUEADOS"
+      [valor]="kpis().bloqueados"
+      variante="rojo"
+    />
   </div>
 
   <!-- ── Filters Bar ─────────────────────────────────────────────────────────── -->
@@ -78,11 +51,9 @@
       <div class="filtros-bar__separador"></div>
       <select class="filtros-bar__select" [(ngModel)]="estadoFiltro" (change)="aplicarFiltros()">
         <option value="">Todos</option>
-        <option value="nuevo">Nueva</option>
-        <option value="en_proceso">En proceso</option>
-        <option value="con_propuesta">Con propuesta</option>
-        <option value="cerrado">Cerrado</option>
-        <option value="anulado">Anulado</option>
+        @for (est of estadosRq(); track est.id) {
+          <option [value]="est.codigo">{{ est.nombre }}</option>
+        }
       </select>
     </div>
     <div class="filtros-bar__der">
@@ -182,7 +153,7 @@
                 <td class="tabla__td">
                   <div class="sla {{ slaClase(item) }}">
                     <span class="sla__dot"></span>
-                    <span class="sla__label">{{ item.prioridadLabel ?? '—' }}</span>
+                    <span class="sla__label">{{ calcularSlaTexto(item) }}</span>
                   </div>
                 </td>
                 <td class="tabla__td tabla__td--centro" (click)="$event.stopPropagation()">
@@ -240,6 +211,19 @@
     [id]="detalleIdAbierto()!"
     (cerrar)="detalleIdAbierto.set(null)"
     (editar)="irAEditar($event); detalleIdAbierto.set(null)"
-    (anular)="detalleIdAbierto.set(null)"
+    (anular)="abrirAnular($event); detalleIdAbierto.set(null)"
+  />
+}
+
+<!-- ── Modal Anular ──────────────────────────────────────────────────────────── -->
+@if (anularId() !== null) {
+  <app-anular-requerimiento
+    [id]="anularId()!"
+    [numero]="anularNumero()"
+    [razonSocial]="anularCliente()"
+    [categoria]="anularCategoria()"
+    [motivos]="motivos()"
+    (cerrar)="anularId.set(null)"
+    (anulado)="onAnulado()"
   />
 }

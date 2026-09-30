@@ -2,9 +2,26 @@ import type { CatalogoItem } from './maestros.model';
 export type { CatalogoItem };
 
 export interface CatalogosRequerimiento {
-  origenes:   CatalogoItem[];
-  areas:      CatalogoItem[];
+  origenes:    CatalogoItem[];
+  areas:       CatalogoItem[];
   prioridades: CatalogoItem[];
+  motivos:     CatalogoItem[];
+  estadosRq:   CatalogoItem[];
+}
+
+export interface AnularRequerimientoComando {
+  idMotivo:      number;
+  justificacion: string;
+}
+
+export interface HistorialItem {
+  idHistorial:  number;
+  tipo:         string;
+  tipoLabel:    string | null;
+  icono:        string | null;
+  descripcion:  string;
+  usuario:      string | null;
+  fecha:        string;
 }
 
 export interface RequerimientoFicha {
@@ -32,6 +49,7 @@ export interface RequerimientoFicha {
   clienteDeuda:    boolean;
   estado:          string;
   estadoLabel:     string | null;
+  historial:       HistorialItem[];
 }
 
 export interface GuardarRequerimientoComando {
@@ -69,6 +87,7 @@ export interface RequerimientoListaItem {
   idPrioridad:     number;
   responsable:     string | null;
   fechaCreacion:   string;
+  fechaNecesidad:  string | null;
   estado:          string;
   estadoLabel:     string | null;
 }

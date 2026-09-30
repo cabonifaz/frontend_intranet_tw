@@ -1,6 +1,8 @@
 import { Component, OnInit, inject, signal, input, output } from '@angular/core';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { SedeListaItem } from '../../../../core/models/maestros.model';
+import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 export interface SedeSeleccionada {
   idSede:          number;
@@ -11,7 +13,7 @@ export interface SedeSeleccionada {
 
 @Component({
   selector: 'app-seleccionar-sede',
-  imports: [],
+  imports: [ModalComponent, ButtonComponent],
   templateUrl: './seleccionar-sede.component.html',
   styleUrl: './seleccionar-sede.component.scss',
 })

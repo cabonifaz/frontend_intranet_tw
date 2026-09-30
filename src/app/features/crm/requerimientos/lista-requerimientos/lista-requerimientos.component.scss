@@ -1,6 +1,6 @@
 // ── Variables ────────────────────────────────────────────────────────────────
 $azul-primario:   #2563EB;
-$azul-oscuro:     #004AC6;
+$azul-oscuro:     #2563EB;
 $azul-suave:      #EFF4FF;
 $verde:           #059669;
 $verde-bg:        rgba(5, 150, 105, 0.1);
@@ -70,7 +70,7 @@ $blanco:          #FFFFFF;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 10px 15px -3px rgba(0, 74, 198, 0.2), 0 4px 6px -4px rgba(0, 74, 198, 0.2);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2), 0 4px 6px -4px rgba(37, 99, 235, 0.2);
   transition: background 0.15s;
 
   &:hover { background: darken($azul-primario, 8%); }

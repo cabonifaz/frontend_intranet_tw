@@ -2,6 +2,9 @@ import { Component, OnInit, inject, signal, output, computed } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { ClienteListaItem } from '../../../../core/models/maestros.model';
+import { ESTADO, ESTADO_OPCIONES_MODAL } from '../../../../core/constants/estados';
+import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 export interface ClienteSeleccionado {
   idCliente:   number;
@@ -11,7 +14,7 @@ export interface ClienteSeleccionado {
 
 @Component({
   selector: 'app-seleccionar-cliente',
-  imports: [FormsModule],
+  imports: [FormsModule, ModalComponent, ButtonComponent],
   templateUrl: './seleccionar-cliente.component.html',
   styleUrl: './seleccionar-cliente.component.scss',
 })
@@ -37,8 +40,10 @@ export class SeleccionarClienteComponent implements OnInit {
   get inicio(): number { return this.clientes().length === 0 ? 0 : (this.pagina() - 1) * this.porPagina + 1; }
   get fin():    number { return Math.min(this.pagina() * this.porPagina, this.clientes().length); }
 
+  readonly estadoOpciones = ESTADO_OPCIONES_MODAL;
+
   busqueda     = '';
-  estadoFiltro = 'Activo';
+  estadoFiltro = ESTADO.ACTIVO;
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -48,11 +53,13 @@ export class SeleccionarClienteComponent implements OnInit {
     this.cargando.set(true);
     this.pagina.set(1);
     try {
-      const lista = await this.maestrosSvc.obtenerClientes(
+      const resultado = await this.maestrosSvc.obtenerClientes(
         this.busqueda     || undefined,
         this.estadoFiltro || undefined,
+        1,
+        200,
       );
-      this.clientes.set(lista);
+      this.clientes.set(resultado.items);
     } finally {
       this.cargando.set(false);
     }
