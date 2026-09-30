@@ -120,17 +120,6 @@ export const CLASES_SUMINISTRO: OpcionCatalogo[] = [
   { value: 'instrumento', label: 'Instrumento' },
 ];
 
-// Mock hasta que exista el maestro de Procedimientos (HU-87).
-// Cuando se implemente HU-87, este catálogo se reemplaza por servicio real.
-export const PROCEDIMIENTOS_CATALOGO: OpcionCatalogo[] = [
-  { value: 'PC-MT-01',      label: 'PC-MT-01 — Calibración de peso patrón con comparador' },
-  { value: 'PC-MT-02',      label: 'PC-MT-02 — Verificación técnica de báscula de camión' },
-  { value: 'POST10-2016',   label: 'POST10 Rev.01 2016 — Mantenimiento de balanzas clase III-IIII' },
-  { value: 'PC-001-2025',   label: 'PC-001 Ed.2 2025 — Calibración de instrumentos de pesaje no automático' },
-  { value: 'PC-BAL-01',     label: 'PC-BAL-01 — Mantenimiento preventivo de balanza camionera' },
-  { value: 'PC-INST-01',    label: 'PC-INST-01 — Instalación de sistema de pesaje industrial' },
-];
-
 // Regla de negocio: sólo la clase 'servicio' usa procedimientos y NO tiene marca/modelo.
 // Las clases equipo/pesa/instrumento tienen marca/modelo y NO usan procedimientos.
 export function esServicio(clase: string): boolean {

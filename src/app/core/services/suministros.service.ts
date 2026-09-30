@@ -13,19 +13,20 @@ import {
   MARCAS_SUMINISTRO,
   MODELOS_SUMINISTRO,
   PROCEDENCIAS_SUMINISTRO,
-  PROCEDIMIENTOS_CATALOGO,
   SUBTIPOS_SUMINISTRO,
   TIPOS_SUMINISTRO,
   OpcionCatalogo,
   esServicio,
 } from '../models/suministros.model';
+import { ProcedimientosService } from './procedimientos.service';
 
 const USAR_MOCK = true;
 
 @Injectable({ providedIn: 'root' })
 export class SuministrosService {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/api/maestros`;
+  private readonly http    = inject(HttpClient);
+  private readonly procSvc = inject(ProcedimientosService);
+  private readonly base    = `${environment.apiUrl}/api/maestros`;
 
   async obtenerSuministros(
     busqueda?: string,
@@ -112,8 +113,8 @@ export class SuministrosService {
   }
 
   obtenerProcedimientos(): OpcionCatalogo[] {
-    // TODO: cuando exista HU-87, reemplazar por servicio real de Procedimientos
-    return PROCEDIMIENTOS_CATALOGO;
+    // Vinculado a HU-87: delega al maestro real de Procedimientos.
+    return this.procSvc.obtenerProcedimientosParaDropdown();
   }
 
   generarDescripcionAuto(clase: string, tipo: string, subtipo: string, marca: string, modelo: string): string {
@@ -235,8 +236,8 @@ export class SuministrosService {
         { nivel: 'corporativo_alto', precio: null },
       ],
       aplicaComercial: false, aplicaServicio: true, aplicaMetrologia: true,
-      idPrimerProcedimiento:  'POST10-2016',
-      idSegundoProcedimiento: 'PC-001-2025',
+      idPrimerProcedimiento:  'POST10',
+      idSegundoProcedimiento: 'PC-001',
       usuarioRegistro: 'JROCA', fechaRegistro: '2025-07-14T17:34:00Z',
       fechaModificacion: '2025-07-14T17:34:00Z', totalEdiciones: 1, firmaDigital: 'SHA-256 · verificado',
       urlFoto: '', urlManualPdf: '',

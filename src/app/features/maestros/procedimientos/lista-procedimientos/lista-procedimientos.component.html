@@ -1,0 +1,124 @@
+<div class="proc-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="menu_book"
+    titulo="Mantenimiento de Procedimientos Metrológicos"
+    subtitulo="Catálogo y gestión de documentos técnicos, normas aprobadas y versiones vigentes para calibración y verificación de equipos"
+  >
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Procedimiento
+    </button>
+  </app-page-header>
+
+  <app-filtros-bar
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por código, descripción, norma o año..."
+    (buscar)="cargar(true)"
+  >
+    <select [(ngModel)]="anioFiltro" (change)="cargar(true)">
+      <option [ngValue]="0">Año: Todos</option>
+      @for (a of aniosOpciones(); track a) {
+        <option [ngValue]="a">{{ a }}</option>
+      }
+    </select>
+    <select [(ngModel)]="estadoFiltro" (change)="cargar(true)">
+      @for (opt of estadoOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+  </app-filtros-bar>
+
+  <div class="pre-nota">
+    <label class="check-pre">
+      <input type="checkbox" [(ngModel)]="soloVigentes" (change)="cargar(true)" />
+      <span class="check-pre__box"></span>
+      <span class="check-pre__texto">Solo procedimientos vigentes para calibración externa</span>
+    </label>
+    <span class="pre-nota__contador">{{ total() }} procedimientos registrados</span>
+  </div>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando procedimientos..." />
+  } @else {
+    @if (items().length === 0) {
+      <app-estado-vacio icono="menu_book" mensaje="No hay procedimientos registrados con los filtros aplicados.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+          <span class="material-symbols-outlined">add</span>
+          Crear primer procedimiento
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th class="th-id">ID</th>
+            <th class="th-anio">AÑO</th>
+            <th class="th-codigo">CÓDIGO</th>
+            <th class="th-centro th-narrow">VER</th>
+            <th class="th-centro th-narrow">REV</th>
+            <th class="th-norma">NORMA / APLICABLE</th>
+            <th class="th-desc">DESCRIPCIÓN / PROCEDIMIENTO METROLÓGICO</th>
+            <th class="th-centro">ESTADO</th>
+            <th class="th-fecha">FECHA DE REVISIÓN</th>
+            <th class="tabla__th--acciones th-acciones">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of items(); track p.idProcedimiento) {
+            <tr (click)="irAEditar(p.idProcedimiento)">
+              <td class="td-id">{{ p.idProcedimiento }}</td>
+              <td class="td-anio">{{ p.anio }}</td>
+              <td class="td-codigo"><span class="codigo-chip">{{ p.codigo }}</span></td>
+              <td class="td-centro">{{ p.version }}</td>
+              <td class="td-centro">{{ p.revision }}</td>
+              <td class="td-norma">{{ p.norma }}</td>
+              <td class="td-desc">{{ truncar(p.descripcion) }}</td>
+              <td class="td-centro">
+                <app-badge-estado [estado]="p.estado" />
+              </td>
+              <td class="td-fecha">{{ p.fechaRevision ? (p.fechaRevision | date:'dd/MM/yyyy') : '—' }}</td>
+              <td class="tabla__td--acciones">
+                <button
+                  class="btn-accion btn-accion--editar"
+                  type="button"
+                  title="Editar procedimiento"
+                  (click)="irAEditar(p.idProcedimiento); $event.stopPropagation()"
+                >
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="btn-accion"
+                  [class.btn-accion--activar]="p.estado === 'Inactivo'"
+                  [class.btn-accion--desactivar]="p.estado === 'Activo'"
+                  type="button"
+                  [title]="p.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+                  (click)="toggleEstado(p, $event)"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ p.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+
+      <app-paginacion
+        [pagina]="pagina()"
+        [total]="total()"
+        [porPagina]="porPagina"
+        etiqueta="procedimientos"
+        (cambioPagina)="irAPagina($event)"
+      />
+    }
+  }
+
+</div>

@@ -52,5 +52,11 @@ export class MaestrosHubComponent {
       descripcion: 'Catálogo técnico-comercial de suministros, insumos, repuestos, equipos y servicios asignables a propuestas.',
       ruta:        '/maestros/suministros',
     },
+    {
+      icono:       'menu_book',
+      titulo:      'Procedimientos',
+      descripcion: 'Catálogo de procedimientos metrológicos, normas técnicas y documentos aprobados para calibración y mantenimiento.',
+      ruta:        '/maestros/procedimientos',
+    },
   ];
 }

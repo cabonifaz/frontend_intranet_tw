@@ -126,6 +126,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'maestros/procedimientos',
+        loadComponent: () =>
+          import('./features/maestros/procedimientos/lista-procedimientos/lista-procedimientos.component').then(
+            m => m.ListaProcedimientosComponent
+          ),
+      },
+      {
+        path: 'maestros/procedimientos/nuevo',
+        loadComponent: () =>
+          import('./features/maestros/procedimientos/ficha-procedimiento/ficha-procedimiento.component').then(
+            m => m.FichaProcedimientoComponent
+          ),
+      },
+      {
+        path: 'maestros/procedimientos/:id',
+        loadComponent: () =>
+          import('./features/maestros/procedimientos/ficha-procedimiento/ficha-procedimiento.component').then(
+            m => m.FichaProcedimientoComponent
+          ),
+      },
+      {
         path: 'crm/requerimientos',
         loadComponent: () =>
           import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(
