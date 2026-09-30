@@ -67,6 +67,31 @@
   gap: 16px;
 }
 
+.grid-full { grid-column: 1 / -1; }
+
+// ── Aviso Clase Servicio ───────────────────────────────────────────────
+.aviso-servicio {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, #FEF3C7 0%, #FFFBEB 100%);
+  border: 1px solid #FCD34D;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #78350F;
+  line-height: 1.5;
+
+  .material-symbols-outlined {
+    font-size: 20px;
+    color: #B45309;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  strong { color: #92400E; font-weight: 700; }
+}
+
 // ── Inputs, selects, textareas base ────────────────────────────────────
 input[type="text"],
 input[type="number"],
@@ -165,62 +190,6 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     border-color: #C4B5FD;
     color: #6D28D9;
     &:hover { background: linear-gradient(90deg, #EDE9FE, #DBEAFE); }
-  }
-}
-
-.input-doble {
-  display: grid;
-  grid-template-columns: 1fr 80px;
-  gap: 6px;
-}
-
-// ── Tags input (rango operativo) ──────────────────────────────────────
-.tags-input {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  background: #FFFFFF;
-  min-height: 44px;
-
-  > input {
-    flex: 1;
-    min-width: 200px;
-    border: none;
-    padding: 4px 6px;
-    background: transparent;
-    box-shadow: none !important;
-    &:focus { outline: none; }
-  }
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 4px 3px 10px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #1D4ED8;
-
-  &__x {
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: #1D4ED8;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    &:hover { background: #DBEAFE; border-radius: 4px; }
   }
 }
 
@@ -343,42 +312,6 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     font-size: 12px;
     font-weight: 600;
     color: #0F172A;
-  }
-}
-
-// ── Lista procedimientos asociados ────────────────────────────────────
-.proc-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    font-size: 12px;
-  }
-
-  &__codigo {
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-weight: 700;
-    color: #1D4ED8;
-    padding: 2px 8px;
-    background: #EFF6FF;
-    border-radius: 4px;
-    font-size: 11px;
-  }
-
-  &__nombre {
-    color: #0F172A;
-    flex: 1;
   }
 }
 

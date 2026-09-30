@@ -69,35 +69,46 @@
               </select>
             </app-campo>
 
-            <app-campo label="Marca" [error]="formulario.get('marca')?.touched && formulario.get('marca')?.invalid ? 'Selecciona una marca' : ''">
-              <div class="input-con-boton">
-                <select formControlName="marca">
-                  <option value="">Selecciona…</option>
-                  @for (opt of marcasSignal(); track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-                <button class="btn-inline" type="button" (click)="abrirModalMarca()">
-                  <span class="material-symbols-outlined">add</span>
-                  Nueva Marca
-                </button>
-              </div>
-            </app-campo>
+            <!-- Marca y Modelo: solo si clase !== 'servicio' -->
+            @if (!esClaseServicio()) {
+              <app-campo label="Marca" [error]="formulario.get('marca')?.touched && formulario.get('marca')?.invalid ? 'Selecciona una marca' : ''">
+                <div class="input-con-boton">
+                  <select formControlName="marca">
+                    <option value="">Selecciona…</option>
+                    @for (opt of marcasSignal(); track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                  <button class="btn-inline" type="button" (click)="abrirModalMarca()">
+                    <span class="material-symbols-outlined">add</span>
+                    Nueva Marca
+                  </button>
+                </div>
+              </app-campo>
 
-            <app-campo label="Modelo" [error]="formulario.get('modelo')?.touched && formulario.get('modelo')?.invalid ? 'Selecciona un modelo' : ''">
-              <div class="input-con-boton">
-                <select formControlName="modelo">
-                  <option value="">Selecciona…</option>
-                  @for (opt of modelosSignal(); track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-                <button class="btn-inline" type="button" (click)="abrirModalModelo()">
-                  <span class="material-symbols-outlined">add</span>
-                  Nuevo Modelo
-                </button>
+              <app-campo label="Modelo" [error]="formulario.get('modelo')?.touched && formulario.get('modelo')?.invalid ? 'Selecciona un modelo' : ''">
+                <div class="input-con-boton">
+                  <select formControlName="modelo">
+                    <option value="">Selecciona…</option>
+                    @for (opt of modelosSignal(); track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                  <button class="btn-inline" type="button" (click)="abrirModalModelo()">
+                    <span class="material-symbols-outlined">add</span>
+                    Nuevo Modelo
+                  </button>
+                </div>
+              </app-campo>
+            } @else {
+              <div class="aviso-servicio grid-full">
+                <span class="material-symbols-outlined">info</span>
+                <div>
+                  <strong>Clase Servicio:</strong> este suministro no requiere Marca ni Modelo.
+                  En su lugar, asigna 1er y 2do Procedimiento (Sección 04).
+                </div>
               </div>
-            </app-campo>
+            }
           </div>
 
         </app-seccion>
@@ -105,7 +116,7 @@
         <!-- ── SECCIÓN 02 — Descripciones y Logística ──────────────────────── -->
         <app-seccion numero="02" icono="description" titulo="Descripciones Técnicas y Logística">
 
-          <app-campo label="Descripción Generada Automática" hint="Concatenación de clase + tipo + subtipo + marca + modelo">
+          <app-campo label="Descripción Generada Automática" hint="Concatenación de clase + tipo + subtipo + marca + modelo (marca/modelo se omiten en Servicio)">
             <div class="input-con-boton">
               <input type="text" formControlName="descripcionAuto" readonly placeholder="Se genera al pulsar el botón…" />
               <button class="btn-inline btn-inline--ia" type="button" (click)="generarDescripcionAuto()">
@@ -117,21 +128,12 @@
 
           <app-campo label="Descripción Manual / Comercial Ampliada"
                      [error]="formulario.get('descripcionManual')?.touched && formulario.get('descripcionManual')?.invalid ? 'Mínimo 10 caracteres' : ''">
-            <textarea formControlName="descripcionManual" rows="4"
+            <textarea formControlName="descripcionManual" rows="3"
                       placeholder="Descripción comercial extendida, uso, aplicaciones, condiciones especiales…"></textarea>
           </app-campo>
 
-          <app-campo label="Alcance / Rango Operativo de Medida y Capacidad">
-            <div class="tags-input">
-              @for (rango of rangoOperativo().controls; track $index; let i = $index) {
-                <span class="tag">
-                  {{ rango.value }}
-                  <button type="button" class="tag__x" (click)="quitarRango(i)" title="Quitar">×</button>
-                </span>
-              }
-              <input type="text" formControlName="nuevoRango" placeholder="Ej: Hasta 250 °C · Enter para agregar"
-                     (keydown.enter)="$event.preventDefault(); agregarRango()" />
-            </div>
+          <app-campo label="Alcance / Rango Operativo">
+            <input type="text" formControlName="alcance" placeholder="Ej: hasta 30 kg · 0 a 6000 g" />
           </app-campo>
 
           <div class="grid-cols-4">
@@ -144,7 +146,7 @@
             </app-campo>
 
             <app-campo label="Cta. Contable">
-              <input type="text" formControlName="ctaContable" placeholder="Ej: 7811109" />
+              <input type="text" formControlName="ctaContable" placeholder="Ej: 7011109" />
             </app-campo>
 
             <app-campo label="Procedencia">
@@ -155,11 +157,8 @@
               </select>
             </app-campo>
 
-            <app-campo label="Cuenta / Stock">
-              <div class="input-doble">
-                <input type="text" formControlName="cuenta" placeholder="Cuenta" />
-                <input type="number" formControlName="stock" min="0" placeholder="Stock" />
-              </div>
+            <app-campo label="Casillero">
+              <input type="text" formControlName="casillero" placeholder="Ej: A-12" />
             </app-campo>
           </div>
 
@@ -182,8 +181,8 @@
           </div>
 
           <div class="grid-cols-2">
-            <app-campo label="Código Estándar UNSPSC (Catálogo)">
-              <input type="text" formControlName="codigoUnspsc" placeholder="Ej: 41111702" />
+            <app-campo label="Código Estándar UNSPSC" hint="Opcional · Clasificación universal de productos y servicios">
+              <input type="text" formControlName="codigoUnspsc" placeholder="Ej: 41111509 - BÁSCULAS DE PISO" />
             </app-campo>
 
             <app-campo label="Precio Mínimo de Referencia (S/)">
@@ -195,53 +194,66 @@
             <div class="grid-cols-3">
               <div class="escala-card">
                 <div class="escala-card__label">NIVEL 1 · ESTÁNDAR</div>
-                <input type="number" formControlName="escalaEstandar" min="0" step="0.01" />
+                <input type="number" formControlName="escalaEstandar" min="0" step="0.01" placeholder="0.00" />
               </div>
               <div class="escala-card">
                 <div class="escala-card__label">NIVEL 2 · VOLUMEN</div>
-                <input type="number" formControlName="escalaVolumen" min="0" step="0.01" />
+                <input type="number" formControlName="escalaVolumen" min="0" step="0.01" placeholder="0.00" />
               </div>
               <div class="escala-card">
                 <div class="escala-card__label">NIVEL 3 · CORPORATIVO ALTO</div>
-                <input type="number" formControlName="escalaCorporativoAlto" min="0" step="0.01" />
+                <input type="number" formControlName="escalaCorporativoAlto" min="0" step="0.01" placeholder="0.00" />
               </div>
             </div>
           </app-campo>
 
-          <app-campo label="Áreas Operativas de Ejecución Asignables">
+          <app-campo label="Áreas de Ejecución">
             <div class="checks-row">
               <label class="check-op">
                 <input type="checkbox" formControlName="aplicaComercial" />
                 <span class="check-op__box"></span>
-                <span class="check-op__texto">Comercial / Ventas</span>
+                <span class="check-op__texto">Comercial</span>
               </label>
               <label class="check-op">
-                <input type="checkbox" formControlName="aplicaServicioTecnico" />
+                <input type="checkbox" formControlName="aplicaServicio" />
                 <span class="check-op__box"></span>
-                <span class="check-op__texto">Servicio Técnico en Campo</span>
+                <span class="check-op__texto">Servicio</span>
               </label>
               <label class="check-op">
-                <input type="checkbox" formControlName="aplicaLaboratorioMetrologia" />
+                <input type="checkbox" formControlName="aplicaMetrologia" />
                 <span class="check-op__box"></span>
-                <span class="check-op__texto">Laboratorio de Metrología</span>
+                <span class="check-op__texto">Metrología</span>
               </label>
             </div>
           </app-campo>
 
-          @if (procedimientosAsociados().length > 0) {
-            <app-campo label="Procedimientos Asociados" hint="Referenciados desde el maestro de procedimientos (HU-87)">
-              <ul class="proc-list">
-                @for (p of procedimientosAsociados(); track p.codigo) {
-                  <li>
-                    <span class="proc-list__codigo">{{ p.codigo }}</span>
-                    <span class="proc-list__nombre">{{ p.nombre }}</span>
-                  </li>
-                }
-              </ul>
-            </app-campo>
-          }
-
         </app-seccion>
+
+        <!-- ── SECCIÓN 04 — Procedimientos (solo Servicio) ─────────────────── -->
+        @if (esClaseServicio()) {
+          <app-seccion numero="04" icono="assignment" titulo="Procedimientos Asociados"
+                       subtitulo="Dropdown al maestro de Procedimientos (HU-87 — próximo)">
+            <div class="grid-cols-2">
+              <app-campo label="1er Procedimiento">
+                <select formControlName="idPrimerProcedimiento">
+                  <option value="">— Sin procedimiento —</option>
+                  @for (p of procedimientosSignal(); track p.value) {
+                    <option [value]="p.value">{{ p.label }}</option>
+                  }
+                </select>
+              </app-campo>
+
+              <app-campo label="2do Procedimiento">
+                <select formControlName="idSegundoProcedimiento">
+                  <option value="">— Sin procedimiento —</option>
+                  @for (p of procedimientosSignal(); track p.value) {
+                    <option [value]="p.value">{{ p.label }}</option>
+                  }
+                </select>
+              </app-campo>
+            </div>
+          </app-seccion>
+        }
 
       </div>
 

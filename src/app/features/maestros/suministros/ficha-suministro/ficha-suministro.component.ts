@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SuministrosService } from '../../../../core/services/suministros.service';
 import {
@@ -12,6 +12,7 @@ import {
   SUBTIPOS_SUMINISTRO,
   TIPOS_SUMINISTRO,
   UNIDADES_SUMINISTRO,
+  esServicio,
 } from '../../../../core/models/suministros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -61,7 +62,7 @@ export class FichaSuministroComponent implements OnInit {
   readonly fechaRegistro     = signal('');
   readonly fechaModificacion = signal('');
   readonly firmaDigital      = signal('');
-  readonly procedimientosAsociados = signal<{ codigo: string; nombre: string }[]>([]);
+  readonly claseActual       = signal('');
 
   readonly clasesOpciones       = CLASES_SUMINISTRO;
   readonly tiposOpciones        = TIPOS_SUMINISTRO;
@@ -70,8 +71,13 @@ export class FichaSuministroComponent implements OnInit {
   readonly unidadesOpciones     = UNIDADES_SUMINISTRO;
   readonly nivelesTarifa        = NIVELES_TARIFA;
 
-  readonly marcasSignal  = signal<OpcionCatalogo[]>([]);
-  readonly modelosSignal = signal<OpcionCatalogo[]>([]);
+  readonly marcasSignal         = signal<OpcionCatalogo[]>([]);
+  readonly modelosSignal        = signal<OpcionCatalogo[]>([]);
+  readonly procedimientosSignal = signal<OpcionCatalogo[]>([]);
+
+  // Regla de negocio: si clase === 'servicio' → sin Marca/Modelo, con Procedimientos.
+  // Si clase !== 'servicio' → con Marca/Modelo, sin Procedimientos.
+  readonly esClaseServicio = computed(() => esServicio(this.claseActual()));
 
   idSuministro = 0;
 
@@ -81,38 +87,38 @@ export class FichaSuministroComponent implements OnInit {
     esActivoEnCatalogo: [true],
     tipo:               ['', Validators.required],
     subtipo:            ['', Validators.required],
-    marca:              ['', Validators.required],
-    modelo:             ['', Validators.required],
+    marca:              [''],   // requerido solo si clase !== 'servicio' (validación dinámica)
+    modelo:             [''],   // idem
 
     // 02 - Descripciones y Logística
     descripcionAuto:    [''],
     descripcionManual:  ['', [Validators.required, Validators.minLength(10)]],
-    rangoOperativo:     this.fb.array<string>([]),
-    nuevoRango:         [''],
-    unidad:             ['unidad'],
+    alcance:            [''],
+    unidad:             ['unidad_bienes'],
     ctaContable:        [''],
     procedencia:        ['nacional'],
-    cuenta:             [''],
-    stock:              [0, [Validators.min(0)]],
+    casillero:          [''],
 
     // 03 - Parámetros de Cotización
     usarEnPropuestas:    [true],
     codigoUnspsc:        [''],
-    precioMinReferencia: [0, [Validators.min(0)]],
-    escalaEstandar:         [0, [Validators.min(0)]],
-    escalaVolumen:          [0, [Validators.min(0)]],
-    escalaCorporativoAlto:  [0, [Validators.min(0)]],
-    aplicaComercial:             [true],
-    aplicaServicioTecnico:       [true],
-    aplicaLaboratorioMetrologia: [true],
+    precioMinReferencia: [null],
+    escalaEstandar:         [null],
+    escalaVolumen:          [null],
+    escalaCorporativoAlto:  [null],
+    aplicaComercial:  [false],
+    aplicaServicio:   [false],
+    aplicaMetrologia: [false],
+
+    // 04 - Procedimientos (solo si clase = 'servicio')
+    idPrimerProcedimiento:  [''],
+    idSegundoProcedimiento: [''],
   });
 
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
     { label: 'Suministros', ruta: '/maestros/suministros' },
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
   ));
-
-  readonly rangoOperativo = computed(() => this.formulario.get('rangoOperativo') as FormArray<any>);
 
   readonly codigoBadge = computed(() => {
     if (this.esNuevo()) return 'AUTO · SUM-NUEVO';
@@ -128,6 +134,13 @@ export class FichaSuministroComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.marcasSignal.set(this.suministrosSvc.obtenerMarcas());
     this.modelosSignal.set(this.suministrosSvc.obtenerModelos());
+    this.procedimientosSignal.set(this.suministrosSvc.obtenerProcedimientos());
+
+    // Sincronizar claseActual con el FormControl para que el computed reaccione
+    this.formulario.get('clase')?.valueChanges.subscribe(v => {
+      this.claseActual.set(v ?? '');
+      this.actualizarValidadoresPorClase(v ?? '');
+    });
 
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
@@ -146,29 +159,30 @@ export class FichaSuministroComponent implements OnInit {
           modelo:             s.modelo,
           descripcionAuto:    s.descripcionAuto,
           descripcionManual:  s.descripcionManual,
+          alcance:            s.alcance,
           unidad:             s.unidad,
           ctaContable:        s.ctaContable,
           procedencia:        s.procedencia,
-          cuenta:             s.cuenta,
-          stock:              s.stock,
+          casillero:          s.casillero,
           usarEnPropuestas:    s.usarEnPropuestas,
           codigoUnspsc:        s.codigoUnspsc,
           precioMinReferencia: s.precioMinReferencia,
-          escalaEstandar:         s.escalas.find(e => e.nivel === 'estandar')?.precio ?? 0,
-          escalaVolumen:          s.escalas.find(e => e.nivel === 'volumen')?.precio ?? 0,
-          escalaCorporativoAlto:  s.escalas.find(e => e.nivel === 'corporativo_alto')?.precio ?? 0,
-          aplicaComercial:             s.aplicaComercial,
-          aplicaServicioTecnico:       s.aplicaServicioTecnico,
-          aplicaLaboratorioMetrologia: s.aplicaLaboratorioMetrologia,
+          escalaEstandar:         s.escalas.find(e => e.nivel === 'estandar')?.precio         ?? null,
+          escalaVolumen:          s.escalas.find(e => e.nivel === 'volumen')?.precio          ?? null,
+          escalaCorporativoAlto:  s.escalas.find(e => e.nivel === 'corporativo_alto')?.precio ?? null,
+          aplicaComercial:  s.aplicaComercial,
+          aplicaServicio:   s.aplicaServicio,
+          aplicaMetrologia: s.aplicaMetrologia,
+          idPrimerProcedimiento:  s.idPrimerProcedimiento  ?? '',
+          idSegundoProcedimiento: s.idSegundoProcedimiento ?? '',
         });
-        const ra = this.formulario.get('rangoOperativo') as FormArray<any>;
-        s.rangoOperativo.forEach(r => ra.push(this.fb.control(r)));
+        this.claseActual.set(s.clase);
+        this.actualizarValidadoresPorClase(s.clase);
         this.totalEdiciones.set(s.totalEdiciones);
         this.usuarioRegistro.set(s.usuarioRegistro);
         this.fechaRegistro.set(s.fechaRegistro);
         this.fechaModificacion.set(s.fechaModificacion);
         this.firmaDigital.set(s.firmaDigital);
-        this.procedimientosAsociados.set(s.procedimientosAsociados);
       }
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el suministro.');
@@ -177,23 +191,31 @@ export class FichaSuministroComponent implements OnInit {
     }
   }
 
-  // ─── Rango operativo (tags) ───────────────────────────────────────────
-  agregarRango(): void {
-    const v = (this.formulario.get('nuevoRango')?.value ?? '').trim();
-    if (!v) return;
-    (this.formulario.get('rangoOperativo') as FormArray).push(this.fb.control(v));
-    this.formulario.patchValue({ nuevoRango: '' });
-  }
-
-  quitarRango(i: number): void {
-    (this.formulario.get('rangoOperativo') as FormArray).removeAt(i);
+  private actualizarValidadoresPorClase(clase: string): void {
+    const marcaCtrl  = this.formulario.get('marca');
+    const modeloCtrl = this.formulario.get('modelo');
+    if (esServicio(clase)) {
+      marcaCtrl?.clearValidators();
+      modeloCtrl?.clearValidators();
+      marcaCtrl?.setValue('');
+      modeloCtrl?.setValue('');
+    } else {
+      marcaCtrl?.setValidators([Validators.required]);
+      modeloCtrl?.setValidators([Validators.required]);
+    }
+    marcaCtrl?.updateValueAndValidity({ emitEvent: false });
+    modeloCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   // ─── Generar descripción automática (mock IA) ─────────────────────────
   generarDescripcionAuto(): void {
     const v = this.formulario.value;
-    if (!v.clase || !v.tipo || !v.subtipo || !v.marca || !v.modelo) {
-      this.toastSvc.error('Completa clase, tipo, sub-tipo, marca y modelo antes de generar.');
+    if (!v.clase || !v.tipo || !v.subtipo) {
+      this.toastSvc.error('Completa clase, tipo y sub-tipo antes de generar.');
+      return;
+    }
+    if (!this.esClaseServicio() && (!v.marca || !v.modelo)) {
+      this.toastSvc.error('Completa marca y modelo antes de generar.');
       return;
     }
     const desc = this.suministrosSvc.generarDescripcionAuto(v.clase, v.tipo, v.subtipo, v.marca, v.modelo);
@@ -238,32 +260,25 @@ export class FichaSuministroComponent implements OnInit {
   limpiarFormulario(): void {
     this.formulario.reset({
       esActivoEnCatalogo: true,
-      unidad: 'unidad',
+      unidad: 'unidad_bienes',
       procedencia: 'nacional',
-      stock: 0,
       usarEnPropuestas: true,
-      precioMinReferencia: 0,
-      escalaEstandar: 0,
-      escalaVolumen: 0,
-      escalaCorporativoAlto: 0,
-      aplicaComercial: true,
-      aplicaServicioTecnico: true,
-      aplicaLaboratorioMetrologia: true,
+      precioMinReferencia: null,
+      escalaEstandar: null,
+      escalaVolumen: null,
+      escalaCorporativoAlto: null,
+      aplicaComercial: false,
+      aplicaServicio: false,
+      aplicaMetrologia: false,
     });
-    while ((this.formulario.get('rangoOperativo') as FormArray).length > 0) {
-      (this.formulario.get('rangoOperativo') as FormArray).removeAt(0);
-    }
+    this.claseActual.set('');
     this.toastSvc.exito('Formulario limpiado.');
   }
 
   duplicarComoPlantilla(): void {
     if (this.esNuevo()) { this.toastSvc.error('Solo puedes duplicar un registro ya guardado.'); return; }
-    const v = this.formulario.value;
     this.esNuevo.set(true);
     this.idSuministro = 0;
-    this.formulario.patchValue({
-      descripcionManual: `${v.descripcionManual} (COPIA)`,
-    });
     this.router.navigate(['/maestros/suministros/nuevo']);
     this.toastSvc.exito('Registro duplicado como plantilla — completa lo necesario y guarda.');
   }
@@ -287,28 +302,29 @@ export class FichaSuministroComponent implements OnInit {
         clase:              v.clase,
         tipo:               v.tipo,
         subtipo:            v.subtipo,
-        marca:              v.marca,
-        modelo:             v.modelo,
+        marca:              esServicio(v.clase) ? '' : (v.marca ?? ''),
+        modelo:             esServicio(v.clase) ? '' : (v.modelo ?? ''),
         descripcionAuto:    v.descripcionAuto ?? '',
         descripcionManual:  v.descripcionManual?.trim() ?? '',
-        rangoOperativo:     (v.rangoOperativo ?? []) as string[],
+        alcance:            v.alcance ?? '',
         unidad:             v.unidad,
         ctaContable:        v.ctaContable ?? '',
         procedencia:        v.procedencia,
-        cuenta:             v.cuenta ?? '',
-        stock:              Number(v.stock) || 0,
+        casillero:          v.casillero ?? '',
         esActivoEnCatalogo: !!v.esActivoEnCatalogo,
         usarEnPropuestas:    !!v.usarEnPropuestas,
         codigoUnspsc:        v.codigoUnspsc ?? '',
-        precioMinReferencia: v.precioMinReferencia != null ? Number(v.precioMinReferencia) : null,
+        precioMinReferencia: v.precioMinReferencia != null && v.precioMinReferencia !== '' ? Number(v.precioMinReferencia) : null,
         escalas: [
-          { nivel: 'estandar',         precio: Number(v.escalaEstandar) || null },
-          { nivel: 'volumen',          precio: Number(v.escalaVolumen) || null },
-          { nivel: 'corporativo_alto', precio: Number(v.escalaCorporativoAlto) || null },
+          { nivel: 'estandar',         precio: v.escalaEstandar != null && v.escalaEstandar !== '' ? Number(v.escalaEstandar) : null },
+          { nivel: 'volumen',          precio: v.escalaVolumen != null && v.escalaVolumen !== '' ? Number(v.escalaVolumen) : null },
+          { nivel: 'corporativo_alto', precio: v.escalaCorporativoAlto != null && v.escalaCorporativoAlto !== '' ? Number(v.escalaCorporativoAlto) : null },
         ],
-        aplicaComercial:             !!v.aplicaComercial,
-        aplicaServicioTecnico:       !!v.aplicaServicioTecnico,
-        aplicaLaboratorioMetrologia: !!v.aplicaLaboratorioMetrologia,
+        aplicaComercial:  !!v.aplicaComercial,
+        aplicaServicio:   !!v.aplicaServicio,
+        aplicaMetrologia: !!v.aplicaMetrologia,
+        idPrimerProcedimiento:  esServicio(v.clase) ? (v.idPrimerProcedimiento  || undefined) : undefined,
+        idSegundoProcedimiento: esServicio(v.clase) ? (v.idSegundoProcedimiento || undefined) : undefined,
         guardarComoBorrador,
       };
       await this.suministrosSvc.guardarSuministro(dto);
