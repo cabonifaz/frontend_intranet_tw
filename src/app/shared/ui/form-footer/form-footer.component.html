@@ -1,0 +1,11 @@
+<div class="form-footer">
+  @if (mostrarCancelar()) {
+    <button class="ff-cancelar" type="button" (click)="onCancelar()">
+      <span class="material-symbols-outlined">close</span>
+      {{ cancelarTexto() }}
+    </button>
+  }
+  <div class="form-footer__acciones">
+    <ng-content></ng-content>
+  </div>
+</div>

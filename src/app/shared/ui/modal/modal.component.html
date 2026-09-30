@@ -1,0 +1,16 @@
+<div class="modal-overlay" (click)="onOverlayClick($event)">
+  <div class="modal modal--{{ ancho() }}">
+    <div class="modal__header">
+      <h2 class="modal__titulo">{{ titulo() }}</h2>
+      @if (cerrable()) {
+        <button class="modal__cerrar" type="button" (click)="onCerrar()" title="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      }
+    </div>
+    <div class="modal__body">
+      <ng-content></ng-content>
+    </div>
+    <ng-content select="[modalFooter]"></ng-content>
+  </div>
+</div>

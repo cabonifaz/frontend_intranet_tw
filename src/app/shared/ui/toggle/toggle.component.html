@@ -1,0 +1,9 @@
+<label class="switch" [class.switch--disabled]="disabled()">
+  <input
+    type="checkbox"
+    [checked]="valor"
+    [disabled]="disabled()"
+    (change)="onInputChange($event)"
+  />
+  <span class="switch__slider"></span>
+</label>

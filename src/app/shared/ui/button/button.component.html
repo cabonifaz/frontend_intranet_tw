@@ -1,0 +1,18 @@
+<button
+  class="btn btn--{{ variant() }} btn--{{ tamano() }}"
+  [class.btn--full]="ancho() === 'full'"
+  [class.btn--cargando]="cargando()"
+  [type]="tipo()"
+  [disabled]="disabled() || cargando()"
+  (click)="onClick($event)"
+>
+  @if (cargando()) {
+    <span class="material-symbols-outlined btn__spin">progress_activity</span>
+  } @else if (icono()) {
+    <span class="material-symbols-outlined">{{ icono() }}</span>
+  }
+  <span class="btn__label"><ng-content></ng-content></span>
+  @if (iconoDer() && !cargando()) {
+    <span class="material-symbols-outlined">{{ iconoDer() }}</span>
+  }
+</button>

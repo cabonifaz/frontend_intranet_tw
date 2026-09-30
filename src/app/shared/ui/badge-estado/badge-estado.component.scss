@@ -1,0 +1,21 @@
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #F1F5F9;
+  color: #64748B;
+
+  &--activo { background: #ECFDF5; color: #047857; }
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+}

@@ -1,0 +1,6 @@
+<span class="badge badge--{{ variant() }} badge--{{ tamano() }}" [class.badge--mono]="mono()">
+  @if (conDot()) {
+    <span class="badge__dot"></span>
+  }
+  {{ texto() }}
+</span>

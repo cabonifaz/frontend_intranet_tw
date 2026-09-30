@@ -1,0 +1,24 @@
+<div class="paginacion">
+  <span class="paginacion__info">
+    {{ desde() }}–{{ hasta() }} de {{ total() }} {{ etiqueta() }}
+  </span>
+  <div class="paginacion__controles">
+    <button
+      class="paginacion__btn"
+      type="button"
+      [disabled]="!hayAnterior()"
+      (click)="irA(pagina() - 1)"
+    >
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    <span class="paginacion__pagina">{{ pagina() }} / {{ totalPaginas() }}</span>
+    <button
+      class="paginacion__btn"
+      type="button"
+      [disabled]="!haySiguiente()"
+      (click)="irA(pagina() + 1)"
+    >
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+  </div>
+</div>

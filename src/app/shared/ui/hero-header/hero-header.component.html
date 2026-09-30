@@ -1,0 +1,28 @@
+<div class="hero">
+  <div class="hero__izq">
+    @if (mostrarBack()) {
+      <button type="button" class="hero__back" (click)="onVolver()" title="Volver">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+    }
+    <div class="hero__contenido">
+      <div class="hero__titulo-row">
+        <h1 class="hero__titulo">{{ titulo() }}</h1>
+        @if (badgeTexto()) {
+          <span class="hero__badge hero__badge--{{ badgeVariant() }}">
+            @if (badgeVariant() === 'verde-dot' || badgeVariant() === 'ambar-dot') {
+              <span class="hero__badge-dot"></span>
+            }
+            {{ badgeTexto() }}
+          </span>
+        }
+      </div>
+      @if (descripcion()) {
+        <p class="hero__desc">{{ descripcion() }}</p>
+      }
+    </div>
+  </div>
+  <div class="hero__der">
+    <ng-content></ng-content>
+  </div>
+</div>

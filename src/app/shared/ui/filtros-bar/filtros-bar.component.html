@@ -1,0 +1,19 @@
+<div class="filtros-bar">
+  <div class="filtros-bar__busqueda">
+    <span class="material-symbols-outlined filtros-bar__icono">search</span>
+    <input
+      class="filtros-bar__input"
+      type="text"
+      [placeholder]="placeholder()"
+      [(ngModel)]="busqueda"
+      (keyup.enter)="onBuscar()"
+    />
+  </div>
+
+  <ng-content></ng-content>
+
+  <button class="filtros-bar__btn" type="button" (click)="onBuscar()">
+    <span class="material-symbols-outlined">search</span>
+    Buscar
+  </button>
+</div>

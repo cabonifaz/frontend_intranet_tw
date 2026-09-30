@@ -1,0 +1,24 @@
+<section class="seccion">
+  <div class="seccion__header">
+    @if (numero()) {
+      <div class="seccion__numero">{{ numero() }}</div>
+    } @else if (icono()) {
+      <div class="seccion__icono">
+        <span class="material-symbols-outlined">{{ icono() }}</span>
+      </div>
+    }
+    <div class="seccion__cuerpo-h">
+      <h2 class="seccion__titulo">{{ titulo() }}</h2>
+      @if (subtitulo()) {
+        <p class="seccion__subtitulo">{{ subtitulo() }}</p>
+      }
+    </div>
+    @if (badgeTexto()) {
+      <span class="seccion__badge seccion__badge--{{ badgeVariant() }}">{{ badgeTexto() }}</span>
+    }
+    <ng-content select="[headerActions]"></ng-content>
+  </div>
+  <div class="seccion__body">
+    <ng-content></ng-content>
+  </div>
+</section>

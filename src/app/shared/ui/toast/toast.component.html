@@ -1,0 +1,15 @@
+<div class="toast-contenedor">
+  @for (t of toastSvc.toasts(); track t.id) {
+    <div class="toast toast--{{ t.tipo }}">
+      <span class="material-symbols-outlined toast__icono">
+        @if (t.tipo === 'exito') { check_circle }
+        @else if (t.tipo === 'error') { error }
+        @else { info }
+      </span>
+      <span class="toast__msg">{{ t.mensaje }}</span>
+      <button class="toast__cerrar" type="button" (click)="toastSvc.cerrar(t.id)">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  }
+</div>

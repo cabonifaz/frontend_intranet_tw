@@ -1,0 +1,28 @@
+.estado-aviso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  color: #94A3B8;
+  font-size: 14px;
+  text-align: center;
+
+  .material-symbols-outlined { font-size: 32px; }
+
+  &--error {
+    color: #EF4444;
+    background: #FFF5F5;
+    border-color: #FCA5A5;
+  }
+
+  p { margin: 0; }
+}
+
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }

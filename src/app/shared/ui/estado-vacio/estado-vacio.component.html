@@ -1,0 +1,7 @@
+<div class="estado-aviso" [class.estado-aviso--error]="variante() === 'error'">
+  <span class="material-symbols-outlined" [class.spin]="variante() === 'cargando'">
+    {{ iconoResuelto }}
+  </span>
+  <p>{{ mensaje() }}</p>
+  <ng-content></ng-content>
+</div>
