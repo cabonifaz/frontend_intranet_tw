@@ -6,7 +6,7 @@ import { debounceTime } from 'rxjs';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
 import { SuplentesService } from '../../../../core/services/suplentes.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
-import { GuardarUsuarioRequest, SedeOperativa, UsuarioListaItem } from '../../../../core/models/usuarios.model';
+import { GuardarUsuarioRequest, UsuarioListaItem } from '../../../../core/models/usuarios.model';
 import { SuplenteListaItem, GuardarSuplenteRequest } from '../../../../core/models/suplentes.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
@@ -78,14 +78,12 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
   readonly error            = signal('');
   readonly esNuevo          = signal(true);
   readonly jefes            = signal<UsuarioListaItem[]>([]);
-  readonly sedes            = signal<SedeOperativa[]>([]);
   readonly comerciales      = signal<UsuarioListaItem[]>([]);
   readonly suplenciasComoTitular  = signal<SuplenteListaItem[]>([]);
   readonly suplenciasComoSuplente = signal<SuplenteListaItem[]>([]);
   readonly formSuplenteAbierto = signal(false);
   readonly guardandoSuplente   = signal(false);
   readonly errorSuplente       = signal('');
-  readonly modalSedesOpen   = signal(false);
   readonly copiado          = signal(false);
 
   idUsuario = 0;
@@ -117,8 +115,6 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     rolSistema:            ['', Validators.required],
     baseOperativa:         ['', Validators.required],
     idSupervisorDirecto:   [null],
-    sedesAutorizadas:      [[] as number[]],
-    areaComercial:         [null],
     habilitadoFirmaInacal:        [false],
     numeroRegistroInacal:         [null],
     fechaExpiracionCertificacion: [null],
@@ -137,19 +133,35 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     activo:       [true],
   });
 
+  // Signal sincronizado con formulario.rolSistema para que los computed reaccionen
+  // (los valores de Reactive Forms no son signals, un computed sobre .value no se actualiza).
+  readonly rolSistemaActual = signal<string>('');
+
   readonly esRolComercial = computed(() => {
-    const rol = this.formulario.get('rolSistema')?.value;
+    const rol = this.rolSistemaActual();
     return this.rolOpciones.find(r => r.value === rol)?.esComercial ?? false;
   });
 
-  readonly rolLabelActual = computed(() => {
-    const rol = this.formulario.get('rolSistema')?.value;
-    return this.rolOpciones.find(r => r.value === rol)?.label ?? 'Sin rol asignado';
+  // Credenciales INACAL (firma de certificados de calibración) solo aplican a Metrología.
+  readonly rolRequiereInacal = computed(() => {
+    const rol = this.rolSistemaActual();
+    return rol === 'jefe_metrologia' || rol === 'metrologo';
   });
 
-  readonly sedesSeleccionadas = computed<SedeOperativa[]>(() => {
-    const ids = (this.formulario.get('sedesAutorizadas')?.value ?? []) as number[];
-    return this.sedes().filter(s => ids.includes(s.idSede));
+  // Numeración dinámica de secciones (depende de qué secciones estén visibles por rol).
+  // Secciones 1 y 2 siempre están. 3 (INACAL) solo metrológico. 4 (Seguridad) siempre.
+  // 5 (Suplencias) solo comercial en modo editar. Nunca coexisten INACAL + Suplencias.
+  readonly numInacal     = computed(() => this.rolRequiereInacal() ? 3 : null);
+  readonly numSeguridad  = computed(() => this.rolRequiereInacal() ? 4 : 3);
+  readonly numSuplencias = computed(() => {
+    if (this.esNuevo() || !this.esRolComercial()) return null;
+    // Comercial no es metrológico → INACAL no está → Suplencias es la siguiente de Seguridad
+    return this.numSeguridad() + 1;
+  });
+
+  readonly rolLabelActual = computed(() => {
+    const rol = this.rolSistemaActual();
+    return this.rolOpciones.find(r => r.value === rol)?.label ?? 'Sin rol asignado';
   });
 
   readonly nombreCompleto = computed(() => {
@@ -182,19 +194,25 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     this.esNuevo.set(nuevo);
     this.borradorKey = `usuarios:${nuevo ? 'nuevo' : idParam}`;
 
+    // Sincronizar signal con el control del form para que los computed reaccionen
+    this.formulario.get('rolSistema')?.valueChanges.subscribe(v => {
+      this.rolSistemaActual.set(v ?? '');
+    });
+
     try {
-      const [jefes, sedes] = await Promise.all([
-        this.usuariosSvc.obtenerJefesDisponibles(),
-        this.usuariosSvc.obtenerSedesOperativas(),
-      ]);
-      this.jefes.set(jefes);
-      this.sedes.set(sedes);
+      const jefes = await this.usuariosSvc.obtenerJefesDisponibles();
 
       if (!nuevo) {
         this.idUsuario = Number(idParam);
+      }
+      // Un usuario no puede ser supervisor de sí mismo (en nuevo idUsuario=0, no filtra a nadie)
+      this.jefes.set(jefes.filter(j => j.idUsuario !== this.idUsuario));
+
+      if (!nuevo) {
         const u = await this.usuariosSvc.obtenerUsuarioPorId(this.idUsuario);
         await this.cargarSuplencias();
         await this.cargarComerciales();
+        this.rolSistemaActual.set(u.rolSistema ?? '');
         this.formulario.patchValue({
           nombre:                       u.nombre,
           apellido:                     u.apellido,
@@ -206,8 +224,6 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
           rolSistema:                   u.rolSistema,
           baseOperativa:                u.baseOperativa,
           idSupervisorDirecto:          u.idSupervisorDirecto,
-          sedesAutorizadas:             u.sedesAutorizadas,
-          areaComercial:                u.areaComercial,
           habilitadoFirmaInacal:        u.habilitadoFirmaInacal,
           numeroRegistroInacal:         u.numeroRegistroInacal,
           fechaExpiracionCertificacion: u.fechaExpiracionCertificacion?.substring(0, 10) ?? null,
@@ -247,27 +263,6 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
       this.copiado.set(true);
       setTimeout(() => this.copiado.set(false), 2000);
     } catch { /* noop */ }
-  }
-
-  abrirModalSedes(): void { this.modalSedesOpen.set(true); }
-  cerrarModalSedes(): void { this.modalSedesOpen.set(false); }
-
-  toggleSede(idSede: number): void {
-    const actuales = (this.formulario.get('sedesAutorizadas')?.value ?? []) as number[];
-    const nuevas = actuales.includes(idSede)
-      ? actuales.filter(id => id !== idSede)
-      : [...actuales, idSede];
-    this.formulario.patchValue({ sedesAutorizadas: nuevas });
-  }
-
-  quitarSede(idSede: number): void {
-    const actuales = (this.formulario.get('sedesAutorizadas')?.value ?? []) as number[];
-    this.formulario.patchValue({ sedesAutorizadas: actuales.filter(id => id !== idSede) });
-  }
-
-  estaSedeSeleccionada(idSede: number): boolean {
-    const ids = (this.formulario.get('sedesAutorizadas')?.value ?? []) as number[];
-    return ids.includes(idSede);
   }
 
   // ─── Borrador local ─────────────────────────────────────────────────
@@ -335,15 +330,14 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         telefono:                     v.telefono || null,
         cargo:                        v.cargo?.trim() || null,
         rolSistema:                   v.rolSistema,
-        areaComercial:                this.esRolComercial() ? (v.areaComercial || null) : null,
         baseOperativa:                v.baseOperativa,
         idSupervisorDirecto:          v.idSupervisorDirecto || null,
-        sedesAutorizadas:             v.sedesAutorizadas ?? [],
         habilitadoFirmaInacal:        !!v.habilitadoFirmaInacal,
         numeroRegistroInacal:         v.habilitadoFirmaInacal ? (v.numeroRegistroInacal || null) : null,
         fechaExpiracionCertificacion: v.habilitadoFirmaInacal ? (v.fechaExpiracionCertificacion || null) : null,
         requiereInduccionSctr:        !!v.requiereInduccionSctr,
-        contrasenaTemporal:           v.contrasenaTemporal,
+        // En modo editar: vacío = no cambiar la contraseña (el back lo interpreta así).
+        contrasenaTemporal:           v.contrasenaTemporal?.trim() || '',
         forzarCambioContrasena:       !!v.forzarCambioContrasena,
         enviarCredencialesCorreo:     !!v.enviarCredencialesCorreo,
         autenticacion2fa:             !!v.autenticacion2fa,
@@ -451,7 +445,7 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         SuplentesService.reemplazarNombres(
           id,
           titular,
-          { nombre: suplente.nombre, apellido: suplente.apellido, cargo: suplente.areaComercial ?? 'Comercial' },
+          { nombre: suplente.nombre, apellido: suplente.apellido, cargo: 'Comercial' },
         );
       }
 

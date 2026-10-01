@@ -153,109 +153,88 @@
             </select>
           </div>
 
-          <div class="campo">
-            <div class="campo-header-flex">
-              <label class="campo__label">Sedes y Unidades Mineras Autorizadas *</label>
-              <span class="campo__hint">Habilita acceso a expedientes técnicos y protocolos en campo</span>
-            </div>
-            <div class="campo-sedes">
-              <div class="campo-sedes__chips">
-                @if (sedesSeleccionadas().length === 0) {
-                  <span class="campo-sedes__placeholder">Seleccione sedes autorizadas para este usuario...</span>
-                } @else {
-                  @for (s of sedesSeleccionadas(); track s.idSede) {
-                    <span class="chip">
-                      <span class="material-symbols-outlined chip__icono">location_on</span>
-                      {{ s.nombre }}
-                      <button type="button" class="chip__quitar" (click)="quitarSede(s.idSede)" title="Quitar">
-                        <span class="material-symbols-outlined">close</span>
-                      </button>
-                    </span>
-                  }
-                }
-              </div>
-              <button type="button" class="btn-asignar" (click)="abrirModalSedes()">
-                <span class="material-symbols-outlined">add</span>
-                Asignar sede
-              </button>
-            </div>
-          </div>
+          <!-- "Sedes y Unidades Mineras Autorizadas" removido:
+               el concepto estaba mal diseñado (los seeds eran Minas = clientes, no sedes de TW).
+               Pendiente de limpieza en el back (drop tabla usuario_sede_autorizada + sacar
+               p_sedes_json del SP). Mientras tanto el DTO envía array vacío. -->
 
-          @if (esRolComercial()) {
-            <div class="campo">
-              <label class="campo__label">Área comercial</label>
-              <input class="campo__input" type="text" placeholder="Ej. Comercial Minería, Comercial Industrial" formControlName="areaComercial" />
-            </div>
-          }
         </app-seccion>
 
-        <!-- SECCIÓN 03 -->
-        <app-seccion
-          icono="workspace_premium"
-          titulo="3. Credenciales de Certificación Técnica"
-          subtitulo="Acreditaciones oficiales para calibración de básculas industriales e informes oficiales."
-          badgeTexto="INACAL DA-DA-01"
-          badgeVariant="dark"
-        >
-          <div class="toggle-row">
-            <div class="toggle-row__texto">
-              <div class="toggle-row__titulo-row">
-                <span class="toggle-row__titulo">Habilitado para firma de Certificados de Calibración INACAL</span>
-                <app-badge texto="Validez Oficial" variant="verde" tamano="sm" />
+        <!-- SECCIÓN 03 — solo para rol Metrología (Jefe de Metrología o Metrólogo) -->
+        @if (rolRequiereInacal()) {
+          <app-seccion
+            icono="workspace_premium"
+            [titulo]="numInacal() + '. Credenciales de Certificación Técnica'"
+            subtitulo="Acreditaciones oficiales para calibración de básculas industriales e informes oficiales."
+            badgeTexto="INACAL DA-DA-01"
+            badgeVariant="dark"
+          >
+            <div class="toggle-row">
+              <div class="toggle-row__texto">
+                <div class="toggle-row__titulo-row">
+                  <span class="toggle-row__titulo">Habilitado para firma de Certificados de Calibración INACAL</span>
+                  <app-badge texto="Validez Oficial" variant="verde" tamano="sm" />
+                </div>
+                <span class="toggle-row__desc">Permite estampar firma digital criptográfica validada en informes metrológicos oficiales entregados a clientes.</span>
               </div>
-              <span class="toggle-row__desc">Permite estampar firma digital criptográfica validada en informes metrológicos oficiales entregados a clientes.</span>
+              <app-toggle formControlName="habilitadoFirmaInacal" />
             </div>
-            <app-toggle formControlName="habilitadoFirmaInacal" />
-          </div>
 
-          @if (formulario.get('habilitadoFirmaInacal')?.value) {
-            <div class="campo-duo">
-              <div class="campo">
-                <label class="campo__label">Número de Registro / Acreditación INACAL</label>
-                <input class="campo__input" type="text" placeholder="Ej. MET-2024-0891" formControlName="numeroRegistroInacal" />
+            @if (formulario.get('habilitadoFirmaInacal')?.value) {
+              <div class="campo-duo">
+                <div class="campo">
+                  <label class="campo__label">Número de Registro / Acreditación INACAL</label>
+                  <input class="campo__input" type="text" placeholder="Ej. MET-2024-0891" formControlName="numeroRegistroInacal" />
+                </div>
+                <div class="campo">
+                  <label class="campo__label">Fecha de Expiración Certificación</label>
+                  <input class="campo__input" type="date" formControlName="fechaExpiracionCertificacion" />
+                </div>
               </div>
-              <div class="campo">
-                <label class="campo__label">Fecha de Expiración Certificación</label>
-                <input class="campo__input" type="date" formControlName="fechaExpiracionCertificacion" />
+            }
+
+            <div class="toggle-row">
+              <div class="toggle-row__texto">
+                <span class="toggle-row__titulo">Requiere inducción y validación SCTR para ingreso a instalaciones del cliente</span>
+                <span class="toggle-row__desc">Bloquea asignación a órdenes de servicio en campo si la póliza está vencida.</span>
               </div>
+              <app-toggle formControlName="requiereInduccionSctr" />
             </div>
-          }
+          </app-seccion>
+        }
 
-          <div class="toggle-row">
-            <div class="toggle-row__texto">
-              <span class="toggle-row__titulo">Requiere inducción y validación SCTR para ingreso a mina</span>
-              <span class="toggle-row__desc">Bloquea asignación a órdenes de servicio en socavón o tajo abierto si la póliza está vencida.</span>
-            </div>
-            <app-toggle formControlName="requiereInduccionSctr" />
-          </div>
-        </app-seccion>
-
-        <!-- SECCIÓN 04 -->
+        <!-- SECCIÓN 04 — distinto texto / comportamiento según crear o editar -->
         <app-seccion
           icono="security"
-          titulo="4. Seguridad y Notificación de Alta"
-          subtitulo="Parámetros de acceso inicial, políticas de robustez de claves y autenticación MFA."
+          [titulo]="numSeguridad() + '. ' + (esNuevo() ? 'Seguridad y Notificación de Alta' : 'Seguridad y Cambio de Contraseña')"
+          [subtitulo]="esNuevo()
+            ? 'Parámetros de acceso inicial, políticas de robustez de claves y autenticación MFA.'
+            : 'Cambia la contraseña del usuario (opcional) y configura políticas de seguridad.'"
         >
           <div class="campo">
             <div class="campo-header-flex">
-              <label class="campo__label">Contraseña Temporal Generada</label>
-              <span class="campo__hint campo__hint--verde">
-                <span class="material-symbols-outlined">check_circle</span>
-                Cumple política de complejidad TW-SEC
-              </span>
+              <label class="campo__label">{{ esNuevo() ? 'Contraseña Inicial' : 'Nueva Contraseña' }}</label>
+              @if (esNuevo()) {
+                <span class="campo__hint campo__hint--verde">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  Cumple política de complejidad TW-SEC
+                </span>
+              } @else {
+                <span class="campo__hint">Dejar vacío para no cambiar la contraseña</span>
+              }
             </div>
             <div class="campo-pass">
               <input
                 class="campo__input campo__input--mono"
                 type="text"
-                readonly
+                [placeholder]="esNuevo() ? '' : 'Dejar vacío para mantener la contraseña actual'"
                 formControlName="contrasenaTemporal"
               />
               <button type="button" class="btn-icono" (click)="copiarContrasena()">
                 <span class="material-symbols-outlined">{{ copiado() ? 'check' : 'content_copy' }}</span>
                 {{ copiado() ? 'Copiado' : 'Copiar' }}
               </button>
-              <button type="button" class="btn-icono btn-icono--sq" (click)="regenerarContrasena()" title="Regenerar">
+              <button type="button" class="btn-icono btn-icono--sq" (click)="regenerarContrasena()" title="Generar contraseña aleatoria">
                 <span class="material-symbols-outlined">refresh</span>
               </button>
             </div>
@@ -265,18 +244,24 @@
             <input type="checkbox" formControlName="forzarCambioContrasena" />
             <span class="check-row__box"></span>
             <span class="check-row__texto">
-              <span class="check-row__titulo">Forzar cambio obligatorio de contraseña en el primer inicio de sesión del usuario.</span>
+              <span class="check-row__titulo">
+                {{ esNuevo()
+                  ? 'Forzar cambio obligatorio de contraseña en el primer inicio de sesión del usuario.'
+                  : 'Forzar cambio obligatorio de contraseña en el próximo inicio de sesión.' }}
+              </span>
             </span>
           </label>
 
-          <label class="check-row">
-            <input type="checkbox" formControlName="enviarCredencialesCorreo" />
-            <span class="check-row__box"></span>
-            <span class="check-row__texto">
-              <span class="check-row__titulo">Enviar credenciales y enlace de activación por correo electrónico institucional</span>
-              <span class="check-row__desc">Se remitirá una notificación cifrada a la dirección configurada con la guía de inicio rápido y enrolamiento corporativo.</span>
-            </span>
-          </label>
+          @if (esNuevo()) {
+            <label class="check-row">
+              <input type="checkbox" formControlName="enviarCredencialesCorreo" />
+              <span class="check-row__box"></span>
+              <span class="check-row__texto">
+                <span class="check-row__titulo">Enviar credenciales y enlace de activación por correo electrónico institucional</span>
+                <span class="check-row__desc">Se remitirá una notificación cifrada a la dirección configurada con la guía de inicio rápido y enrolamiento corporativo.</span>
+              </span>
+            </label>
+          }
 
           <div class="toggle-row">
             <div class="toggle-row__texto">
@@ -290,11 +275,11 @@
           </div>
         </app-seccion>
 
-        <!-- SECCIÓN 05: SUPLENCIAS (solo edición) -->
-        @if (!esNuevo()) {
+        <!-- SECCIÓN 05: SUPLENCIAS (solo edición + solo si rol es comercial o jefe_comercial) -->
+        @if (!esNuevo() && esRolComercial()) {
           <app-seccion
             icono="swap_horiz"
-            titulo="5. Suplencias y Delegación Comercial"
+            [titulo]="numSuplencias() + '. Suplencias y Delegación Comercial'"
             subtitulo="Gestiona quién cubre a este usuario y a quién este usuario suple. Las asignaciones activas otorgan permisos operativos temporales."
           >
             <!-- Sub-lista 1: Suplentes que lo cubren (user es titular) -->
@@ -589,36 +574,6 @@
   }
 
 </div>
-
-<!-- Modal Sedes -->
-@if (modalSedesOpen()) {
-  <app-modal titulo="Asignar Sedes y Unidades Mineras" ancho="sm" (cerrar)="cerrarModalSedes()">
-    <p class="modal-desc">Selecciona una o más sedes donde el usuario está autorizado a operar.</p>
-    <ul class="lista-sedes">
-      @for (s of sedes(); track s.idSede) {
-        <li class="lista-sedes__item"
-            [class.lista-sedes__item--activo]="estaSedeSeleccionada(s.idSede)"
-            (click)="toggleSede(s.idSede)">
-          <div class="lista-sedes__check">
-            @if (estaSedeSeleccionada(s.idSede)) {
-              <span class="material-symbols-outlined">check</span>
-            }
-          </div>
-          <div class="lista-sedes__info">
-            <span class="lista-sedes__nombre">{{ s.nombre }}</span>
-            <span class="lista-sedes__meta">{{ s.tipo }} · {{ s.ubicacion }}</span>
-          </div>
-        </li>
-      }
-    </ul>
-    <div class="modal-footer" modalFooter>
-      <button class="btn-primary" type="button" (click)="cerrarModalSedes()">
-        <span class="material-symbols-outlined">check</span>
-        Confirmar ({{ sedesSeleccionadas().length }})
-      </button>
-    </div>
-  </app-modal>
-}
 
 @if (borradorDisponible(); as draft) {
   <app-modal-borrador

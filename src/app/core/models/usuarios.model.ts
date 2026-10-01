@@ -5,7 +5,6 @@ export interface UsuarioListaItem {
   correo: string;
   rolSistema: string;
   rolSistemaLabel: string;
-  areaComercial: string | null;
   telefono: string | null;
   estado: string;
   ultimoAcceso: string | null;
@@ -21,7 +20,6 @@ export interface UsuarioDetalle extends UsuarioListaItem {
   // Asignación operativa
   baseOperativa:        string | null;
   idSupervisorDirecto:  number | null;
-  sedesAutorizadas:     number[];
 
   // Certificación técnica
   habilitadoFirmaInacal:        boolean;
@@ -52,10 +50,8 @@ export interface GuardarUsuarioRequest {
   telefono:       string | null;
   cargo:          string | null;
   rolSistema:     string;
-  areaComercial:  string | null;
   baseOperativa:  string | null;
   idSupervisorDirecto:  number | null;
-  sedesAutorizadas:     number[];
   habilitadoFirmaInacal:        boolean;
   numeroRegistroInacal:         string | null;
   fechaExpiracionCertificacion: string | null;
@@ -72,9 +68,3 @@ export interface CambiarEstadoUsuarioRequest {
   estado: string;
 }
 
-export interface SedeOperativa {
-  idSede: number;
-  nombre: string;
-  ubicacion: string;
-  tipo: string;
-}

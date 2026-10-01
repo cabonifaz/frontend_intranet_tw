@@ -89,7 +89,6 @@
             <tr>
               <th>Usuario</th>
               <th>Rol</th>
-              <th>Área</th>
               <th>Último Acceso</th>
               <th>Estado</th>
               <th class="tabla__th--acciones">Acciones</th>
@@ -109,9 +108,6 @@
                 </td>
                 <td>
                   <span class="badge-rol">{{ u.rolSistemaLabel }}</span>
-                </td>
-                <td>
-                  <span class="area-texto">{{ u.areaComercial ?? '—' }}</span>
                 </td>
                 <td>
                   <span class="ultimo-acceso">{{ formatearUltimoAcceso(u.ultimoAcceso) }}</span>
