@@ -1,11 +1,11 @@
 <section class="seccion">
   <div class="seccion__header">
-    @if (numero()) {
-      <div class="seccion__numero">{{ numero() }}</div>
-    } @else if (icono()) {
+    @if (icono()) {
       <div class="seccion__icono">
         <span class="material-symbols-outlined">{{ icono() }}</span>
       </div>
+    } @else if (numero()) {
+      <div class="seccion__numero">{{ numero() }}</div>
     }
     <div class="seccion__cuerpo-h">
       <h2 class="seccion__titulo">{{ titulo() }}</h2>

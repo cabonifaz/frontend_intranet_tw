@@ -22,7 +22,7 @@
       <div class="ficha-main">
 
         <!-- ── SECCIÓN 01 — Identificación ─────────────────────────────────── -->
-        <app-seccion numero="01" icono="fingerprint" titulo="Identificación y Clasificación Primaria"
+        <app-seccion icono="fingerprint" titulo="1. Identificación y Clasificación Primaria"
                      subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios">
 
           <!-- Fila 1: ID · Clase · Estado -->
@@ -116,7 +116,7 @@
         </app-seccion>
 
         <!-- ── SECCIÓN 02 — Descripciones y Logística ──────────────────────── -->
-        <app-seccion numero="02" icono="description" titulo="Descripciones Técnicas y Logística">
+        <app-seccion icono="description" titulo="2. Descripciones Técnicas y Logística">
 
           <app-campo label="Descripción Generada Automática" hint="Concatenación de clase + tipo + subtipo + marca + modelo (marca/modelo se omiten en Servicio)">
             <div class="input-con-boton">
@@ -167,7 +167,7 @@
         </app-seccion>
 
         <!-- ── SECCIÓN 03 — Parámetros de Cotización y Propuestas ──────────── -->
-        <app-seccion numero="03" icono="request_quote" titulo="Parámetros de Cotización y Propuestas">
+        <app-seccion icono="request_quote" titulo="3. Parámetros de Cotización y Propuestas">
 
           <div class="panel-toggle">
             <div class="panel-toggle__left">
@@ -233,7 +233,7 @@
 
         <!-- ── SECCIÓN 04 — Procedimientos (solo Servicio) ─────────────────── -->
         @if (esClaseServicio()) {
-          <app-seccion numero="04" icono="assignment" titulo="Procedimientos Asociados"
+          <app-seccion icono="assignment" titulo="4. Procedimientos Asociados"
                        subtitulo="Dropdown al maestro de Procedimientos (HU-87 — próximo)">
             <div class="grid-cols-2">
               <app-campo label="1er Procedimiento">

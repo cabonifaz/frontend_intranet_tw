@@ -37,8 +37,8 @@
 
         <!-- SECCIÓN 01 -->
         <app-seccion
-          numero="01"
-          titulo="Información Personal y Credenciales Básicas"
+          icono="person"
+          titulo="1. Información Personal y Credenciales Básicas"
           subtitulo="Datos de filiación oficial, documento nacional de identidad y contacto de la empresa."
           badgeTexto="* CAMPOS OBLIGATORIOS"
           badgeVariant="rojo"
@@ -110,8 +110,8 @@
 
         <!-- SECCIÓN 02 -->
         <app-seccion
-          numero="02"
-          titulo="Asignación Operativa y Rol de Sistema"
+          icono="assignment_ind"
+          titulo="2. Asignación Operativa y Rol de Sistema"
           subtitulo="Defina el nivel jerárquico, privilegios de acceso y unidades operativas autorizadas."
         >
           <div class="campo-duo">
@@ -191,8 +191,8 @@
 
         <!-- SECCIÓN 03 -->
         <app-seccion
-          numero="03"
-          titulo="Credenciales de Certificación Técnica"
+          icono="workspace_premium"
+          titulo="3. Credenciales de Certificación Técnica"
           subtitulo="Acreditaciones oficiales para calibración de básculas industriales e informes oficiales."
           badgeTexto="INACAL DA-DA-01"
           badgeVariant="dark"
@@ -232,8 +232,8 @@
 
         <!-- SECCIÓN 04 -->
         <app-seccion
-          numero="04"
-          titulo="Seguridad y Notificación de Alta"
+          icono="security"
+          titulo="4. Seguridad y Notificación de Alta"
           subtitulo="Parámetros de acceso inicial, políticas de robustez de claves y autenticación MFA."
         >
           <div class="campo">
@@ -293,8 +293,8 @@
         <!-- SECCIÓN 05: SUPLENCIAS (solo edición) -->
         @if (!esNuevo()) {
           <app-seccion
-            numero="05"
-            titulo="Suplencias y Delegación Comercial"
+            icono="swap_horiz"
+            titulo="5. Suplencias y Delegación Comercial"
             subtitulo="Gestiona quién cubre a este usuario y a quién este usuario suple. Las asignaciones activas otorgan permisos operativos temporales."
           >
             <!-- Sub-lista 1: Suplentes que lo cubren (user es titular) -->
