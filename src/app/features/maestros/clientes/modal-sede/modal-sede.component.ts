@@ -1,20 +1,28 @@
-import { Component, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject, input, output, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
+import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { CatalogoItem, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 
 @Component({
   selector: 'app-modal-sede',
-  imports: [ReactiveFormsModule, ModalComponent, ButtonComponent, CampoComponent],
+  imports: [ReactiveFormsModule, ModalComponent, ModalBorradorComponent, ButtonComponent, CampoComponent],
   templateUrl: './modal-sede.component.html',
   styleUrl: './modal-sede.component.scss',
 })
-export class ModalSedeComponent implements OnInit {
+export class ModalSedeComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
+  private readonly borradorSvc = inject(BorradorService);
+  private readonly toastSvc    = inject(ToastService);
+  private readonly destroyRef  = inject(DestroyRef);
 
   readonly idCliente  = input.required<number>();
   readonly sedeEditar = input<SedeListaItem | null>(null);
@@ -27,6 +35,14 @@ export class ModalSedeComponent implements OnInit {
   readonly error           = signal('');
   readonly tiposInstalacion = signal<CatalogoItem[]>([]);
   readonly regiones         = signal<CatalogoItem[]>([]);
+
+  // Borrador local (solo activo cuando idCliente > 0)
+  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
+  private borradorKey = '';
+  private borradorHabilitado = false;
+  private autoguardadoActivo = false;
+  private huboCambiosAutoguardados = false;
+  private salidaControlada = false;
 
   formulario: FormGroup = this.fb.group({
     nombre:          ['', Validators.required],
@@ -58,6 +74,51 @@ export class ModalSedeComponent implements OnInit {
         direccionExacta: sede.direccionExacta ?? '',
       });
     }
+
+    // Habilitar borrador solo cuando hay cliente persistido (idCliente > 0)
+    if (this.idCliente() > 0) {
+      this.borradorHabilitado = true;
+      this.borradorKey = `sede:${this.idCliente()}:${sede?.idSede ?? 'nueva'}`;
+      const draft = this.borradorSvc.obtener(this.borradorKey);
+      if (draft) {
+        this.borradorDisponible.set(draft);
+      }
+      this.activarAutoguardado();
+    }
+  }
+
+  // ─── Borrador local ─────────────────────────────────────────────────
+  private activarAutoguardado(): void {
+    this.autoguardadoActivo = true;
+    this.formulario.valueChanges
+      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.autoguardadoActivo || !this.borradorHabilitado) return;
+        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
+        this.huboCambiosAutoguardados = true;
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.borradorHabilitado && !this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
+      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
+    }
+  }
+
+  restaurarBorrador(): void {
+    const draft = this.borradorDisponible();
+    if (!draft) return;
+    this.autoguardadoActivo = false;
+    this.formulario.patchValue(draft.data as object, { emitEvent: false });
+    this.autoguardadoActivo = true;
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador restaurado.');
+  }
+
+  descartarBorrador(): void {
+    this.borradorSvc.borrar(this.borradorKey);
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador descartado.');
   }
 
   async guardar(): Promise<void> {
@@ -85,6 +146,10 @@ export class ModalSedeComponent implements OnInit {
     this.error.set('');
     try {
       await this.maestrosSvc.guardarSede(dto);
+      if (this.borradorHabilitado) {
+        this.borradorSvc.borrar(this.borradorKey);
+      }
+      this.salidaControlada = true;
       this.guardado.emit();
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al guardar la sede.');

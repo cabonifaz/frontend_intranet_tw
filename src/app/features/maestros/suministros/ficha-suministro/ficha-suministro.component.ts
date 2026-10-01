@@ -1,8 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { debounceTime } from 'rxjs';
 import { SuministrosService } from '../../../../core/services/suministros.service';
+import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   CLASES_SUMINISTRO,
   GuardarSuministroRequest,
@@ -23,6 +26,7 @@ import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../shared/ui/toggle/toggle.component';
 import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
+import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
@@ -41,16 +45,26 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     CampoComponent,
     ToggleComponent,
     ModalComponent,
+    ModalBorradorComponent,
   ],
   templateUrl: './ficha-suministro.component.html',
   styleUrl: './ficha-suministro.component.scss',
 })
-export class FichaSuministroComponent implements OnInit {
-  private readonly fb           = inject(FormBuilder);
+export class FichaSuministroComponent implements OnInit, OnDestroy {
+  private readonly fb             = inject(FormBuilder);
   private readonly suministrosSvc = inject(SuministrosService);
-  private readonly toastSvc     = inject(ToastService);
-  private readonly route        = inject(ActivatedRoute);
-  private readonly router       = inject(Router);
+  private readonly borradorSvc    = inject(BorradorService);
+  private readonly toastSvc       = inject(ToastService);
+  private readonly route          = inject(ActivatedRoute);
+  private readonly router         = inject(Router);
+  private readonly destroyRef     = inject(DestroyRef);
+
+  // Borrador local
+  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
+  private borradorKey = '';
+  private autoguardadoActivo = false;
+  private huboCambiosAutoguardados = false;
+  private salidaControlada = false;
 
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
@@ -145,6 +159,7 @@ export class FichaSuministroComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
+    this.borradorKey = `suministros:${nuevo ? 'nuevo' : idParam}`;
 
     try {
       if (!nuevo) {
@@ -184,6 +199,13 @@ export class FichaSuministroComponent implements OnInit {
         this.fechaModificacion.set(s.fechaModificacion);
         this.firmaDigital.set(s.firmaDigital);
       }
+
+      // Detectar borrador local y activar autoguardado
+      const draft = this.borradorSvc.obtener(this.borradorKey);
+      if (draft) {
+        this.borradorDisponible.set(draft);
+      }
+      this.activarAutoguardado();
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el suministro.');
     } finally {
@@ -275,25 +297,63 @@ export class FichaSuministroComponent implements OnInit {
     this.toastSvc.exito('Formulario limpiado.');
   }
 
-  duplicarComoPlantilla(): void {
-    if (this.esNuevo()) { this.toastSvc.error('Solo puedes duplicar un registro ya guardado.'); return; }
-    this.esNuevo.set(true);
-    this.idSuministro = 0;
-    this.router.navigate(['/maestros/suministros/nuevo']);
-    this.toastSvc.exito('Registro duplicado como plantilla — completa lo necesario y guarda.');
+  // ─── Borrador local ─────────────────────────────────────────────────
+  private activarAutoguardado(): void {
+    this.autoguardadoActivo = true;
+    this.formulario.valueChanges
+      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.autoguardadoActivo) return;
+        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
+        this.huboCambiosAutoguardados = true;
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
+      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
+    }
+  }
+
+  restaurarBorrador(): void {
+    const draft = this.borradorDisponible();
+    if (!draft) return;
+    this.autoguardadoActivo = false;
+    this.formulario.patchValue(draft.data as object, { emitEvent: false });
+    // Resync claseActual + validadores dependientes de clase
+    const claseVal = this.formulario.get('clase')?.value ?? '';
+    this.claseActual.set(claseVal);
+    this.actualizarValidadoresPorClase(claseVal);
+    this.autoguardadoActivo = true;
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador restaurado.');
+  }
+
+  descartarBorrador(): void {
+    this.borradorSvc.borrar(this.borradorKey);
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador descartado.');
+  }
+
+  async guardarBorrador(): Promise<void> {
+    this.salidaControlada = true;
+    this.guardandoBorrador.set(true);
+    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
+    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
+    this.guardandoBorrador.set(false);
+    this.router.navigate(['/maestros/suministros']);
   }
 
   // ─── Guardar ──────────────────────────────────────────────────────────
-  async guardar(guardarComoBorrador: boolean): Promise<void> {
-    if (!guardarComoBorrador && this.formulario.invalid) {
+  async guardar(): Promise<void> {
+    if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
     if (this.guardando() || this.guardandoBorrador()) return;
 
-    const flag = guardarComoBorrador ? this.guardandoBorrador : this.guardando;
-    flag.set(true);
+    this.guardando.set(true);
     this.error.set('');
     try {
       const v = this.formulario.value;
@@ -325,15 +385,15 @@ export class FichaSuministroComponent implements OnInit {
         aplicaMetrologia: !!v.aplicaMetrologia,
         idPrimerProcedimiento:  esServicio(v.clase) ? (v.idPrimerProcedimiento  || undefined) : undefined,
         idSegundoProcedimiento: esServicio(v.clase) ? (v.idSegundoProcedimiento || undefined) : undefined,
-        guardarComoBorrador,
+        guardarComoBorrador: false,
       };
       await this.suministrosSvc.guardarSuministro(dto);
+      this.borradorSvc.borrar(this.borradorKey);
+      this.salidaControlada = true;
       this.toastSvc.exito(
-        guardarComoBorrador
-          ? 'Suministro guardado como borrador.'
-          : this.esNuevo()
-            ? 'Suministro registrado y publicado correctamente.'
-            : 'Suministro actualizado correctamente.'
+        this.esNuevo()
+          ? 'Suministro registrado y publicado correctamente.'
+          : 'Suministro actualizado correctamente.'
       );
       this.router.navigate(['/maestros/suministros']);
     } catch (e: unknown) {
@@ -341,7 +401,7 @@ export class FichaSuministroComponent implements OnInit {
       this.error.set(msg);
       this.toastSvc.error(msg);
     } finally {
-      flag.set(false);
+      this.guardando.set(false);
     }
   }
 

@@ -1,9 +1,13 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
+import { debounceTime } from 'rxjs';
 import { CrmService } from '../../../../core/services/crm.service';
+import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import {
   CatalogoItem,
   RequerimientoFicha,
@@ -29,23 +33,40 @@ import {
   SedeSeleccionada,
 } from '../seleccionar-sede/seleccionar-sede.component';
 
+interface BorradorRequerimiento {
+  form: Record<string, unknown>;
+  cliente: ClienteSeleccionado | null;
+  sede: SedeSeleccionada | null;
+  contacto: ContactoSeleccionado | null;
+}
+
 @Component({
   selector: 'app-ficha-requerimiento',
-  imports: [ReactiveFormsModule, RouterLink, DatePipe, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, SeleccionarClienteComponent, SeleccionarSedeComponent, SeleccionarContactoComponent],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalBorradorComponent, SeleccionarClienteComponent, SeleccionarSedeComponent, SeleccionarContactoComponent],
   templateUrl: './ficha-requerimiento.component.html',
   styleUrl: './ficha-requerimiento.component.scss',
 })
-export class FichaRequerimientoComponent implements OnInit {
-  private readonly fb       = inject(FormBuilder);
-  private readonly crmSvc   = inject(CrmService);
-  private readonly toastSvc = inject(ToastService);
-  private readonly route    = inject(ActivatedRoute);
-  private readonly router   = inject(Router);
+export class FichaRequerimientoComponent implements OnInit, OnDestroy {
+  private readonly fb          = inject(FormBuilder);
+  private readonly crmSvc      = inject(CrmService);
+  private readonly borradorSvc = inject(BorradorService);
+  private readonly toastSvc    = inject(ToastService);
+  private readonly route       = inject(ActivatedRoute);
+  private readonly router      = inject(Router);
+  private readonly destroyRef  = inject(DestroyRef);
 
-  readonly cargando    = signal(true);
-  readonly guardando   = signal(false);
-  readonly error       = signal('');
-  readonly esNuevo     = signal(true);
+  readonly cargando          = signal(true);
+  readonly guardando         = signal(false);
+  readonly guardandoBorrador = signal(false);
+  readonly error             = signal('');
+  readonly esNuevo           = signal(true);
+
+  // Borrador local
+  readonly borradorDisponible = signal<BorradorInfo<BorradorRequerimiento> | null>(null);
+  private borradorKey = '';
+  private autoguardadoActivo = false;
+  private huboCambiosAutoguardados = false;
+  private salidaControlada = false;
   readonly ficha       = signal<RequerimientoFicha | null>(null);
   readonly origenes    = signal<CatalogoItem[]>([]);
   readonly areas       = signal<CatalogoItem[]>([]);
@@ -163,6 +184,7 @@ export class FichaRequerimientoComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo   = !idParam;
     this.esNuevo.set(nuevo);
+    this.borradorKey = `requerimientos:${nuevo ? 'nuevo' : idParam}`;
 
     try {
       const cats = await this.crmSvc.obtenerCatalogos();
@@ -195,6 +217,15 @@ export class FichaRequerimientoComponent implements OnInit {
           this.formulario.disable();
         }
       }
+
+      // Borrador local: no activar en modo solo-lectura
+      if (!this.esSoloLectura()) {
+        const draft = this.borradorSvc.obtener<BorradorRequerimiento>(this.borradorKey);
+        if (draft) {
+          this.borradorDisponible.set(draft);
+        }
+        this.activarAutoguardado();
+      }
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar.');
     } finally {
@@ -202,26 +233,90 @@ export class FichaRequerimientoComponent implements OnInit {
     }
   }
 
+  // ─── Borrador local ─────────────────────────────────────────────────
+  private snapshotBorrador(): BorradorRequerimiento {
+    return {
+      form:     this.formulario.getRawValue(),
+      cliente:  this.cliente(),
+      sede:     this.sede(),
+      contacto: this.contacto(),
+    };
+  }
+
+  private activarAutoguardado(): void {
+    this.autoguardadoActivo = true;
+    this.formulario.valueChanges
+      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.autoguardadoActivo) return;
+        this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
+        this.huboCambiosAutoguardados = true;
+      });
+  }
+
+  private marcarAutoguardadoManual(): void {
+    if (!this.autoguardadoActivo) return;
+    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
+    this.huboCambiosAutoguardados = true;
+  }
+
+  ngOnDestroy(): void {
+    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
+      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
+    }
+  }
+
+  restaurarBorrador(): void {
+    const draft = this.borradorDisponible();
+    if (!draft) return;
+    this.autoguardadoActivo = false;
+    this.formulario.patchValue(draft.data.form, { emitEvent: false });
+    this.cliente.set(draft.data.cliente);
+    this.sede.set(draft.data.sede);
+    this.contacto.set(draft.data.contacto);
+    this.autoguardadoActivo = true;
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador restaurado.');
+  }
+
+  descartarBorrador(): void {
+    this.borradorSvc.borrar(this.borradorKey);
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador descartado.');
+  }
+
+  async guardarBorrador(): Promise<void> {
+    this.salidaControlada = true;
+    this.guardandoBorrador.set(true);
+    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
+    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
+    this.guardandoBorrador.set(false);
+    this.router.navigate(['/crm/requerimientos']);
+  }
+
   onClienteConfirmado(sel: ClienteSeleccionado): void {
     this.cliente.set(sel);
     this.mostrarModalCliente.set(false);
     this.sede.set(null);
     this.contacto.set(null);
+    this.marcarAutoguardadoManual();
   }
 
   onSedeConfirmada(sel: SedeSeleccionada): void {
     this.sede.set(sel);
     this.mostrarModalSede.set(false);
     this.contacto.set(null);
+    this.marcarAutoguardadoManual();
   }
 
   onContactoConfirmado(sel: ContactoSeleccionado): void {
     this.contacto.set(sel);
     this.mostrarModalContacto.set(false);
+    this.marcarAutoguardadoManual();
   }
 
   async guardar(): Promise<void> {
-    if (this.formulario.invalid || !this.cliente() || this.guardando()) return;
+    if (this.formulario.invalid || !this.cliente() || this.guardando() || this.guardandoBorrador()) return;
     this.guardando.set(true);
     this.error.set('');
     try {
@@ -241,6 +336,8 @@ export class FichaRequerimientoComponent implements OnInit {
         clienteDeuda:    v.clienteDeuda,
       };
       await this.crmSvc.guardarRequerimiento(cmd);
+      this.borradorSvc.borrar(this.borradorKey);
+      this.salidaControlada = true;
       const msg = this.esNuevo()
         ? 'Requerimiento creado exitosamente.'
         : 'Cambios guardados correctamente.';

@@ -16,7 +16,7 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar(false)" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
 
       <div class="ficha-main">
 
@@ -152,13 +152,10 @@
           <app-button variant="ghost" icono="cleaning_services" (clic)="limpiarFormulario()">
             Limpiar Formulario
           </app-button>
-          <app-button variant="secondary" icono="content_copy" [disabled]="esNuevo()" (clic)="guardarComoPlantilla()">
-            Guardar como Plantilla
-          </app-button>
-          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardar(true)">
+          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
             Guardar Borrador
           </app-button>
-          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar(false)">
+          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar()">
             {{ esNuevo() ? 'Guardar y Activar Procedimiento' : 'Guardar Cambios' }}
           </app-button>
         </app-form-footer>
@@ -168,3 +165,11 @@
   }
 
 </div>
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
+}

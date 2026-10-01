@@ -16,7 +16,7 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar(false)" class="ficha-grid">
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid">
 
       <!-- ═════════════════════════════ COLUMNA MAIN ═════════════════════════════ -->
       <div class="ficha-main">
@@ -336,13 +336,10 @@
           <app-button variant="ghost" icono="cleaning_services" (clic)="limpiarFormulario()">
             Limpiar Formulario
           </app-button>
-          <app-button variant="secondary" icono="content_copy" [disabled]="esNuevo()" (clic)="duplicarComoPlantilla()">
-            Duplicar como Plantilla
-          </app-button>
-          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardar(true)">
+          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
             Guardar Borrador
           </app-button>
-          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar(false)">
+          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar()">
             {{ esNuevo() ? 'Guardar y Publicar Registro' : 'Guardar Cambios' }}
           </app-button>
         </app-form-footer>
@@ -383,4 +380,12 @@
       <app-button variant="primary" icono="check" (clic)="guardarNuevoModelo()">Guardar Modelo</app-button>
     </div>
   </app-modal>
+}
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
 }

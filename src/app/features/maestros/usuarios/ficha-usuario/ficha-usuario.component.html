@@ -492,20 +492,20 @@
           (cancelar)="cancelar()"
         >
           <app-button
-            variant="secondary"
-            icono="save"
+            variant="ghost"
+            icono="drafts"
             [disabled]="guardando() || guardandoBorrador()"
             [cargando]="guardandoBorrador()"
-            (clic)="guardar(true)"
+            (clic)="guardarBorrador()"
           >
-            {{ guardandoBorrador() ? 'Guardando...' : 'Guardar como Borrador' }}
+            {{ guardandoBorrador() ? 'Guardando...' : 'Guardar Borrador' }}
           </app-button>
           <app-button
             variant="primary"
             iconoDer="arrow_forward"
             [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
             [cargando]="guardando()"
-            (clic)="guardar(false)"
+            (clic)="guardar()"
           >
             {{ guardando() ? 'Guardando...' : (esNuevo() ? 'Registrar y Activar Usuario' : 'Guardar Cambios') }}
           </app-button>
@@ -618,4 +618,12 @@
       </button>
     </div>
   </app-modal>
+}
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
 }

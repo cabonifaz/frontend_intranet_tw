@@ -1,8 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { debounceTime } from 'rxjs';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
 import { SuplentesService } from '../../../../core/services/suplentes.service';
+import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { GuardarUsuarioRequest, SedeOperativa, UsuarioListaItem } from '../../../../core/models/usuarios.model';
 import { SuplenteListaItem, GuardarSuplenteRequest } from '../../../../core/models/suplentes.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
@@ -16,6 +19,7 @@ import { BadgeComponent }      from '../../../../shared/ui/badge/badge.component
 import { BadgeEstadoComponent } from '../../../../shared/ui/badge-estado/badge-estado.component';
 import { ButtonComponent }     from '../../../../shared/ui/button/button.component';
 import { CampoComponent }      from '../../../../shared/ui/campo/campo.component';
+import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
@@ -46,17 +50,27 @@ interface RequisitoAlta {
     BadgeEstadoComponent,
     ButtonComponent,
     CampoComponent,
+    ModalBorradorComponent,
   ],
   templateUrl: './ficha-usuario.component.html',
   styleUrl: './ficha-usuario.component.scss',
 })
-export class FichaUsuarioComponent implements OnInit {
+export class FichaUsuarioComponent implements OnInit, OnDestroy {
   private readonly fb           = inject(FormBuilder);
   private readonly usuariosSvc  = inject(UsuariosService);
   private readonly suplentesSvc = inject(SuplentesService);
+  private readonly borradorSvc  = inject(BorradorService);
   private readonly toastSvc     = inject(ToastService);
   private readonly route        = inject(ActivatedRoute);
   private readonly router       = inject(Router);
+  private readonly destroyRef   = inject(DestroyRef);
+
+  // Borrador local
+  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
+  private borradorKey = '';
+  private autoguardadoActivo = false;
+  private huboCambiosAutoguardados = false;
+  private salidaControlada = false;
 
   readonly cargando         = signal(true);
   readonly guardando        = signal(false);
@@ -166,6 +180,7 @@ export class FichaUsuarioComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo   = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
+    this.borradorKey = `usuarios:${nuevo ? 'nuevo' : idParam}`;
 
     try {
       const [jefes, sedes] = await Promise.all([
@@ -204,6 +219,13 @@ export class FichaUsuarioComponent implements OnInit {
       } else {
         this.regenerarContrasena();
       }
+
+      // Detectar borrador local y activar autoguardado
+      const draft = this.borradorSvc.obtener(this.borradorKey);
+      if (draft) {
+        this.borradorDisponible.set(draft);
+      }
+      this.activarAutoguardado();
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar los datos.');
     } finally {
@@ -248,16 +270,58 @@ export class FichaUsuarioComponent implements OnInit {
     return ids.includes(idSede);
   }
 
-  async guardar(guardarComoBorrador: boolean): Promise<void> {
-    if (!guardarComoBorrador && this.formulario.invalid) {
+  // ─── Borrador local ─────────────────────────────────────────────────
+  private activarAutoguardado(): void {
+    this.autoguardadoActivo = true;
+    this.formulario.valueChanges
+      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (!this.autoguardadoActivo) return;
+        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
+        this.huboCambiosAutoguardados = true;
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
+      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
+    }
+  }
+
+  restaurarBorrador(): void {
+    const draft = this.borradorDisponible();
+    if (!draft) return;
+    this.autoguardadoActivo = false;
+    this.formulario.patchValue(draft.data as object, { emitEvent: false });
+    this.autoguardadoActivo = true;
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador restaurado.');
+  }
+
+  descartarBorrador(): void {
+    this.borradorSvc.borrar(this.borradorKey);
+    this.borradorDisponible.set(null);
+    this.toastSvc.exito('Borrador descartado.');
+  }
+
+  async guardarBorrador(): Promise<void> {
+    this.salidaControlada = true;
+    this.guardandoBorrador.set(true);
+    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
+    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
+    this.guardandoBorrador.set(false);
+    this.router.navigate(['/maestros/usuarios']);
+  }
+
+  async guardar(): Promise<void> {
+    if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
     if (this.guardando() || this.guardandoBorrador()) return;
 
-    const flag = guardarComoBorrador ? this.guardandoBorrador : this.guardando;
-    flag.set(true);
+    this.guardando.set(true);
     this.error.set('');
     try {
       const v = this.formulario.value;
@@ -283,15 +347,15 @@ export class FichaUsuarioComponent implements OnInit {
         forzarCambioContrasena:       !!v.forzarCambioContrasena,
         enviarCredencialesCorreo:     !!v.enviarCredencialesCorreo,
         autenticacion2fa:             !!v.autenticacion2fa,
-        guardarComoBorrador:          guardarComoBorrador,
+        guardarComoBorrador:          false,
       };
       await this.usuariosSvc.guardarUsuario(dto);
+      this.borradorSvc.borrar(this.borradorKey);
+      this.salidaControlada = true;
       this.toastSvc.exito(
-        guardarComoBorrador
-          ? 'Usuario guardado como borrador.'
-          : this.esNuevo()
-            ? 'Usuario registrado y activado correctamente.'
-            : 'Usuario actualizado correctamente.'
+        this.esNuevo()
+          ? 'Usuario registrado y activado correctamente.'
+          : 'Usuario actualizado correctamente.'
       );
       this.router.navigate(['/maestros/usuarios']);
     } catch (e: unknown) {
@@ -299,7 +363,7 @@ export class FichaUsuarioComponent implements OnInit {
       this.error.set(msg);
       this.toastSvc.error(msg);
     } finally {
-      flag.set(false);
+      this.guardando.set(false);
     }
   }
 

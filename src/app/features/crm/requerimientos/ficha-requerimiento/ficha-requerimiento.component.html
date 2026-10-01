@@ -418,9 +418,18 @@
       }
       @if (!esSoloLectura()) {
         <app-button
+          variant="ghost"
+          icono="drafts"
+          [disabled]="guardando() || guardandoBorrador()"
+          [cargando]="guardandoBorrador()"
+          (clic)="guardarBorrador()"
+        >
+          Guardar Borrador
+        </app-button>
+        <app-button
           variant="primary"
           icono="save"
-          [disabled]="!puedeGuardar || guardando()"
+          [disabled]="!puedeGuardar || guardando() || guardandoBorrador()"
           [cargando]="guardando()"
           (clic)="guardar()"
         >
@@ -457,3 +466,11 @@
       (cancelado)="mostrarModalContacto.set(false)"
     />
   }
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
+}

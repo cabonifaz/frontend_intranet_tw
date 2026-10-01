@@ -140,3 +140,11 @@
     </div>
   </div>
 </app-modal>
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
+}

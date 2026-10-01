@@ -575,9 +575,18 @@
         (cancelar)="cancelar()"
       >
         <app-button
+          variant="ghost"
+          icono="drafts"
+          [disabled]="guardando() || guardandoBorrador()"
+          [cargando]="guardandoBorrador()"
+          (clic)="guardarBorrador()"
+        >
+          Guardar Borrador
+        </app-button>
+        <app-button
           variant="primary"
           icono="check"
-          [disabled]="formulario.invalid || guardando()"
+          [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
           [cargando]="guardando()"
           (clic)="guardar()"
         >
@@ -607,5 +616,13 @@
     (guardado)="onContactoGuardado()"
     (guardadoLocal)="onContactoGuardadoLocal($event)"
     (cancelado)="cerrarModalContacto()"
+  />
+}
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
   />
 }

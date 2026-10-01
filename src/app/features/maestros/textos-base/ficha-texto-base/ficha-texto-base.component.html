@@ -18,11 +18,11 @@
       </app-button>
       <app-button
         variant="secondary"
-        icono="save"
+        icono="drafts"
         tamano="sm"
         [disabled]="guardando() || guardandoBorrador()"
         [cargando]="guardandoBorrador()"
-        (clic)="guardar(true)"
+        (clic)="guardarBorrador()"
       >
         Guardar Borrador
       </app-button>
@@ -31,7 +31,7 @@
         icono="check"
         [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
         [cargando]="guardando()"
-        (clic)="guardar(false)"
+        (clic)="guardar()"
       >
         Guardar Texto Base
       </app-button>
@@ -174,11 +174,11 @@
 
         <!-- Footer -->
         <app-form-footer cancelarTexto="Cancelar" (cancelar)="cancelar()">
-          <app-button variant="secondary" icono="bookmark" (clic)="guardar(true)" [cargando]="guardandoBorrador()">
-            Guardar como Plantilla
-          </app-button>
           <app-button variant="secondary" icono="visibility" (clic)="abrirModalPreview()">
             Vista Previa en PDF
+          </app-button>
+          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
+            Guardar Borrador
           </app-button>
           <app-button
             variant="primary"
@@ -186,7 +186,7 @@
             iconoDer="arrow_forward"
             [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
             [cargando]="guardando()"
-            (clic)="guardar(false)"
+            (clic)="guardar()"
           >
             {{ esNuevo() ? 'Guardar y Activar Texto Base' : 'Guardar Cambios' }}
           </app-button>
@@ -402,4 +402,12 @@
       </div>
     </div>
   </app-modal>
+}
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
 }
