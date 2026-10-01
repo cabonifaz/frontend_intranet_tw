@@ -4,10 +4,8 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProcedimientosService } from '../../../../core/services/procedimientos.service';
 import {
-  AREAS_TECNICAS,
   GuardarProcedimientoRequest,
-  SEGMENTOS_METROLOGICOS,
-  SEGMENTOS_REGULADOS,
+  TIPOS_PROCEDIMIENTO,
 } from '../../../../core/models/procedimientos.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -51,49 +49,29 @@ export class FichaProcedimientoComponent implements OnInit {
   readonly esNuevo           = signal(true);
   readonly totalEdiciones    = signal(0);
   readonly usuarioRegistro   = signal('');
+  readonly pcRegistro        = signal('');
   readonly fechaRegistro     = signal('');
   readonly fechaModificacion = signal('');
 
-  readonly segmentosRegulados     = SEGMENTOS_REGULADOS;
-  readonly segmentosMetrologicos  = SEGMENTOS_METROLOGICOS;
-  readonly areasTecnicas          = AREAS_TECNICAS;
+  readonly tiposProcedimiento = TIPOS_PROCEDIMIENTO;
 
   idProcedimiento = 0;
 
   formulario: FormGroup = this.fb.group({
-    // 01 - Identificación y Clasificación Técnica
-    codigo:                   ['', [Validators.required, Validators.minLength(2)]],
-    anioEmision:              [new Date().getFullYear(), [Validators.required, Validators.min(2000)]],
-    versionOficial:           [1, [Validators.required, Validators.min(1)]],
-    version:                  [1, [Validators.required, Validators.min(1)]],
-    revision:                 [1, [Validators.required, Validators.min(1)]],
-    alcanceNorma:             [''],
-    tipoSegmentoRegulado:     ['', Validators.required],
-    tipoSegmentoMetrologico:  ['', Validators.required],
-
-    // 02 - Descripción y Alcance Metrológico
-    alcanceTitulo:               ['', [Validators.required, Validators.minLength(10)]],
-    descripcion:                 ['', Validators.required],
-    norma:                       [''],
-    normaNacionalRangoSuperior:  [''],
-    normaNacionalRangoInferior:  [''],
-
-    // 03 - Documentación Técnica y Digitalización
-    esFormatoDigitalIso:   [true],
-    enlaceCatalogoExterno: [''],
-
-    // Sidebar - Estado & Operatividad
+    // 01 - Identificación
+    codigo:              ['', [Validators.required, Validators.minLength(2)]],
+    anio:                [new Date().getFullYear(), [Validators.required, Validators.min(2000)]],
+    version:             [1, [Validators.required, Validators.min(1)]],
+    autorNorma:          ['', Validators.required],
+    normaBase:           [''],
+    tipoProcedimiento:   ['', Validators.required],
+    esFormatoDigitalIso: [true],
     esActivo:            [true],
-    esVigente:           [true],
-    esVigenteIso17025:   [true],
-    sincronizarAppMovil: [true],
 
-    // Sidebar - Servicios Aplicables
-    aplicaCalibracionLab:       [true],
-    aplicaVerificacionCampo:    [false],
-    aplicaMantenimiento:        [false],
-    aplicaCertificacionExterna: [false],
-    areaTecnicaResponsable:     ['metrologia_legal'],
+    // 02 - Descripción y Alcance
+    alcance:             [''],
+    descripcion:         ['', [Validators.required, Validators.minLength(10)]],
+    aprobadoPor:         [''],
   });
 
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
@@ -106,11 +84,6 @@ export class FichaProcedimientoComponent implements OnInit {
     return `ID · ${this.idProcedimiento}`;
   });
 
-  readonly previewCodigo = computed(() => this.formulario.get('codigo')?.value || 'PC-NEW');
-  readonly previewAnio    = computed(() => this.formulario.get('anioEmision')?.value || '—');
-  readonly previewVersion = computed(() => this.formulario.get('versionOficial')?.value || 1);
-  readonly previewTitulo  = computed(() => this.formulario.get('alcanceTitulo')?.value || 'Título del procedimiento');
-
   async ngOnInit(): Promise<void> {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
@@ -121,33 +94,21 @@ export class FichaProcedimientoComponent implements OnInit {
         this.idProcedimiento = Number(idParam);
         const p = await this.procSvc.obtenerProcedimientoPorId(this.idProcedimiento);
         this.formulario.patchValue({
-          codigo:                   p.codigo,
-          anioEmision:              p.anioEmision,
-          versionOficial:           p.versionOficial,
-          version:                  p.version,
-          revision:                 p.revision,
-          alcanceNorma:             p.alcanceNorma,
-          tipoSegmentoRegulado:     p.tipoSegmentoRegulado,
-          tipoSegmentoMetrologico:  p.tipoSegmentoMetrologico,
-          alcanceTitulo:            p.alcanceTitulo,
-          descripcion:              p.descripcion,
-          norma:                    p.norma,
-          normaNacionalRangoSuperior: p.normaNacionalRangoSuperior,
-          normaNacionalRangoInferior: p.normaNacionalRangoInferior,
-          esFormatoDigitalIso:      p.esFormatoDigitalIso,
-          enlaceCatalogoExterno:    p.enlaceCatalogoExterno,
-          esActivo:                 p.esActivo,
-          esVigente:                p.esVigente,
-          esVigenteIso17025:        p.esVigenteIso17025,
-          sincronizarAppMovil:      p.sincronizarAppMovil,
-          aplicaCalibracionLab:     p.aplicaCalibracionLab,
-          aplicaVerificacionCampo:  p.aplicaVerificacionCampo,
-          aplicaMantenimiento:      p.aplicaMantenimiento,
-          aplicaCertificacionExterna: p.aplicaCertificacionExterna,
-          areaTecnicaResponsable:   p.areaTecnicaResponsable,
+          codigo:              p.codigo,
+          anio:                p.anio,
+          version:             p.version,
+          autorNorma:          p.autorNorma,
+          normaBase:           p.normaBase,
+          tipoProcedimiento:   p.tipoProcedimiento,
+          esFormatoDigitalIso: p.esFormatoDigitalIso,
+          esActivo:            p.esActivo,
+          alcance:             p.alcance,
+          descripcion:         p.descripcion,
+          aprobadoPor:         p.aprobadoPor,
         });
         this.totalEdiciones.set(p.totalEdiciones);
         this.usuarioRegistro.set(p.usuarioRegistro);
+        this.pcRegistro.set(p.pcRegistro);
         this.fechaRegistro.set(p.fechaRegistro);
         this.fechaModificacion.set(p.fechaModificacion);
       }
@@ -158,18 +119,15 @@ export class FichaProcedimientoComponent implements OnInit {
     }
   }
 
-  // Foto/PDF placeholder — upload real pendiente (ver memoria: project_hu86_upload_pendiente)
+  // PDF placeholder — upload real pendiente (ver memoria: project_hu86_upload_pendiente)
   onAdjuntarPdf(): void { this.toastSvc.exito('Adjuntar PDF disponible cuando el back tenga endpoint de storage.'); }
-  onVerPdf():      void { this.toastSvc.exito('Preview PDF disponible cuando el archivo esté cargado.'); }
 
   limpiarFormulario(): void {
     this.formulario.reset({
-      anioEmision: new Date().getFullYear(),
-      version: 1, revision: 1, versionOficial: 1,
+      anio: new Date().getFullYear(),
+      version: 1,
       esFormatoDigitalIso: true,
-      esActivo: true, esVigente: true, esVigenteIso17025: true, sincronizarAppMovil: true,
-      aplicaCalibracionLab: true,
-      areaTecnicaResponsable: 'metrologia_legal',
+      esActivo: true,
     });
     this.toastSvc.exito('Formulario limpiado.');
   }
@@ -196,33 +154,19 @@ export class FichaProcedimientoComponent implements OnInit {
     try {
       const v = this.formulario.value;
       const dto: GuardarProcedimientoRequest = {
-        idProcedimiento:   this.idProcedimiento,
-        codigo:            v.codigo?.trim().toUpperCase() ?? '',
-        anio:              Number(v.anioEmision) || new Date().getFullYear(),
-        version:           Number(v.version) || 1,
-        revision:          Number(v.revision) || 1,
-        norma:             v.norma ?? '',
-        descripcion:       v.descripcion?.trim() ?? '',
-        esVigente:         !!v.esVigente,
-        anioEmision:               Number(v.anioEmision) || new Date().getFullYear(),
-        versionOficial:            Number(v.versionOficial) || 1,
-        alcanceNorma:              v.alcanceNorma ?? '',
-        tipoSegmentoRegulado:      v.tipoSegmentoRegulado,
-        tipoSegmentoMetrologico:   v.tipoSegmentoMetrologico,
-        alcanceTitulo:             v.alcanceTitulo?.trim() ?? '',
-        normaNacionalRangoSuperior: v.normaNacionalRangoSuperior ?? '',
-        normaNacionalRangoInferior: v.normaNacionalRangoInferior ?? '',
-        esFormatoDigitalIso:       !!v.esFormatoDigitalIso,
-        urlPdfAprobado:            '',
-        enlaceCatalogoExterno:     v.enlaceCatalogoExterno ?? '',
-        esActivo:                  !!v.esActivo,
-        esVigenteIso17025:         !!v.esVigenteIso17025,
-        sincronizarAppMovil:       !!v.sincronizarAppMovil,
-        aplicaCalibracionLab:      !!v.aplicaCalibracionLab,
-        aplicaVerificacionCampo:   !!v.aplicaVerificacionCampo,
-        aplicaMantenimiento:       !!v.aplicaMantenimiento,
-        aplicaCertificacionExterna: !!v.aplicaCertificacionExterna,
-        areaTecnicaResponsable:    v.areaTecnicaResponsable,
+        idProcedimiento:     this.idProcedimiento,
+        codigo:              v.codigo?.trim().toUpperCase() ?? '',
+        anio:                Number(v.anio) || new Date().getFullYear(),
+        version:             Number(v.version) || 1,
+        autorNorma:          v.autorNorma?.trim() ?? '',
+        normaBase:           v.normaBase?.trim() ?? '',
+        tipoProcedimiento:   v.tipoProcedimiento,
+        descripcion:         v.descripcion?.trim() ?? '',
+        alcance:             v.alcance?.trim() ?? '',
+        aprobadoPor:         v.aprobadoPor?.trim() ?? '',
+        esFormatoDigitalIso: !!v.esFormatoDigitalIso,
+        urlPdfAprobado:      '',
+        esActivo:            !!v.esActivo,
         guardarComoBorrador,
       };
       await this.procSvc.guardarProcedimiento(dto);

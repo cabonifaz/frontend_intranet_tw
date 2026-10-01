@@ -56,7 +56,6 @@ export class ListaProcedimientosComponent implements OnInit {
   busqueda      = '';
   anioFiltro    = 0;
   estadoFiltro  = ESTADO.ACTIVO;
-  soloVigentes  = true;
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -71,7 +70,6 @@ export class ListaProcedimientosComponent implements OnInit {
         this.busqueda || undefined,
         this.anioFiltro || undefined,
         this.estadoFiltro || undefined,
-        this.soloVigentes,
         this.pagina(),
         this.porPagina,
       );

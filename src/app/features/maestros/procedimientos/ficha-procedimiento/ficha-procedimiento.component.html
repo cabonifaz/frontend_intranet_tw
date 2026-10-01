@@ -5,7 +5,7 @@
   <app-page-header
     icono="menu_book"
     [titulo]="esNuevo() ? 'Nuevo Procedimiento Metrológico' : 'Editar Procedimiento'"
-    subtitulo="Alta, versionado y clasificación técnica de procedimientos, normas aprobadas y documentación de referencia para calibración"
+    subtitulo="Alta, versionado y clasificación técnica de procedimientos aprobados para calibración y verificación"
   >
     <span class="badge-codigo">{{ codigoBadge() }}</span>
   </app-page-header>
@@ -16,115 +16,93 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar(false)" class="ficha-grid">
+    <form [formGroup]="formulario" (ngSubmit)="guardar(false)" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
 
-      <!-- ═════════════════════════════ COLUMNA MAIN ═════════════════════════════ -->
       <div class="ficha-main">
 
-        <!-- ── SECCIÓN 01 — Identificación y Clasificación Técnica ────────── -->
-        <app-seccion numero="01" icono="fingerprint" titulo="Identificación y Clasificación Técnica"
-                     subtitulo="Código único, versión, año de emisión y clasificación por segmento metrológico regulado">
+        <!-- ── SECCIÓN 01 — Identificación ──────────────────────────────── -->
+        <app-seccion icono="fingerprint" titulo="1. Identificación"
+                     subtitulo="Datos únicos del procedimiento: código, año, versión y clasificación">
 
           <div class="grid-cols-3">
-            <app-campo label="Código Técnico / Norma"
+            <app-campo label="Código Técnico"
                        [error]="formulario.get('codigo')?.touched && formulario.get('codigo')?.invalid ? 'Código requerido (mín. 2 caracteres)' : ''">
               <input type="text" formControlName="codigo" placeholder="Ej: PC-001" />
             </app-campo>
 
-            <app-campo label="Año Emisión"
-                       [error]="formulario.get('anioEmision')?.touched && formulario.get('anioEmision')?.invalid ? 'Año requerido' : ''">
-              <input type="number" formControlName="anioEmision" min="2000" placeholder="2026" />
+            <app-campo label="Año"
+                       [error]="formulario.get('anio')?.touched && formulario.get('anio')?.invalid ? 'Año requerido' : ''">
+              <input type="number" formControlName="anio" min="2000" placeholder="2026" />
             </app-campo>
 
-            <app-campo label="Versión Oficial"
-                       [error]="formulario.get('versionOficial')?.touched && formulario.get('versionOficial')?.invalid ? 'Versión ≥ 1' : ''">
-              <input type="number" formControlName="versionOficial" min="1" placeholder="1" />
+            <app-campo label="Versión"
+                       [error]="formulario.get('version')?.touched && formulario.get('version')?.invalid ? 'Versión ≥ 1' : ''">
+              <input type="number" formControlName="version" min="1" placeholder="1" />
             </app-campo>
           </div>
 
           <div class="grid-cols-3">
-            <app-campo label="Versión (interna)">
-              <input type="number" formControlName="version" min="1" />
+            <app-campo label="Autor"
+                       [error]="formulario.get('autorNorma')?.touched && formulario.get('autorNorma')?.invalid ? 'Autor requerido' : ''"
+                       hint="Entidad que redactó el documento">
+              <input type="text" formControlName="autorNorma" placeholder="Ej: INDECOPI · OIML · Interno TW" />
             </app-campo>
 
-            <app-campo label="Revisión">
-              <input type="number" formControlName="revision" min="1" />
+            <app-campo label="Norma (opcional)" hint="Estándar técnico base">
+              <input type="text" formControlName="normaBase" placeholder="Ej: OIML R76 · ISO 17025 · NMP 002" />
             </app-campo>
 
-            <app-campo label="Alcance / Norma (código corto)">
-              <input type="text" formControlName="alcanceNorma" placeholder="Ej: WACAL-EM" />
+            <app-campo label="Tipo de Procedimiento"
+                       [error]="formulario.get('tipoProcedimiento')?.touched && formulario.get('tipoProcedimiento')?.invalid ? 'Selecciona un tipo' : ''">
+              <select formControlName="tipoProcedimiento">
+                <option value="">Selecciona…</option>
+                @for (opt of tiposProcedimiento; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
             </app-campo>
           </div>
 
           <div class="grid-cols-2">
-            <app-campo label="Tipo / Segmento Regulado Cubierto"
-                       [error]="formulario.get('tipoSegmentoRegulado')?.touched && formulario.get('tipoSegmentoRegulado')?.invalid ? 'Selecciona un segmento' : ''">
-              <select formControlName="tipoSegmentoRegulado">
-                <option value="">Selecciona…</option>
-                @for (opt of segmentosRegulados; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
+            <app-campo label="Digital (ISO)">
+              <div class="toggle-linea">
+                <app-toggle formControlName="esFormatoDigitalIso" />
+                <span>Procedimiento en formato digital ISO</span>
+              </div>
             </app-campo>
 
-            <app-campo label="Tipo / Segmento Metrológico Primario"
-                       [error]="formulario.get('tipoSegmentoMetrologico')?.touched && formulario.get('tipoSegmentoMetrologico')?.invalid ? 'Selecciona un segmento' : ''">
-              <select formControlName="tipoSegmentoMetrologico">
-                <option value="">Selecciona…</option>
-                @for (opt of segmentosMetrologicos; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
+            <app-campo label="Estado">
+              <div class="toggle-linea">
+                <app-toggle formControlName="esActivo" />
+                <span>Procedimiento Activo</span>
+              </div>
             </app-campo>
           </div>
 
         </app-seccion>
 
-        <!-- ── SECCIÓN 02 — Descripción y Alcance Metrológico ────────────── -->
-        <app-seccion numero="02" icono="description" titulo="Descripción y Alcance Metrológico">
+        <!-- ── SECCIÓN 02 — Descripción y Alcance ────────────────────────── -->
+        <app-seccion icono="description" titulo="2. Descripción y Alcance">
 
-          <app-campo label="Alcance / Título Oficial del Procedimiento"
-                     [error]="formulario.get('alcanceTitulo')?.touched && formulario.get('alcanceTitulo')?.invalid ? 'Título requerido (mín. 10 caracteres)' : ''">
-            <input type="text" formControlName="alcanceTitulo"
-                   placeholder="Ej: Calibración de instrumentos de pesaje no automático" />
+          <app-campo label="Alcance / Rango de Aplicabilidad"
+                     hint="Define cuándo aplica este procedimiento (ej: rango de capacidad, clase, tipo de equipo)">
+            <input type="text" formControlName="alcance"
+                   placeholder="Ej: 0 a 300 kg · Clase III-IIII" />
           </app-campo>
 
-          <app-campo label="Descripción Completa"
-                     [error]="formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid ? 'Descripción requerida' : ''">
+          <app-campo label="Descripción"
+                     [error]="formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid ? 'Descripción requerida (mín. 10 caracteres)' : ''">
             <textarea formControlName="descripcion" rows="3"
                       placeholder="Detalle completo del procedimiento, aplicaciones y contexto técnico…"></textarea>
           </app-campo>
 
-          <div class="grid-cols-2">
-            <app-campo label="Norma Nacional / Rango Superior">
-              <input type="text" formControlName="normaNacionalRangoSuperior"
-                     placeholder="Ej: INDECOPI · OIML R76" />
-            </app-campo>
-
-            <app-campo label="Norma Nacional / Rango Inferior">
-              <input type="text" formControlName="normaNacionalRangoInferior"
-                     placeholder="Ej: NMP 002:2009" />
-            </app-campo>
-          </div>
-
-          <app-campo label="Norma corta (para tabla)">
-            <input type="text" formControlName="norma" placeholder="Ej: OIML R111 · INDECOPI · Interno TW" />
+          <app-campo label="Aprobado por"
+                     hint="Persona autorizada que validó el procedimiento (requerido para QMS/ISO 17025)">
+            <input type="text" formControlName="aprobadoPor"
+                   placeholder="Ej: Ing. Ana Torres · Jefe de Metrología" />
           </app-campo>
 
-        </app-seccion>
-
-        <!-- ── SECCIÓN 03 — Documentación Técnica y Digitalización ───────── -->
-        <app-seccion numero="03" icono="menu_book" titulo="Documentación Técnica y Digitalización">
-
-          <div class="toggle-linea toggle-linea--card">
-            <app-toggle formControlName="esFormatoDigitalIso" />
-            <div>
-              <div class="tl-titulo">¿Procedimiento en Formato Digital ISO?</div>
-              <div class="tl-hint">Habilitar cuando el documento cumple con estructura ISO/IEC 17025 y está firmado digitalmente.</div>
-            </div>
-          </div>
-
-          <app-campo label="Adjuntar Documento de la Norma / Procedimiento PDF Aprobado"
+          <app-campo label="Adjuntar Documento PDF Aprobado"
                      hint="Placeholder — upload real habilitado cuando el back tenga endpoint de storage">
             <div class="dropzone" (click)="onAdjuntarPdf()">
               <span class="material-symbols-outlined dropzone__icono">upload_file</span>
@@ -135,125 +113,38 @@
             </div>
           </app-campo>
 
-          <app-campo label="Enlace Oficial a Catálogo / Repositorio Digital Metrológico"
-                     hint="URL pública a la norma en INDECOPI, OIML, ASTM u otro repositorio autorizado">
-            <input type="url" formControlName="enlaceCatalogoExterno"
-                   placeholder="https://www.oiml.org/…" />
-          </app-campo>
-
         </app-seccion>
 
       </div>
 
       <!-- ═════════════════════════════ SIDEBAR ═════════════════════════════ -->
-      <aside class="ficha-sidebar">
+      @if (!esNuevo()) {
+        <aside class="ficha-sidebar">
 
-        <div class="side-card side-card--estado">
-          <div class="side-card__header">
-            <span class="material-symbols-outlined">verified</span>
-            <span>ESTADO & OPERATIVIDAD</span>
-          </div>
+          <app-seccion icono="verified" titulo="Trazabilidad & Auditoría"
+                       subtitulo="Historial de registro y modificaciones del procedimiento">
+            <dl class="traz-list">
+              <div>
+                <dt>Usuario Registro</dt>
+                <dd>{{ usuarioRegistro() || '—' }}</dd>
+              </div>
+              <div>
+                <dt>PC Registro</dt>
+                <dd>{{ pcRegistro() || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Fecha Registro</dt>
+                <dd>{{ fechaRegistro() ? (fechaRegistro() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+              </div>
+              <div>
+                <dt>Fecha Modificación</dt>
+                <dd>{{ fechaModificacion() ? (fechaModificacion() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+              </div>
+            </dl>
+          </app-seccion>
 
-          <div class="side-toggle">
-            <app-toggle formControlName="esActivo" />
-            <div>
-              <div class="side-toggle__titulo">Procedimiento Activo</div>
-              <div class="side-toggle__hint">Disponible para asignar en servicios</div>
-            </div>
-          </div>
-
-          <div class="side-toggle">
-            <app-toggle formControlName="esVigenteIso17025" />
-            <div>
-              <div class="side-toggle__titulo">Vigente ISO/IEC 17025</div>
-              <div class="side-toggle__hint">Certificado por auditoría de calidad</div>
-            </div>
-          </div>
-
-          <div class="side-toggle">
-            <app-toggle formControlName="sincronizarAppMovil" />
-            <div>
-              <div class="side-toggle__titulo">Sincronizar en App Móvil</div>
-              <div class="side-toggle__hint">Disponible offline para técnicos en campo</div>
-            </div>
-          </div>
-
-          <dl class="traz-list">
-            <div>
-              <dt>Última Validación</dt>
-              <dd>{{ fechaModificacion() ? (fechaModificacion() | date:'dd/MM/yyyy') : '—' }}</dd>
-            </div>
-            <div>
-              <dt>Origen</dt>
-              <dd>{{ usuarioRegistro() || '—' }}</dd>
-            </div>
-            <div>
-              <dt>Versión</dt>
-              <dd>v{{ formulario.get('versionOficial')?.value ?? 1 }}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div class="side-card">
-          <div class="side-card__header">
-            <span class="material-symbols-outlined">checklist</span>
-            <span>SERVICIOS APLICABLES</span>
-          </div>
-
-          <label class="check-op">
-            <input type="checkbox" formControlName="aplicaCalibracionLab" />
-            <span class="check-op__box"></span>
-            <span class="check-op__texto">Calibración en Laboratorio Central</span>
-          </label>
-
-          <label class="check-op">
-            <input type="checkbox" formControlName="aplicaVerificacionCampo" />
-            <span class="check-op__box"></span>
-            <span class="check-op__texto">Verificación en Planta / Campo (Metrología)</span>
-          </label>
-
-          <label class="check-op">
-            <input type="checkbox" formControlName="aplicaMantenimiento" />
-            <span class="check-op__box"></span>
-            <span class="check-op__texto">Mantenimiento Preventivo & Correctivo</span>
-          </label>
-
-          <label class="check-op">
-            <input type="checkbox" formControlName="aplicaCertificacionExterna" />
-            <span class="check-op__box"></span>
-            <span class="check-op__texto">Certificación Externa por Terceros</span>
-          </label>
-
-          <app-campo label="Área Técnica Responsable Ejecutiva">
-            <select formControlName="areaTecnicaResponsable">
-              @for (a of areasTecnicas; track a.value) {
-                <option [value]="a.value">{{ a.label }}</option>
-              }
-            </select>
-          </app-campo>
-        </div>
-
-        <div class="side-card side-card--preview">
-          <div class="side-card__header">
-            <span class="material-symbols-outlined">description</span>
-            <span>VISTA PREVIA DE FICHA</span>
-          </div>
-          <div class="preview-doc">
-            <div class="preview-doc__meta">
-              <span class="preview-doc__code">{{ previewCodigo() }}</span>
-              <span class="preview-doc__ver">Versión {{ previewVersion() }}</span>
-              <span class="preview-doc__anio">{{ previewAnio() }}</span>
-            </div>
-            <div class="preview-doc__titulo">Procedimiento de calibración de instrumentos de pesaje</div>
-            <div class="preview-doc__norma">{{ formulario.get('alcanceNorma')?.value || '—' }}</div>
-            <div class="preview-doc__body">
-              <span class="material-symbols-outlined">picture_as_pdf</span>
-              <span>Sin PDF cargado</span>
-            </div>
-          </div>
-        </div>
-
-      </aside>
+        </aside>
+      }
 
       <!-- ═════════════════════════════ FOOTER ═════════════════════════════ -->
       <div class="ficha-footer">

@@ -32,11 +32,6 @@
   </app-filtros-bar>
 
   <div class="pre-nota">
-    <label class="check-pre">
-      <input type="checkbox" [(ngModel)]="soloVigentes" (change)="cargar(true)" />
-      <span class="check-pre__box"></span>
-      <span class="check-pre__texto">Solo procedimientos vigentes para calibración externa</span>
-    </label>
     <span class="pre-nota__contador">{{ total() }} procedimientos registrados</span>
   </div>
 
@@ -58,32 +53,41 @@
       <app-tabla-maestro>
         <thead>
           <tr>
-            <th class="th-id">ID</th>
-            <th class="th-anio">AÑO</th>
             <th class="th-codigo">CÓDIGO</th>
+            <th class="th-anio">AÑO</th>
             <th class="th-centro th-narrow">VER</th>
-            <th class="th-centro th-narrow">REV</th>
-            <th class="th-norma">NORMA / APLICABLE</th>
+            <th class="th-centro th-narrow">DIGITAL</th>
+            <th class="th-norma">NORMA / AUTOR</th>
             <th class="th-desc">DESCRIPCIÓN / PROCEDIMIENTO METROLÓGICO</th>
             <th class="th-centro">ESTADO</th>
-            <th class="th-fecha">FECHA DE REVISIÓN</th>
+            <th class="th-fecha">FECHA REGISTRO</th>
             <th class="tabla__th--acciones th-acciones">ACCIONES</th>
           </tr>
         </thead>
         <tbody>
           @for (p of items(); track p.idProcedimiento) {
             <tr (click)="irAEditar(p.idProcedimiento)">
-              <td class="td-id">{{ p.idProcedimiento }}</td>
-              <td class="td-anio">{{ p.anio }}</td>
               <td class="td-codigo"><span class="codigo-chip">{{ p.codigo }}</span></td>
+              <td class="td-anio">{{ p.anio }}</td>
               <td class="td-centro">{{ p.version }}</td>
-              <td class="td-centro">{{ p.revision }}</td>
-              <td class="td-norma">{{ p.norma }}</td>
+              <td class="td-centro">
+                <span class="badge-mini" [class.badge-mini--si]="p.esFormatoDigitalIso">
+                  {{ p.esFormatoDigitalIso ? 'S' : 'N' }}
+                </span>
+              </td>
+              <td class="td-norma">
+                @if (p.normaBase) {
+                  <span class="norma-linea">{{ p.normaBase }}</span>
+                  <span class="autor-linea">{{ p.autorNorma }}</span>
+                } @else {
+                  <span class="norma-linea">{{ p.autorNorma }}</span>
+                }
+              </td>
               <td class="td-desc">{{ truncar(p.descripcion) }}</td>
               <td class="td-centro">
                 <app-badge-estado [estado]="p.estado" />
               </td>
-              <td class="td-fecha">{{ p.fechaRevision ? (p.fechaRevision | date:'dd/MM/yyyy') : '—' }}</td>
+              <td class="td-fecha">{{ p.fechaRegistro ? (p.fechaRegistro | date:'dd/MM/yyyy') : '—' }}</td>
               <td class="tabla__td--acciones">
                 <button
                   class="btn-accion btn-accion--editar"
