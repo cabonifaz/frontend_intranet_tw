@@ -4,17 +4,12 @@ import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
-import { SuministrosService } from '../../../../core/services/suministros.service';
+import { SuministrosService, DescripcionCatalogoSuministro } from '../../../../core/services/suministros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
-  CLASES_SUMINISTRO,
   GuardarSuministroRequest,
   NIVELES_TARIFA,
   OpcionCatalogo,
-  PROCEDENCIAS_SUMINISTRO,
-  SUBTIPOS_SUMINISTRO,
-  TIPOS_SUMINISTRO,
-  UNIDADES_SUMINISTRO,
   esServicio,
 } from '../../../../core/models/suministros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
@@ -27,6 +22,7 @@ import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../shared/ui/toggle/toggle.component';
 import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
+import { ModalNuevoItemCatalogoComponent } from '../../../../shared/ui/modal-nuevo-item-catalogo/modal-nuevo-item-catalogo.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
@@ -46,6 +42,7 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     ToggleComponent,
     ModalComponent,
     ModalBorradorComponent,
+    ModalNuevoItemCatalogoComponent,
   ],
   templateUrl: './ficha-suministro.component.html',
   styleUrl: './ficha-suministro.component.scss',
@@ -78,11 +75,12 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   readonly firmaDigital      = signal('');
   readonly claseActual       = signal('');
 
-  readonly clasesOpciones       = CLASES_SUMINISTRO;
-  readonly tiposOpciones        = TIPOS_SUMINISTRO;
-  readonly subtiposOpciones     = SUBTIPOS_SUMINISTRO;
-  readonly procedenciasOpciones = PROCEDENCIAS_SUMINISTRO;
-  readonly unidadesOpciones     = UNIDADES_SUMINISTRO;
+  // Catálogos cargados desde tabla_maestra on init
+  readonly clasesOpciones       = signal<OpcionCatalogo[]>([]);
+  readonly tiposOpciones        = signal<OpcionCatalogo[]>([]);
+  readonly subtiposOpciones     = signal<OpcionCatalogo[]>([]);
+  readonly procedenciasOpciones = signal<OpcionCatalogo[]>([]);
+  readonly unidadesOpciones     = signal<OpcionCatalogo[]>([]);
   readonly nivelesTarifa        = NIVELES_TARIFA;
 
   readonly marcasSignal         = signal<OpcionCatalogo[]>([]);
@@ -139,15 +137,34 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     return `ID · ${this.idSuministro}`;
   });
 
-  // ─── Modales de Marca / Modelo ────────────────────────────────────────
-  readonly modalMarcaOpen  = signal(false);
-  readonly modalModeloOpen = signal(false);
-  nuevaMarcaNombre  = '';
-  nuevoModeloNombre = '';
+  // ─── Modal genérico "Nuevo item de catálogo" (Tipo/Subtipo/Marca/Modelo) ──
+  readonly modalCatalogo = signal<{
+    descripcion: DescripcionCatalogoSuministro;
+    titulo: string;
+    etiqueta: string;
+    placeholder: string;
+    campoFormulario: 'tipo' | 'subtipo' | 'marca' | 'modelo';
+  } | null>(null);
+  readonly guardandoCatalogo = signal(false);
 
   async ngOnInit(): Promise<void> {
-    this.marcasSignal.set(this.suministrosSvc.obtenerMarcas());
-    this.modelosSignal.set(this.suministrosSvc.obtenerModelos());
+    // Carga paralela de los 7 catálogos de tabla_maestra + procedimientos (del maestro HU-87)
+    const [clases, tipos, subtipos, marcas, modelos, procedencias, unidades] = await Promise.all([
+      this.suministrosSvc.obtenerClases(),
+      this.suministrosSvc.obtenerTipos(),
+      this.suministrosSvc.obtenerSubtipos(),
+      this.suministrosSvc.obtenerMarcas(),
+      this.suministrosSvc.obtenerModelos(),
+      this.suministrosSvc.obtenerProcedencias(),
+      this.suministrosSvc.obtenerUnidades(),
+    ]);
+    this.clasesOpciones.set(clases);
+    this.tiposOpciones.set(tipos);
+    this.subtiposOpciones.set(subtipos);
+    this.marcasSignal.set(marcas);
+    this.modelosSignal.set(modelos);
+    this.procedenciasOpciones.set(procedencias);
+    this.unidadesOpciones.set(unidades);
     this.procedimientosSignal.set(this.suministrosSvc.obtenerProcedimientos());
 
     // Sincronizar claseActual con el FormControl para que el computed reaccione
@@ -230,7 +247,7 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   }
 
   // ─── Generar descripción automática (mock IA) ─────────────────────────
-  generarDescripcionAuto(): void {
+  async generarDescripcionAuto(): Promise<void> {
     const v = this.formulario.value;
     if (!v.clase || !v.tipo || !v.subtipo) {
       this.toastSvc.error('Completa clase, tipo y sub-tipo antes de generar.');
@@ -240,36 +257,63 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
       this.toastSvc.error('Completa marca y modelo antes de generar.');
       return;
     }
-    const desc = this.suministrosSvc.generarDescripcionAuto(v.clase, v.tipo, v.subtipo, v.marca, v.modelo);
+    const desc = await this.suministrosSvc.generarDescripcionAuto(v.clase, v.tipo, v.subtipo, v.marca, v.modelo);
     this.formulario.patchValue({ descripcionAuto: desc });
     this.toastSvc.exito('Descripción automática generada.');
   }
 
-  // ─── Modal Nueva Marca / Modelo ───────────────────────────────────────
-  abrirModalMarca(): void  { this.nuevaMarcaNombre  = ''; this.modalMarcaOpen.set(true); }
-  cerrarModalMarca(): void { this.modalMarcaOpen.set(false); }
-
-  async guardarNuevaMarca(): Promise<void> {
-    const nombre = this.nuevaMarcaNombre.trim();
-    if (nombre.length < 2) { this.toastSvc.error('Nombre de marca demasiado corto.'); return; }
-    const nueva = await this.suministrosSvc.crearMarca(nombre);
-    this.marcasSignal.set(this.suministrosSvc.obtenerMarcas());
-    this.formulario.patchValue({ marca: nueva.value });
-    this.toastSvc.exito(`Marca "${nueva.label}" registrada.`);
-    this.cerrarModalMarca();
+  // ─── Modal genérico "Nuevo item de catálogo" ────────────────────────────
+  abrirModalTipo(): void {
+    this.modalCatalogo.set({
+      descripcion: 'TIPO_SUMINISTRO', titulo: 'Nuevo Tipo', etiqueta: 'Nombre del Tipo',
+      placeholder: 'Ej: Balanza Industrial', campoFormulario: 'tipo',
+    });
   }
 
-  abrirModalModelo(): void  { this.nuevoModeloNombre = ''; this.modalModeloOpen.set(true); }
-  cerrarModalModelo(): void { this.modalModeloOpen.set(false); }
+  abrirModalSubtipo(): void {
+    this.modalCatalogo.set({
+      descripcion: 'SUBTIPO_SUMINISTRO', titulo: 'Nuevo Sub-Tipo', etiqueta: 'Nombre del Sub-Tipo',
+      placeholder: 'Ej: De Plataforma', campoFormulario: 'subtipo',
+    });
+  }
 
-  async guardarNuevoModelo(): Promise<void> {
-    const nombre = this.nuevoModeloNombre.trim();
-    if (nombre.length < 1) { this.toastSvc.error('Nombre de modelo requerido.'); return; }
-    const nuevo = await this.suministrosSvc.crearModelo(nombre);
-    this.modelosSignal.set(this.suministrosSvc.obtenerModelos());
-    this.formulario.patchValue({ modelo: nuevo.value });
-    this.toastSvc.exito(`Modelo "${nuevo.label}" registrado.`);
-    this.cerrarModalModelo();
+  abrirModalMarca(): void {
+    this.modalCatalogo.set({
+      descripcion: 'MARCA_SUMINISTRO', titulo: 'Nueva Marca', etiqueta: 'Nombre de la Marca',
+      placeholder: 'Ej: OHAUS', campoFormulario: 'marca',
+    });
+  }
+
+  abrirModalModelo(): void {
+    this.modalCatalogo.set({
+      descripcion: 'MODELO_SUMINISTRO', titulo: 'Nuevo Modelo', etiqueta: 'Nombre del Modelo',
+      placeholder: 'Ej: TW-M2', campoFormulario: 'modelo',
+    });
+  }
+
+  cerrarModalCatalogo(): void { this.modalCatalogo.set(null); }
+
+  async crearItemCatalogo(label: string): Promise<void> {
+    const m = this.modalCatalogo();
+    if (!m || this.guardandoCatalogo()) return;
+    this.guardandoCatalogo.set(true);
+    try {
+      const nueva = await this.suministrosSvc.agregarItemCatalogo(m.descripcion, label);
+      // Refrescar el signal correspondiente desde el cache del service
+      switch (m.campoFormulario) {
+        case 'tipo':    this.tiposOpciones.set(await this.suministrosSvc.obtenerTipos()); break;
+        case 'subtipo': this.subtiposOpciones.set(await this.suministrosSvc.obtenerSubtipos()); break;
+        case 'marca':   this.marcasSignal.set(await this.suministrosSvc.obtenerMarcas()); break;
+        case 'modelo':  this.modelosSignal.set(await this.suministrosSvc.obtenerModelos()); break;
+      }
+      this.formulario.patchValue({ [m.campoFormulario]: nueva.value });
+      this.toastSvc.exito(`"${nueva.label}" agregado al catálogo.`);
+      this.modalCatalogo.set(null);
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'Error al agregar item al catálogo.');
+    } finally {
+      this.guardandoCatalogo.set(false);
+    }
   }
 
   // Foto / Manual PDF: placeholder — upload real pendiente hasta que el back tenga endpoint + storage

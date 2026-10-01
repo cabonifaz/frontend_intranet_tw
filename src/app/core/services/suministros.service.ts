@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
+import { CatalogoItem } from '../models/maestros.model';
 import {
   CambiarEstadoSuministroRequest,
   GuardarSuministroRequest,
@@ -15,12 +16,23 @@ import {
   PROCEDENCIAS_SUMINISTRO,
   SUBTIPOS_SUMINISTRO,
   TIPOS_SUMINISTRO,
+  UNIDADES_SUMINISTRO,
   OpcionCatalogo,
   esServicio,
 } from '../models/suministros.model';
 import { ProcedimientosService } from './procedimientos.service';
 
-const USAR_MOCK = true;
+// Descripciones de tabla_maestra (deben coincidir con los seeds del back)
+export type DescripcionCatalogoSuministro =
+  | 'CLASE_SUMINISTRO'
+  | 'TIPO_SUMINISTRO'
+  | 'SUBTIPO_SUMINISTRO'
+  | 'MARCA_SUMINISTRO'
+  | 'MODELO_SUMINISTRO'
+  | 'PROCEDENCIA_SUMINISTRO'
+  | 'UNIDAD_SUMINISTRO';
+
+const USAR_MOCK = environment.usarMocks;
 
 @Injectable({ providedIn: 'root' })
 export class SuministrosService {
@@ -88,39 +100,106 @@ export class SuministrosService {
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
   }
 
-  async crearMarca(nombre: string): Promise<OpcionCatalogo> {
-    await this.mockDelay(200);
-    const value = nombre.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    const nueva: OpcionCatalogo = { value, label: nombre.toUpperCase() };
-    SuministrosService.marcasDinamicas.push(nueva);
-    return nueva;
+  // ─── Catálogos (clase, tipo, subtipo, marca, modelo, procedencia, unidad) ───
+  // Se traen de tabla_maestra via GET /maestros/catalogos/{descripcion}.
+  // Cuando USAR_MOCK=true, retornan las constantes locales.
+  // Se cachean en memoria tras la primera carga.
+
+  private readonly cacheCatalogos = new Map<DescripcionCatalogoSuministro, OpcionCatalogo[]>();
+
+  private async cargarCatalogo(
+    descripcion: DescripcionCatalogoSuministro,
+    fallback: OpcionCatalogo[],
+  ): Promise<OpcionCatalogo[]> {
+    if (this.cacheCatalogos.has(descripcion)) {
+      return this.cacheCatalogos.get(descripcion)!;
+    }
+    if (USAR_MOCK) {
+      const copia = [...fallback];
+      this.cacheCatalogos.set(descripcion, copia);
+      return copia;
+    }
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<CatalogoItem[]>>(`${this.base}/catalogos/${descripcion}`),
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+    const items: OpcionCatalogo[] = r.datos.map(i => ({
+      value: i.codigo ?? i.nombre,
+      label: i.nombre,
+    }));
+    this.cacheCatalogos.set(descripcion, items);
+    return items;
   }
 
-  async crearModelo(nombre: string): Promise<OpcionCatalogo> {
-    await this.mockDelay(200);
-    const value = nombre.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    const nuevo: OpcionCatalogo = { value, label: nombre.toUpperCase() };
-    SuministrosService.modelosDinamicos.push(nuevo);
-    return nuevo;
-  }
-
-  obtenerMarcas(): OpcionCatalogo[] {
-    return [...MARCAS_SUMINISTRO, ...SuministrosService.marcasDinamicas];
-  }
-
-  obtenerModelos(): OpcionCatalogo[] {
-    return [...MODELOS_SUMINISTRO, ...SuministrosService.modelosDinamicos];
-  }
+  obtenerClases(): Promise<OpcionCatalogo[]>        { return this.cargarCatalogo('CLASE_SUMINISTRO',       CLASES_SUMINISTRO); }
+  obtenerTipos(): Promise<OpcionCatalogo[]>         { return this.cargarCatalogo('TIPO_SUMINISTRO',        TIPOS_SUMINISTRO); }
+  obtenerSubtipos(): Promise<OpcionCatalogo[]>      { return this.cargarCatalogo('SUBTIPO_SUMINISTRO',     SUBTIPOS_SUMINISTRO); }
+  obtenerMarcas(): Promise<OpcionCatalogo[]>        { return this.cargarCatalogo('MARCA_SUMINISTRO',       MARCAS_SUMINISTRO); }
+  obtenerModelos(): Promise<OpcionCatalogo[]>       { return this.cargarCatalogo('MODELO_SUMINISTRO',      MODELOS_SUMINISTRO); }
+  obtenerProcedencias(): Promise<OpcionCatalogo[]>  { return this.cargarCatalogo('PROCEDENCIA_SUMINISTRO', PROCEDENCIAS_SUMINISTRO); }
+  obtenerUnidades(): Promise<OpcionCatalogo[]>      { return this.cargarCatalogo('UNIDAD_SUMINISTRO',      UNIDADES_SUMINISTRO); }
 
   obtenerProcedimientos(): OpcionCatalogo[] {
-    // Vinculado a HU-87: delega al maestro real de Procedimientos.
+    // Vinculado a HU-87: delega al maestro real de Procedimientos (no es tabla_maestra).
     return this.procSvc.obtenerProcedimientosParaDropdown();
   }
 
-  generarDescripcionAuto(clase: string, tipo: string, subtipo: string, marca: string, modelo: string): string {
-    const claseLabel   = this.labelDeCatalogo(CLASES_SUMINISTRO,   clase);
-    const tipoLabel    = this.labelDeCatalogo(TIPOS_SUMINISTRO,    tipo);
-    const subtipoLabel = this.labelDeCatalogo(SUBTIPOS_SUMINISTRO, subtipo);
+  /**
+   * Agrega un item nuevo a un catálogo de tabla_maestra via POST /maestros/catalogos/{descripcion}.
+   * Devuelve la OpcionCatalogo creada y la agrega al cache local para que la UI la vea sin recargar.
+   */
+  async agregarItemCatalogo(
+    descripcion: DescripcionCatalogoSuministro,
+    label: string,
+    codigo?: string,
+  ): Promise<OpcionCatalogo> {
+    const value = (codigo ?? label).toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    if (USAR_MOCK) {
+      await this.mockDelay(200);
+      const nueva: OpcionCatalogo = { value, label: label.toUpperCase() };
+      const cache = this.cacheCatalogos.get(descripcion) ?? [];
+      cache.push(nueva);
+      this.cacheCatalogos.set(descripcion, cache);
+      return nueva;
+    }
+
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<CatalogoItem>>(
+        `${this.base}/catalogos/${descripcion}`,
+        { string1: label, string2: value },
+      ),
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+    const nueva: OpcionCatalogo = {
+      value: r.datos.codigo ?? r.datos.nombre,
+      label: r.datos.nombre,
+    };
+    const cache = this.cacheCatalogos.get(descripcion) ?? [];
+    cache.push(nueva);
+    this.cacheCatalogos.set(descripcion, cache);
+    return nueva;
+  }
+
+  // Compatibilidad: los métodos crearMarca/crearModelo quedan como wrappers
+  // sobre agregarItemCatalogo (si algún otro componente los sigue usando).
+  crearMarca(nombre: string): Promise<OpcionCatalogo> {
+    return this.agregarItemCatalogo('MARCA_SUMINISTRO', nombre);
+  }
+
+  crearModelo(nombre: string): Promise<OpcionCatalogo> {
+    return this.agregarItemCatalogo('MODELO_SUMINISTRO', nombre);
+  }
+
+  async generarDescripcionAuto(clase: string, tipo: string, subtipo: string, marca: string, modelo: string): Promise<string> {
+    const [clases, tipos, subtipos] = await Promise.all([
+      this.obtenerClases(),
+      this.obtenerTipos(),
+      this.obtenerSubtipos(),
+    ]);
+    const claseLabel   = this.labelDeCatalogo(clases,   clase);
+    const tipoLabel    = this.labelDeCatalogo(tipos,    tipo);
+    const subtipoLabel = this.labelDeCatalogo(subtipos, subtipo);
 
     const partes: string[] = [];
     if (claseLabel)   partes.push(claseLabel);
@@ -129,8 +208,9 @@ export class SuministrosService {
 
     // Servicio no lleva Marca/Modelo (regla de negocio del legacy)
     if (!esServicio(clase)) {
-      const marcaLabel  = this.labelDeCatalogo(this.obtenerMarcas(),  marca);
-      const modeloLabel = this.labelDeCatalogo(this.obtenerModelos(), modelo);
+      const [marcas, modelos] = await Promise.all([this.obtenerMarcas(), this.obtenerModelos()]);
+      const marcaLabel  = this.labelDeCatalogo(marcas,  marca);
+      const modeloLabel = this.labelDeCatalogo(modelos, modelo);
       if (marcaLabel)  partes.push(`Marca ${marcaLabel}`);
       if (modeloLabel) partes.push(`Modelo ${modeloLabel}`);
     }
@@ -143,9 +223,6 @@ export class SuministrosService {
   }
 
   // ─── MOCK ────────────────────────────────────────────────────────────────
-
-  private static marcasDinamicas: OpcionCatalogo[] = [];
-  private static modelosDinamicos: OpcionCatalogo[] = [];
 
   private static mockData: SuministroDetalle[] = [
     // ── INSTRUMENTO
@@ -354,13 +431,14 @@ export class SuministrosService {
 
     if (busqueda) {
       const q = busqueda.toLowerCase();
+      const [marcas, modelos] = await Promise.all([this.obtenerMarcas(), this.obtenerModelos()]);
       filtered = filtered.filter(s =>
         String(s.idSuministro).includes(q) ||
         s.descripcion.toLowerCase().includes(q) ||
         s.tipoLabel.toLowerCase().includes(q) ||
         s.subtipoLabel.toLowerCase().includes(q) ||
-        this.labelDeCatalogo(this.obtenerMarcas(),  s.marca).toLowerCase().includes(q) ||
-        this.labelDeCatalogo(this.obtenerModelos(), s.modelo).toLowerCase().includes(q) ||
+        this.labelDeCatalogo(marcas,  s.marca).toLowerCase().includes(q) ||
+        this.labelDeCatalogo(modelos, s.modelo).toLowerCase().includes(q) ||
         (s.ctaContable ?? '').toLowerCase().includes(q)
       );
     }

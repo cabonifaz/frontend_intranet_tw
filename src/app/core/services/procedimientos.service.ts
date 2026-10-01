@@ -11,7 +11,7 @@ import {
   OpcionCatalogo,
 } from '../models/procedimientos.model';
 
-const USAR_MOCK = true;
+const USAR_MOCK = environment.usarMocks;
 
 @Injectable({ providedIn: 'root' })
 export class ProcedimientosService {

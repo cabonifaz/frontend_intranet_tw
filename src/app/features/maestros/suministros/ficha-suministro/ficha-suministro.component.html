@@ -37,7 +37,7 @@
             <app-campo label="Clase Principal" [error]="formulario.get('clase')?.touched && formulario.get('clase')?.invalid ? 'Selecciona una clase' : ''">
               <select formControlName="clase">
                 <option value="">Selecciona…</option>
-                @for (opt of clasesOpciones; track opt.value) {
+                @for (opt of clasesOpciones(); track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
               </select>
@@ -54,21 +54,33 @@
           <!-- Fila 2+: Tipo · SubTipo · Marca · Modelo -->
           <div class="grid-cols-2">
             <app-campo label="Tipo" [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''">
-              <select formControlName="tipo">
-                <option value="">Selecciona…</option>
-                @for (opt of tiposOpciones; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
+              <div class="input-con-boton">
+                <select formControlName="tipo">
+                  <option value="">Selecciona…</option>
+                  @for (opt of tiposOpciones(); track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <button class="btn-inline" type="button" (click)="abrirModalTipo()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nuevo Tipo
+                </button>
+              </div>
             </app-campo>
 
             <app-campo label="Sub-Tipo" [error]="formulario.get('subtipo')?.touched && formulario.get('subtipo')?.invalid ? 'Selecciona un subtipo' : ''">
-              <select formControlName="subtipo">
-                <option value="">Selecciona…</option>
-                @for (opt of subtiposOpciones; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
+              <div class="input-con-boton">
+                <select formControlName="subtipo">
+                  <option value="">Selecciona…</option>
+                  @for (opt of subtiposOpciones(); track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+                <button class="btn-inline" type="button" (click)="abrirModalSubtipo()">
+                  <span class="material-symbols-outlined">add</span>
+                  Nuevo Sub-Tipo
+                </button>
+              </div>
             </app-campo>
 
             <!-- Marca y Modelo: solo si clase !== 'servicio' -->
@@ -141,7 +153,7 @@
           <div class="grid-cols-4">
             <app-campo label="Unidad">
               <select formControlName="unidad">
-                @for (opt of unidadesOpciones; track opt.value) {
+                @for (opt of unidadesOpciones(); track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
               </select>
@@ -153,7 +165,7 @@
 
             <app-campo label="Procedencia">
               <select formControlName="procedencia">
-                @for (opt of procedenciasOpciones; track opt.value) {
+                @for (opt of procedenciasOpciones(); track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
               </select>
@@ -350,36 +362,16 @@
 
 </div>
 
-<!-- ═════════════════ MODAL: Nueva Marca ═════════════════ -->
-@if (modalMarcaOpen()) {
-  <app-modal titulo="Registrar Nueva Marca" ancho="sm" (cerrar)="cerrarModalMarca()">
-    <div class="modal-body">
-      <p class="modal-hint">La marca quedará disponible en el catálogo maestro para todos los suministros.</p>
-      <label class="modal-label">Nombre de la marca</label>
-      <input type="text" class="modal-input" [(ngModel)]="nuevaMarcaNombre" [ngModelOptions]="{ standalone: true }"
-             placeholder="Ej: OHAUS" (keydown.enter)="guardarNuevaMarca()" />
-    </div>
-    <div modalFooter class="modal-footer">
-      <app-button variant="ghost" (clic)="cerrarModalMarca()">Cancelar</app-button>
-      <app-button variant="primary" icono="check" (clic)="guardarNuevaMarca()">Guardar Marca</app-button>
-    </div>
-  </app-modal>
-}
-
-<!-- ═════════════════ MODAL: Nuevo Modelo ═════════════════ -->
-@if (modalModeloOpen()) {
-  <app-modal titulo="Registrar Nuevo Modelo" ancho="sm" (cerrar)="cerrarModalModelo()">
-    <div class="modal-body">
-      <p class="modal-hint">El modelo quedará asociado a la marca seleccionada.</p>
-      <label class="modal-label">Nombre del modelo</label>
-      <input type="text" class="modal-input" [(ngModel)]="nuevoModeloNombre" [ngModelOptions]="{ standalone: true }"
-             placeholder="Ej: TW-M2" (keydown.enter)="guardarNuevoModelo()" />
-    </div>
-    <div modalFooter class="modal-footer">
-      <app-button variant="ghost" (clic)="cerrarModalModelo()">Cancelar</app-button>
-      <app-button variant="primary" icono="check" (clic)="guardarNuevoModelo()">Guardar Modelo</app-button>
-    </div>
-  </app-modal>
+<!-- ═════════════════ MODAL genérico: Nuevo item de catálogo ═════════════════ -->
+@if (modalCatalogo(); as m) {
+  <app-modal-nuevo-item-catalogo
+    [titulo]="m.titulo"
+    [etiquetaCampo]="m.etiqueta"
+    [placeholder]="m.placeholder"
+    [guardando]="guardandoCatalogo()"
+    (guardar)="crearItemCatalogo($event)"
+    (cancelar)="cerrarModalCatalogo()"
+  />
 }
 
 @if (borradorDisponible(); as draft) {

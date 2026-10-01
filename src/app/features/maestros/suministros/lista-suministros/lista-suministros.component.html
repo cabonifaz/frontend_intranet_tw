@@ -20,13 +20,13 @@
   >
     <select [(ngModel)]="claseFiltro" (change)="cargar(true)">
       <option value="">Clase: Todas</option>
-      @for (opt of clasesOpciones; track opt.value) {
+      @for (opt of clasesOpciones(); track opt.value) {
         <option [value]="opt.value">{{ opt.label }}</option>
       }
     </select>
     <select [(ngModel)]="tipoFiltro" (change)="cargar(true)">
       <option value="">Tipo / Subtipo: Todos</option>
-      @for (opt of tiposOpciones; track opt.value) {
+      @for (opt of tiposOpciones(); track opt.value) {
         <option [value]="opt.value">{{ opt.label }}</option>
       }
     </select>

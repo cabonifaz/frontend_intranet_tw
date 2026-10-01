@@ -1,0 +1,27 @@
+<app-modal [titulo]="titulo()" ancho="sm" (cerrar)="onCancelar()">
+  <div class="mnic-body">
+    <app-campo [label]="etiquetaCampo() + ' *'">
+      <input
+        type="text"
+        [placeholder]="placeholder()"
+        [ngModel]="nombre()"
+        (ngModelChange)="nombre.set($event)"
+        (keydown.enter)="onGuardar()"
+        autofocus
+      />
+    </app-campo>
+    <p class="mnic-hint">Se agregará al catálogo y quedará disponible en toda la plataforma.</p>
+  </div>
+  <div modalFooter class="mnic-footer">
+    <app-button variant="ghost" (clic)="onCancelar()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="check"
+      [disabled]="!valido"
+      [cargando]="guardando()"
+      (clic)="onGuardar()"
+    >
+      {{ guardando() ? 'Guardando...' : 'Guardar' }}
+    </app-button>
+  </div>
+</app-modal>

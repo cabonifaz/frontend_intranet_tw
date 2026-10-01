@@ -12,7 +12,7 @@ import {
   GuardarEquipoClienteRequest,
 } from '../models/equipos-cliente.model';
 
-const USAR_MOCK = true;
+const USAR_MOCK = environment.usarMocks;
 
 @Injectable({ providedIn: 'root' })
 export class EquiposClienteService {

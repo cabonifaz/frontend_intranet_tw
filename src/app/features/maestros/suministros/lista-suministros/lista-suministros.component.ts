@@ -4,8 +4,7 @@ import { Router } from '@angular/router';
 import { SuministrosService } from '../../../../core/services/suministros.service';
 import {
   SuministroListaItem,
-  CLASES_SUMINISTRO,
-  TIPOS_SUMINISTRO,
+  OpcionCatalogo,
 } from '../../../../core/models/suministros.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent }  from '../../../../shared/ui/page-header/page-header.component';
@@ -48,8 +47,11 @@ export class ListaSuministrosComponent implements OnInit {
   readonly breadcrumb = breadcrumbMaestros('Suministros');
 
   readonly estadoOpciones = ESTADO_OPCIONES;
-  readonly clasesOpciones = CLASES_SUMINISTRO;
-  readonly tiposOpciones  = TIPOS_SUMINISTRO;
+  readonly clasesOpciones = signal<OpcionCatalogo[]>([]);
+  readonly tiposOpciones  = signal<OpcionCatalogo[]>([]);
+  // Cache local para los labels en la columna "Marca · Modelo"
+  private readonly marcasLookup  = signal<OpcionCatalogo[]>([]);
+  private readonly modelosLookup = signal<OpcionCatalogo[]>([]);
 
   busqueda        = '';
   claseFiltro     = '';
@@ -58,6 +60,16 @@ export class ListaSuministrosComponent implements OnInit {
   soloEnPropuestas = true;
 
   async ngOnInit(): Promise<void> {
+    const [clases, tipos, marcas, modelos] = await Promise.all([
+      this.suministrosSvc.obtenerClases(),
+      this.suministrosSvc.obtenerTipos(),
+      this.suministrosSvc.obtenerMarcas(),
+      this.suministrosSvc.obtenerModelos(),
+    ]);
+    this.clasesOpciones.set(clases);
+    this.tiposOpciones.set(tipos);
+    this.marcasLookup.set(marcas);
+    this.modelosLookup.set(modelos);
     await this.cargar();
   }
 
@@ -117,10 +129,10 @@ export class ListaSuministrosComponent implements OnInit {
   }
 
   marcaLabel(s: SuministroListaItem): string {
-    return this.suministrosSvc.obtenerMarcas().find(m => m.value === s.marca)?.label ?? s.marca;
+    return this.marcasLookup().find(m => m.value === s.marca)?.label ?? s.marca;
   }
 
   modeloLabel(s: SuministroListaItem): string {
-    return this.suministrosSvc.obtenerModelos().find(m => m.value === s.modelo)?.label ?? s.modelo;
+    return this.modelosLookup().find(m => m.value === s.modelo)?.label ?? s.modelo;
   }
 }
