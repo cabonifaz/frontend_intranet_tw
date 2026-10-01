@@ -58,5 +58,11 @@ export class MaestrosHubComponent {
       descripcion: 'Catálogo de procedimientos metrológicos, normas técnicas y documentos aprobados para calibración y mantenimiento.',
       ruta:        '/maestros/procedimientos',
     },
+    {
+      icono:       'precision_manufacturing',
+      titulo:      'Equipos de Cliente',
+      descripcion: 'Parque de instrumentos y balanzas en campo por cliente y sede operativa, con hoja de vida y trazabilidad ISO 17025.',
+      ruta:        '/maestros/equipos',
+    },
   ];
 }

@@ -1,0 +1,22 @@
+<app-modal titulo="Borrador no guardado disponible" ancho="sm" [cerrable]="false" (cerrar)="descartar.emit()">
+  <div class="mb-body">
+    <div class="mb-body__icono">
+      <span class="material-symbols-outlined">drafts</span>
+    </div>
+    <p class="mb-body__texto">
+      Tienes información sin guardar de este formulario desde el
+      <strong>{{ fechaGuardado() | date:'dd/MM/yyyy HH:mm' }}</strong>.
+    </p>
+    <p class="mb-body__pregunta">¿Querés continuar donde lo dejaste o empezar en blanco?</p>
+  </div>
+  <div modalFooter class="mb-footer">
+    <button type="button" class="mb-btn mb-btn--descartar" (click)="descartar.emit()">
+      <span class="material-symbols-outlined">delete_sweep</span>
+      Descartar borrador
+    </button>
+    <button type="button" class="mb-btn mb-btn--restaurar" (click)="restaurar.emit()">
+      <span class="material-symbols-outlined">restore</span>
+      Restaurar borrador
+    </button>
+  </div>
+</app-modal>

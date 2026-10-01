@@ -1,0 +1,86 @@
+.mb-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px 4px;
+  text-align: center;
+
+  &__icono {
+    width: 56px;
+    height: 56px;
+    border-radius: 9999px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563EB;
+
+    .material-symbols-outlined { font-size: 30px; }
+  }
+
+  &__texto {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+
+    strong {
+      color: #0F172A;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    }
+  }
+
+  &__pregunta {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+    margin: 2px 0 0;
+  }
+}
+
+.mb-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #E2E8F0;
+  background: #FAFBFC;
+}
+
+.mb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &--descartar {
+    background: #FFFFFF;
+    color: #475569;
+    border-color: #E2E8F0;
+
+    &:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+      color: #0F172A;
+    }
+  }
+
+  &--restaurar {
+    background: #2563EB;
+    color: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+
+    &:hover { background: #1D4ED8; }
+  }
+}

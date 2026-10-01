@@ -1,0 +1,133 @@
+<div class="eq-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="precision_manufacturing"
+    titulo="Mantenimiento de Equipos de Cliente"
+    subtitulo="Gestión centralizada del parque de instrumentos y balanzas por cliente y sede operativa"
+  >
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Equipo
+    </button>
+  </app-page-header>
+
+  <app-filtros-bar
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por serie, código TW, código cliente, marca o modelo..."
+    (buscar)="cargar(true)"
+  >
+    <select [(ngModel)]="clienteFiltro" (change)="onClienteFiltroChange()">
+      <option [ngValue]="0">Cliente: Todos</option>
+      @for (c of clientes(); track c.idCliente) {
+        <option [ngValue]="c.idCliente">{{ c.razonSocial }}</option>
+      }
+    </select>
+    <select [(ngModel)]="sedeFiltro" (change)="cargar(true)" [disabled]="!clienteFiltro">
+      <option [ngValue]="0">Sede: Todas</option>
+      @for (s of sedes(); track s.idSede) {
+        <option [ngValue]="s.idSede">{{ s.nombre }}</option>
+      }
+    </select>
+    <select [(ngModel)]="clasificacionFiltro" (change)="cargar(true)">
+      <option value="">Clasificación: Todas</option>
+      @for (opt of clasificacionesOpciones; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+  </app-filtros-bar>
+
+  <div class="pre-nota">
+    <label class="check-pre">
+      <input type="checkbox" [(ngModel)]="soloVigentesEnServicio" (change)="cargar(true)" />
+      <span class="check-pre__box"></span>
+      <span class="check-pre__texto">Solo con calibración vigente o en servicio</span>
+    </label>
+    <span class="pre-nota__contador">{{ total() }} equipos registrados</span>
+  </div>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando equipos..." />
+  } @else {
+    @if (items().length === 0) {
+      <app-estado-vacio icono="precision_manufacturing" mensaje="No hay equipos registrados con los filtros aplicados.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
+          <span class="material-symbols-outlined">add</span>
+          Registrar primer equipo
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th class="th-serie">N.º DE SERIE</th>
+            <th class="th-cliente">CLIENTE</th>
+            <th class="th-cod-cli">CÓDIGO CLIENTE</th>
+            <th class="th-cod-tw">CÓDIGO TW</th>
+            <th class="th-instr">INSTRUMENTO</th>
+            <th class="th-marca">MARCA Y MODELO</th>
+            <th class="th-centro">ESTADO</th>
+            <th class="tabla__th--acciones th-acciones">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (eq of items(); track eq.idEquipo) {
+            <tr (click)="irAEditar(eq.idEquipo)">
+              <td class="td-serie">{{ eq.numSerie }}</td>
+              <td class="td-cliente">
+                <span class="cliente-linea">{{ eq.clienteRazonSocial }}</span>
+                <span class="sede-linea">{{ eq.sedeNombre }}</span>
+              </td>
+              <td class="td-cod"><span class="cod-chip">{{ eq.codigoCliente }}</span></td>
+              <td class="td-cod"><span class="cod-chip cod-chip--tw">{{ eq.codigoTw }}</span></td>
+              <td class="td-instr">{{ eq.clasificacionLabel }}</td>
+              <td class="td-marca">
+                <span class="marca-linea">{{ eq.marca }}</span>
+                <span class="modelo-linea">{{ eq.modelo }}</span>
+              </td>
+              <td class="td-centro">
+                <app-badge-estado [estado]="eq.estado" />
+              </td>
+              <td class="tabla__td--acciones">
+                <button
+                  class="btn-accion btn-accion--editar"
+                  type="button"
+                  title="Editar equipo"
+                  (click)="irAEditar(eq.idEquipo); $event.stopPropagation()"
+                >
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button
+                  class="btn-accion"
+                  [class.btn-accion--activar]="eq.estado === 'Inactivo'"
+                  [class.btn-accion--desactivar]="eq.estado !== 'Inactivo'"
+                  type="button"
+                  [title]="eq.estado !== 'Inactivo' ? 'Dar de baja' : 'Reactivar'"
+                  (click)="toggleEstado(eq, $event)"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ eq.estado !== 'Inactivo' ? 'toggle_on' : 'toggle_off' }}
+                  </span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+
+      <app-paginacion
+        [pagina]="pagina()"
+        [total]="total()"
+        [porPagina]="porPagina"
+        etiqueta="equipos"
+        (cambioPagina)="irAPagina($event)"
+      />
+    }
+  }
+
+</div>

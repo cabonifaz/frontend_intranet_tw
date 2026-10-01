@@ -1,0 +1,320 @@
+<div class="ficha-page">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  <app-page-header
+    icono="precision_manufacturing"
+    [titulo]="esNuevo() ? 'Nuevo Registro de Equipo de Cliente' : 'Editar Equipo'"
+    subtitulo="Alta técnica, operativa y trazabilidad de instrumentos de pesaje industrial y metrología"
+  >
+    <span class="badge-codigo">{{ codigoBadge() }}</span>
+  </app-page-header>
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando equipo..." />
+  } @else if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  } @else {
+
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
+
+      <div class="ficha-main">
+
+        <!-- ── SECCIÓN 01 — Datos Generales y Ubicación ─────────────────── -->
+        <app-seccion icono="place" titulo="1. Datos Generales y Ubicación"
+                     subtitulo="Asignación jurídica, sede e información operativa del activo">
+          <div class="grid-cols-3">
+            <app-campo label="Cliente Titular"
+                       [error]="formulario.get('idCliente')?.touched && formulario.get('idCliente')?.invalid ? 'Selecciona un cliente' : ''">
+              <select formControlName="idCliente">
+                <option [ngValue]="0">Selecciona…</option>
+                @for (c of clientes(); track c.idCliente) {
+                  <option [ngValue]="c.idCliente">{{ c.razonSocial }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Local / Sede Operativa"
+                       [error]="formulario.get('idSede')?.touched && formulario.get('idSede')?.invalid ? 'Selecciona una sede' : ''">
+              <select formControlName="idSede" [disabled]="!formulario.get('idCliente')?.value">
+                <option [ngValue]="0">Selecciona…</option>
+                @for (s of sedes(); track s.idSede) {
+                  <option [ngValue]="s.idSede">{{ s.nombre }}</option>
+                }
+              </select>
+            </app-campo>
+
+            <app-campo label="Clasificación Técnica"
+                       [error]="formulario.get('clasificacion')?.touched && formulario.get('clasificacion')?.invalid ? 'Selecciona una clasificación' : ''">
+              <select formControlName="clasificacion">
+                <option value="">Selecciona…</option>
+                @for (opt of clasificacionesOpciones; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+          </div>
+
+          <app-campo label="Ubicación Específica en Planta / Área Operativa">
+            <input type="text" formControlName="ubicacionEspecifica"
+                   placeholder="Ej: Zona de Recepción de Carnes y Frescos · Muelle 4" />
+          </app-campo>
+
+          <div class="checks-row">
+            <label class="check-op">
+              <input type="checkbox" formControlName="esPreRevisado" />
+              <span class="check-op__box"></span>
+              <span class="check-op__texto">Instrumento Pre-Revisado</span>
+              @if (usuarioPreRevisor()) {
+                <span class="check-op__meta">(Validado por {{ usuarioPreRevisor() }} el {{ fechaPreRevision() | date:'dd/MM/yyyy' }})</span>
+              }
+            </label>
+
+            <label class="check-op">
+              <input type="checkbox" formControlName="bloqueadoParaServicios" />
+              <span class="check-op__box"></span>
+              <span class="check-op__texto">Bloqueado para Servicios</span>
+              <span class="check-op__meta">(Equipo fuera de uso o en baja mantenimiento)</span>
+            </label>
+          </div>
+        </app-seccion>
+
+        <!-- ── SECCIÓN 02 — Especificaciones Metrológicas y Técnicas ───── -->
+        <app-seccion icono="precision_manufacturing" titulo="2. Especificaciones Metrológicas y Técnicas"
+                     subtitulo="Parámetros técnicos de calibración, división de verificación y clase de exactitud">
+
+          <app-campo label="Suministro / Ficha de Modelo Fabricante"
+                     hint="Vincula a un modelo del catálogo de Suministros (HU-86)">
+            <select formControlName="idSuministro">
+              <option [ngValue]="null">— Sin vinculación —</option>
+              @for (s of suministros(); track s.value) {
+                <option [ngValue]="s.value">{{ s.label }}</option>
+              }
+            </select>
+          </app-campo>
+
+          <div class="grid-cols-3">
+            <app-campo label="N.º de Serie Fabricante"
+                       [error]="formulario.get('numSerie')?.touched && formulario.get('numSerie')?.invalid ? 'Serie requerida' : ''"
+                       [hint]="!esNuevo() ? '🔒 Bloqueado tras registro inicial' : ''">
+              <input type="text" formControlName="numSerie" placeholder="Ej: NT-984526-2823" />
+            </app-campo>
+
+            <app-campo label="Cód. Activo Cliente">
+              <input type="text" formControlName="codigoCliente" placeholder="Ej: ACT-TOT-1014-002" />
+            </app-campo>
+
+            <app-campo label="Código Interno TW">
+              <div class="lectura">
+                <span>{{ esNuevo() ? '(se genera al guardar)' : codigoBadge() }}</span>
+                <span class="chip-auto">AUTO</span>
+              </div>
+            </app-campo>
+          </div>
+
+          <div class="grid-cols-3">
+            <app-campo label="Marca"
+                       [error]="formulario.get('marca')?.touched && formulario.get('marca')?.invalid ? 'Marca requerida' : ''"
+                       [hint]="!esNuevo() ? '🔒 Bloqueado tras registro' : ''">
+              <input type="text" formControlName="marca" placeholder="Ej: METTLER TOLEDO" />
+            </app-campo>
+
+            <app-campo label="Modelo"
+                       [error]="formulario.get('modelo')?.touched && formulario.get('modelo')?.invalid ? 'Modelo requerido' : ''"
+                       [hint]="!esNuevo() ? '🔒 Bloqueado tras registro' : ''">
+              <input type="text" formControlName="modelo" placeholder="Ej: IND570 (PUA579)" />
+            </app-campo>
+
+            <app-campo label="Clase de Exactitud">
+              <select formControlName="claseExactitud">
+                @for (opt of clasesExactitud; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </app-campo>
+          </div>
+
+          <div class="grid-cols-3">
+            <app-campo label="División Mínima (d)">
+              <input type="text" formControlName="divisionMinima" placeholder="Ej: 0.05 kg" />
+            </app-campo>
+
+            <app-campo label="División Verif (e)">
+              <input type="text" formControlName="divisionVerif" placeholder="Ej: 0.05 kg" />
+            </app-campo>
+
+            <app-campo label="Alcance Máximo (Max)">
+              <input type="text" formControlName="alcanceMaximo" placeholder="Ej: 1500 kg" />
+            </app-campo>
+          </div>
+
+          <div class="grid-cols-2">
+            <app-campo label="Escala / Graduación de Aforo">
+              <input type="text" formControlName="escalaGraduacion"
+                     placeholder="Ej: Monorango (Niveles simple cronico)" />
+            </app-campo>
+
+            <app-campo label="Puntos de Calibración Sugeridos">
+              <input type="text" formControlName="puntosCalibracion"
+                     placeholder="Ej: 15%, 25%, 50%, 75%, 100%" />
+            </app-campo>
+          </div>
+
+          <app-campo label="Rango Operativo Real en Proceso">
+            <input type="text" formControlName="rangoOperativoReal"
+                   placeholder="Ej: 50 kg hasta 1200 kg (Balanzas de carne)" />
+          </app-campo>
+
+          <app-campo label="Observaciones Metrológicas y Condiciones Ambientales">
+            <textarea formControlName="observaciones" rows="3"
+                      placeholder="Condiciones de instalación, exposición ambiental, humedad, vibraciones, etc."></textarea>
+          </app-campo>
+
+        </app-seccion>
+
+        <!-- ── SECCIÓN 03 — Estado Operativo Actual (timeline 4 pasos) ─── -->
+        <app-seccion icono="route" titulo="3. Estado Operativo Actual de Despacho"
+                     subtitulo="Ubicación y fase operativa en el ciclo de calibración">
+
+          <div class="timeline">
+            @for (estado of estadosOperativos; track estado.value; let i = $index; let last = $last) {
+              <div class="timeline__paso"
+                   [class.timeline__paso--activo]="formulario.get('estadoOperativo')?.value === estado.value"
+                   [class.timeline__paso--completado]="getIndiceEstado() > i"
+                   (click)="seleccionarEstado(estado.value)">
+                <div class="timeline__dot">
+                  @if (getIndiceEstado() > i) {
+                    <span class="material-symbols-outlined">check</span>
+                  } @else {
+                    <span>{{ i + 1 }}</span>
+                  }
+                </div>
+                <span class="timeline__label">{{ estado.label }}</span>
+              </div>
+              @if (!last) {
+                <div class="timeline__linea" [class.timeline__linea--completada]="getIndiceEstado() > i"></div>
+              }
+            }
+          </div>
+
+          <div class="estado-general">
+            <app-toggle formControlName="esActivo" />
+            <div>
+              <div class="estado-general__titulo">Equipo Activo en Catálogo</div>
+              <div class="estado-general__hint">Si se desactiva, se marca como "Inactivo" y se oculta en búsquedas por defecto.</div>
+            </div>
+          </div>
+
+        </app-seccion>
+
+      </div>
+
+      <!-- ═══════════════════════════════ SIDEBAR ═══════════════════════════════ -->
+      @if (!esNuevo()) {
+        <aside class="ficha-sidebar">
+
+          <!-- Card: Registro Fotográfico -->
+          <app-seccion icono="photo_camera" titulo="Registro Fotográfico del Activo"
+                       subtitulo="3 vistas del equipo instalado">
+            <div class="fotos-grid">
+              @for (foto of fotos(); track foto.tipo) {
+                <div class="foto-slot" (click)="onSubirFoto(foto.tipo)">
+                  <div class="foto-slot__preview">
+                    @if (foto.url) {
+                      <img [src]="foto.url" [alt]="foto.label" />
+                    } @else {
+                      <span class="material-symbols-outlined">add_a_photo</span>
+                    }
+                  </div>
+                  <div class="foto-slot__label">{{ foto.label }}</div>
+                </div>
+              }
+            </div>
+          </app-seccion>
+
+          <!-- Card: Hoja de Vida de Servicios -->
+          <app-seccion icono="receipt_long" titulo="Hoja de Vida de Servicios"
+                       subtitulo="Historial de órdenes de trabajo e intervenciones">
+            @if (hojaVida().length === 0) {
+              <div class="vacio">
+                <span class="material-symbols-outlined">inbox</span>
+                <span>Sin órdenes de trabajo registradas</span>
+              </div>
+            } @else {
+              <ul class="ot-list">
+                @for (ot of hojaVida(); track ot.numeroOt) {
+                  <li>
+                    <div class="ot-list__header">
+                      <span class="ot-list__numero">{{ ot.numeroOt }}</span>
+                      <span class="ot-list__fecha">{{ ot.fecha | date:'dd/MM/yyyy' }}</span>
+                    </div>
+                    <div class="ot-list__servicio">{{ ot.tipoServicio }}</div>
+                    <div class="ot-list__tecnico">Técnico: {{ ot.tecnico }}</div>
+                  </li>
+                }
+              </ul>
+            }
+            @if (proximaCalibracion()) {
+              <div class="prox-calib">
+                <span class="material-symbols-outlined">event_upcoming</span>
+                <div>
+                  <div class="prox-calib__titulo">Próxima Calibración</div>
+                  <div class="prox-calib__fecha">{{ proximaCalibracion() | date:'dd/MM/yyyy' }}</div>
+                </div>
+              </div>
+            }
+          </app-seccion>
+
+          <!-- Card: Trazabilidad ISO 17025 -->
+          <app-seccion icono="verified" titulo="Trazabilidad ISO 17025"
+                       subtitulo="Auditoría de creación y modificaciones">
+            <dl class="traz-list">
+              <div>
+                <dt>Usuario Registro</dt>
+                <dd>{{ usuarioRegistro() || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Terminal / PC</dt>
+                <dd>{{ pcRegistro() || '—' }}</dd>
+              </div>
+              <div>
+                <dt>Fecha Registro</dt>
+                <dd>{{ fechaRegistro() ? (fechaRegistro() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+              </div>
+              <div>
+                <dt>Fecha Modificación</dt>
+                <dd>{{ fechaModificacion() ? (fechaModificacion() | date:'dd/MM/yyyy HH:mm') : '—' }}</dd>
+              </div>
+            </dl>
+          </app-seccion>
+
+        </aside>
+      }
+
+      <!-- ═══════════════════════════════ FOOTER ═══════════════════════════════ -->
+      <div class="ficha-footer">
+        <app-form-footer cancelarTexto="Volver al Listado" (cancelar)="cancelar()">
+          <app-button variant="ghost" icono="cleaning_services" (clic)="limpiarFormulario()">
+            Limpiar
+          </app-button>
+          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
+            Guardar Borrador
+          </app-button>
+          <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar()">
+            {{ esNuevo() ? 'Guardar y Activar Equipo' : 'Guardar Cambios' }}
+          </app-button>
+        </app-form-footer>
+      </div>
+
+    </form>
+  }
+
+</div>
+
+@if (borradorDisponible(); as draft) {
+  <app-modal-borrador
+    [fechaGuardado]="draft.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
+}

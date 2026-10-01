@@ -147,6 +147,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'maestros/equipos',
+        loadComponent: () =>
+          import('./features/maestros/equipos-cliente/lista-equipos-cliente/lista-equipos-cliente.component').then(
+            m => m.ListaEquiposClienteComponent
+          ),
+      },
+      {
+        path: 'maestros/equipos/nuevo',
+        loadComponent: () =>
+          import('./features/maestros/equipos-cliente/ficha-equipo-cliente/ficha-equipo-cliente.component').then(
+            m => m.FichaEquipoClienteComponent
+          ),
+      },
+      {
+        path: 'maestros/equipos/:id',
+        loadComponent: () =>
+          import('./features/maestros/equipos-cliente/ficha-equipo-cliente/ficha-equipo-cliente.component').then(
+            m => m.FichaEquipoClienteComponent
+          ),
+      },
+      {
         path: 'crm/requerimientos',
         loadComponent: () =>
           import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(
