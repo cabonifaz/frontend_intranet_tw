@@ -1,10 +1,16 @@
-import { Component, Input } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, Input, inject, signal } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+
+interface SubNavItem {
+  etiqueta: string;
+  ruta:     string;
+}
 
 interface NavItem {
   icono:    string;
   etiqueta: string;
-  ruta:     string;
+  ruta?:    string;          // Link directo
+  hijos?:   SubNavItem[];    // Agrupador expandible
 }
 
 @Component({
@@ -16,20 +22,57 @@ interface NavItem {
 export class SidebarComponent {
   @Input() colapsado = false;
 
+  private readonly router = inject(Router);
+
   readonly navItems: NavItem[] = [
-    { icono: 'dashboard',         etiqueta: 'Dashboard',            ruta: '/dashboard'      },
-    { icono: 'support_agent',     etiqueta: 'CRM / Requerimientos', ruta: '/crm/requerimientos' },
-    { icono: 'folder_open',       etiqueta: 'Expediente Digital',   ruta: '/expedientes'    },
-    { icono: 'calendar_month',    etiqueta: 'Programación',         ruta: '/programacion'   },
-    { icono: 'health_and_safety', etiqueta: 'SSOMA',                ruta: '/ssoma'          },
-    { icono: 'track_changes',     etiqueta: 'Seguimiento',          ruta: '/seguimiento'    },
-    { icono: 'build',             etiqueta: 'Revisión Técnica',     ruta: '/revision'       },
-    { icono: 'request_quote',     etiqueta: 'Precotización',        ruta: '/precotizacion'  },
-    { icono: 'scale',             etiqueta: 'Metrología',           ruta: '/metrologia'     },
-    { icono: 'receipt_long',      etiqueta: 'Facturación',          ruta: '/facturacion'    },
-    { icono: 'analytics',         etiqueta: 'Reportes SLA',         ruta: '/reportes-sla'   },
-    { icono: 'settings',          etiqueta: 'Maestros',             ruta: '/maestros' },
-    { icono: 'headset_mic',       etiqueta: 'Helpdesk',             ruta: '/helpdesk'       },
-    { icono: 'leaderboard',       etiqueta: 'Scorecard',            ruta: '/scorecard'      },
+    {
+      icono:    'dashboard',
+      etiqueta: 'Dashboard',
+      ruta:     '/dashboard',
+    },
+    {
+      icono:    'support_agent',
+      etiqueta: 'CRM',
+      hijos: [
+        { etiqueta: 'Requerimientos', ruta: '/crm/requerimientos' },
+        { etiqueta: 'Propuestas',     ruta: '/crm/propuestas' },
+      ],
+    },
+    {
+      icono:    'settings',
+      etiqueta: 'Maestros',
+      ruta:     '/maestros',
+    },
   ];
+
+  readonly expandidos = signal<Set<string>>(this.calcularExpandidosIniciales());
+
+  private calcularExpandidosIniciales(): Set<string> {
+    const url = this.router.url;
+    const set = new Set<string>();
+    for (const item of this.navItems) {
+      if (item.hijos?.some(h => url.startsWith(h.ruta))) {
+        set.add(item.etiqueta);
+      }
+    }
+    return set;
+  }
+
+  toggleGrupo(etiqueta: string): void {
+    const set = new Set(this.expandidos());
+    if (set.has(etiqueta)) set.delete(etiqueta);
+    else set.add(etiqueta);
+    this.expandidos.set(set);
+  }
+
+  estaExpandido(etiqueta: string): boolean {
+    return this.expandidos().has(etiqueta);
+  }
+
+  // Un grupo se marca como activo si alguno de sus hijos está en la ruta actual.
+  grupoActivo(item: NavItem): boolean {
+    if (!item.hijos) return false;
+    const url = this.router.url;
+    return item.hijos.some(h => url.startsWith(h.ruta));
+  }
 }

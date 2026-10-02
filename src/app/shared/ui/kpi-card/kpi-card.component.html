@@ -1,12 +1,14 @@
-<div class="kpi-card kpi-card--{{ variante() }}">
-  <div class="kpi-card__icono">
-    <span class="material-symbols-outlined">{{ icono() }}</span>
+<div class="kpi-card kpi-card--{{ variante() }}" [class.kpi-card--con-subtitulo]="!!subtitulo()">
+  <div class="kpi-card__principal">
+    <div class="kpi-card__icono">
+      <span class="material-symbols-outlined">{{ icono() }}</span>
+    </div>
+    <div class="kpi-card__contenido">
+      <span class="kpi-card__etiqueta">{{ etiqueta() }}</span>
+      <span class="kpi-card__valor">{{ valor() }}</span>
+    </div>
   </div>
-  <div class="kpi-card__contenido">
-    <span class="kpi-card__etiqueta">{{ etiqueta() }}</span>
-    <span class="kpi-card__valor">{{ valor() }}</span>
-    @if (subtitulo()) {
-      <span class="kpi-card__subtitulo">{{ subtitulo() }}</span>
-    }
-  </div>
+  @if (subtitulo()) {
+    <span class="kpi-card__subtitulo">{{ subtitulo() }}</span>
+  }
 </div>

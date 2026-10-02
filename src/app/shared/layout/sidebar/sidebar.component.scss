@@ -113,4 +113,81 @@ $transition:          0.22s ease;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color $transition;
+  flex: 1;
+}
+
+// ─── Botón del grupo (variante de .sidebar__item) ────────────────────────────
+.sidebar__item--boton {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-left: 3px solid transparent;
+  font: inherit;
+  text-align: left;
+}
+
+// ─── Chevron del grupo ───────────────────────────────────────────────────────
+.sidebar__chevron {
+  font-size: 18px;
+  color: $text-secundario;
+  flex-shrink: 0;
+  transition: transform $transition, color $transition;
+
+  &--abierto {
+    transform: rotate(180deg);
+    color: $text-primario;
+  }
+}
+
+// ─── Grupo con hijo activo (resalta la cabecera) ─────────────────────────────
+.sidebar__grupo--activo > .sidebar__item--boton {
+  .sidebar__icono { color: #60A5FA; }
+  .sidebar__etiqueta { color: $text-primario; font-weight: 600; }
+}
+
+// ─── Lista de sub-items ──────────────────────────────────────────────────────
+.sidebar__sublist {
+  list-style: none;
+  padding: 4px 0 4px 36px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// ─── Sub-item ────────────────────────────────────────────────────────────────
+.sidebar__subitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background $transition;
+  cursor: pointer;
+
+  &:hover { background: $item-hover-bg; }
+
+  &-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: $text-secundario;
+    flex-shrink: 0;
+    transition: background $transition;
+  }
+
+  &-etiqueta {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: $text-secundario;
+    transition: color $transition;
+  }
+
+  &--activo {
+    background: $item-activo-bg;
+
+    .sidebar__subitem-dot { background: $item-activo-border; }
+    .sidebar__subitem-etiqueta { color: $text-primario; font-weight: 600; }
+  }
 }

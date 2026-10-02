@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
 
-type Variante = 'azul' | 'verde' | 'ambar' | 'rojo' | 'morado';
+type Variante = 'azul' | 'verde' | 'ambar' | 'rojo' | 'morado' | 'rosa';
 
 @Component({
   selector: 'app-kpi-card',

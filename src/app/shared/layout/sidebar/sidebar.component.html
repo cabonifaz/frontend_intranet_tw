@@ -7,22 +7,62 @@
 
   <!-- Nav items -->
   <ul class="sidebar__nav" role="list">
-    @for (item of navItems; track item.ruta) {
-      <li>
-        <a
-          class="sidebar__item"
-          [routerLink]="item.ruta"
-          routerLinkActive="sidebar__item--activo"
-          [routerLinkActiveOptions]="{ exact: item.ruta === '/dashboard' }"
-          [title]="colapsado ? item.etiqueta : ''"
-          [attr.aria-label]="item.etiqueta"
-        >
-          <span class="material-symbols-outlined sidebar__icono">{{ item.icono }}</span>
-          @if (!colapsado) {
-            <span class="sidebar__etiqueta">{{ item.etiqueta }}</span>
+    @for (item of navItems; track item.etiqueta) {
+      @if (item.hijos) {
+        <!-- ── Grupo expandible ────────────────────────────────────────── -->
+        <li class="sidebar__grupo" [class.sidebar__grupo--activo]="grupoActivo(item)">
+          <button
+            class="sidebar__item sidebar__item--boton"
+            type="button"
+            [title]="colapsado ? item.etiqueta : ''"
+            [attr.aria-expanded]="estaExpandido(item.etiqueta)"
+            (click)="toggleGrupo(item.etiqueta)"
+          >
+            <span class="material-symbols-outlined sidebar__icono">{{ item.icono }}</span>
+            @if (!colapsado) {
+              <span class="sidebar__etiqueta">{{ item.etiqueta }}</span>
+              <span class="material-symbols-outlined sidebar__chevron"
+                    [class.sidebar__chevron--abierto]="estaExpandido(item.etiqueta)">
+                expand_more
+              </span>
+            }
+          </button>
+
+          @if (estaExpandido(item.etiqueta) && !colapsado) {
+            <ul class="sidebar__sublist" role="list">
+              @for (hijo of item.hijos; track hijo.ruta) {
+                <li>
+                  <a
+                    class="sidebar__subitem"
+                    [routerLink]="hijo.ruta"
+                    routerLinkActive="sidebar__subitem--activo"
+                  >
+                    <span class="sidebar__subitem-dot"></span>
+                    <span class="sidebar__subitem-etiqueta">{{ hijo.etiqueta }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
           }
-        </a>
-      </li>
+        </li>
+      } @else {
+        <!-- ── Item simple ──────────────────────────────────────────────── -->
+        <li>
+          <a
+            class="sidebar__item"
+            [routerLink]="item.ruta!"
+            routerLinkActive="sidebar__item--activo"
+            [routerLinkActiveOptions]="{ exact: item.ruta === '/dashboard' }"
+            [title]="colapsado ? item.etiqueta : ''"
+            [attr.aria-label]="item.etiqueta"
+          >
+            <span class="material-symbols-outlined sidebar__icono">{{ item.icono }}</span>
+            @if (!colapsado) {
+              <span class="sidebar__etiqueta">{{ item.etiqueta }}</span>
+            }
+          </a>
+        </li>
+      }
     }
   </ul>
 
