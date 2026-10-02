@@ -1,9 +1,12 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { PropuestaDraftService } from '../../../../core/services/propuesta-draft.service';
+import { PropuestasService } from '../../../../core/services/propuestas.service';
+import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
 import { PASOS_WIZARD, PasoWizard } from '../../../../core/models/propuesta-detalle.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-propuesta-wizard',
@@ -12,16 +15,20 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
   styleUrl: './propuesta-wizard.component.scss',
 })
 export class PropuestaWizardComponent implements OnInit {
-  private readonly route     = inject(ActivatedRoute);
-  private readonly router    = inject(Router);
-  readonly draftSvc          = inject(PropuestaDraftService);
+  private readonly route         = inject(ActivatedRoute);
+  private readonly router        = inject(Router);
+  private readonly propuestasSvc = inject(PropuestasService);
+  private readonly toast         = inject(ToastService);
+  readonly draftSvc              = inject(PropuestaDraftService);
 
   readonly pasos: PasoWizard[] = PASOS_WIZARD;
 
   readonly idParam = signal<string>('nueva');
   readonly esNuevo = computed(() => this.idParam() === 'nueva');
 
-  readonly pasoActual = signal<string>('configuracion');
+  readonly pasoActual    = signal<string>('configuracion');
+  readonly guardando     = signal(false);
+  readonly cargandoDatos = signal(false);
 
   readonly bannerCerrado = signal(false);
 
@@ -39,17 +46,6 @@ export class PropuestaWizardComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.idParam.set(this.route.snapshot.paramMap.get('id') ?? 'nueva');
-    this.draftSvc.cargarDesdeStorage(this.idParam());
-
-    // Query params para detectar vinculación a RQ y propuesta previa
-    const qp = this.route.snapshot.queryParamMap;
-    const versionDe = qp.get('versionDe');
-    if (versionDe) {
-      // En producción esto viene del back; aquí lo faketeamos.
-      const version = /v(\d+)/.exec(versionDe)?.[1];
-      const siguiente = version ? `v${Number(version) + 1}` : 'v2';
-      this.propuestaPrevia.set({ codigo: versionDe, versionSiguiente: siguiente });
-    }
 
     // Observa cambios del child outlet para pintar el stepper activo
     this.router.events.subscribe(() => {
@@ -62,6 +58,43 @@ export class PropuestaWizardComponent implements OnInit {
     const url = this.router.url;
     if (!this.pasos.some(p => url.includes(`/${p.ruta}`))) {
       this.router.navigate([this.rutaBase(), 'configuracion'], { replaceUrl: true });
+    }
+
+    // Fuente de datos del draft según modo:
+    //   - Edición: GET /api/crm/propuestas/{id} → mapDetalleToDraft
+    //   - Nueva con ?idRequerimiento: GET /api/crm/propuestas/nueva → prellenar
+    //   - Nueva sin query: localStorage (continuar borrador en progreso)
+    const qp = this.route.snapshot.queryParamMap;
+    const idRequerimiento = Number(qp.get('idRequerimiento') ?? 0);
+
+    this.cargandoDatos.set(true);
+    try {
+      if (!this.esNuevo()) {
+        const detalle = await this.propuestasSvc.obtenerPropuestaPorId(Number(this.idParam()));
+        this.draftSvc.cargarDraft(mapDetalleToDraft(detalle));
+        if (detalle.idPropuestaPadre) {
+          this.propuestaPrevia.set({
+            codigo:           detalle.numero,
+            versionSiguiente: `v${detalle.version}`,
+          });
+        }
+      } else if (idRequerimiento > 0) {
+        const datos = await this.propuestasSvc.obtenerDatosNueva(idRequerimiento);
+        this.draftSvc.cargarDraft(prellenarDraftDesdeRq(datos));
+        if (datos.propuestaExistente) {
+          this.propuestaPrevia.set({
+            codigo:           datos.propuestaExistente.numero,
+            versionSiguiente: `v${datos.propuestaExistente.version + 1}`,
+          });
+        }
+      } else {
+        this.draftSvc.cargarDesdeStorage(this.idParam());
+      }
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'Error al cargar la propuesta.');
+      this.draftSvc.cargarDesdeStorage(this.idParam());
+    } finally {
+      this.cargandoDatos.set(false);
     }
   }
 
@@ -112,10 +145,40 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  guardarBorrador(): void {
-    // Draft ya está persistido en localStorage en cada mutación.
-    // Aquí solo mostramos feedback.
-    console.log('[propuesta] borrador guardado', this.draftSvc.draft());
+  async guardarBorrador(): Promise<void> {
+    const draft = this.draftSvc.draft();
+    if (!draft.idRequerimiento) {
+      this.toast.error('No se puede guardar: falta vincular un requerimiento.');
+      return;
+    }
+    this.guardando.set(true);
+    try {
+      const dto      = mapDraftToGuardarDto(draft);
+      const resultado = await this.propuestasSvc.guardarPropuesta(dto);
+
+      // Refrescar draft con los IDs y totales recalculados que devolvió el back
+      this.draftSvc.actualizar({
+        idPropuesta: resultado.idPropuesta,
+        codigo:      resultado.numero,
+        version:     `v${resultado.version}`,
+      });
+
+      this.toast.exito(
+        this.esNuevo() ? `Propuesta ${resultado.numero} creada como borrador.` : 'Cambios guardados.',
+      );
+
+      // Si era "nueva", pasamos a la ruta de edición ya con el id real
+      if (this.esNuevo() && resultado.idPropuesta > 0) {
+        this.idParam.set(String(resultado.idPropuesta));
+        this.router.navigate(['/crm/propuestas', resultado.idPropuesta, 'editar', this.pasoActual()], {
+          replaceUrl: true,
+        });
+      }
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'Error al guardar.');
+    } finally {
+      this.guardando.set(false);
+    }
   }
 
   verPreviaPdf(): void {

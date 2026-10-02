@@ -12,10 +12,11 @@ import {
 } from '../../../../core/models/propuestas.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { ModalElegirRqComponent } from '../modal-elegir-rq/modal-elegir-rq.component';
 
 @Component({
   selector: 'app-lista-propuestas',
-  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent],
+  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ModalElegirRqComponent],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
 })
@@ -46,7 +47,8 @@ export class ListaPropuestasComponent implements OnInit {
   readonly inicio       = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
   readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
-  readonly estadoActivo = signal<EstadoPropuesta | 'todas'>('todas');
+  readonly estadoActivo    = signal<EstadoPropuesta | 'todas'>('todas');
+  readonly modalRqAbierto  = signal(false);
 
   // Filtros bindeados a los inputs (no gatillan carga hasta que el usuario busca)
   busqueda      = '';
@@ -116,7 +118,14 @@ export class ListaPropuestasComponent implements OnInit {
   }
 
   irANuevo(): void {
-    this.router.navigate(['/crm/propuestas/nueva']);
+    this.modalRqAbierto.set(true);
+  }
+
+  onRqSeleccionado(idRequerimiento: number): void {
+    this.modalRqAbierto.set(false);
+    this.router.navigate(['/crm/propuestas/nueva'], {
+      queryParams: { idRequerimiento },
+    });
   }
 
   irAEditar(id: number): void {

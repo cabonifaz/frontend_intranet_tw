@@ -1,0 +1,78 @@
+<div class="overlay" (click)="cerrar.emit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <header class="modal__header">
+      <div>
+        <h2 class="modal__titulo">Elegir Requerimiento</h2>
+        <p class="modal__sub">Selecciona el RQ sobre el que se armará la nueva propuesta comercial</p>
+      </div>
+      <button type="button" class="modal__cerrar" (click)="cerrar.emit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </header>
+
+    <div class="modal__body">
+      <div class="buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="text"
+          placeholder="Buscar por N° RQ, cliente o RUC..."
+          [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)"
+        />
+      </div>
+
+      @if (cargando()) {
+        <div class="estado">
+          <span class="material-symbols-outlined estado__spinner">progress_activity</span>
+          Cargando requerimientos...
+        </div>
+      } @else if (error()) {
+        <div class="estado estado--error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      } @else if (filtrados().length === 0) {
+        <div class="estado">
+          <span class="material-symbols-outlined">inbox</span>
+          No se encontraron requerimientos disponibles.
+        </div>
+      } @else {
+        <ul class="rq-lista">
+          @for (rq of filtrados(); track rq.idRequerimiento) {
+            <li
+              class="rq-item"
+              [class.rq-item--activo]="elegido() === rq.idRequerimiento"
+              (click)="elegido.set(rq.idRequerimiento)"
+            >
+              <div class="rq-item__col-iz">
+                <span class="rq-item__numero">{{ rq.numero }}</span>
+                <span class="rq-item__estado">{{ rq.estadoLabel ?? rq.estado }}</span>
+              </div>
+              <div class="rq-item__col-centro">
+                <span class="rq-item__cliente">{{ rq.razonSocial }}</span>
+                <span class="rq-item__ruc">RUC {{ rq.ruc ?? '—' }}</span>
+              </div>
+              <div class="rq-item__col-der">
+                <span class="rq-item__tipo">{{ rq.tipoLabel ?? '—' }}</span>
+                <span class="rq-item__fecha">{{ formatearFecha(rq.fechaCreacion) }}</span>
+              </div>
+              @if (elegido() === rq.idRequerimiento) {
+                <span class="material-symbols-outlined rq-item__check">check_circle</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <footer class="modal__footer">
+      <button type="button" class="btn-secundario" (click)="cerrar.emit()">Cancelar</button>
+      <button type="button" class="btn-primario" [disabled]="elegido() == null" (click)="confirmar()">
+        <span class="material-symbols-outlined">arrow_forward</span>
+        Continuar al wizard
+      </button>
+    </footer>
+
+  </div>
+</div>

@@ -235,3 +235,10 @@
   </div>
 
 </div>
+
+@if (modalRqAbierto()) {
+  <app-modal-elegir-rq
+    (cerrar)="modalRqAbierto.set(false)"
+    (seleccionado)="onRqSeleccionado($event)"
+  />
+}

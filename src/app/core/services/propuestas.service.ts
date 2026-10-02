@@ -1,4 +1,8 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { RespuestaApi } from '../models/autenticacion.model';
 import {
   EstadoPropuesta,
   FiltrosPropuestas,
@@ -8,248 +12,373 @@ import {
   TipoPropuesta,
 } from '../models/propuestas.model';
 
-const USAR_MOCK = true;
+// ─── DTOs del back (shape literal del server) ────────────────────────────────
+interface PropuestaResumenDtoApi {
+  idPropuesta:          number;
+  numero:               string;
+  version:              number;
+  idRequerimiento:      number;
+  numeroRequerimiento:  string;
+  idCliente:            number;
+  razonSocial:          string;
+  referencia:           string | null;
+  moneda:               string | null;
+  total:                number;
+  totalOpcionales:      number;
+  estado:               string;
+  fechaCreacion:        string | null;
+  responsable:          string | null;
+}
+
+interface PropuestasPaginadoDtoApi {
+  items:     PropuestaResumenDtoApi[];
+  total:     number;
+  pagina:    number;
+  porPagina: number;
+}
+
+/** GET /api/crm/propuestas/nueva?idRequerimiento=X */
+export interface DatosNuevaPropuestaApi {
+  idRequerimiento:     number;
+  numeroRequerimiento: string;
+  estadoRequerimiento: string;
+  idCliente:           number;
+  razonSocial:         string;
+  ruc:                 string;
+  idSede:              number | null;
+  nombreSede:          string | null;
+  idContacto:          number | null;
+  nombreContacto:      string | null;
+  cargoContacto:       string | null;
+  idArea:              number | null;
+  areaLabel:           string | null;
+  idPrioridad:         number | null;
+  prioridadLabel:      string | null;
+  descripcion:         string;
+  propuestaExistente:  { idPropuesta: number; numero: string; version: number; estado: string } | null;
+}
+
+export interface GuardarPropuestaResultadoApi {
+  idPropuesta:         number;
+  numero:              string;
+  version:             number;
+  estado:              string;
+  subtotal:            number;
+  descuentoMonto:      number;
+  igvMonto:            number;
+  total:               number;
+  subtotalOpcionales:  number;
+  descuentoOpcionales: number;
+  totalOpcionales:     number;
+}
+
+export interface PropuestaItemApi {
+  idItem:            number | null;
+  seccion:           'principal' | 'opcional';
+  idCatalogoItem:    number | null;
+  descripcion:       string | null;
+  alcance:           string | null;
+  puntosCalibracion: string | null;
+  cantidad:          number;
+  frecuencia:        number;
+  precioUnitario:    number;
+  descuento:         number;
+  subtotal:          number;
+  esEspaciado:       boolean;
+  orden:             number;
+}
+
+export interface PropuestaTextoApi {
+  id:          number | null;
+  seccion:     'detalle' | 'recomendaciones' | 'suministros_cliente' | 'condiciones';
+  tipo:        'titulo' | 'vineta';
+  texto:       string | null;
+  idTextoBase: number | null;
+  orden:       number;
+}
+
+export interface PropuestaFormaPagoApi {
+  id:             number | null;
+  porcentaje:     number;
+  condicion:      string | null;
+  condicionLabel: string | null;
+  orden:          number;
+}
+
+export interface PropuestaEquipoApi {
+  id:            number | null;
+  idEquipo:      number | null;
+  localSede:     string | null;
+  tipo:          string | null;
+  subtipo:       string | null;
+  numSerie:      string | null;
+  marca:         string | null;
+  modelo:        string | null;
+  codigoCliente: string | null;
+  codigoTw:      string | null;
+  orden:         number;
+}
+
+export interface PropuestaDetalleApi {
+  idPropuesta:         number;
+  numero:              string;
+  version:             number;
+  estado:              string;
+  idPropuestaPadre:    number | null;
+  esEditable:          boolean;
+
+  idRequerimiento:     number;
+  numeroRequerimiento: string;
+  idCliente:           number;
+  razonSocial:         string;
+  ruc:                 string;
+  idSede:              number | null;
+  nombreSede:          string | null;
+  idContacto:          number | null;
+  nombreContacto:      string | null;
+  cargoContacto:       string | null;
+  idResponsable:       number | null;
+  nombreResponsable:   string | null;
+
+  tipoServicio:        string | null;
+  referencia:          string | null;
+  introduccion:        string | null;
+  notasGenerales:      string | null;
+  seccionesActivas:    string[];
+
+  esTercerizado:       boolean;
+  terceroRuc:          string | null;
+  terceroRazonSocial:  string | null;
+  terceroDireccion:    string | null;
+
+  idMoneda:              number;
+  moneda:                string | null;
+  monedaSimbolo:         string | null;
+  tipoCambio:            number | null;
+  garantiaMeses:         number | null;
+  mostrarGarantia:       boolean;
+  plazoEntregaDias:      number | null;
+  plazoEntregaUnidad:    string | null;
+  plazoEntregaCondicion: string | null;
+  vigenciaDias:          number | null;
+  aplicaIgv:             boolean;
+  preciosIncluyenIgv:    boolean;
+  igvPct:                number;
+
+  subtotal:              number;
+  descuentoPct:          number | null;
+  descuentoMonto:        number;
+  idMotivoDescuento:     number | null;
+  igvMonto:              number;
+  total:                 number;
+  subtotalOpcionales:    number;
+  descuentoOpcionales:   number;
+  totalOpcionales:       number;
+
+  nombreCreador:         string | null;
+  fechaCreacion:         string | null;
+  fechaEnvio:            string | null;
+  fechaExpiracion:       string | null;
+
+  items:      PropuestaItemApi[];
+  textos:     PropuestaTextoApi[];
+  formasPago: PropuestaFormaPagoApi[];
+  equipos:    PropuestaEquipoApi[];
+}
+
+/** Body de POST /api/crm/propuestas */
+export interface GuardarPropuestaDtoApi {
+  idPropuesta:        number;
+  idPropuestaBase:    number | null;
+  idRequerimiento:    number;
+
+  idSede:             number | null;
+  idContacto:         number | null;
+  idResponsable:      number | null;
+  tipoServicio:       string | null;
+  seccionesActivas:   string[] | null;
+
+  esTercerizado:      boolean;
+  terceroRuc:         string | null;
+  terceroRazonSocial: string | null;
+  terceroDireccion:   string | null;
+
+  referencia:         string | null;
+  introduccion:       string | null;
+  notasGenerales:     string | null;
+
+  idMoneda:              number;
+  tipoCambio:            number | null;
+  garantiaMeses:         number | null;
+  mostrarGarantia:       boolean;
+  plazoEntregaDias:      number | null;
+  plazoEntregaUnidad:    string | null;
+  plazoEntregaCondicion: string | null;
+  vigenciaDias:          number | null;
+  aplicaIgv:             boolean;
+  preciosIncluyenIgv:    boolean;
+
+  descuentoPct:         number | null;
+  descuentoMonto:       number | null;
+  idMotivoDescuento:    number | null;
+  descuentoOpcionales:  number | null;
+
+  items:      PropuestaItemApi[];
+  textos:     PropuestaTextoApi[];
+  formasPago: PropuestaFormaPagoApi[];
+  equipos:    PropuestaEquipoApi[];
+}
+
+/** Mapea labels human-readable para los estados que trae el back. */
+const ESTADO_LABEL: Record<string, string> = {
+  borrador:       'Borrador',
+  pendiente:      'Pendiente',
+  por_vb:         'Por VB',
+  por_enviar:     'Por Enviar',
+  en_seguimiento: 'En Seguimiento',
+  aceptada:       'Aceptada',
+  rechazada:      'Rechazada',
+  por_consolidar: 'Por Consolidar',
+};
 
 @Injectable({ providedIn: 'root' })
 export class PropuestasService {
-  // Nota: back aún no existe para HU-07/HU-08. Toda la lógica es mock-first
-  //       con persistencia en memoria del service (lifetime = sesión).
-  //       Cuando Bryan entregue endpoints, se reemplazan los metodos privados.
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/api/crm/propuestas`;
 
   // ─── Lista paginada + KPIs ──────────────────────────────────────────────────
   async obtenerPropuestas(filtros: FiltrosPropuestas): Promise<PropuestasPaginado> {
-    if (USAR_MOCK) return this.mockObtener(filtros);
-    throw new Error('Backend de propuestas aún no disponible.');
-  }
+    // 1. Lista paginada que mostrará la tabla
+    const items = await this.obtenerPaginaInterna(filtros);
 
-  // ─── Mock internals ─────────────────────────────────────────────────────────
+    // 2. KPIs: una pasada adicional sin filtros ni paginación (porPagina alto).
+    //    TODO: cuando el back exponga /kpis dedicado, reemplazar esto por un GET
+    //    aparte más barato.
+    const kpis = await this.calcularKpis();
 
-  private async mockObtener(f: FiltrosPropuestas): Promise<PropuestasPaginado> {
-    await this.simularLatencia();
-
-    let items = [...PropuestasService.mockData];
-
-    if (f.estado && f.estado !== 'todas') {
-      items = items.filter(i => i.estado === f.estado);
-    }
-    if (f.anio) {
-      items = items.filter(i => new Date(i.fechaCreacion).getFullYear() === f.anio);
-    }
-    if (f.comercial && f.comercial !== 'todos') {
-      items = items.filter(i => i.comercial === f.comercial);
-    }
-    if (f.tipo && f.tipo !== 'cualquiera') {
-      items = items.filter(i => i.tipo === f.tipo);
-    }
-    if (f.busqueda) {
-      const q = f.busqueda.toLowerCase().trim();
-      items = items.filter(i =>
-        i.codigo.toLowerCase().includes(q) ||
-        (i.codigoRequerimiento ?? '').toLowerCase().includes(q) ||
-        i.razonSocial.toLowerCase().includes(q) ||
-        i.ruc.includes(q) ||
-        i.referencia.toLowerCase().includes(q)
-      );
-    }
-
-    const total = items.length;
-    const start = (f.pagina - 1) * f.porPagina;
-    const paginados = items.slice(start, start + f.porPagina);
-
-    return {
-      kpis: PropuestasService.mockKpis(),
-      items: paginados,
-      total,
-      pagina: f.pagina,
-      porPagina: f.porPagina,
-    };
+    return { ...items, kpis };
   }
 
   async obtenerComerciales(): Promise<string[]> {
-    await this.simularLatencia(50);
-    return Array.from(new Set(PropuestasService.mockData.map(p => p.comercial))).sort();
+    const todas = await this.obtenerTodasParaStats();
+    return Array.from(new Set(todas.map(p => p.responsable).filter((r): r is string => !!r))).sort();
   }
 
-  private simularLatencia(ms = 180): Promise<void> {
-    return new Promise(r => setTimeout(r, ms));
+  // ─── GET /api/crm/propuestas/nueva?idRequerimiento=X ───────────────────────
+  async obtenerDatosNueva(idRequerimiento: number): Promise<DatosNuevaPropuestaApi> {
+    const params = new HttpParams().set('idRequerimiento', idRequerimiento);
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<DatosNuevaPropuestaApi>>(`${this.base}/nueva`, { params })
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar el requerimiento.');
+    return r.datos;
   }
 
-  // ─── KPIs calculados de los mocks ───────────────────────────────────────────
-  private static mockKpis(): KpisPropuestas {
-    const porEstado = (e: EstadoPropuesta) => this.mockData.filter(p => p.estado === e).length;
-    const vencidos  = this.mockData.filter(p => p.slaDiasRestantes < 0).length;
+  // ─── GET /api/crm/propuestas/{id} ─────────────────────────────────────────
+  async obtenerPropuestaPorId(idPropuesta: number): Promise<PropuestaDetalleApi> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PropuestaDetalleApi>>(`${this.base}/${idPropuesta}`)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'Propuesta no encontrada.');
+    return r.datos;
+  }
+
+  // ─── POST /api/crm/propuestas ─────────────────────────────────────────────
+  async guardarPropuesta(dto: GuardarPropuestaDtoApi): Promise<GuardarPropuestaResultadoApi> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<GuardarPropuestaResultadoApi>>(this.base, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'Error al guardar.');
+    return r.datos;
+  }
+
+  // ─── HTTP real ──────────────────────────────────────────────────────────────
+  private async obtenerPaginaInterna(f: FiltrosPropuestas): Promise<PropuestasPaginado> {
+    let params = new HttpParams()
+      .set('pagina',    f.pagina)
+      .set('porPagina', f.porPagina);
+
+    if (f.busqueda) params = params.set('busqueda', f.busqueda);
+    if (f.estado && f.estado !== 'todas') params = params.set('estado', f.estado);
+
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PropuestasPaginadoDtoApi>>(this.base, { params })
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'Error al cargar propuestas.');
+
+    // Año, comercial y tipo no son filtros nativos del back todavía — los
+    // aplicamos en cliente sobre los resultados paginados para que la UI
+    // responda a los selects. Cuando el back los soporte, se pasan como query.
+    let items = r.datos.items.map(mapResumenToListaItem);
+    if (f.anio) items = items.filter(i => new Date(i.fechaCreacion).getFullYear() === f.anio);
+    if (f.comercial && f.comercial !== 'todos') items = items.filter(i => i.comercial === f.comercial);
+    // (f.tipo queda sin efecto hasta que el back exponga el campo).
+
     return {
-      pendientes:          porEstado('pendiente'),
-      variacionPendientes: 12,
-      porVistoBueno:       porEstado('por_vb'),
-      porEnviar:           porEstado('por_enviar'),
-      enSeguimiento:       porEstado('en_seguimiento'),
-      slaVencidos:         vencidos,
+      kpis:      { pendientes: 0, variacionPendientes: 0, porVistoBueno: 0, porEnviar: 0, enSeguimiento: 0, slaVencidos: 0 },
+      items,
+      total:     r.datos.total,
+      pagina:    r.datos.pagina,
+      porPagina: r.datos.porPagina,
     };
   }
 
-  // ─── Dataset mock reutilizado por HU-07 ────────────────────────────────────
-  static readonly mockData: PropuestaListaItem[] = PropuestasService.generarMocks();
-
-  private static generarMocks(): PropuestaListaItem[] {
-    const base: Omit<PropuestaListaItem, 'idPropuesta'>[] = [
-      {
-        codigo: 'PROP-002581', version: 'v3',
-        idRequerimiento: 1, codigoRequerimiento: 'RQ-2024-001',
-        idCliente: 1, razonSocial: 'Minera Antamina', ruc: '20100036352',
-        referencia: 'Calibración anual celdas de carga - Planta Concentradora',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'en_seguimiento', estadoLabel: 'En Seguimiento',
-        monto: 18450.00, moneda: 'PEN',
-        comercial: 'Ana Torres', avatarComercial: 'AT',
-        slaDiasRestantes: 5,
-        fechaCreacion: '2024-11-02T10:00:00Z',
-        fechaUltimaMod: '2024-11-10T15:30:00Z',
-      },
-      {
-        codigo: 'PROP-002590', version: 'v1',
-        idRequerimiento: 2, codigoRequerimiento: 'RQ-2024-002',
-        idCliente: 2, razonSocial: 'Aceros Arequipa', ruc: '20170040913',
-        referencia: 'Mantenimiento planta Pisco - Básculas camioneras',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'pendiente', estadoLabel: 'Pendiente',
-        monto: 12800.00, moneda: 'PEN',
-        comercial: 'Carlos Ruiz', avatarComercial: 'CR',
-        slaDiasRestantes: 3,
-        fechaCreacion: '2024-11-05T09:15:00Z',
-        fechaUltimaMod: '2024-11-05T09:15:00Z',
-      },
-      {
-        codigo: 'PROP-002603', version: 'v2',
-        idRequerimiento: 3, codigoRequerimiento: 'RQ-2024-003',
-        idCliente: 3, razonSocial: 'Cales S.A.', ruc: '20298765443',
-        referencia: 'Calibración de plataforma industrial - Operaciones Lima',
-        tipo: 'mixta', tipoLabel: 'MIXTA',
-        estado: 'por_vb', estadoLabel: 'Por VB',
-        monto: 4500.00, moneda: 'USD',
-        comercial: 'Ana Torres', avatarComercial: 'AT',
-        slaDiasRestantes: 1,
-        fechaCreacion: '2024-11-07T11:00:00Z',
-        fechaUltimaMod: '2024-11-11T16:00:00Z',
-      },
-      {
-        codigo: 'PROP-002611', version: 'v1',
-        idRequerimiento: 4, codigoRequerimiento: 'RQ-2024-004',
-        idCliente: 4, razonSocial: 'Southern Copper', ruc: '20100124823',
-        referencia: 'Fabricación balanza especial para pesaje de concentrado',
-        tipo: 'proyecto', tipoLabel: 'PROYECTO',
-        estado: 'por_enviar', estadoLabel: 'Por Enviar',
-        monto: 68900.00, moneda: 'PEN',
-        comercial: 'Carlos Ruiz', avatarComercial: 'CR',
-        slaDiasRestantes: -2,
-        fechaCreacion: '2024-10-28T08:00:00Z',
-        fechaUltimaMod: '2024-11-09T12:00:00Z',
-      },
-      {
-        codigo: 'PROP-002615', version: 'v1',
-        idRequerimiento: 5, codigoRequerimiento: 'RQ-2024-005',
-        idCliente: 5, razonSocial: 'Volcan Compañía Minera', ruc: '20383045267',
-        referencia: 'Suministro de pesas patrón clase M1 - Lab Metrología',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'pendiente', estadoLabel: 'Pendiente',
-        monto: 8900.00, moneda: 'USD',
-        comercial: 'Lucía Fernández', avatarComercial: 'LF',
-        slaDiasRestantes: 7,
-        fechaCreacion: '2024-11-08T14:00:00Z',
-        fechaUltimaMod: '2024-11-08T14:00:00Z',
-      },
-      {
-        codigo: 'PROP-002618', version: 'v2',
-        idRequerimiento: 6, codigoRequerimiento: 'RQ-2024-006',
-        idCliente: 6, razonSocial: 'Yanacocha S.A.', ruc: '20137291313',
-        referencia: 'Mantenimiento preventivo semestral balanzas de precisión',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'borrador', estadoLabel: 'Borrador',
-        monto: 15600.00, moneda: 'PEN',
-        comercial: 'Ana Torres', avatarComercial: 'AT',
-        slaDiasRestantes: 12,
-        fechaCreacion: '2024-11-10T10:30:00Z',
-        fechaUltimaMod: '2024-11-10T10:30:00Z',
-      },
-      {
-        codigo: 'PROP-002620', version: 'v1',
-        idRequerimiento: null, codigoRequerimiento: null,
-        idCliente: 7, razonSocial: 'Hipermercados Tottus', ruc: '20508565934',
-        referencia: 'Calibración masiva balanzas comerciales - Lima Norte',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'aceptada', estadoLabel: 'Aceptada',
-        monto: 22400.00, moneda: 'PEN',
-        comercial: 'Carlos Ruiz', avatarComercial: 'CR',
-        slaDiasRestantes: 0,
-        fechaCreacion: '2024-10-20T09:00:00Z',
-        fechaUltimaMod: '2024-11-04T18:00:00Z',
-      },
-      {
-        codigo: 'PROP-002625', version: 'v3',
-        idRequerimiento: 7, codigoRequerimiento: 'RQ-2024-007',
-        idCliente: 8, razonSocial: 'Compañía Minera Milpo', ruc: '20383082700',
-        referencia: 'Verificación anual INACAL - Lote 12 instrumentos',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'rechazada', estadoLabel: 'Rechazada',
-        monto: 9850.00, moneda: 'USD',
-        comercial: 'Lucía Fernández', avatarComercial: 'LF',
-        slaDiasRestantes: 0,
-        fechaCreacion: '2024-10-25T11:00:00Z',
-        fechaUltimaMod: '2024-11-02T10:00:00Z',
-      },
-      {
-        codigo: 'PROP-002630', version: 'v1',
-        idRequerimiento: 8, codigoRequerimiento: 'RQ-2024-008',
-        idCliente: 9, razonSocial: 'Backus & Johnston', ruc: '20100113610',
-        referencia: 'Instalación de celdas de carga en línea de envasado',
-        tipo: 'proyecto', tipoLabel: 'PROYECTO',
-        estado: 'por_consolidar', estadoLabel: 'Por Consolidar',
-        monto: 142300.00, moneda: 'PEN',
-        comercial: 'Carlos Ruiz', avatarComercial: 'CR',
-        slaDiasRestantes: 15,
-        fechaCreacion: '2024-11-01T08:30:00Z',
-        fechaUltimaMod: '2024-11-11T09:00:00Z',
-      },
-      {
-        codigo: 'PROP-002634', version: 'v1',
-        idRequerimiento: 9, codigoRequerimiento: 'RQ-2024-009',
-        idCliente: 10, razonSocial: 'Gloria S.A.', ruc: '20100190797',
-        referencia: 'Calibración trimestral balanzas analíticas - Planta Huachipa',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'en_seguimiento', estadoLabel: 'En Seguimiento',
-        monto: 6750.00, moneda: 'PEN',
-        comercial: 'Ana Torres', avatarComercial: 'AT',
-        slaDiasRestantes: -1,
-        fechaCreacion: '2024-11-03T16:00:00Z',
-        fechaUltimaMod: '2024-11-11T14:00:00Z',
-      },
-      {
-        codigo: 'PROP-002640', version: 'v2',
-        idRequerimiento: 10, codigoRequerimiento: 'RQ-2024-010',
-        idCliente: 11, razonSocial: 'Alicorp', ruc: '20100055237',
-        referencia: 'Mantenimiento correctivo tolva de pesaje industrial',
-        tipo: 'servicio', tipoLabel: 'SERVICIO',
-        estado: 'pendiente', estadoLabel: 'Pendiente',
-        monto: 11200.00, moneda: 'PEN',
-        comercial: 'Lucía Fernández', avatarComercial: 'LF',
-        slaDiasRestantes: 4,
-        fechaCreacion: '2024-11-06T13:00:00Z',
-        fechaUltimaMod: '2024-11-09T16:00:00Z',
-      },
-      {
-        codigo: 'PROP-002645', version: 'v1',
-        idRequerimiento: 11, codigoRequerimiento: 'RQ-2024-011',
-        idCliente: 12, razonSocial: 'Minsur', ruc: '20100136741',
-        referencia: 'Fabricación de 2 indicadores digitales de alta resolución',
-        tipo: 'proyecto', tipoLabel: 'PROYECTO',
-        estado: 'borrador', estadoLabel: 'Borrador',
-        monto: 32500.00, moneda: 'USD',
-        comercial: 'Carlos Ruiz', avatarComercial: 'CR',
-        slaDiasRestantes: 20,
-        fechaCreacion: '2024-11-11T10:00:00Z',
-        fechaUltimaMod: '2024-11-11T10:00:00Z',
-      },
-    ];
-    return base.map((p, i) => ({ idPropuesta: i + 1, ...p }));
+  private async obtenerTodasParaStats(): Promise<PropuestaResumenDtoApi[]> {
+    const params = new HttpParams().set('pagina', 1).set('porPagina', 1000);
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PropuestasPaginadoDtoApi>>(this.base, { params })
+    );
+    return r.datos?.items ?? [];
   }
+
+  private async calcularKpis(): Promise<KpisPropuestas> {
+    try {
+      const todas = await this.obtenerTodasParaStats();
+      const porEstado = (e: string) => todas.filter(p => p.estado === e).length;
+      return {
+        pendientes:          porEstado('pendiente'),
+        variacionPendientes: 0,
+        porVistoBueno:       porEstado('por_vb'),
+        porEnviar:           porEstado('por_enviar'),
+        enSeguimiento:       porEstado('en_seguimiento'),
+        slaVencidos:         0,
+      };
+    } catch {
+      return { pendientes: 0, variacionPendientes: 0, porVistoBueno: 0, porEnviar: 0, enSeguimiento: 0, slaVencidos: 0 };
+    }
+  }
+}
+
+// ─── Mapeos ──────────────────────────────────────────────────────────────────
+function mapResumenToListaItem(r: PropuestaResumenDtoApi): PropuestaListaItem {
+  const responsable = r.responsable ?? '—';
+  return {
+    idPropuesta:          r.idPropuesta,
+    codigo:               r.numero,
+    version:              r.version > 0 ? `v${r.version}` : 'v1',
+    idRequerimiento:      r.idRequerimiento || null,
+    codigoRequerimiento:  r.numeroRequerimiento || null,
+    idCliente:            r.idCliente,
+    razonSocial:          r.razonSocial,
+    ruc:                  '',
+    referencia:           r.referencia ?? '',
+    tipo:                 'servicio' as TipoPropuesta,
+    tipoLabel:            'SERVICIO',
+    estado:               (r.estado as EstadoPropuesta) ?? 'borrador',
+    estadoLabel:          ESTADO_LABEL[r.estado] ?? r.estado,
+    monto:                Number(r.total || 0),
+    moneda:               r.moneda ?? 'USD',
+    comercial:            responsable,
+    avatarComercial:      iniciales(responsable),
+    slaDiasRestantes:     0,
+    fechaCreacion:        r.fechaCreacion ?? '',
+    fechaUltimaMod:       '',
+  };
+}
+
+function iniciales(nombre: string): string {
+  const partes = nombre.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return '—';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[1][0]).toUpperCase();
 }
