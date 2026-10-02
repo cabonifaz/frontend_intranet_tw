@@ -12,7 +12,8 @@ if (!apiUrl) {
 
 const contenido = `export const environment = {
   production: true,
-  apiUrl: '${apiUrl || 'API_URL_PLACEHOLDER'}'
+  apiUrl: '${apiUrl || 'API_URL_PLACEHOLDER'}',
+  usarMocks: false,
 };
 `;
 
