@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
+  CambiarContrasenaRequest,
   IniciarSesionEntrada,
   IniciarSesionSalida,
   RespuestaApi,
@@ -60,16 +61,44 @@ export class AutenticacionService {
     otroStorage.removeItem(TOKEN_KEY);
     otroStorage.removeItem(USUARIO_KEY);
     const sesion: UsuarioSesion = {
-      nombre:     respuesta.datos.nombre,
-      apellido:   respuesta.datos.apellido,
-      correo:     respuesta.datos.correo,
-      rolSistema: respuesta.datos.rolSistema,
+      nombre:                 respuesta.datos.nombre,
+      apellido:               respuesta.datos.apellido,
+      correo:                 respuesta.datos.correo,
+      rolSistema:             respuesta.datos.rolSistema,
+      forzarCambioContrasena: respuesta.datos.forzarCambioContrasena ?? false,
     };
 
     storage.setItem(TOKEN_KEY,    respuesta.datos.token);
     storage.setItem(USUARIO_KEY,  JSON.stringify(sesion));
 
     this._usuarioActual.set(sesion);
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado. Si el back responde OK,
+   * limpia el flag forzarCambioContrasena del signal y del storage.
+   */
+  async cambiarContrasena(dto: CambiarContrasenaRequest): Promise<void> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<null>>(
+        `${environment.apiUrl}/api/autenticacion/cambiar-contrasena`,
+        dto,
+      ).pipe(
+        catchError((err: HttpErrorResponse) => {
+          const mensaje = err.error?.mensaje ?? 'Error al cambiar la contraseña.';
+          return throwError(() => new Error(mensaje));
+        }),
+      ),
+    );
+    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+
+    // Actualizar el signal + storage para que el guard deje de redirigir
+    const actual = this._usuarioActual();
+    if (!actual) return;
+    const actualizado: UsuarioSesion = { ...actual, forzarCambioContrasena: false };
+    this._usuarioActual.set(actualizado);
+    const storage = localStorage.getItem(USUARIO_KEY) ? localStorage : sessionStorage;
+    storage.setItem(USUARIO_KEY, JSON.stringify(actualizado));
   }
 
   cerrarSesion(): void {
@@ -93,7 +122,16 @@ export class AutenticacionService {
     try {
       const raw =
         localStorage.getItem(USUARIO_KEY) ?? sessionStorage.getItem(USUARIO_KEY);
-      return raw ? (JSON.parse(raw) as UsuarioSesion) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<UsuarioSesion>;
+      // Defensa para sesiones viejas sin el flag
+      return {
+        nombre:                 parsed.nombre ?? '',
+        apellido:               parsed.apellido ?? '',
+        correo:                 parsed.correo ?? '',
+        rolSistema:             parsed.rolSistema ?? '',
+        forzarCambioContrasena: parsed.forzarCambioContrasena ?? false,
+      };
     } catch {
       return null;
     }
@@ -112,11 +150,12 @@ export class AutenticacionService {
       idTipoMensaje: 1,
       mensaje: 'OK',
       datos: {
-        token:      `mock-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-        nombre:     c.nombre,
-        apellido:   c.apellido,
-        correo:     c.correo,
-        rolSistema: c.rol,
+        token:                  `mock-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        nombre:                 c.nombre,
+        apellido:               c.apellido,
+        correo:                 c.correo,
+        rolSistema:             c.rol,
+        forzarCambioContrasena: false,
       },
     };
   }

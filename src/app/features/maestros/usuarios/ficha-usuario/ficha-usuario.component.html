@@ -46,16 +46,24 @@
           <div class="campo-duo">
             <div class="campo">
               <label class="campo__label">Nombres Completos *</label>
-              <input class="campo__input" type="text" placeholder="Ej. Carlos Eduardo" formControlName="nombre" />
+              <input class="campo__input" type="text" placeholder="Ej. Carlos Eduardo"
+                     formControlName="nombre" maxlength="60" (input)="filtrarSoloLetras($event)" />
               @if (formulario.get('nombre')?.touched && formulario.get('nombre')?.hasError('required')) {
                 <span class="campo__error">Los nombres son obligatorios.</span>
+              }
+              @if (formulario.get('nombre')?.touched && formulario.get('nombre')?.hasError('pattern')) {
+                <span class="campo__error">Solo letras y espacios.</span>
               }
             </div>
             <div class="campo">
               <label class="campo__label">Apellidos Completos *</label>
-              <input class="campo__input" type="text" placeholder="Ej. Mendoza Alva" formControlName="apellido" />
+              <input class="campo__input" type="text" placeholder="Ej. Mendoza Alva"
+                     formControlName="apellido" maxlength="60" (input)="filtrarSoloLetras($event)" />
               @if (formulario.get('apellido')?.touched && formulario.get('apellido')?.hasError('required')) {
                 <span class="campo__error">Los apellidos son obligatorios.</span>
+              }
+              @if (formulario.get('apellido')?.touched && formulario.get('apellido')?.hasError('pattern')) {
+                <span class="campo__error">Solo letras y espacios.</span>
               }
             </div>
           </div>
@@ -69,42 +77,46 @@
                     <option [value]="t">{{ t }}</option>
                   }
                 </select>
-                <input class="campo__input" type="text" placeholder="Ej. 45892134" formControlName="numeroDocumento" />
+                <input class="campo__input" type="text" placeholder="Ej. 45892134"
+                       formControlName="numeroDocumento"
+                       [maxlength]="maxLengthDocumento"
+                       inputmode="numeric"
+                       (input)="filtrarDocumento($event)" />
               </div>
               @if (formulario.get('numeroDocumento')?.touched && formulario.get('numeroDocumento')?.hasError('required')) {
                 <span class="campo__error">El número de documento es obligatorio.</span>
+              }
+              @if (formulario.get('numeroDocumento')?.touched && formulario.get('numeroDocumento')?.hasError('pattern')) {
+                <span class="campo__error">Formato inválido para {{ formulario.get('tipoDocumento')?.value }}.</span>
               }
             </div>
             <div class="campo">
               <label class="campo__label">Correo Corporativo *</label>
               <div class="campo-correo">
-                <input class="campo__input" type="text" placeholder="cmendoza" formControlName="correo" />
+                <input class="campo__input" type="text" placeholder="cmendoza"
+                       formControlName="correo" maxlength="60" (input)="filtrarUsername($event)" />
                 <span class="campo-correo__suffix">&#64;totalweight.pe</span>
               </div>
               @if (formulario.get('correo')?.touched && formulario.get('correo')?.hasError('required')) {
                 <span class="campo__error">El correo es obligatorio.</span>
               }
+              @if (formulario.get('correo')?.touched && formulario.get('correo')?.hasError('pattern')) {
+                <span class="campo__error">Solo letras, números, punto, guion o guion bajo.</span>
+              }
             </div>
           </div>
 
-          <div class="campo-duo">
-            <div class="campo">
-              <label class="campo__label">Teléfono / Celular Flota *</label>
-              <div class="campo-icono">
-                <span class="material-symbols-outlined campo-icono__glyph">call</span>
-                <input class="campo__input campo__input--pl" type="tel" placeholder="Ej. +51 984 123 456" formControlName="telefono" />
-              </div>
+          <div class="campo">
+            <label class="campo__label">Teléfono / Celular Flota *</label>
+            <div class="campo-icono">
+              <span class="material-symbols-outlined campo-icono__glyph">call</span>
+              <input class="campo__input campo__input--pl" type="tel" placeholder="Ej. +51 984 123 456"
+                     formControlName="telefono" maxlength="20"
+                     inputmode="tel" (input)="filtrarTelefono($event)" />
             </div>
-            <div class="campo">
-              <label class="campo__label">Cargo / Puesto Interno *</label>
-              <div class="campo-icono">
-                <span class="material-symbols-outlined campo-icono__glyph">work</span>
-                <input class="campo__input campo__input--pl" type="text" placeholder="Ej. Técnico Metrólogo Senior" formControlName="cargo" />
-              </div>
-              @if (formulario.get('cargo')?.touched && formulario.get('cargo')?.hasError('required')) {
-                <span class="campo__error">El cargo es obligatorio.</span>
-              }
-            </div>
+            @if (formulario.get('telefono')?.touched && formulario.get('telefono')?.hasError('pattern')) {
+              <span class="campo__error">Solo números y símbolos de teléfono (+ ( ) - espacio).</span>
+            }
           </div>
         </app-seccion>
 
@@ -114,6 +126,36 @@
           titulo="2. Asignación Operativa y Rol de Sistema"
           subtitulo="Defina el nivel jerárquico, privilegios de acceso y unidades operativas autorizadas."
         >
+          <!-- Área → Cargo (filtrado por área) → Rol -->
+          <div class="campo-duo">
+            <div class="campo">
+              <label class="campo__label">Área *</label>
+              <select class="campo__select" formControlName="area">
+                <option value="">Seleccione área...</option>
+                @for (a of areasUsuario(); track a.id) {
+                  <option [value]="a.codigo">{{ a.nombre }}</option>
+                }
+              </select>
+              @if (formulario.get('area')?.touched && formulario.get('area')?.hasError('required')) {
+                <span class="campo__error">Debes seleccionar un área.</span>
+              }
+            </div>
+            <div class="campo">
+              <label class="campo__label">Cargo / Puesto Interno *</label>
+              <select class="campo__select" formControlName="cargo" [attr.disabled]="!areaActual() ? true : null">
+                <option value="">
+                  {{ areaActual() ? 'Seleccione cargo...' : 'Primero elegí un área...' }}
+                </option>
+                @for (c of cargosFiltrados(); track c.id) {
+                  <option [value]="c.codigo">{{ c.nombre }}</option>
+                }
+              </select>
+              @if (formulario.get('cargo')?.touched && formulario.get('cargo')?.hasError('required')) {
+                <span class="campo__error">Debes seleccionar un cargo.</span>
+              }
+            </div>
+          </div>
+
           <div class="campo-duo">
             <div class="campo">
               <label class="campo__label">Rol Principal en la Plataforma *</label>
@@ -128,15 +170,15 @@
               }
             </div>
             <div class="campo">
-              <label class="campo__label">Base Operativa Principal *</label>
-              <select class="campo__select" formControlName="baseOperativa">
-                <option value="">Seleccione sede operativa principal...</option>
-                @for (b of basesOperativas; track b) {
-                  <option [value]="b">{{ b }}</option>
+              <label class="campo__label">Sede Operativa Principal *</label>
+              <select class="campo__select" formControlName="sedeOperativa">
+                <option value="">Seleccione sede operativa...</option>
+                @for (s of sedesOperativas(); track s.id) {
+                  <option [value]="s.codigo">{{ s.nombre }}</option>
                 }
               </select>
-              @if (formulario.get('baseOperativa')?.touched && formulario.get('baseOperativa')?.hasError('required')) {
-                <span class="campo__error">Debes seleccionar una base.</span>
+              @if (formulario.get('sedeOperativa')?.touched && formulario.get('sedeOperativa')?.hasError('required')) {
+                <span class="campo__error">Debes seleccionar una sede.</span>
               }
             </div>
           </div>
@@ -526,7 +568,7 @@
               </div>
               <div>
                 <p class="card-perfil__mini-label">SEDE PRINCIPAL</p>
-                <p class="card-perfil__mini-valor">{{ formulario.get('baseOperativa')?.value || 'Por asignar' }}</p>
+                <p class="card-perfil__mini-valor">{{ formulario.get('sedeOperativa')?.value || 'Por asignar' }}</p>
               </div>
             </div>
           </div>

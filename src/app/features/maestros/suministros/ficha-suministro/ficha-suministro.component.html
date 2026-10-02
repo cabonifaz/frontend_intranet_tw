@@ -130,14 +130,13 @@
         <!-- ── SECCIÓN 02 — Descripciones y Logística ──────────────────────── -->
         <app-seccion icono="description" titulo="2. Descripciones Técnicas y Logística">
 
-          <app-campo label="Descripción Generada Automática" hint="Concatenación de clase + tipo + subtipo + marca + modelo (marca/modelo se omiten en Servicio)">
-            <div class="input-con-boton">
-              <input type="text" formControlName="descripcionAuto" readonly placeholder="Se genera al pulsar el botón…" />
-              <button class="btn-inline btn-inline--ia" type="button" (click)="generarDescripcionAuto()">
-                <span class="material-symbols-outlined">auto_awesome</span>
-                Generar con IA
-              </button>
-            </div>
+          <app-campo
+            label="Descripción Generada Automática"
+            [hint]="esClaseServicio()
+              ? 'Se genera automáticamente: clase + tipo + subtipo'
+              : 'Se genera automáticamente: clase + tipo + subtipo + marca + modelo'"
+          >
+            <input type="text" formControlName="descripcionAuto" readonly placeholder="Completá los campos de arriba y se genera automáticamente…" />
           </app-campo>
 
           <app-campo label="Descripción Manual / Comercial Ampliada"

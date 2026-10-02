@@ -95,7 +95,8 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
 
     // Sidebar - Aplicabilidad
     activo:                     [true],
-    aplicaTodosServicios:       [true],
+    // "aplicaTodosServicios" se derivó: ahora es UI pura (checkbox computed).
+    // Al guardar se calcula como true si los 4 individuales están en true.
     aplicaCalibracionLab:       [true],
     aplicaCalibracionPlanta:    [true],
     aplicaMantenimiento:        [true],
@@ -145,7 +146,6 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
           ordenAparicion:            t.ordenAparicion,
           nivelSangria:              t.nivelSangria,
           activo:                    t.estado === 'Activo',
-          aplicaTodosServicios:      t.aplicaTodosServicios,
           aplicaCalibracionLab:      t.aplicaCalibracionLab,
           aplicaCalibracionPlanta:   t.aplicaCalibracionPlanta,
           aplicaMantenimiento:       t.aplicaMantenimiento,
@@ -239,15 +239,27 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  /**
+   * UI helper: marca/desmarca los 4 checkboxes de servicios al mismo tiempo.
+   * No existe como campo del formulario — su valor se deriva de los 4 individuales.
+   */
   toggleTodosServicios(): void {
-    const nuevo = !this.formulario.get('aplicaTodosServicios')?.value;
+    const nuevo = !this.aplicaTodosServicios();
     this.formulario.patchValue({
-      aplicaTodosServicios:    nuevo,
       aplicaCalibracionLab:    nuevo,
       aplicaCalibracionPlanta: nuevo,
       aplicaMantenimiento:     nuevo,
       aplicaVentaSuministros:  nuevo,
     });
+  }
+
+  /** True solo si los 4 servicios individuales están marcados. */
+  aplicaTodosServicios(): boolean {
+    const v = this.formulario.value;
+    return !!v.aplicaCalibracionLab
+        && !!v.aplicaCalibracionPlanta
+        && !!v.aplicaMantenimiento
+        && !!v.aplicaVentaSuministros;
   }
 
   toggleRenderPreview(): void {
@@ -306,7 +318,9 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
         esPredeterminado:         !!v.esPredeterminado,
         esNegritaPorDefecto:      !!v.esNegritaPorDefecto,
         activo:                   !!v.activo,
-        aplicaTodosServicios:     !!v.aplicaTodosServicios,
+        // Derivado: true solo si los 4 individuales son true.
+        // Pendiente: Bryan dropea esta columna de BD + DTO en próxima migración.
+        aplicaTodosServicios:     this.aplicaTodosServicios(),
         aplicaCalibracionLab:     !!v.aplicaCalibracionLab,
         aplicaCalibracionPlanta:  !!v.aplicaCalibracionPlanta,
         aplicaMantenimiento:      !!v.aplicaMantenimiento,

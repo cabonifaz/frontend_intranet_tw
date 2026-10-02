@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { autenticacionGuard } from './core/guards/autenticacion.guard';
+import { cambioContrasenaGuard } from './core/guards/cambio-contrasena.guard';
 import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
 
 export const routes: Routes = [
@@ -16,9 +17,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // Pantalla standalone (sin AppLayout). Solo accesible si el usuario está autenticado.
+    path: 'cambiar-contrasena',
+    canActivate: [autenticacionGuard],
+    loadComponent: () =>
+      import('./features/autenticacion/cambiar-contrasena/cambiar-contrasena.component').then(
+        m => m.CambiarContrasenaComponent
+      ),
+  },
+  {
     path: '',
     component: AppLayoutComponent,
-    canActivate: [autenticacionGuard],
+    canActivate: [autenticacionGuard, cambioContrasenaGuard],
     children: [
       {
         path: 'dashboard',

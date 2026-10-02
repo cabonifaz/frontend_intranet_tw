@@ -11,13 +11,15 @@ import {
   EquiposClientePaginado,
   GuardarEquipoClienteRequest,
 } from '../models/equipos-cliente.model';
+import { SuministrosService } from './suministros.service';
 
 const USAR_MOCK = environment.usarMocks;
 
 @Injectable({ providedIn: 'root' })
 export class EquiposClienteService {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/api/maestros`;
+  private readonly http            = inject(HttpClient);
+  private readonly suministrosSvc  = inject(SuministrosService);
+  private readonly base            = `${environment.apiUrl}/api/maestros`;
 
   async obtenerEquipos(
     busqueda?: string,
@@ -81,19 +83,29 @@ export class EquiposClienteService {
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
   }
 
-  // ─── Catálogo mock de suministros (hasta integración HU-86 real) ─────────
-  // En el prototipo este dropdown viene del catálogo de Suministros Técnicos.
-  obtenerSuministrosParaDropdown(): { value: number; label: string }[] {
-    return [
-      { value: 1, label: 'METTLER TOLEDO PUA679-CS1500 Plataforma Inox' },
-      { value: 2, label: 'RICE LAKE SURVIVOR CTR 2500 kg Steel Deck' },
-      { value: 3, label: 'A&D WEIGHING EK-6000 Precisión analítica' },
-      { value: 4, label: 'OHAUS CORP Defender 3000 Sobremesa 30kg' },
-      { value: 5, label: 'TOLEDO IND VMT-80 Báscula camionera 80t' },
-      { value: 6, label: 'FLINTEC RC3-30t Celda tolva pesaje' },
-      { value: 7, label: 'MSI INTERCOMP Challenger 3 Gancho grúa' },
-      { value: 8, label: 'DIGI SM 5100H Colgante etiquetadora' },
-    ];
+  // ─── Suministros clase "equipo" para linkear la ficha con el catálogo HU-86 ──
+  //   Incluye marca y modelo (ya resueltos a labels del catálogo) para que la ficha
+  //   los autorellene y bloquee cuando el usuario elige un suministro.
+  async obtenerSuministrosParaDropdown(): Promise<
+    { value: number; label: string; marca: string; modelo: string }[]
+  > {
+    try {
+      const [r, marcas, modelos] = await Promise.all([
+        this.suministrosSvc.obtenerSuministros(undefined, 'equipo', undefined, 'Activo', false, 1, 200),
+        this.suministrosSvc.obtenerMarcas().catch(() => []),
+        this.suministrosSvc.obtenerModelos().catch(() => []),
+      ]);
+      const labelDe = (lista: { value: string; label: string }[], code: string) =>
+        lista.find(o => o.value === code)?.label ?? code ?? '';
+      return r.items.map(s => ({
+        value:  s.idSuministro,
+        label:  s.descripcion || `${s.marca} ${s.modelo}`.trim(),
+        marca:  labelDe(marcas,  s.marca),
+        modelo: labelDe(modelos, s.modelo),
+      }));
+    } catch {
+      return [];
+    }
   }
 
   // ─── MOCK ────────────────────────────────────────────────────────────────

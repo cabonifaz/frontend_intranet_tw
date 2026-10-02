@@ -75,13 +75,22 @@ export class ProcedimientosService {
   }
 
   // Usado por HU-86 (dropdown en ficha Suministro clase Servicio).
-  obtenerProcedimientosParaDropdown(): OpcionCatalogo[] {
-    return ProcedimientosService.mockData
-      .filter(p => p.esActivo)
-      .map(p => ({
-        value: p.codigo,
-        label: `${p.codigo} · ${p.descripcion.substring(0, 70)}${p.descripcion.length > 70 ? '…' : ''}`,
-      }));
+  // Cuando usarMocks=false, llama al endpoint GET /maestros/procedimientos/opciones del back.
+  async obtenerProcedimientosParaDropdown(): Promise<OpcionCatalogo[]> {
+    if (USAR_MOCK) {
+      return ProcedimientosService.mockData
+        .filter(p => p.esActivo)
+        .map(p => ({
+          value: p.codigo,
+          label: `${p.codigo} · ${p.descripcion.substring(0, 70)}${p.descripcion.length > 70 ? '…' : ''}`,
+        }));
+    }
+
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<OpcionCatalogo[]>>(`${this.base}/procedimientos/opciones`),
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
   }
 
   // ─── MOCK ────────────────────────────────────────────────────────────────

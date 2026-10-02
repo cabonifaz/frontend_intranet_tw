@@ -216,8 +216,9 @@
           <div class="card-aplicabilidad__grupo">
             <p class="card-aplicabilidad__grupo-titulo">Servicios Aplicables:</p>
 
-            <label class="check-simple" (click)="toggleTodosServicios()">
-              <input type="checkbox" formControlName="aplicaTodosServicios" />
+            <!-- UI helper: no es campo del form, se deriva de los 4 individuales -->
+            <label class="check-simple" (click)="toggleTodosServicios(); $event.preventDefault()">
+              <input type="checkbox" [checked]="aplicaTodosServicios()" (click)="$event.preventDefault()" />
               <span class="check-simple__box"></span>
               <span class="check-simple__texto">Aplica a Todos los Servicios</span>
             </label>
@@ -296,6 +297,9 @@
             <div
               class="pdf-preview__content"
               [class.pdf-preview__content--negrita]="formulario.get('esNegritaPorDefecto')?.value"
+              [class.pdf-preview__content--sangria1]="formulario.get('nivelSangria')?.value === 'primer_nivel'"
+              [class.pdf-preview__content--sangria2]="formulario.get('nivelSangria')?.value === 'segundo_nivel'"
+              [class.pdf-preview__content--vineta]="formulario.get('nivelSangria')?.value === 'vineta'"
               [innerHTML]="textoRenderizado()"
             ></div>
 

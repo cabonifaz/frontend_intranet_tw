@@ -16,9 +16,10 @@ export interface UsuarioDetalle extends UsuarioListaItem {
   tipoDocumento:  string;
   numeroDocumento: string;
   cargo:           string | null;
+  area:            string | null;
 
   // Asignación operativa
-  baseOperativa:        string | null;
+  sedeOperativa:        string | null;
   idSupervisorDirecto:  number | null;
 
   // Certificación técnica
@@ -49,8 +50,9 @@ export interface GuardarUsuarioRequest {
   correo:         string;
   telefono:       string | null;
   cargo:          string | null;
+  area:           string | null;
   rolSistema:     string;
-  baseOperativa:  string | null;
+  sedeOperativa:  string | null;
   idSupervisorDirecto:  number | null;
   habilitadoFirmaInacal:        boolean;
   numeroRegistroInacal:         string | null;

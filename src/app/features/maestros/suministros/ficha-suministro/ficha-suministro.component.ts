@@ -149,7 +149,7 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     // Carga paralela de los 7 catálogos de tabla_maestra + procedimientos (del maestro HU-87)
-    const [clases, tipos, subtipos, marcas, modelos, procedencias, unidades] = await Promise.all([
+    const [clases, tipos, subtipos, marcas, modelos, procedencias, unidades, procedimientos] = await Promise.all([
       this.suministrosSvc.obtenerClases(),
       this.suministrosSvc.obtenerTipos(),
       this.suministrosSvc.obtenerSubtipos(),
@@ -157,6 +157,7 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
       this.suministrosSvc.obtenerModelos(),
       this.suministrosSvc.obtenerProcedencias(),
       this.suministrosSvc.obtenerUnidades(),
+      this.suministrosSvc.obtenerProcedimientos().catch(() => []),
     ]);
     this.clasesOpciones.set(clases);
     this.tiposOpciones.set(tipos);
@@ -165,13 +166,18 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     this.modelosSignal.set(modelos);
     this.procedenciasOpciones.set(procedencias);
     this.unidadesOpciones.set(unidades);
-    this.procedimientosSignal.set(this.suministrosSvc.obtenerProcedimientos());
+    this.procedimientosSignal.set(procedimientos);
 
     // Sincronizar claseActual con el FormControl para que el computed reaccione
     this.formulario.get('clase')?.valueChanges.subscribe(v => {
       this.claseActual.set(v ?? '');
       this.actualizarValidadoresPorClase(v ?? '');
+      this.actualizarDescripcionAuto();
     });
+    // Descripción automática en vivo al cambiar cualquiera de los campos relevantes
+    for (const campo of ['tipo', 'subtipo', 'marca', 'modelo']) {
+      this.formulario.get(campo)?.valueChanges.subscribe(() => this.actualizarDescripcionAuto());
+    }
 
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
@@ -246,20 +252,21 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     modeloCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
-  // ─── Generar descripción automática (mock IA) ─────────────────────────
-  async generarDescripcionAuto(): Promise<void> {
+  // ─── Descripción automática (en vivo, sin botón) ───────────────────────
+  // Se recalcula cada vez que cambia clase/tipo/subtipo/marca/modelo.
+  // Para Servicio: solo clase + tipo + subtipo. Para el resto: + marca + modelo.
+  private async actualizarDescripcionAuto(): Promise<void> {
     const v = this.formulario.value;
     if (!v.clase || !v.tipo || !v.subtipo) {
-      this.toastSvc.error('Completa clase, tipo y sub-tipo antes de generar.');
+      this.formulario.patchValue({ descripcionAuto: '' }, { emitEvent: false });
       return;
     }
     if (!this.esClaseServicio() && (!v.marca || !v.modelo)) {
-      this.toastSvc.error('Completa marca y modelo antes de generar.');
+      this.formulario.patchValue({ descripcionAuto: '' }, { emitEvent: false });
       return;
     }
     const desc = await this.suministrosSvc.generarDescripcionAuto(v.clase, v.tipo, v.subtipo, v.marca, v.modelo);
-    this.formulario.patchValue({ descripcionAuto: desc });
-    this.toastSvc.exito('Descripción automática generada.');
+    this.formulario.patchValue({ descripcionAuto: desc }, { emitEvent: false });
   }
 
   // ─── Modal genérico "Nuevo item de catálogo" ────────────────────────────

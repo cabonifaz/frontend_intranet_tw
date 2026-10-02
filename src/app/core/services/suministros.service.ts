@@ -139,7 +139,7 @@ export class SuministrosService {
   obtenerProcedencias(): Promise<OpcionCatalogo[]>  { return this.cargarCatalogo('PROCEDENCIA_SUMINISTRO', PROCEDENCIAS_SUMINISTRO); }
   obtenerUnidades(): Promise<OpcionCatalogo[]>      { return this.cargarCatalogo('UNIDAD_SUMINISTRO',      UNIDADES_SUMINISTRO); }
 
-  obtenerProcedimientos(): OpcionCatalogo[] {
+  obtenerProcedimientos(): Promise<OpcionCatalogo[]> {
     // Vinculado a HU-87: delega al maestro real de Procedimientos (no es tabla_maestra).
     return this.procSvc.obtenerProcedimientosParaDropdown();
   }

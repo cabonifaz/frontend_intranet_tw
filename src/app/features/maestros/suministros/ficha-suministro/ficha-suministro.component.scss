@@ -44,7 +44,8 @@
 }
 
 .ficha-footer {
-  grid-column: 1 / -1;
+  // Solo la columna main — el sidebar sticky no debe tapar los botones
+  grid-column: 1 / 2;
   margin-top: 4px;
 }
 

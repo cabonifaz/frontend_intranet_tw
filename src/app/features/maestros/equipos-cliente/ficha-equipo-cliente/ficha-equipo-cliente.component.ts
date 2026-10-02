@@ -91,7 +91,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   // Dropdowns dinámicos
   readonly clientes          = signal<ClienteListaItem[]>([]);
   readonly sedes             = signal<SedeListaItem[]>([]);
-  readonly suministros       = signal<{ value: number; label: string }[]>([]);
+  readonly suministros       = signal<{ value: number; label: string; marca: string; modelo: string }[]>([]);
 
   idEquipo = 0;
 
@@ -136,8 +136,32 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
-    this.suministros.set(this.equiposSvc.obtenerSuministrosParaDropdown());
+    this.suministros.set(await this.equiposSvc.obtenerSuministrosParaDropdown());
     await this.cargarClientes();
+
+    // Autofill de marca/modelo cuando el usuario elige un suministro del catálogo.
+    // En modo edición los controles ya están disabled por la regla de inmutabilidad,
+    // así que esta lógica solo tiene efecto en "Nuevo Equipo".
+    this.formulario.get('idSuministro')?.valueChanges.subscribe(idSum => {
+      const marcaCtrl  = this.formulario.get('marca');
+      const modeloCtrl = this.formulario.get('modelo');
+      if (!marcaCtrl || !modeloCtrl || !this.esNuevo()) return;
+
+      if (idSum != null && idSum !== '' && Number(idSum) > 0) {
+        const sum = this.suministros().find(s => s.value === Number(idSum));
+        if (sum) {
+          marcaCtrl.setValue(sum.marca,   { emitEvent: false });
+          modeloCtrl.setValue(sum.modelo, { emitEvent: false });
+          marcaCtrl.disable({ emitEvent: false });
+          modeloCtrl.disable({ emitEvent: false });
+        }
+      } else {
+        marcaCtrl.enable({ emitEvent: false });
+        modeloCtrl.enable({ emitEvent: false });
+        marcaCtrl.setValue('',  { emitEvent: false });
+        modeloCtrl.setValue('', { emitEvent: false });
+      }
+    });
 
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';

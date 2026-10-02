@@ -1,0 +1,141 @@
+<div class="cc-layout">
+  <main class="cc-main">
+    <div class="cc-card">
+
+      <!-- Logo + saludo -->
+      <header class="cc-header">
+        <img src="/assets/images/totalweight-logo.png" alt="Total Weight" class="cc-logo" />
+        <h1 class="cc-titulo">Cambio de contraseña obligatorio</h1>
+        <p class="cc-subtitulo">
+          @if (usuarioActual(); as u) {
+            Hola <strong>{{ u.nombre }}</strong>,
+          }
+          por seguridad debes definir una nueva contraseña antes de usar la plataforma.
+        </p>
+      </header>
+
+      <form class="cc-form" [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+
+        <!-- Contraseña actual -->
+        <div class="cc-campo" [class.cc-campo--error]="actual.invalid && actual.touched">
+          <label class="cc-label" for="cActual">Contraseña actual (temporal)</label>
+          <div class="cc-wrapper">
+            <input
+              id="cActual"
+              class="cc-input"
+              [type]="mostrarActual() ? 'text' : 'password'"
+              formControlName="contrasenaActual"
+              placeholder="La contraseña que te asignaron"
+              autocomplete="current-password"
+            />
+            <button type="button" class="cc-ojo" (click)="toggleActual()"
+                    [attr.aria-label]="mostrarActual() ? 'Ocultar' : 'Mostrar'">
+              <span class="material-symbols-outlined">
+                {{ mostrarActual() ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          @if (actual.invalid && actual.touched) {
+            <span class="cc-error">
+              @if (actual.errors?.['required']) { La contraseña actual es requerida. }
+            </span>
+          }
+        </div>
+
+        <!-- Contraseña nueva -->
+        <div class="cc-campo" [class.cc-campo--error]="nueva.invalid && nueva.touched">
+          <label class="cc-label" for="cNueva">Nueva contraseña</label>
+          <div class="cc-wrapper">
+            <input
+              id="cNueva"
+              class="cc-input"
+              [type]="mostrarNueva() ? 'text' : 'password'"
+              formControlName="contrasenaNueva"
+              placeholder="Mínimo 8 caracteres"
+              autocomplete="new-password"
+            />
+            <button type="button" class="cc-ojo" (click)="toggleNueva()"
+                    [attr.aria-label]="mostrarNueva() ? 'Ocultar' : 'Mostrar'">
+              <span class="material-symbols-outlined">
+                {{ mostrarNueva() ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          @if (nueva.invalid && nueva.touched) {
+            <span class="cc-error">
+              @if (nueva.errors?.['required']) { La nueva contraseña es requerida. }
+              @else if (nueva.errors?.['minlength']) { Mínimo 8 caracteres. }
+              @else if (nueva.errors?.['pattern']) { Debe incluir mayúscula, minúscula y número. }
+            </span>
+          }
+          <p class="cc-hint">Al menos 8 caracteres, con una mayúscula, una minúscula y un número.</p>
+        </div>
+
+        <!-- Confirmar nueva -->
+        <div class="cc-campo" [class.cc-campo--error]="confirmar.invalid && confirmar.touched">
+          <label class="cc-label" for="cConf">Confirmar nueva contraseña</label>
+          <div class="cc-wrapper">
+            <input
+              id="cConf"
+              class="cc-input"
+              [type]="mostrarConfirmar() ? 'text' : 'password'"
+              formControlName="confirmarContrasena"
+              placeholder="Repetí la nueva contraseña"
+              autocomplete="new-password"
+            />
+            <button type="button" class="cc-ojo" (click)="toggleConfirmar()"
+                    [attr.aria-label]="mostrarConfirmar() ? 'Ocultar' : 'Mostrar'">
+              <span class="material-symbols-outlined">
+                {{ mostrarConfirmar() ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          @if (confirmar.invalid && confirmar.touched) {
+            <span class="cc-error">
+              @if (confirmar.errors?.['required']) { Repetí la nueva contraseña. }
+            </span>
+          }
+        </div>
+
+        <!-- Errores a nivel grupo (coinciden / distinta de actual) -->
+        @if (formulario.touched && formulario.errors?.['noCoinciden']) {
+          <div class="cc-error-box">Las nuevas contraseñas no coinciden.</div>
+        }
+        @if (formulario.touched && formulario.errors?.['igualALaActual']) {
+          <div class="cc-error-box">La nueva contraseña debe ser distinta de la actual.</div>
+        }
+
+        <!-- Error servidor -->
+        @if (errorMensaje()) {
+          <div class="cc-error-box">
+            <span class="material-symbols-outlined">error</span>
+            {{ errorMensaje() }}
+          </div>
+        }
+
+        <!-- Acciones -->
+        <div class="cc-acciones">
+          <button type="button" class="cc-btn cc-btn--secundario" (click)="cerrarSesion()">
+            Cerrar sesión
+          </button>
+          <button
+            type="submit"
+            class="cc-btn cc-btn--primario"
+            [disabled]="cargando()"
+          >
+            @if (cargando()) {
+              <span class="cc-spinner" aria-hidden="true"></span>
+              Guardando...
+            } @else {
+              Cambiar contraseña
+            }
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+
+    <p class="cc-footer">TOTAL WEIGHT © 2026</p>
+  </main>
+</div>

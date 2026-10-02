@@ -2,6 +2,10 @@ export interface CatalogoItem {
   id: number;
   nombre: string;
   codigo: string | null;
+  // Opcionales — se usan en catálogos jerárquicos (ej. CARGO_USUARIO los usa
+  // para indicar el área a la que pertenece el cargo via String3).
+  num2?: number | null;
+  string3?: string | null;
 }
 
 export interface ClientesPaginado {

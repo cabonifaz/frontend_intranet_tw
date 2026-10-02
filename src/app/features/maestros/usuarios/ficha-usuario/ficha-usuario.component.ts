@@ -5,8 +5,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
 import { SuplentesService } from '../../../../core/services/suplentes.service';
+import { MaestrosService } from '../../../../core/services/maestros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { GuardarUsuarioRequest, UsuarioListaItem } from '../../../../core/models/usuarios.model';
+import { CatalogoItem } from '../../../../core/models/maestros.model';
 import { SuplenteListaItem, GuardarSuplenteRequest } from '../../../../core/models/suplentes.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
@@ -59,6 +61,7 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
   private readonly fb           = inject(FormBuilder);
   private readonly usuariosSvc  = inject(UsuariosService);
   private readonly suplentesSvc = inject(SuplentesService);
+  private readonly maestrosSvc  = inject(MaestrosService);
   private readonly borradorSvc  = inject(BorradorService);
   private readonly toastSvc     = inject(ToastService);
   private readonly route        = inject(ActivatedRoute);
@@ -102,18 +105,42 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
 
   readonly tipoDocOpciones = ['DNI', 'CE', 'Pasaporte'];
 
-  readonly basesOperativas = ['Lima Central', 'Arequipa', 'Cusco', 'Cajamarca', 'Tacna', 'Áncash', 'Apurímac'];
+  // Catálogos dinámicos de tabla_maestra (back real).
+  // Se cargan en ngOnInit vía MaestrosService.obtenerCatalogo(descripcion).
+  readonly sedesOperativas = signal<CatalogoItem[]>([]);
+  readonly areasUsuario    = signal<CatalogoItem[]>([]);
+  readonly cargosUsuario   = signal<CatalogoItem[]>([]);
+  // Área actualmente seleccionada (sync con form para que el computed reaccione)
+  readonly areaActual      = signal<string>('');
+
+  // Cargos filtrados por área seleccionada (CARGO_USUARIO.String3 === area actual).
+  // Si no hay área elegida, no muestra nada → fuerza al usuario a elegir área primero.
+  readonly cargosFiltrados = computed(() => {
+    const area = this.areaActual();
+    if (!area) return [];
+    return this.cargosUsuario().filter(c => c.string3 === area);
+  });
 
   formulario: FormGroup = this.fb.group({
-    nombre:           ['', [Validators.required, Validators.minLength(2)]],
-    apellido:         ['', [Validators.required, Validators.minLength(2)]],
+    // Solo letras (acentos + ñ) y espacios, 2-60 chars
+    nombre:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60),
+                    Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]+$/)]],
+    apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(60),
+                    Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]+$/)]],
     tipoDocumento:    ['DNI', Validators.required],
-    numeroDocumento:  ['', [Validators.required, Validators.minLength(6)]],
-    correo:           ['', [Validators.required, Validators.email]],
-    telefono:         [null],
-    cargo:            ['', Validators.required],
+    // Longitud se ajusta dinámicamente según tipoDocumento (ver actualizarValidadorDocumento)
+    numeroDocumento:  ['', [Validators.required, Validators.pattern(/^[0-9]{8}$/)]],
+    // El input solo recibe el username (ej. "jperez"), el dominio @totalweight.pe
+    // se agrega al construir el DTO. Validamos solo el formato del username.
+    correo:           ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]+$/), Validators.maxLength(60)]],
+    // Teléfono: solo dígitos, +, espacios, paréntesis, guiones. Máx 20 chars.
+    telefono:         [null, [Validators.pattern(/^[0-9+() \-]*$/), Validators.maxLength(20)]],
+    // Cargo temporalmente opcional hasta que Bryan cargue los seeds de CARGO_USUARIO.
+    // Volver a Validators.required cuando el catálogo esté poblado.
+    cargo:            [''],
+    area:             ['', Validators.required],
     rolSistema:            ['', Validators.required],
-    baseOperativa:         ['', Validators.required],
+    sedeOperativa:         ['', Validators.required],
     idSupervisorDirecto:   [null],
     habilitadoFirmaInacal:        [false],
     numeroRegistroInacal:         [null],
@@ -194,13 +221,38 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     this.esNuevo.set(nuevo);
     this.borradorKey = `usuarios:${nuevo ? 'nuevo' : idParam}`;
 
-    // Sincronizar signal con el control del form para que los computed reaccionen
+    // Validador dinámico de número de documento según tipo (DNI 8 dígitos, CE 9, Pasaporte alfanumérico 6-12)
+    this.formulario.get('tipoDocumento')?.valueChanges.subscribe(tipo => {
+      this.actualizarValidadorDocumento(tipo ?? 'DNI');
+    });
+    this.actualizarValidadorDocumento(this.formulario.get('tipoDocumento')?.value ?? 'DNI');
+
+    // Sincronizar signals con los controls del form para que los computed reaccionen
     this.formulario.get('rolSistema')?.valueChanges.subscribe(v => {
       this.rolSistemaActual.set(v ?? '');
     });
+    this.formulario.get('area')?.valueChanges.subscribe(v => {
+      const nuevaArea = v ?? '';
+      // Al cambiar de área, resetear el cargo (puede no pertenecer a la nueva área)
+      if (nuevaArea !== this.areaActual()) {
+        this.formulario.get('cargo')?.setValue('', { emitEvent: false });
+      }
+      this.areaActual.set(nuevaArea);
+    });
 
     try {
-      const jefes = await this.usuariosSvc.obtenerJefesDisponibles();
+      // Catálogos de tabla_maestra en paralelo. Cada catálogo se carga de forma
+      // independiente: si un catálogo falla (ej. CARGO_USUARIO sin seeds aún),
+      // los otros igual se cargan y la ficha es usable.
+      const [jefes, sedes, areas, cargos] = await Promise.all([
+        this.usuariosSvc.obtenerJefesDisponibles(),
+        this.maestrosSvc.obtenerCatalogo('SEDE_OPERATIVA_TW').catch(() => []),
+        this.maestrosSvc.obtenerCatalogo('AREA_USUARIO').catch(() => []),
+        this.maestrosSvc.obtenerCatalogo('CARGO_USUARIO').catch(() => []),
+      ]);
+      this.sedesOperativas.set(sedes);
+      this.areasUsuario.set(areas);
+      this.cargosUsuario.set(cargos);
 
       if (!nuevo) {
         this.idUsuario = Number(idParam);
@@ -213,16 +265,19 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         await this.cargarSuplencias();
         await this.cargarComerciales();
         this.rolSistemaActual.set(u.rolSistema ?? '');
+        this.areaActual.set(u.area ?? '');
         this.formulario.patchValue({
           nombre:                       u.nombre,
           apellido:                     u.apellido,
           tipoDocumento:                u.tipoDocumento,
           numeroDocumento:              u.numeroDocumento,
-          correo:                       u.correo,
+          // El input solo muestra el username — quitamos el dominio al cargar
+          correo:                       u.correo?.replace(/@totalweight\.pe$/i, '') ?? '',
           telefono:                     u.telefono,
           cargo:                        u.cargo,
+          area:                         u.area,
           rolSistema:                   u.rolSistema,
-          baseOperativa:                u.baseOperativa,
+          sedeOperativa:                u.sedeOperativa,
           idSupervisorDirecto:          u.idSupervisorDirecto,
           habilitadoFirmaInacal:        u.habilitadoFirmaInacal,
           numeroRegistroInacal:         u.numeroRegistroInacal,
@@ -247,6 +302,65 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  /**
+   * Actualiza las reglas de longitud + pattern del campo numeroDocumento
+   * según el tipo de documento seleccionado.
+   */
+  private actualizarValidadorDocumento(tipo: string): void {
+    const ctrl = this.formulario.get('numeroDocumento');
+    if (!ctrl) return;
+    let patron: RegExp;
+    switch (tipo) {
+      case 'CE':         patron = /^[0-9]{9}$/;        break;  // Carnet de Extranjería: 9 dígitos
+      case 'Pasaporte':  patron = /^[a-zA-Z0-9]{6,12}$/; break;  // Pasaporte: alfanumérico 6-12
+      case 'DNI':
+      default:           patron = /^[0-9]{8}$/;        break;  // DNI: 8 dígitos
+    }
+    ctrl.setValidators([Validators.required, Validators.pattern(patron)]);
+    ctrl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Longitud máxima permitida en el input de documento según tipo (para HTML [maxlength]). */
+  get maxLengthDocumento(): number {
+    const t = this.formulario.get('tipoDocumento')?.value;
+    return t === 'CE' ? 9 : t === 'Pasaporte' ? 12 : 8;
+  }
+
+  /** Bloquea caracteres no válidos al escribir (filtro en tiempo real). */
+  filtrarSoloLetras(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ ]/g, '');
+    if (input.value !== limpio) input.value = limpio;
+  }
+
+  filtrarSoloNumeros(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = input.value.replace(/[^0-9]/g, '');
+    if (input.value !== limpio) input.value = limpio;
+  }
+
+  filtrarDocumento(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const t = this.formulario.get('tipoDocumento')?.value;
+    // DNI/CE solo números, Pasaporte alfanumérico
+    const limpio = t === 'Pasaporte'
+      ? input.value.replace(/[^a-zA-Z0-9]/g, '')
+      : input.value.replace(/[^0-9]/g, '');
+    if (input.value !== limpio) input.value = limpio;
+  }
+
+  filtrarTelefono(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = input.value.replace(/[^0-9+() \-]/g, '');
+    if (input.value !== limpio) input.value = limpio;
+  }
+
+  filtrarUsername(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const limpio = input.value.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (input.value !== limpio) input.value = limpio;
   }
 
   regenerarContrasena(): void {
@@ -326,11 +440,13 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         apellido:                     v.apellido?.trim(),
         tipoDocumento:                v.tipoDocumento,
         numeroDocumento:              v.numeroDocumento?.trim(),
-        correo:                       v.correo?.trim().toLowerCase(),
+        // Concatenamos el dominio corporativo al username ingresado (el input solo recibe username).
+        correo:                       `${v.correo?.trim().toLowerCase()}@totalweight.pe`,
         telefono:                     v.telefono || null,
         cargo:                        v.cargo?.trim() || null,
+        area:                         v.area || null,
         rolSistema:                   v.rolSistema,
-        baseOperativa:                v.baseOperativa,
+        sedeOperativa:                v.sedeOperativa,
         idSupervisorDirecto:          v.idSupervisorDirecto || null,
         habilitadoFirmaInacal:        !!v.habilitadoFirmaInacal,
         numeroRegistroInacal:         v.habilitadoFirmaInacal ? (v.numeroRegistroInacal || null) : null,

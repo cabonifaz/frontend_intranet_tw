@@ -15,6 +15,7 @@ export interface IniciarSesionSalida {
   apellido: string;
   correo: string;
   rolSistema: string;
+  forzarCambioContrasena: boolean;
 }
 
 export interface UsuarioSesion {
@@ -22,4 +23,10 @@ export interface UsuarioSesion {
   apellido: string;
   correo: string;
   rolSistema: string;
+  forzarCambioContrasena: boolean;
+}
+
+export interface CambiarContrasenaRequest {
+  contrasenaActual: string;
+  contrasenaNueva: string;
 }

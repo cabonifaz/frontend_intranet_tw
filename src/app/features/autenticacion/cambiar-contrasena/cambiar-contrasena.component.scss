@@ -1,0 +1,231 @@
+.cc-layout {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #131B2E;
+  padding: 24px;
+  overflow: hidden;
+
+  // Capa de imagen industrial (misma que login)
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/images/industrial-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.35;
+    z-index: 0;
+  }
+
+  // Degradado por encima para fijar el tono azul
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(147.99deg, rgba(19, 27, 46, 0.8) 0%, rgba(0, 74, 198, 0.4) 100%);
+    mix-blend-mode: multiply;
+    z-index: 1;
+  }
+}
+
+.cc-main {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.cc-card {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.cc-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cc-logo {
+  height: 48px;
+  margin-bottom: 4px;
+}
+
+.cc-titulo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 0;
+}
+
+.cc-subtitulo {
+  font-size: 13px;
+  color: #64748B;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &--error .cc-input {
+    border-color: #DC2626;
+    background: #FEF2F2;
+  }
+}
+
+.cc-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.cc-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cc-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 44px 0 14px;
+  border: 1px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #FFFFFF;
+  color: #0F172A;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  &::placeholder { color: #94A3B8; }
+}
+
+.cc-ojo {
+  position: absolute;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748B;
+  border-radius: 6px;
+
+  &:hover { background: #F1F5F9; color: #0F172A; }
+
+  .material-symbols-outlined { font-size: 20px; }
+}
+
+.cc-hint {
+  font-size: 11px;
+  color: #94A3B8;
+  margin: 2px 0 0;
+}
+
+.cc-error {
+  font-size: 12px;
+  color: #DC2626;
+  font-weight: 500;
+}
+
+.cc-error-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  color: #B91C1C;
+  font-size: 13px;
+
+  .material-symbols-outlined { font-size: 18px; }
+}
+
+.cc-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cc-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  &--primario {
+    background: #2563EB;
+    color: #FFFFFF;
+
+    &:hover:not(:disabled) { background: #1D4ED8; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  &--secundario {
+    background: #FFFFFF;
+    color: #475569;
+    border-color: #CBD5E1;
+
+    &:hover { background: #F8FAFC; color: #0F172A; }
+  }
+}
+
+.cc-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: cc-spin 0.6s linear infinite;
+}
+
+@keyframes cc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cc-footer {
+  font-size: 11px;
+  color: #94A3B8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}

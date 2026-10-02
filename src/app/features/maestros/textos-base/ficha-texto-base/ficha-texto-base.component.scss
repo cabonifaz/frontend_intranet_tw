@@ -617,7 +617,13 @@
     color: #0F172A;
     white-space: pre-wrap;
 
-    &--negrita { font-weight: 700; }
+    &--negrita  { font-weight: 700; }
+    &--sangria1 { padding-left: 16px; }
+    &--sangria2 { padding-left: 32px; }
+    &--vineta {
+      padding-left: 14px;
+      &::before { content: '• '; font-weight: 700; }
+    }
 
     ::ng-deep strong { color: #1D4ED8; }
   }
