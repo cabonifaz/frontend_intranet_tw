@@ -1,0 +1,96 @@
+<app-seccion
+  icono="gavel"
+  titulo="8. Condiciones del Servicio y Cláusulas Contractuales"
+  subtitulo="Selecciona, ordena y personaliza los términos contractuales aplicables a esta cotización"
+>
+  <div class="header-cond">
+    <span class="badge-marco">
+      <span class="material-symbols-outlined">assignment</span>
+      CONTRATO MARCO
+    </span>
+    <span class="badge-count">
+      Cláusulas activas: <strong>{{ clausulas().length }}</strong>
+    </span>
+    <div class="header-cond__filtros">
+      <label>Buscar por:</label>
+      <select [ngModel]="subtipoFiltro()" (ngModelChange)="subtipoFiltro.set($event)">
+        <option value="">Subtipo (Todos)</option>
+        @for (s of subtipos(); track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <app-doble-panel
+    tituloCatalogo="Textos Base / Cláusulas Disponibles"
+    tituloSeleccion="Condiciones del Servicio (en la Propuesta)"
+    [countCatalogo]="catalogoFiltrado().length + ' disponibles'"
+    [countSeleccion]="clausulas().length + ' cláusulas'"
+    placeholderBuscar="Filtrar texto o cláusula contractual..."
+    (buscar)="busqueda.set($event)"
+    (agregar)="agregar()"
+    (quitar)="quitar()"
+  >
+    <!-- Catálogo -->
+    <div dpanel-catalogo>
+      <ul class="lista-clausulas">
+        @for (c of catalogoFiltrado(); track c.id) {
+          <li class="lista-clausulas__item"
+              [class.lista-clausulas__item--activa]="seleccionada() === c.id"
+              (click)="seleccionada.set(c.id)">
+            <div class="lista-clausulas__meta">
+              <span class="chip-sub">{{ c.subtipo }}</span>
+              <span class="codigo">{{ c.codigo }}</span>
+            </div>
+            <span class="lista-clausulas__texto">{{ c.texto }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+
+    <!-- Selección -->
+    <div dpanel-seleccion>
+      @if (clausulas().length === 0) {
+        <div class="vacio-cond">
+          <span class="material-symbols-outlined">gavel</span>
+          <p>Sin cláusulas en la propuesta</p>
+          <button type="button" class="btn-restablecer" (click)="restablecerMarco()">Restablecer cláusulas marco</button>
+        </div>
+      } @else {
+        <ol class="clausulas-prop">
+          @for (c of clausulas(); track c.id; let i = $index) {
+            <li class="clausulas-prop__item"
+                [class.clausulas-prop__item--activa]="seleccionadaProp() === i"
+                (click)="seleccionadaProp.set(i)">
+              <span class="clausulas-prop__num">{{ i + 1 }}</span>
+              <textarea
+                [value]="c.texto"
+                rows="2"
+                (change)="actualizarTexto(i, $any($event.target).value)"
+                (click)="$event.stopPropagation()"
+              ></textarea>
+              <div class="clausulas-prop__acciones">
+                <button type="button" class="btn-icono-mini" (click)="$event.stopPropagation(); moverArriba(i)" title="Subir">
+                  <span class="material-symbols-outlined">arrow_upward</span>
+                </button>
+                <button type="button" class="btn-icono-mini" (click)="$event.stopPropagation(); moverAbajo(i)" title="Bajar">
+                  <span class="material-symbols-outlined">arrow_downward</span>
+                </button>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+
+    <div dpanel-footer>
+      <div class="footer-cond">
+        <button type="button" class="btn-pequeno">Nueva Cláusula</button>
+        <button type="button" class="btn-pequeno">Actualizar Catálogo</button>
+        <button type="button" class="btn-pequeno" (click)="restablecerMarco()">Restablecer Cláusulas Marco</button>
+        <span class="footer-cond__hint">Última sincronización con Contrato Marco: Hoy 05:19</span>
+      </div>
+    </div>
+  </app-doble-panel>
+</app-seccion>

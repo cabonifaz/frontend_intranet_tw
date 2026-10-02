@@ -1,0 +1,161 @@
+<form [formGroup]="form" class="config">
+
+  <!-- ── 1. Datos verificados del RQ ─────────────────────────────────────── -->
+  <app-seccion
+    icono="verified"
+    titulo="1. Datos verificados del RQ"
+    subtitulo="Información cargada automáticamente desde el requerimiento"
+  >
+    <button type="button" class="btn-inline" headerActions (click)="verOrigenRq()">
+      <span class="material-symbols-outlined">open_in_new</span>
+      Ver origen
+    </button>
+
+    <div class="grid-cols-3">
+      <app-campo label="Cliente">
+        <div class="lectura">{{ draftSvc.draft().razonSocial || '—' }}</div>
+      </app-campo>
+      <app-campo label="Contacto">
+        <div class="lectura">{{ draftSvc.draft().contacto || '—' }}</div>
+      </app-campo>
+      <app-campo label="RQ Vinculado">
+        <div class="lectura">
+          <span>{{ draftSvc.draft().codigoRequerimiento || 'Independiente' }}</span>
+          @if (draftSvc.draft().codigoRequerimiento) {
+            <span class="chip-info">RQ</span>
+          }
+        </div>
+      </app-campo>
+    </div>
+  </app-seccion>
+
+  <!-- ── 2. Configuración de la Propuesta ─────────────────────────────────── -->
+  <app-seccion
+    icono="tune"
+    titulo="2. Configuración de la Propuesta"
+    subtitulo="Elige las secciones que necesitarás; el stepper se ajustará automáticamente"
+  >
+    <button type="button" class="btn-inline" headerActions (click)="restaurarDefault()">
+      <span class="material-symbols-outlined">restart_alt</span>
+      Restaurar default
+    </button>
+
+    <div class="info-tip">
+      <span class="material-symbols-outlined">info</span>
+      <span>
+        <strong>Configuración, Propuesta, Forma de Pago y Listado de Equipos</strong> son obligatorias.
+        Las demás son opcionales — desactívalas si no las necesitas.
+      </span>
+    </div>
+
+    <div class="grid-secciones">
+      @for (sec of SECCIONES; track sec.key) {
+        <label class="seccion-chip"
+               [class.seccion-chip--activa]="secciones()[sec.key]"
+               [class.seccion-chip--obligatoria]="sec.obligatoria">
+          <input
+            type="checkbox"
+            [checked]="secciones()[sec.key]"
+            [disabled]="sec.obligatoria"
+            (change)="toggleSeccion(sec.key)"
+          />
+          <span class="seccion-chip__numero">{{ sec.numero }}</span>
+          <span class="seccion-chip__label">{{ sec.label }}</span>
+          @if (sec.obligatoria) {
+            <span class="material-symbols-outlined seccion-chip__candado" title="Sección obligatoria">lock</span>
+          }
+        </label>
+      }
+    </div>
+
+    <div class="divisor"></div>
+
+    <h4 class="subtitulo-mini">Parámetros operativos</h4>
+    <div class="grid-cols-2">
+      <app-campo label="Tipo de propuesta">
+        <select formControlName="tipoPropuesta">
+          <option value="">Seleccionar...</option>
+          @for (t of tiposPropuesta; track t.value) {
+            <option [value]="t.value">{{ t.label }}</option>
+          }
+        </select>
+      </app-campo>
+      <app-campo label="Responsable Comercial Asignado">
+        <div class="input-con-boton">
+          <input type="text" formControlName="responsableTecnico" readonly />
+          <button type="button" class="btn-inline" (click)="cambiarResponsable()">
+            Cambiar
+          </button>
+        </div>
+      </app-campo>
+    </div>
+
+    <div class="divisor"></div>
+
+    <div class="toggle-linea">
+      <app-toggle formControlName="requiereTercerizacion" />
+      <div class="toggle-linea__texto">
+        <strong>¿Servicio Tercerizado?</strong>
+        <span>Propuesta y certificación emitidas a nombre de una empresa intermediaria.</span>
+      </div>
+    </div>
+  </app-seccion>
+
+  <!-- ── 3. Datos de la Empresa Certificadora (si tercerizado) ───────────── -->
+  @if (form.get('requiereTercerizacion')?.value) {
+    <app-seccion
+      icono="business"
+      titulo="3. Datos de la Empresa para Certificación de Calibración"
+      subtitulo="La propuesta y el certificado se emitirán a nombre de esta empresa"
+      badgeTexto="TERCERIZADO"
+      badgeVariant="azul"
+    >
+      <div class="grid-cols-2">
+        <app-campo label="RUC">
+          <input type="text" formControlName="terceroRuc" placeholder="Ej: 20100036352" />
+        </app-campo>
+        <app-campo label="Razón social">
+          <input type="text" formControlName="terceroEmpresa" placeholder="Nombre legal de la empresa" />
+        </app-campo>
+        <app-campo label="Nombre comercial">
+          <input type="text" formControlName="terceroNombreComercial" placeholder="Nombre de marca" />
+        </app-campo>
+        <app-campo label="País fiscal">
+          <input type="text" formControlName="terceroPais" />
+        </app-campo>
+      </div>
+      <app-campo label="Dirección fiscal">
+        <input type="text" formControlName="terceroDireccion" placeholder="Av. ... distrito, provincia" />
+      </app-campo>
+    </app-seccion>
+  }
+
+  <!-- ── 4. Datos de la Propuesta — Carátula y Formalidades ─────────────── -->
+  <app-seccion
+    icono="description"
+    titulo="4. Datos de la Propuesta — Carátula y Formalidades"
+    subtitulo="Textos y datos que aparecerán en la primera página del PDF"
+  >
+    <button type="button" class="btn-inline" headerActions (click)="verCaratulaPdf()">
+      <span class="material-symbols-outlined">picture_as_pdf</span>
+      Vista previa carátula
+    </button>
+
+    <div class="grid-cols-2">
+      <app-campo label="Cliente">
+        <input type="text" [value]="draftSvc.draft().razonSocial" readonly />
+      </app-campo>
+      <app-campo label="Dirigido a">
+        <input type="text" formControlName="dirigidoA" placeholder="Nombre + cargo del destinatario" />
+      </app-campo>
+    </div>
+    <app-campo label="Introducción / saludo">
+      <textarea
+        formControlName="textoIntroduccion"
+        rows="4"
+        placeholder="Mensaje introductorio que aparece debajo del saludo..."
+      ></textarea>
+    </app-campo>
+  </app-seccion>
+
+</form>

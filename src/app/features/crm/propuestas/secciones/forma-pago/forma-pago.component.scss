@@ -1,0 +1,210 @@
+:host { display: block; }
+
+.forma-pago {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.subtitulo-mini {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.badge-politica {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.toggle-linea {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+    color: #64748B;
+
+    strong { color: #0F172A; font-size: 13px; font-weight: 600; }
+  }
+}
+
+// ── Botón agregar cuota (header del bloque forma de pago) ───────────────────
+.btn-add-cuota {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover { background: #1D4ED8; }
+}
+
+// ── Lista de cuotas ─────────────────────────────────────────────────────────
+.cuotas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cuota {
+  display: grid;
+  grid-template-columns: 80px 110px 1fr 40px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+
+  &__hito {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  &__pct {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    height: 36px;
+
+    input {
+      width: 50px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+      text-align: center;
+      outline: none;
+      font-family: inherit;
+    }
+
+    span {
+      font-size: 12px;
+      color: #64748B;
+      font-weight: 600;
+    }
+  }
+
+  &__desc {
+    padding: 8px 12px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0F172A;
+    outline: none;
+    font-family: inherit;
+
+    &:focus { border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
+  }
+
+  &__eliminar {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFFFFF;
+    color: #94A3B8;
+    border: 1px solid #E2E8F0;
+    border-radius: 50%;
+    cursor: pointer;
+
+    .material-symbols-outlined { font-size: 16px; }
+
+    &:hover { background: #FEE2E2; color: #DC2626; border-color: #FECACA; }
+  }
+}
+
+// ── Validación 100% ─────────────────────────────────────────────────────────
+.validacion-100 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  strong { font-weight: 700; }
+
+  &--ok {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    color: #047857;
+  }
+
+  &--error {
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    color: #B91C1C;
+  }
+}
+
+// ── Footer: botones link ────────────────────────────────────────────────────
+.footer-fp {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.btn-link-fp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  color: #2563EB;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover { background: #EFF6FF; }
+}

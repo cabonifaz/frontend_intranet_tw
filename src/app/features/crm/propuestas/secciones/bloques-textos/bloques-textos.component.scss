@@ -1,0 +1,233 @@
+:host { display: block; }
+
+// ── Lista de textos del catálogo (izq) ──────────────────────────────────────
+.lista-textos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  &__item {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #F1F5F9;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: #F8FAFC; }
+
+    &--activo {
+      background: #EFF6FF;
+      border-left: 3px solid #2563EB;
+      padding-left: 11px;
+    }
+  }
+
+  &__bullet {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #94A3B8;
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+
+  &__texto {
+    flex: 1;
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  &__item--activo .lista-textos__bullet { background: #2563EB; }
+  &__item--activo .lista-textos__texto  { color: #0F172A; font-weight: 500; }
+}
+
+// ── Vacíos ──────────────────────────────────────────────────────────────────
+.vacio-mini {
+  padding: 24px;
+  text-align: center;
+  color: #94A3B8;
+  font-size: 12px;
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  color: #94A3B8;
+  font-size: 13px;
+  text-align: center;
+
+  .material-symbols-outlined { font-size: 36px; opacity: 0.5; }
+
+  p { margin: 0; }
+}
+
+// ── Bloques jerárquicos (der) ──────────────────────────────────────────────
+.bloques {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.bloque-grupo {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: #CBD5E1; }
+
+  &--activo {
+    border-color: #2563EB;
+    background: #F0F9FF;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  &__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #2563EB;
+    color: #FFFFFF;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__titulo {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+
+    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; }
+    &:hover { background: #FFFFFF; border-color: #E2E8F0; }
+  }
+
+  &__hint {
+    margin: 4px 0 0 30px;
+    font-size: 11px;
+    color: #94A3B8;
+    font-style: italic;
+  }
+
+  &__vinetas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    li {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding-left: 30px;
+      position: relative;
+
+      &::before {
+        content: '•';
+        position: absolute;
+        left: 18px;
+        color: #94A3B8;
+      }
+
+      input {
+        flex: 1;
+        padding: 5px 8px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        font-size: 12px;
+        color: #475569;
+        font-family: inherit;
+
+        &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; }
+        &:hover { background: #FFFFFF; border-color: #E2E8F0; }
+      }
+    }
+  }
+}
+
+.chip-mini {
+  padding: 2px 7px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.btn-eliminar-mini {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #94A3B8;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &:hover { background: #FEE2E2; color: #DC2626; }
+}
+
+// ── Botones ──────────────────────────────────────────────────────────────────
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: 1px solid #2563EB;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover { background: #1D4ED8; }
+
+  &--outline {
+    background: #FFFFFF;
+    color: #2563EB;
+    border: 1px dashed #93C5FD;
+
+    &:hover { background: #EFF6FF; }
+  }
+}
+
+.acciones-abajo {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border-top: 1px solid #F1F5F9;
+}

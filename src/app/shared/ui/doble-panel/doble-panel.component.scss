@@ -1,0 +1,147 @@
+:host { display: block; }
+
+.dpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  // ── Barra superior ───────────────────────────────────────────────────────
+  &__barra {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  &__busqueda {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 240px;
+    height: 40px;
+
+    .material-symbols-outlined { color: #94A3B8; font-size: 18px; }
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      color: #0F172A;
+      background: transparent;
+      height: 100%;
+
+      &::placeholder { color: #94A3B8; }
+    }
+  }
+
+  // ── Grid principal (catálogo | botones | selección) ─────────────────────
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 400px;
+
+    &--catalogo { border-left: 3px solid #94A3B8; }
+    &--seleccion { border-left: 3px solid #2563EB; }
+  }
+
+  &__panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+  }
+
+  &__panel-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  &__panel-count {
+    font-size: 11px;
+    color: #64748B;
+    font-weight: 500;
+
+    &--azul { color: #1D4ED8; font-weight: 700; }
+  }
+
+  &__panel-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  // ── Botones centrales ────────────────────────────────────────────────────
+  &__botones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-self: center;
+  }
+
+  // ── Footer ───────────────────────────────────────────────────────────────
+  &__footer:not(:empty) {
+    padding-top: 4px;
+  }
+}
+
+// ── Botones de buscar y flechas ──────────────────────────────────────────────
+.btn-buscar {
+  padding: 7px 14px;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: #1D4ED8; }
+}
+
+.btn-flecha {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: 1px solid #2563EB;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  .material-symbols-outlined { font-size: 20px; }
+
+  &:hover { background: #1D4ED8; }
+
+  &--secundaria {
+    background: #FFFFFF;
+    color: #64748B;
+    border-color: #E2E8F0;
+
+    &:hover { background: #F8FAFC; color: #0F172A; }
+  }
+}

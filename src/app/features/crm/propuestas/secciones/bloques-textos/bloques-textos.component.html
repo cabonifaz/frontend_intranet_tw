@@ -1,0 +1,89 @@
+<app-doble-panel
+  [tituloCatalogo]="tituloCatalogo()"
+  [tituloSeleccion]="tituloSeleccion()"
+  [countCatalogo]="textosFiltrados().length + ' disponibles'"
+  [countSeleccion]="grupos().length + ' grupos · ' + totalVinetas() + ' viñetas'"
+  [placeholderBuscar]="filtroPlaceholder()"
+  (buscar)="onBuscar($event)"
+  (agregar)="agregar()"
+  (quitar)="quitar()"
+>
+  <!-- ── Catálogo (izq) ─────────────────────────────────────────── -->
+  <div dpanel-catalogo>
+    <ul class="lista-textos">
+      @for (t of textosFiltrados(); track t.id) {
+        <li
+          class="lista-textos__item"
+          [class.lista-textos__item--activo]="textoSeleccionado() === t.id"
+          (click)="textoSeleccionado.set(t.id)"
+        >
+          <span class="lista-textos__bullet"></span>
+          <span class="lista-textos__texto">{{ t.texto }}</span>
+        </li>
+      } @empty {
+        <div class="vacio-mini">Sin textos disponibles</div>
+      }
+    </ul>
+  </div>
+
+  <!-- ── Selección (der) — bloques jerárquicos ──────────────────── -->
+  <div dpanel-seleccion>
+    @if (grupos().length === 0) {
+      <div class="vacio">
+        <span class="material-symbols-outlined">format_list_bulleted</span>
+        <p>Añade un grupo y luego inserta viñetas desde el catálogo</p>
+        <button type="button" class="btn-add" (click)="agregarGrupo()">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo grupo
+        </button>
+      </div>
+    } @else {
+      <div class="bloques">
+        @for (g of grupos(); track g.id; let i = $index) {
+          <div class="bloque-grupo"
+               [class.bloque-grupo--activo]="grupoActivo() === g.id"
+               (click)="grupoActivo.set(g.id)">
+            <div class="bloque-grupo__header">
+              <span class="bloque-grupo__num">{{ i + 1 }}</span>
+              <input
+                type="text"
+                class="bloque-grupo__titulo"
+                [value]="g.titulo"
+                (change)="actualizarTituloGrupo(g.id, $any($event.target).value)"
+                (click)="$event.stopPropagation()"
+              />
+              <span class="chip-mini">TÍTULO</span>
+            </div>
+
+            @if (g.vinetas.length === 0) {
+              <p class="bloque-grupo__hint">Selecciona un texto del catálogo y clic en →</p>
+            } @else {
+              <ul class="bloque-grupo__vinetas">
+                @for (v of g.vinetas; track v.id) {
+                  <li>
+                    <input
+                      type="text"
+                      [value]="v.texto"
+                      (change)="actualizarTextoVineta(g.id, v.id, $any($event.target).value)"
+                      (click)="$event.stopPropagation()"
+                    />
+                    <button type="button" class="btn-eliminar-mini"
+                            (click)="$event.stopPropagation(); eliminarVineta(g.id, v.id)">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+      </div>
+      <div class="acciones-abajo">
+        <button type="button" class="btn-add btn-add--outline" (click)="agregarGrupo()">
+          <span class="material-symbols-outlined">add</span>
+          Nuevo título / grupo
+        </button>
+      </div>
+    }
+  </div>
+</app-doble-panel>

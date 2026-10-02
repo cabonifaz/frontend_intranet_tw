@@ -1,0 +1,104 @@
+<form [formGroup]="form" class="forma-pago">
+
+  <!-- ── Condiciones Generales ───────────────────────────────────────────── -->
+  <app-seccion
+    icono="payments"
+    titulo="6. Condiciones Generales y Modalidad de Pago"
+    subtitulo="Define las condiciones comerciales, moneda, plazos de entrega y validez de la oferta económica"
+  >
+    <span headerActions class="badge-politica">POLÍTICA COMERCIAL TW</span>
+
+    <h4 class="subtitulo-mini">Condiciones generales de la propuesta</h4>
+    <div class="grid-cols-3">
+      <app-campo label="Tipo de Moneda">
+        <select formControlName="tipoMoneda">
+          <option value="USD">Dólares Americanos (US $USD)</option>
+          <option value="PEN">Soles Peruanos (S/. PEN)</option>
+        </select>
+      </app-campo>
+      <app-campo label="Tipo de Cambio (T/C)">
+        <input type="number" step="0.001" formControlName="tipoCambio" />
+      </app-campo>
+      <app-campo label="Garantía de Equipos (meses)">
+        <input type="number" min="0" formControlName="garantiaEquipos" />
+      </app-campo>
+    </div>
+
+    <div class="grid-cols-3">
+      <app-campo label="Plazo de Entrega">
+        <input type="number" min="0" formControlName="plazoEntrega" />
+      </app-campo>
+      <app-campo label="Días">
+        <select formControlName="plazoEntregaUnidad">
+          <option value="habiles">Días hábiles</option>
+          <option value="calendario">Días calendario</option>
+        </select>
+      </app-campo>
+      <app-campo label="Validez de Oferta (días)">
+        <input type="number" min="0" formControlName="validezOferta" />
+      </app-campo>
+    </div>
+
+    <div class="toggle-linea">
+      <app-toggle formControlName="igvDesagregado" />
+      <div class="toggle-linea__texto">
+        <strong>Mostrar IGV desagregado (18%)</strong>
+        <span>Si está marcado, los precios se muestran como subtotal + IGV. Si no, se desagregan solo al pie.</span>
+      </div>
+    </div>
+  </app-seccion>
+
+  <!-- ── Forma de Pago / Método ──────────────────────────────────────────── -->
+  <app-seccion
+    icono="account_balance"
+    titulo="Forma de Pago / Método de Pago"
+    subtitulo="Define cómo se dividirá el pago en hitos. El total debe sumar 100%"
+  >
+    <button headerActions type="button" class="btn-add-cuota" (click)="agregarCuota()">
+      <span class="material-symbols-outlined">add</span>
+      Agregar forma de pago
+    </button>
+
+    <div class="cuotas">
+      @for (c of cuotas(); track c.id; let i = $index) {
+        <div class="cuota">
+          <span class="cuota__hito">Hito {{ i + 1 }}</span>
+          <div class="cuota__pct">
+            <input type="number" min="0" max="100"
+                   [value]="c.porcentaje"
+                   (change)="actualizarCuota(c.id, 'porcentaje', +$any($event.target).value)" />
+            <span>%</span>
+          </div>
+          <input type="text"
+                 class="cuota__desc"
+                 [value]="c.descripcion"
+                 (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)" />
+          <button type="button" class="cuota__eliminar" (click)="eliminarCuota(c.id)">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <div class="validacion-100" [class.validacion-100--ok]="esValido100()" [class.validacion-100--error]="!esValido100()">
+      <span class="material-symbols-outlined">
+        {{ esValido100() ? 'check_circle' : 'error' }}
+      </span>
+      Total: <strong>{{ totalCuotas() }}%</strong>
+      @if (esValido100()) { — Suma 100% completada }
+      @else { — Faltan {{ (100 - totalCuotas()).toFixed(1) }}% para completar }
+    </div>
+
+    <div class="footer-fp">
+      <button type="button" class="btn-link-fp" (click)="restablecerDefault()">
+        <span class="material-symbols-outlined">restart_alt</span>
+        Restablecer valores predeterminados
+      </button>
+      <button type="button" class="btn-link-fp">
+        <span class="material-symbols-outlined">download</span>
+        Cargar condiciones del Contrato Marco Antamina
+      </button>
+    </div>
+  </app-seccion>
+
+</form>

@@ -1,0 +1,130 @@
+<app-seccion
+  icono="shopping_cart"
+  titulo="2. Propuesta Comercial"
+  subtitulo="Selecciona del catálogo los suministros y servicios que incluirá la propuesta"
+>
+  <app-doble-panel
+    tituloCatalogo="Catálogo de Suministros / Servicios"
+    tituloSeleccion="Propuesta Comercial"
+    [countCatalogo]="catalogoFiltrado().length + ' disponibles'"
+    [countSeleccion]="lineas().length + ' seleccionados'"
+    placeholderBuscar="Buscar por descripción, código o tipo..."
+    (buscar)="buscar($event)"
+    (agregar)="agregar()"
+    (quitar)="quitar()"
+  >
+    <!-- ── Catálogo (izq) ─────────────────────────────────────────── -->
+    <div dpanel-catalogo>
+      <table class="tabla-min">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>DESCRIPCIÓN</th>
+            <th>TIPO</th>
+            <th>SUB TIPO</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of catalogoFiltrado(); track c.id) {
+            <tr
+              (click)="seleccionado.set(c.id)"
+              [class.tabla-min__fila--activa]="seleccionado() === c.id">
+              <td class="mono">{{ c.id }}</td>
+              <td>{{ c.descripcion }}</td>
+              <td class="celda-tipo">{{ c.tipo }}</td>
+              <td class="celda-tipo">{{ c.subtipo }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Selección (der) ────────────────────────────────────────── -->
+    <div dpanel-seleccion>
+      @if (lineas().length === 0) {
+        <div class="vacio">
+          <span class="material-symbols-outlined">add_shopping_cart</span>
+          Añade suministros desde el catálogo
+        </div>
+      } @else {
+        <table class="tabla-editable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>DESCRIPCIÓN</th>
+              <th>ALCANCE</th>
+              <th class="centro">PTOS<br>CALIB.</th>
+              <th class="centro">CANT.</th>
+              <th class="centro">FREC.</th>
+              <th class="centro">V. UNIT.</th>
+              <th class="centro">DCTO %</th>
+              <th class="derecha">SUBTOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of lineas(); track $index) {
+              <tr
+                (click)="seleccionadoLinea.set($index)"
+                [class.tabla-editable__fila--activa]="seleccionadoLinea() === $index">
+                <td class="mono">{{ $index + 1 }}</td>
+                <td class="celda-desc">{{ l.descripcion }}</td>
+                <td>
+                  <input type="text" [value]="l.alcance"
+                         (change)="actualizarLinea($index, 'alcance', $any($event.target).value)" />
+                </td>
+                <td>
+                  <input type="text" [value]="l.ptosCalibracion"
+                         (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)" />
+                </td>
+                <td>
+                  <input type="number" min="1" [value]="l.cantidad"
+                         (change)="actualizarLinea($index, 'cantidad', +$any($event.target).value)" />
+                </td>
+                <td>
+                  <input type="number" min="1" [value]="l.frecuencia"
+                         (change)="actualizarLinea($index, 'frecuencia', +$any($event.target).value)" />
+                </td>
+                <td>
+                  <input type="number" step="0.01" [value]="l.precioUnitario"
+                         (change)="actualizarLinea($index, 'precioUnitario', +$any($event.target).value)" />
+                </td>
+                <td>
+                  <input type="number" min="0" max="100" [value]="l.descuentoPct"
+                         (change)="actualizarLinea($index, 'descuentoPct', +$any($event.target).value)" />
+                </td>
+                <td class="derecha mono">{{ formato(subtotalLinea(l)) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- ── Footer: totales + acciones ─────────────────────────────── -->
+    <div dpanel-footer>
+      <div class="totales-row">
+        <div class="totales-row__izq">
+          <button type="button" class="btn-pequeno">Nuevo</button>
+          <button type="button" class="btn-pequeno">Actualizar</button>
+          <button type="button" class="btn-pequeno btn-pequeno--rojo">Anular</button>
+          <button type="button" class="btn-pequeno btn-pequeno--azul">Guardar</button>
+          <button type="button" class="btn-pequeno">Vista Previa</button>
+        </div>
+        <div class="totales-row__der">
+          <div class="total-item">
+            <span class="total-item__label">SUB TOTAL</span>
+            <span class="total-item__valor">$ {{ formato(draftSvc.subtotal() + totalDescuento()) }}</span>
+          </div>
+          <div class="total-item">
+            <span class="total-item__label">DESCUENTO</span>
+            <span class="total-item__valor">$ {{ formato(totalDescuento()) }}</span>
+          </div>
+          <div class="total-item total-item--grande">
+            <span class="total-item__label">TOTAL</span>
+            <span class="total-item__valor">$ {{ formato(draftSvc.subtotal()) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-doble-panel>
+</app-seccion>

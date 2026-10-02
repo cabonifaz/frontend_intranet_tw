@@ -1,0 +1,207 @@
+:host { display: block; }
+
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ── Grids reutilizables (coinciden con las otras fichas) ────────────────────
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 700px) { grid-template-columns: 1fr; }
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+// ── Celda readonly estilo "lectura" (patrón del sistema) ────────────────────
+.lectura {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #0F172A;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+
+.chip-info {
+  padding: 2px 8px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+// ── Botón inline (acción secundaria dentro de un header o inline) ───────────
+.btn-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 1px dashed #93C5FD;
+  border-radius: 8px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+
+  .material-symbols-outlined { font-size: 16px; }
+
+  &:hover { background: #DBEAFE; }
+}
+
+// ── Input + botón adyacente ─────────────────────────────────────────────────
+.input-con-boton {
+  display: flex;
+  gap: 8px;
+
+  > input, > select { flex: 1; }
+}
+
+// ── Tip informativo ─────────────────────────────────────────────────────────
+.info-tip {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  color: #1E40AF;
+  font-size: 12px;
+  line-height: 1.5;
+
+  strong { font-weight: 700; }
+
+  .material-symbols-outlined { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+}
+
+// ── Grid de 9 secciones ─────────────────────────────────────────────────────
+.grid-secciones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 700px) { grid-template-columns: 1fr; }
+}
+
+.seccion-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  input[type="checkbox"] {
+    accent-color: #2563EB;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &__numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #FFFFFF;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  &__candado {
+    font-size: 14px;
+    color: #94A3B8;
+    flex-shrink: 0;
+  }
+
+  &--activa {
+    background: #EFF6FF;
+    border-color: #BFDBFE;
+
+    .seccion-chip__numero { background: #2563EB; color: #FFFFFF; border-color: #2563EB; }
+    .seccion-chip__label  { color: #0F172A; font-weight: 600; }
+  }
+
+  &--obligatoria {
+    cursor: not-allowed;
+    opacity: 0.95;
+
+    input[type="checkbox"] { cursor: not-allowed; }
+  }
+
+  &:hover:not(.seccion-chip--obligatoria) {
+    border-color: #2563EB;
+  }
+}
+
+// ── Divisor horizontal fino ─────────────────────────────────────────────────
+.divisor {
+  height: 1px;
+  background: #F1F5F9;
+  margin: 2px 0;
+}
+
+// ── Subtítulo entre bloques ─────────────────────────────────────────────────
+.subtitulo-mini {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+// ── Toggle con descripción (patrón del sistema) ─────────────────────────────
+.toggle-linea {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12px;
+    color: #64748B;
+
+    strong { color: #0F172A; font-size: 13px; font-weight: 600; }
+  }
+}

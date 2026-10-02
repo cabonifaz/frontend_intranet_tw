@@ -178,6 +178,51 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/propuestas',
+        loadComponent: () =>
+          import('./features/crm/propuestas/lista-propuestas/lista-propuestas.component').then(
+            m => m.ListaPropuestasComponent
+          ),
+      },
+      {
+        path: 'crm/propuestas/nueva',
+        loadComponent: () =>
+          import('./features/crm/propuestas/wizard/propuesta-wizard.component').then(
+            m => m.PropuestaWizardComponent
+          ),
+        children: [
+          { path: '', redirectTo: 'configuracion', pathMatch: 'full' },
+          { path: 'configuracion',       loadComponent: () => import('./features/crm/propuestas/secciones/configuracion/configuracion.component').then(m => m.ConfiguracionComponent) },
+          { path: 'propuesta',           loadComponent: () => import('./features/crm/propuestas/secciones/propuesta/propuesta.component').then(m => m.PropuestaComponent) },
+          { path: 'opcionales',          loadComponent: () => import('./features/crm/propuestas/secciones/opcionales/opcionales.component').then(m => m.OpcionalesComponent) },
+          { path: 'detalle',             loadComponent: () => import('./features/crm/propuestas/secciones/detalle/detalle.component').then(m => m.DetalleComponent) },
+          { path: 'recomendaciones',     loadComponent: () => import('./features/crm/propuestas/secciones/recomendaciones/recomendaciones.component').then(m => m.RecomendacionesComponent) },
+          { path: 'forma-pago',          loadComponent: () => import('./features/crm/propuestas/secciones/forma-pago/forma-pago.component').then(m => m.FormaPagoComponent) },
+          { path: 'suministros-cliente', loadComponent: () => import('./features/crm/propuestas/secciones/suministros-cliente/suministros-cliente.component').then(m => m.SuministrosClienteComponent) },
+          { path: 'condiciones',         loadComponent: () => import('./features/crm/propuestas/secciones/condiciones/condiciones.component').then(m => m.CondicionesComponent) },
+          { path: 'listado-equipos',     loadComponent: () => import('./features/crm/propuestas/secciones/listado-equipos/listado-equipos.component').then(m => m.ListadoEquiposComponent) },
+        ],
+      },
+      {
+        path: 'crm/propuestas/:id/editar',
+        loadComponent: () =>
+          import('./features/crm/propuestas/wizard/propuesta-wizard.component').then(
+            m => m.PropuestaWizardComponent
+          ),
+        children: [
+          { path: '', redirectTo: 'configuracion', pathMatch: 'full' },
+          { path: 'configuracion',       loadComponent: () => import('./features/crm/propuestas/secciones/configuracion/configuracion.component').then(m => m.ConfiguracionComponent) },
+          { path: 'propuesta',           loadComponent: () => import('./features/crm/propuestas/secciones/propuesta/propuesta.component').then(m => m.PropuestaComponent) },
+          { path: 'opcionales',          loadComponent: () => import('./features/crm/propuestas/secciones/opcionales/opcionales.component').then(m => m.OpcionalesComponent) },
+          { path: 'detalle',             loadComponent: () => import('./features/crm/propuestas/secciones/detalle/detalle.component').then(m => m.DetalleComponent) },
+          { path: 'recomendaciones',     loadComponent: () => import('./features/crm/propuestas/secciones/recomendaciones/recomendaciones.component').then(m => m.RecomendacionesComponent) },
+          { path: 'forma-pago',          loadComponent: () => import('./features/crm/propuestas/secciones/forma-pago/forma-pago.component').then(m => m.FormaPagoComponent) },
+          { path: 'suministros-cliente', loadComponent: () => import('./features/crm/propuestas/secciones/suministros-cliente/suministros-cliente.component').then(m => m.SuministrosClienteComponent) },
+          { path: 'condiciones',         loadComponent: () => import('./features/crm/propuestas/secciones/condiciones/condiciones.component').then(m => m.CondicionesComponent) },
+          { path: 'listado-equipos',     loadComponent: () => import('./features/crm/propuestas/secciones/listado-equipos/listado-equipos.component').then(m => m.ListadoEquiposComponent) },
+        ],
+      },
+      {
         path: 'crm/requerimientos',
         loadComponent: () =>
           import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(

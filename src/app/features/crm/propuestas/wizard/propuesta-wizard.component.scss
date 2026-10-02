@@ -1,0 +1,473 @@
+// ── Página (patrón ficha-page del sistema) ──────────────────────────────────
+.wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
+}
+
+// ── Badge ZERO DATA ENTRY (acción del page-header) ──────────────────────────
+.badge-zde {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+// ── Banner "Propuesta existente detectada" ──────────────────────────────────
+.banner-aviso {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 12px;
+
+  &__izq {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  &__icono {
+    color: #B45309;
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: #78350F;
+
+    strong { color: #78350F; font-weight: 700; }
+  }
+
+  &__link {
+    color: #B45309;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+}
+
+.btn-banner {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--primario {
+    background: #2563EB;
+    color: #FFFFFF;
+    border: 1px solid #2563EB;
+
+    &:hover { background: #1D4ED8; }
+  }
+
+  &--secundario {
+    background: #FFFFFF;
+    color: #78350F;
+    border: 1px solid #FDE68A;
+
+    &:hover { background: #FEF3C7; }
+  }
+}
+
+// ── Stepper horizontal ──────────────────────────────────────────────────────
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  overflow-x: auto;
+
+  &__paso {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #94A3B8;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover { background: #F8FAFC; color: #475569; }
+
+    &--completado {
+      color: #059669;
+
+      .stepper__numero {
+        background: #ECFDF5;
+        color: #059669;
+        border-color: #A7F3D0;
+
+        .material-symbols-outlined { font-size: 16px; }
+      }
+    }
+
+    &--activo {
+      color: #0F172A;
+      background: #EFF6FF;
+      font-weight: 600;
+
+      .stepper__numero {
+        background: #2563EB;
+        color: #FFFFFF;
+        border-color: #2563EB;
+      }
+    }
+  }
+
+  &__numero {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #F1F5F9;
+    color: #64748B;
+    border: 1px solid #E2E8F0;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__separador {
+    flex: 1;
+    min-width: 12px;
+    height: 1px;
+    background: #E2E8F0;
+    margin: 0 2px;
+  }
+}
+
+// ── Grid ficha (main + sidebar sticky) — mismo patrón que ficha-suministro ──
+.ficha-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1200px) { grid-template-columns: 1fr; }
+}
+
+.ficha-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+// Oculta el router-outlet dentro del wizard (es inline y mete whitespace)
+:host ::ng-deep .ficha-main > router-outlet { display: none; }
+:host ::ng-deep .ficha-main > *:not(router-outlet) { display: block; min-width: 0; }
+
+.ficha-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 24px;
+}
+
+.ficha-footer {
+  grid-column: 1 / 2;
+  margin-top: 4px;
+}
+
+// ── Sidebar cards ────────────────────────────────────────────────────────────
+.sidebar-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &--totales {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__modo {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.6px;
+  }
+
+  &__codigo {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  &__referencia {
+    font-size: 12px;
+    color: #64748B;
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  &__totales {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  &__hint {
+    font-size: 12px;
+    color: #94A3B8;
+    margin: 0;
+    font-style: italic;
+  }
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &__label {
+    font-size: 11px;
+    color: #64748B;
+    font-weight: 500;
+  }
+
+  &__valor {
+    font-size: 13px;
+    color: #0F172A;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+
+    &--destacado {
+      font-size: 20px;
+      color: #059669;
+      letter-spacing: -0.3px;
+    }
+  }
+
+  &--grande {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid #F1F5F9;
+
+    .total-row__label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+.expediente {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  &__icono {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #EFF6FF;
+    color: #2563EB;
+    border-radius: 8px;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+
+    strong { color: #0F172A; font-weight: 600; }
+    span { color: #94A3B8; }
+  }
+}
+
+.btn-sidebar {
+  padding: 8px 12px;
+  background: #FFFFFF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: #EFF6FF; }
+}
+
+.flujo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__paso {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 18px;
+      bottom: -14px;
+      width: 2px;
+      background: #E2E8F0;
+    }
+
+    &--completado {
+      .flujo__dot { background: #059669; border-color: #A7F3D0; }
+      &:not(:last-child)::after { background: #A7F3D0; }
+    }
+
+    &--activo {
+      .flujo__dot {
+        background: #2563EB;
+        border-color: #BFDBFE;
+        box-shadow: 0 0 0 3px #DBEAFE;
+      }
+
+      .flujo__info strong { color: #0F172A; }
+    }
+  }
+
+  &__dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    border: 2px solid #E2E8F0;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+
+    strong { color: #475569; font-weight: 600; }
+    span { color: #94A3B8; font-size: 11px; }
+  }
+}
+
+// ── Footer sticky con botones ───────────────────────────────────────────────
+.wizard__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  position: sticky;
+  bottom: 20px;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+
+  &-der {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+.btn-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &--primario {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+
+    &:hover { background: #1D4ED8; }
+  }
+
+  &--exito {
+    background: #059669;
+    color: #FFFFFF;
+    border-color: #059669;
+
+    &:hover { background: #047857; }
+  }
+
+  &--secundario {
+    background: transparent;
+    color: #64748B;
+    border-color: #E2E8F0;
+
+    &:hover { background: #F8FAFC; color: #0F172A; }
+  }
+
+  &--terciario {
+    background: #FFFFFF;
+    color: #475569;
+    border-color: #E2E8F0;
+
+    &:hover { background: #F8FAFC; color: #0F172A; }
+  }
+}

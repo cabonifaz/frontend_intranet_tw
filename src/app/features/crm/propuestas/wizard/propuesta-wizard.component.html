@@ -1,0 +1,185 @@
+<div class="wizard">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  <app-page-header
+    icono="description"
+    titulo="Nueva Propuesta Comercial"
+    [subtitulo]="draftSvc.draft().codigoRequerimiento
+      ? 'Generando documento basado en el requerimiento ' + draftSvc.draft().codigoRequerimiento + (draftSvc.draft().razonSocial ? ' · ' + draftSvc.draft().razonSocial : '')
+      : 'Propuesta independiente (sin vínculo a requerimiento)'"
+  >
+    <span class="badge-zde">
+      <span class="material-symbols-outlined">bolt</span>
+      ZERO DATA ENTRY ACTIVO
+    </span>
+  </app-page-header>
+
+  <!-- ── Banner propuesta existente ──────────────────────────────────────────── -->
+  @if (propuestaPrevia() && !bannerCerrado()) {
+    <div class="banner-aviso">
+      <div class="banner-aviso__izq">
+        <span class="material-symbols-outlined banner-aviso__icono">warning</span>
+        <div class="banner-aviso__texto">
+          <strong>Propuesta existente detectada</strong>
+          <span>
+            Ya existe una propuesta vinculada a este requerimiento:
+            <a href="#" class="banner-aviso__link">{{ propuestaPrevia()!.codigo }}</a>.
+            ¿Cómo desea proceder?
+          </span>
+        </div>
+      </div>
+      <div class="banner-aviso__acciones">
+        <button class="btn-banner btn-banner--primario" type="button">
+          Crear nueva versión ({{ propuestaPrevia()!.versionSiguiente }})
+        </button>
+        <button class="btn-banner btn-banner--secundario" type="button">
+          Crear propuesta independiente
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Stepper ─────────────────────────────────────────────────────────────── -->
+  <div class="stepper">
+    @for (paso of pasosVisibles(); track paso.id; let i = $index) {
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso.id === pasoActual()"
+         [class.stepper__paso--completado]="paso.numero < pasoActivoNumero()"
+         [routerLink]="rutaPaso(paso)">
+        <span class="stepper__numero">
+          @if (paso.numero < pasoActivoNumero()) {
+            <span class="material-symbols-outlined">check</span>
+          } @else {
+            {{ paso.numero }}
+          }
+        </span>
+        <span class="stepper__label">{{ paso.etiqueta }}</span>
+      </a>
+      @if (!$last) {
+        <span class="stepper__separador"></span>
+      }
+    }
+  </div>
+
+  <!-- ── Grid de ficha: main (secciones) + sidebar sticky ─────────────────────── -->
+  <div class="ficha-grid">
+    <main class="ficha-main">
+      <router-outlet />
+    </main>
+
+    <aside class="ficha-sidebar">
+      <!-- ── Card: código + totales ──────────────────────────────────────── -->
+      <div class="sidebar-card sidebar-card--totales">
+        <div class="sidebar-card__header">
+          <span class="sidebar-card__modo">
+            {{ esNuevo() ? 'NUEVA PROPUESTA' : 'MODO EDICIÓN ' + (draftSvc.draft().version || 'v1').toUpperCase() }}
+          </span>
+          <span class="sidebar-card__codigo">
+            {{ draftSvc.draft().codigo || 'PROP-NUEVA' }}
+          </span>
+        </div>
+        <p class="sidebar-card__referencia">
+          @if (draftSvc.draft().codigoRequerimiento) {
+            {{ draftSvc.draft().codigoRequerimiento }} · {{ draftSvc.draft().razonSocial }}
+          } @else {
+            Sin requerimiento vinculado
+          }
+        </p>
+        <div class="sidebar-card__totales">
+          <div class="total-row">
+            <span class="total-row__label">SUBTOTAL</span>
+            <span class="total-row__valor">{{ formatearMonto(draftSvc.subtotal()) }}</span>
+          </div>
+          <div class="total-row">
+            <span class="total-row__label">IGV (18%)</span>
+            <span class="total-row__valor">{{ formatearMonto(draftSvc.igv()) }}</span>
+          </div>
+          <div class="total-row total-row--grande">
+            <span class="total-row__label">TOTAL ESTIMADO</span>
+            <span class="total-row__valor total-row__valor--destacado">
+              {{ formatearMonto(draftSvc.totalEstimado()) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Card: expediente relacionado ────────────────────────────────── -->
+      <div class="sidebar-card">
+        <span class="sidebar-card__label">EXPEDIENTE RELACIONADO</span>
+        @if (draftSvc.draft().codigoRequerimiento) {
+          <div class="expediente">
+            <span class="material-symbols-outlined expediente__icono">folder_open</span>
+            <div class="expediente__info">
+              <strong>EXP-2024-MIN-01</strong>
+              <span>Sector Minero · Nivel A1</span>
+            </div>
+          </div>
+          <button class="btn-sidebar" type="button">Abrir Expediente</button>
+        } @else {
+          <p class="sidebar-card__hint">Sin expediente vinculado todavía</p>
+        }
+      </div>
+
+      <!-- ── Card: flujo de aprobación ───────────────────────────────────── -->
+      <div class="sidebar-card">
+        <span class="sidebar-card__label">FLUJO DE APROBACIÓN</span>
+        <div class="flujo">
+          <div class="flujo__paso flujo__paso--completado">
+            <span class="flujo__dot"></span>
+            <div class="flujo__info">
+              <strong>Creación</strong>
+              <span>Ana Torres · Hoy 09:12</span>
+            </div>
+          </div>
+          <div class="flujo__paso flujo__paso--activo">
+            <span class="flujo__dot"></span>
+            <div class="flujo__info">
+              <strong>En Edición</strong>
+              <span>Paso actual: {{ pasoActivoNumero() }}</span>
+            </div>
+          </div>
+          <div class="flujo__paso">
+            <span class="flujo__dot"></span>
+            <div class="flujo__info">
+              <strong>Visto Bueno</strong>
+              <span>Pendiente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── Footer con navegación ───────────────────────────────────────────────── -->
+  <div class="ficha-footer">
+    <div class="wizard__footer">
+      <button class="btn-footer btn-footer--secundario" type="button" (click)="irAnterior()">
+        <span class="material-symbols-outlined">arrow_back</span>
+        {{ pasoActual() === pasos[0].id ? 'Cancelar y Volver al RQ' : 'Volver al paso anterior' }}
+      </button>
+      <div class="wizard__footer-der">
+        <button class="btn-footer btn-footer--terciario" type="button" (click)="guardarBorrador()">
+          <span class="material-symbols-outlined">save</span>
+          Guardar borrador
+        </button>
+        <button class="btn-footer btn-footer--terciario" type="button" (click)="verPreviaPdf()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          Vista Previa PDF
+        </button>
+        @if (!esUltimoPaso()) {
+          <button class="btn-footer btn-footer--primario" type="button" (click)="irSiguiente()">
+            Continuar
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        } @else {
+          <button class="btn-footer btn-footer--exito" type="button">
+            <span class="material-symbols-outlined">task_alt</span>
+            Finalizar y Generar Propuesta
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+</div>

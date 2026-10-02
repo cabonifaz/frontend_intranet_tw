@@ -1,0 +1,111 @@
+<app-seccion
+  icono="precision_manufacturing"
+  titulo="9. Listado de Equipos Asociados al Servicio / Propuesta"
+  subtitulo="Selecciona los activos de la sede del cliente disponibles para incluir a mantenimiento, calibración o reparación"
+>
+  <div class="header-eq">
+    <div class="header-eq__badges">
+      <span class="badge-asoc">EQUIPOS ASOCIADOS: <strong>{{ equipos().length }}</strong></span>
+      <span class="badge-marco">MODALIDAD CONTRACTUAL MARCO</span>
+    </div>
+    <div class="header-eq__filtros">
+      <label>Buscar por:</label>
+      <select [ngModel]="subtipoFiltro()" (ngModelChange)="subtipoFiltro.set($event)">
+        <option value="">Subtipo (Todos)</option>
+        @for (s of subtipos(); track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+      <button type="button" class="btn-pequeno" (click)="editarEquipos()">
+        <span class="material-symbols-outlined">edit</span>
+        Editar Equipos
+      </button>
+      <button type="button" class="btn-pequeno btn-pequeno--azul" (click)="importarXls()">
+        <span class="material-symbols-outlined">upload_file</span>
+        Importar de XLS
+      </button>
+    </div>
+  </div>
+
+  <app-doble-panel
+    tituloCatalogo="Equipos en Sede (Catálogo)"
+    tituloSeleccion="Listado de Equipos en Propuesta"
+    [countCatalogo]="catalogoFiltrado().length + ' equipos'"
+    [countSeleccion]="equipos().length + ' vinculados'"
+    placeholderBuscar="Buscar por N/S, código, código TW, marca..."
+    (buscar)="busqueda.set($event)"
+    (agregar)="agregar()"
+    (quitar)="quitar()"
+  >
+    <!-- Catálogo -->
+    <div dpanel-catalogo>
+      <table class="tabla-eq">
+        <thead>
+          <tr>
+            <th>#</th><th>LOCAL</th><th>TIPO</th><th>SUBTIPO</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of catalogoFiltrado(); track e.id; let i = $index) {
+            <tr (click)="seleccionado.set(e.id)" [class.tabla-eq__fila--activa]="seleccionado() === e.id">
+              <td class="mono">{{ i + 1 }}</td>
+              <td class="celda-fuerte">{{ e.local }}</td>
+              <td>{{ e.tipo }}</td>
+              <td class="celda-subtipo">{{ e.subtipo }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Selección -->
+    <div dpanel-seleccion>
+      @if (equipos().length === 0) {
+        <div class="vacio">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <p>Sin equipos vinculados a la propuesta</p>
+          <span class="hint">Selecciona equipos del catálogo o importa desde XLS</span>
+        </div>
+      } @else {
+        <table class="tabla-eq">
+          <thead>
+            <tr>
+              <th>#</th><th>LOCAL</th><th>TIPO</th><th>SUBTIPO</th><th>N/S</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of equipos(); track e.idEquipo; let i = $index) {
+              <tr (click)="seleccionadoProp.set(i)" [class.tabla-eq__fila--activa]="seleccionadoProp() === i">
+                <td class="mono">{{ i + 1 }}</td>
+                <td class="celda-fuerte">{{ e.local }}</td>
+                <td>{{ e.tipo }}</td>
+                <td class="celda-subtipo">{{ e.subtipo }}</td>
+                <td class="mono">{{ e.numSerie }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <div dpanel-footer>
+      <div class="footer-eq">
+        <div class="footer-eq__izq">
+          <span class="footer-eq__hint">Total equipos a intervenir: <strong>{{ equipos().length }} unidades</strong></span>
+          @if (equipos().length > 0) {
+            <span class="chip-info">Calibración INACAL requerida</span>
+          }
+        </div>
+        <div class="footer-eq__der">
+          <button type="button" class="btn-pequeno" (click)="exportarLista()">
+            <span class="material-symbols-outlined">download</span>
+            Exportar
+          </button>
+          <button type="button" class="btn-pequeno btn-pequeno--rojo" (click)="limpiarLista()">
+            Limpiar lista
+          </button>
+        </div>
+      </div>
+    </div>
+  </app-doble-panel>
+</app-seccion>

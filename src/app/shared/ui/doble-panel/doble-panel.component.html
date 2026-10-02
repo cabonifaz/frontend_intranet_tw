@@ -1,0 +1,61 @@
+<div class="dpanel">
+
+  <!-- ── Barra superior ──────────────────────────────────────────────────── -->
+  <div class="dpanel__barra">
+    @if (buscable()) {
+      <div class="dpanel__busqueda">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="text"
+          [(ngModel)]="busqueda"
+          (keyup.enter)="onBuscar()"
+          [placeholder]="placeholderBuscar()"
+        />
+        <button type="button" class="btn-buscar" (click)="onBuscar()">Buscar</button>
+      </div>
+    }
+    <ng-content select="[dpanel-header]"></ng-content>
+  </div>
+
+  <!-- ── Grid: catálogo | botones | selección ────────────────────────────── -->
+  <div class="dpanel__grid">
+    <div class="dpanel__panel dpanel__panel--catalogo">
+      <div class="dpanel__panel-header">
+        <span class="dpanel__panel-titulo">{{ tituloCatalogo() }}</span>
+        @if (countCatalogo()) {
+          <span class="dpanel__panel-count">{{ countCatalogo() }}</span>
+        }
+      </div>
+      <div class="dpanel__panel-body">
+        <ng-content select="[dpanel-catalogo]"></ng-content>
+      </div>
+    </div>
+
+    <div class="dpanel__botones">
+      <button type="button" class="btn-flecha" (click)="agregar.emit()" [title]="textoFlechaDer()">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <button type="button" class="btn-flecha btn-flecha--secundaria" (click)="quitar.emit()" [title]="textoFlechaIzq()">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+    </div>
+
+    <div class="dpanel__panel dpanel__panel--seleccion">
+      <div class="dpanel__panel-header">
+        <span class="dpanel__panel-titulo">{{ tituloSeleccion() }}</span>
+        @if (countSeleccion()) {
+          <span class="dpanel__panel-count dpanel__panel-count--azul">{{ countSeleccion() }}</span>
+        }
+      </div>
+      <div class="dpanel__panel-body">
+        <ng-content select="[dpanel-seleccion]"></ng-content>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer (totales / acciones) ─────────────────────────────────────── -->
+  <div class="dpanel__footer">
+    <ng-content select="[dpanel-footer]"></ng-content>
+  </div>
+
+</div>

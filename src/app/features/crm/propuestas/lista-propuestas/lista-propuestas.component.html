@@ -1,0 +1,237 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────────── -->
+  <div class="pagina__header">
+    <div class="pagina__header-izq">
+      <app-breadcrumb [items]="breadcrumb" />
+      <h1 class="pagina__titulo">Propuestas Comerciales</h1>
+      <p class="pagina__subtitulo">Gestión de propuestas, versiones y avance del ciclo comercial</p>
+    </div>
+    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+      <span class="material-symbols-outlined">add</span>
+      Nueva Propuesta
+    </button>
+  </div>
+
+  <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <app-kpi-card
+      icono="schedule"
+      etiqueta="PENDIENTES"
+      [valor]="kpis().pendientes"
+      variante="azul"
+      [subtitulo]="'↑ ' + kpis().variacionPendientes + '% vs mes anterior'"
+    />
+    <app-kpi-card
+      icono="check_circle"
+      etiqueta="POR VISTO BUENO"
+      [valor]="kpis().porVistoBueno"
+      variante="ambar"
+      subtitulo="Requiere acción inmediata"
+    />
+    <app-kpi-card
+      icono="send"
+      etiqueta="POR ENVIAR"
+      [valor]="kpis().porEnviar"
+      variante="morado"
+      subtitulo="Bandeja de salida"
+    />
+    <app-kpi-card
+      icono="timelapse"
+      etiqueta="EN SEGUIMIENTO"
+      [valor]="kpis().enSeguimiento"
+      variante="rosa"
+      subtitulo="En proceso de cierre"
+    />
+    <app-kpi-card
+      icono="warning"
+      etiqueta="SLA VENCIDOS"
+      [valor]="kpis().slaVencidos"
+      variante="rojo"
+      subtitulo="Crítico: Atención prioritaria"
+    />
+  </div>
+
+  <!-- ── Tabs de estado ──────────────────────────────────────────────────────── -->
+  <div class="tabs">
+    @for (tab of estadosTabs; track tab.codigo) {
+      <button
+        class="tabs__item"
+        [class.tabs__item--activo]="estadoActivo() === tab.codigo"
+        type="button"
+        (click)="cambiarTab(tab.codigo)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- ── Filtros ────────────────────────────────────────────────────────────── -->
+  <div class="filtros-card">
+    <div class="filtros-card__buscador-row">
+      <div class="filtros-card__buscador-label">BUSCADOR GENERAL</div>
+      <div class="filtros-card__filtros-labels">
+        <span>AÑO</span>
+        <span>COMERCIAL</span>
+        <span>TIPO</span>
+      </div>
+    </div>
+    <div class="filtros-card__row">
+      <div class="campo__con-icono filtros-card__buscador">
+        <span class="material-symbols-outlined campo__icono-input">search</span>
+        <input
+          class="campo__input campo__input--icono"
+          type="text"
+          placeholder="Buscar propuesta, RQ, cliente o referencia..."
+          [(ngModel)]="busqueda"
+          (keyup.enter)="aplicarFiltros()"
+        />
+      </div>
+      <select class="filtros-card__select" [(ngModel)]="anioFiltro">
+        @for (a of anios; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+      <select class="filtros-card__select" [(ngModel)]="comercialFiltro">
+        <option value="todos">Todos</option>
+        @for (c of comerciales(); track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+      <select class="filtros-card__select" [(ngModel)]="tipoFiltro">
+        @for (t of tipos; track t.value) {
+          <option [value]="t.value">{{ t.label }}</option>
+        }
+      </select>
+    </div>
+    <div class="filtros-card__acciones">
+      <button class="btn-filtrar" type="button" (click)="aplicarFiltros()">
+        <span class="material-symbols-outlined">filter_list</span>
+        Filtrar
+      </button>
+      <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+        Limpiar
+      </button>
+      <button class="btn-icon" type="button" title="Exportar">
+        <span class="material-symbols-outlined">download</span>
+      </button>
+      <button class="btn-icon" type="button" title="Actualizar" (click)="aplicarFiltros()">
+        <span class="material-symbols-outlined">refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="tabla-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────────────────────── -->
+  <div class="tabla-card">
+    <div class="tabla-card__scroll">
+      <table class="tabla">
+        <thead class="tabla__head">
+          <tr>
+            <th class="tabla__th">PROPUESTA</th>
+            <th class="tabla__th">VERSIÓN</th>
+            <th class="tabla__th">RQ</th>
+            <th class="tabla__th">CLIENTE / RUC</th>
+            <th class="tabla__th">REFERENCIA</th>
+            <th class="tabla__th">TIPO</th>
+            <th class="tabla__th tabla__th--derecha">MONTO</th>
+            <th class="tabla__th">MONEDA</th>
+            <th class="tabla__th">COMERCIAL</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="9" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
+                Cargando propuestas...
+              </td>
+            </tr>
+          } @else if (items().length === 0) {
+            <tr>
+              <td colspan="9" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined">inbox</span>
+                No se encontraron propuestas con los filtros aplicados.
+              </td>
+            </tr>
+          } @else {
+            @for (item of items(); track item.idPropuesta) {
+              <tr class="tabla__fila" (click)="irAEditar(item.idPropuesta)">
+                <td class="tabla__td">
+                  <span class="tabla__codigo">{{ item.codigo }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__version">{{ item.version }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__rq">{{ item.codigoRequerimiento ?? '—' }}</span>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__cliente">
+                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__referencia">{{ item.referencia }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge-tipo {{ tipoClase(item.tipo) }}">
+                    {{ item.tipoLabel }}
+                  </span>
+                </td>
+                <td class="tabla__td tabla__td--derecha">
+                  <span class="tabla__monto">{{ formatearMonto(item.monto, item.moneda) }}</span>
+                </td>
+                <td class="tabla__td">
+                  <span class="tabla__moneda">{{ item.moneda }}</span>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__comercial">
+                    <span class="tabla__avatar">{{ item.avatarComercial }}</span>
+                    <span class="tabla__comercial-nombre">{{ item.comercial }}</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (!cargando() && total() > 0) {
+      <div class="paginacion">
+        <span class="paginacion__info">
+          Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} propuestas
+        </span>
+        <div class="paginacion__btns">
+          <button class="paginacion__btn" type="button"
+                  [disabled]="pagina() === 1"
+                  (click)="irPagina(pagina() - 1)">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          @for (p of paginas; track p) {
+            <button class="paginacion__btn"
+                    [class.paginacion__btn--activo]="p === pagina()"
+                    type="button"
+                    (click)="irPagina(p)">{{ p }}</button>
+          }
+          <button class="paginacion__btn" type="button"
+                  [disabled]="pagina() === totalPaginas()"
+                  (click)="irPagina(pagina() + 1)">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+</div>
