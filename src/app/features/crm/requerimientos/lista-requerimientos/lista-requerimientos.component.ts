@@ -117,6 +117,12 @@ export class ListaRequerimientosComponent implements OnInit {
     this.router.navigate(['/crm/requerimientos', id, 'editar']);
   }
 
+  irACrearPropuesta(idRequerimiento: number): void {
+    this.router.navigate(['/crm/propuestas/nueva'], {
+      queryParams: { idRequerimiento },
+    });
+  }
+
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
       [ESTADO_RQ.NUEVO]:         'badge--azul',

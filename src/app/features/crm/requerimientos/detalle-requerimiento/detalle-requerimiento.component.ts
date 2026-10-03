@@ -11,9 +11,10 @@ import { ESTADO_RQ } from '../../../../core/constants/estados';
 })
 export class DetalleRequerimientoComponent implements OnInit {
   @Input() id!: number;
-  @Output() cerrar = new EventEmitter<void>();
-  @Output() editar = new EventEmitter<number>();
-  @Output() anular = new EventEmitter<number>();
+  @Output() cerrar          = new EventEmitter<void>();
+  @Output() editar          = new EventEmitter<number>();
+  @Output() anular          = new EventEmitter<number>();
+  @Output() crearPropuesta  = new EventEmitter<number>();
 
   private readonly crmSvc = inject(CrmService);
 

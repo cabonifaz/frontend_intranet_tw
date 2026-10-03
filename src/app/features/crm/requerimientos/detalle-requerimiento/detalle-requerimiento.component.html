@@ -550,9 +550,15 @@
         </button>
         <div class="modal__footer-der">
           <button class="btn-secundario" type="button" (click)="cerrar.emit()">Cerrar</button>
-          <button class="btn-primario" type="button" (click)="editar.emit(f.idRequerimiento)">
+          <button class="btn-secundario" type="button" (click)="editar.emit(f.idRequerimiento)">
             <span class="material-symbols-outlined">edit</span>
-            Editar Requerimiento
+            Editar
+          </button>
+          <button class="btn-primario" type="button"
+                  [disabled]="f.estado === ESTADO_RQ.CERRADO || f.estado === ESTADO_RQ.ANULADO"
+                  (click)="crearPropuesta.emit(f.idRequerimiento)">
+            <span class="material-symbols-outlined">description</span>
+            Crear Propuesta
           </button>
         </div>
       </div>
