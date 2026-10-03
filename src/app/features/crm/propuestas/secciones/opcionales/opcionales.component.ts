@@ -81,6 +81,10 @@ export class OpcionalesComponent {
     return l.cantidad * l.frecuencia * l.precioUnitario * (1 - l.descuentoPct / 100);
   }
 
+  actualizarDescuentoOpcionales(valor: number): void {
+    this.draftSvc.actualizar({ descuentoOpcionales: valor > 0 ? valor : null });
+  }
+
   formato(n: number): string {
     return new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   }

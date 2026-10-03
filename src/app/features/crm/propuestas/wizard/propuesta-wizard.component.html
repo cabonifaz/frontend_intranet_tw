@@ -9,10 +9,17 @@
       ? 'Generando documento basado en el requerimiento ' + draftSvc.draft().codigoRequerimiento + (draftSvc.draft().razonSocial ? ' · ' + draftSvc.draft().razonSocial : '')
       : 'Propuesta independiente (sin vínculo a requerimiento)'"
   >
-    <span class="badge-zde">
-      <span class="material-symbols-outlined">bolt</span>
-      ZERO DATA ENTRY ACTIVO
-    </span>
+    @if (!draftSvc.draft().esEditable) {
+      <span class="badge-lectura">
+        <span class="material-symbols-outlined">lock</span>
+        SOLO LECTURA · {{ draftSvc.draft().estado }}
+      </span>
+    } @else {
+      <span class="badge-zde">
+        <span class="material-symbols-outlined">bolt</span>
+        ZERO DATA ENTRY ACTIVO
+      </span>
+    }
   </app-page-header>
 
   <!-- ── Banner propuesta existente ──────────────────────────────────────────── -->
@@ -64,7 +71,7 @@
 
   <!-- ── Grid de ficha: main (secciones) + sidebar sticky ─────────────────────── -->
   <div class="ficha-grid">
-    <main class="ficha-main">
+    <main class="ficha-main" [class.ficha-main--lectura]="!draftSvc.draft().esEditable">
       <router-outlet />
     </main>
 
@@ -159,10 +166,14 @@
         {{ pasoActual() === pasos[0].id ? 'Cancelar y Volver al RQ' : 'Volver al paso anterior' }}
       </button>
       <div class="wizard__footer-der">
-        <button class="btn-footer btn-footer--terciario" type="button" (click)="guardarBorrador()">
-          <span class="material-symbols-outlined">save</span>
-          Guardar borrador
-        </button>
+        @if (draftSvc.draft().esEditable) {
+          <button class="btn-footer btn-footer--terciario" type="button"
+                  [disabled]="guardando()"
+                  (click)="guardarBorrador()">
+            <span class="material-symbols-outlined">save</span>
+            {{ guardando() ? 'Guardando...' : 'Guardar borrador' }}
+          </button>
+        }
         <button class="btn-footer btn-footer--terciario" type="button" (click)="verPreviaPdf()">
           <span class="material-symbols-outlined">picture_as_pdf</span>
           Vista Previa PDF
@@ -172,7 +183,7 @@
             Continuar
             <span class="material-symbols-outlined">arrow_forward</span>
           </button>
-        } @else {
+        } @else if (draftSvc.draft().esEditable) {
           <button class="btn-footer btn-footer--exito" type="button">
             <span class="material-symbols-outlined">task_alt</span>
             Finalizar y Generar Propuesta

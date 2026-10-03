@@ -149,11 +149,27 @@
         <input type="text" formControlName="dirigidoA" placeholder="Nombre + cargo del destinatario" />
       </app-campo>
     </div>
-    <app-campo label="Introducción / saludo">
+
+    <app-campo label="Referencia / Asunto" hint="Aparece debajo del título en el PDF">
+      <input type="text" formControlName="referencia"
+             placeholder="Ej. Mantenimiento anual celdas de carga - Planta Concentradora" />
+    </app-campo>
+
+    <app-campo label="Introducción / Saludo"
+               hint="Mensaje introductorio al cliente (texto plano por ahora)">
       <textarea
         formControlName="textoIntroduccion"
         rows="4"
-        placeholder="Mensaje introductorio que aparece debajo del saludo..."
+        placeholder="Estimado..."
+      ></textarea>
+    </app-campo>
+
+    <app-campo label="Notas generales / Observaciones"
+               hint="Comentarios adicionales que acompañan la propuesta">
+      <textarea
+        formControlName="notasGenerales"
+        rows="3"
+        placeholder="Observaciones internas, aclaraciones adicionales, condiciones particulares..."
       ></textarea>
     </app-campo>
   </app-seccion>

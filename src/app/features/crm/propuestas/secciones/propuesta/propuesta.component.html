@@ -102,6 +102,27 @@
 
     <!-- ── Footer: totales + acciones ─────────────────────────────── -->
     <div dpanel-footer>
+      <!-- Descuento global sobre la propuesta -->
+      <div class="descuento-global">
+        <span class="descuento-global__label">DESCUENTO GLOBAL (propuesta):</span>
+        <div class="descuento-global__inputs">
+          <label>
+            % Pct
+            <input type="number" min="0" max="100" step="0.01"
+                   [value]="draftSvc.draft().descuentoPct ?? 0"
+                   (change)="actualizarDescuentoGlobal('pct', +$any($event.target).value)" />
+          </label>
+          <span class="descuento-global__o">o</span>
+          <label>
+            Monto fijo
+            <input type="number" min="0" step="0.01"
+                   [value]="draftSvc.draft().descuentoMonto ?? 0"
+                   [disabled]="(draftSvc.draft().descuentoPct ?? 0) > 0"
+                   (change)="actualizarDescuentoGlobal('monto', +$any($event.target).value)" />
+          </label>
+        </div>
+      </div>
+
       <div class="totales-row">
         <div class="totales-row__izq">
           <button type="button" class="btn-pequeno">Nuevo</button>
@@ -112,12 +133,12 @@
         </div>
         <div class="totales-row__der">
           <div class="total-item">
-            <span class="total-item__label">SUB TOTAL</span>
-            <span class="total-item__valor">$ {{ formato(draftSvc.subtotal() + totalDescuento()) }}</span>
+            <span class="total-item__label">SUBTOTAL BRUTO</span>
+            <span class="total-item__valor">$ {{ formato(draftSvc.subtotalBruto()) }}</span>
           </div>
           <div class="total-item">
-            <span class="total-item__label">DESCUENTO</span>
-            <span class="total-item__valor">$ {{ formato(totalDescuento()) }}</span>
+            <span class="total-item__label">DESCUENTO TOTAL</span>
+            <span class="total-item__valor">$ {{ formato(draftSvc.descuentoGlobal() + totalDescuento()) }}</span>
           </div>
           <div class="total-item total-item--grande">
             <span class="total-item__label">TOTAL</span>

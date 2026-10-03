@@ -20,21 +20,35 @@ export class PropuestaDraftService {
   readonly draft = signal<PropuestaDraft>(crearDraftVacio());
 
   // ─── Derivados para el sidebar ─────────────────────────────────────────────
-  readonly subtotal = computed(() => {
+  readonly subtotalBruto = computed(() => {
     const d = this.draft();
     return d.lineasPropuesta.reduce((acc, l) =>
       acc + l.cantidad * l.frecuencia * l.precioUnitario * (1 - l.descuentoPct / 100), 0);
   });
 
+  // Descuento global de la propuesta: si DescuentoPct > 0 tiene prioridad,
+  // si no se usa DescuentoMonto. Alineado con la regla del back.
+  readonly descuentoGlobal = computed(() => {
+    const d = this.draft();
+    if ((d.descuentoPct ?? 0) > 0) return this.subtotalBruto() * (d.descuentoPct ?? 0) / 100;
+    return d.descuentoMonto ?? 0;
+  });
+
+  readonly subtotal = computed(() => Math.max(0, this.subtotalBruto() - this.descuentoGlobal()));
+
   readonly igv = computed(() => this.draft().igvDesagregado ? this.subtotal() * 0.18 : 0);
 
   readonly totalEstimado = computed(() => this.subtotal() + this.igv());
 
-  readonly subtotalOpcionales = computed(() => {
+  readonly subtotalOpcionalesBruto = computed(() => {
     const d = this.draft();
     return d.lineasOpcionales.reduce((acc, l) =>
       acc + l.cantidad * l.frecuencia * l.precioUnitario * (1 - l.descuentoPct / 100), 0);
   });
+
+  readonly subtotalOpcionales = computed(() =>
+    Math.max(0, this.subtotalOpcionalesBruto() - (this.draft().descuentoOpcionales ?? 0))
+  );
 
   readonly totalCuotas = computed(() =>
     this.draft().cuotas.reduce((acc, c) => acc + c.porcentaje, 0));

@@ -52,6 +52,21 @@ export interface PropuestaDraft {
   idRequerimiento:     number | null;
   codigoRequerimiento: string | null;
 
+  // Estado y edición
+  estado:              string;          // 'borrador' | 'pendiente' | 'por_vb' | ...
+  esEditable:          boolean;         // false → UI en modo solo-lectura
+
+  // Campos de carátula adicionales (Fase 2b)
+  referencia:          string;
+  introduccion:        string;
+  notasGenerales:      string;
+
+  // Descuentos globales (Fase 2c)
+  descuentoPct:        number | null;   // % de descuento sobre subtotal propuesta
+  descuentoMonto:      number | null;   // Monto fijo (si no se usa pct)
+  idMotivoDescuento:   number | null;
+  descuentoOpcionales: number | null;
+
   // Datos del cliente (readonly, vienen del RQ)
   idCliente:    number | null;
   razonSocial:  string;
@@ -125,6 +140,18 @@ export function crearDraftVacio(): PropuestaDraft {
     razonSocial: '',
     ruc: '',
     contacto: '',
+
+    estado:              'borrador',
+    esEditable:          true,
+
+    referencia:          '',
+    introduccion:        '',
+    notasGenerales:      '',
+
+    descuentoPct:        null,
+    descuentoMonto:      null,
+    idMotivoDescuento:   null,
+    descuentoOpcionales: null,
 
     seccionesIncluidas: {
       configuracion:        true,

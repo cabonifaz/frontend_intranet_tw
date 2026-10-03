@@ -63,6 +63,8 @@ export class ConfiguracionComponent implements OnInit {
     dirigidoA:             [''],
     saludoIntroduccion:    [''],
     textoIntroduccion:     [''],
+    referencia:            [''],
+    notasGenerales:        [''],
   });
 
   // Checkboxes de secciones — sync con el draft directamente
@@ -78,7 +80,9 @@ export class ConfiguracionComponent implements OnInit {
       terceroRuc:            d.terceroRuc,
       terceroDireccion:      d.terceroDireccion,
       dirigidoA:             d.contacto,
-      textoIntroduccion:     this.textoIntroduccionDefault(),
+      textoIntroduccion:     d.introduccion || this.textoIntroduccionDefault(),
+      referencia:            d.referencia,
+      notasGenerales:        d.notasGenerales,
     }, { emitEvent: false });
 
     this.form.valueChanges.subscribe(v => {
@@ -89,6 +93,9 @@ export class ConfiguracionComponent implements OnInit {
         terceroEmpresa:        v.terceroEmpresa ?? '',
         terceroRuc:            v.terceroRuc ?? '',
         terceroDireccion:      v.terceroDireccion ?? '',
+        referencia:            v.referencia ?? '',
+        introduccion:          v.textoIntroduccion ?? '',
+        notasGenerales:        v.notasGenerales ?? '',
       });
     });
   }

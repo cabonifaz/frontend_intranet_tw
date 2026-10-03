@@ -1,6 +1,7 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
+import { MaestrosService } from '../../../../../core/services/maestros.service';
 import { CuotaPago } from '../../../../../core/models/propuesta-detalle.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { CampoComponent } from '../../../../../shared/ui/campo/campo.component';
@@ -14,7 +15,10 @@ import { ToggleComponent } from '../../../../../shared/ui/toggle/toggle.componen
 })
 export class FormaPagoComponent implements OnInit {
   readonly draftSvc = inject(PropuestaDraftService);
-  private readonly fb = inject(FormBuilder);
+  private readonly fb        = inject(FormBuilder);
+  private readonly maestrosSvc = inject(MaestrosService);
+
+  readonly condicionesPago = signal<{ codigo: string; nombre: string }[]>([]);
 
   readonly form = this.fb.group({
     tipoMoneda:         ['USD'],
@@ -29,7 +33,14 @@ export class FormaPagoComponent implements OnInit {
   readonly totalCuotas = computed(() => this.draftSvc.totalCuotas());
   readonly esValido100 = computed(() => Math.abs(this.totalCuotas() - 100) < 0.01);
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    try {
+      const condiciones = await this.maestrosSvc.obtenerCatalogo('CONDICION_PAGO');
+      this.condicionesPago.set(
+        condiciones.map(c => ({ codigo: c.codigo ?? c.nombre, nombre: c.nombre }))
+      );
+    } catch { /* catálogo opcional */ }
+
     const d = this.draftSvc.draft();
     this.form.patchValue({
       tipoMoneda:         d.tipoMoneda || 'USD',

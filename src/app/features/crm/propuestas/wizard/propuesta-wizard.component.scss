@@ -20,6 +20,25 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+// ── Badge SOLO LECTURA (propuesta ya no editable) ──────────────────────────
+.badge-lectura {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #FEF2F2;
+  color: #B91C1C;
+  border: 1px solid #FECACA;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 
   .material-symbols-outlined { font-size: 16px; }
 }
@@ -187,6 +206,19 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+
+  // Modo solo-lectura: deshabilita cualquier input, select, textarea, button
+  // dentro del contenido del wizard. Mantiene el click en el stepper (navegación).
+  &--lectura {
+    :host ::ng-deep input,
+    :host ::ng-deep select,
+    :host ::ng-deep textarea,
+    :host ::ng-deep button:not(.btn-link):not(.btn-inline) {
+      pointer-events: none;
+      opacity: 0.75;
+      background-color: #F8FAFC !important;
+    }
+  }
 }
 
 // Oculta el router-outlet dentro del wizard (es inline y mete whitespace)

@@ -96,6 +96,20 @@ export class PropuestaComponent {
     return l.cantidad * l.frecuencia * l.precioUnitario * (1 - l.descuentoPct / 100);
   }
 
+  actualizarDescuentoGlobal(tipo: 'pct' | 'monto', valor: number): void {
+    if (tipo === 'pct') {
+      this.draftSvc.actualizar({
+        descuentoPct:   valor > 0 ? valor : null,
+        descuentoMonto: valor > 0 ? null : this.draftSvc.draft().descuentoMonto,
+      });
+    } else {
+      this.draftSvc.actualizar({
+        descuentoMonto: valor > 0 ? valor : null,
+        descuentoPct:   null,
+      });
+    }
+  }
+
   formato(n: number): string {
     return new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
   }

@@ -59,6 +59,18 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
     ruc:                 d.ruc,
     contacto:            d.nombreContacto ?? '',
 
+    estado:              d.estado,
+    esEditable:          d.esEditable,
+
+    referencia:          d.referencia ?? '',
+    introduccion:        d.introduccion ?? '',
+    notasGenerales:      d.notasGenerales ?? '',
+
+    descuentoPct:        d.descuentoPct,
+    descuentoMonto:      Number(d.descuentoMonto ?? 0),
+    idMotivoDescuento:   d.idMotivoDescuento,
+    descuentoOpcionales: Number(d.descuentoOpcionales ?? 0),
+
     seccionesIncluidas: {
       configuracion:        true,
       propuesta:            d.seccionesActivas.includes('propuesta')             || true,
@@ -253,9 +265,9 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     terceroRazonSocial: draft.terceroEmpresa    || null,
     terceroDireccion:   draft.terceroDireccion  || null,
 
-    referencia:     null,                                      // TODO: campo del draft
-    introduccion:   null,                                      // TODO: campo del draft
-    notasGenerales: null,
+    referencia:     draft.referencia     || null,
+    introduccion:   draft.introduccion   || null,
+    notasGenerales: draft.notasGenerales || null,
 
     idMoneda:              MONEDA_CODIGO_A_ID[draft.tipoMoneda] ?? 2,
     tipoCambio:            draft.tipoCambio,
@@ -268,10 +280,10 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     aplicaIgv:             true,
     preciosIncluyenIgv:    !draft.igvDesagregado,
 
-    descuentoPct:        null,
-    descuentoMonto:      null,
-    idMotivoDescuento:   null,
-    descuentoOpcionales: null,
+    descuentoPct:        draft.descuentoPct,
+    descuentoMonto:      draft.descuentoMonto,
+    idMotivoDescuento:   draft.idMotivoDescuento,
+    descuentoOpcionales: draft.descuentoOpcionales,
 
     items,
     textos,

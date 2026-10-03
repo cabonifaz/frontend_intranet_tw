@@ -69,10 +69,21 @@
                    (change)="actualizarCuota(c.id, 'porcentaje', +$any($event.target).value)" />
             <span>%</span>
           </div>
-          <input type="text"
-                 class="cuota__desc"
-                 [value]="c.descripcion"
-                 (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)" />
+          @if (condicionesPago().length > 0) {
+            <select class="cuota__desc"
+                    [value]="c.descripcion"
+                    (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)">
+              <option value="">Selecciona condición...</option>
+              @for (cp of condicionesPago(); track cp.codigo) {
+                <option [value]="cp.codigo">{{ cp.nombre }}</option>
+              }
+            </select>
+          } @else {
+            <input type="text"
+                   class="cuota__desc"
+                   [value]="c.descripcion"
+                   (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)" />
+          }
           <button type="button" class="cuota__eliminar" (click)="eliminarCuota(c.id)">
             <span class="material-symbols-outlined">close</span>
           </button>

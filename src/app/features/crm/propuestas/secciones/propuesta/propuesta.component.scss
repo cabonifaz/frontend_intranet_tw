@@ -128,6 +128,73 @@
   .material-symbols-outlined { font-size: 36px; opacity: 0.5; }
 }
 
+// ── Descuento global (sobre la propuesta o opcionales) ──────────────────────
+.descuento-global {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: #FEF3C7;
+  border: 1px dashed #FDE68A;
+  border-radius: 8px;
+  margin-bottom: 8px;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #92400E;
+    letter-spacing: 0.4px;
+  }
+
+  &__inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  &__o {
+    color: #94A3B8;
+    font-size: 11px;
+    font-style: italic;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748B;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    gap: 2px;
+
+    input {
+      width: 80px;
+      padding: 4px 8px;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0F172A;
+      background: #FFFFFF;
+      text-align: right;
+      font-family: inherit;
+
+      &:focus {
+        outline: none;
+        border-color: #B45309;
+      }
+
+      &:disabled {
+        background: #F8FAFC;
+        color: #94A3B8;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
 // ── Fila de totales + acciones ──────────────────────────────────────────────
 .totales-row {
   display: flex;
