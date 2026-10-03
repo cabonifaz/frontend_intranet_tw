@@ -37,12 +37,12 @@
         </div>
       </div>
       <div class="banner-aviso__acciones">
-        <button class="btn-banner btn-banner--primario" type="button">
+        <app-button variant="primary" tamano="sm">
           Crear nueva versión ({{ propuestaPrevia()!.versionSiguiente }})
-        </button>
-        <button class="btn-banner btn-banner--secundario" type="button">
+        </app-button>
+        <app-button variant="secondary" tamano="sm">
           Crear propuesta independiente
-        </button>
+        </app-button>
       </div>
     </div>
   }
@@ -52,13 +52,13 @@
     @for (paso of pasosVisibles(); track paso.id; let i = $index) {
       <a class="stepper__paso"
          [class.stepper__paso--activo]="paso.id === pasoActual()"
-         [class.stepper__paso--completado]="paso.numero < pasoActivoNumero()"
+         [class.stepper__paso--completado]="i + 1 < pasoActivoNumero()"
          [routerLink]="rutaPaso(paso)">
         <span class="stepper__numero">
-          @if (paso.numero < pasoActivoNumero()) {
+          @if (i + 1 < pasoActivoNumero()) {
             <span class="material-symbols-outlined">check</span>
           } @else {
-            {{ paso.numero }}
+            {{ i + 1 }}
           }
         </span>
         <span class="stepper__label">{{ paso.etiqueta }}</span>
@@ -70,11 +70,12 @@
   </div>
 
   <!-- ── Grid de ficha: main (secciones) + sidebar sticky ─────────────────────── -->
-  <div class="ficha-grid">
+  <div class="ficha-grid" [class.ficha-grid--full]="!mostrarSidebar()">
     <main class="ficha-main" [class.ficha-main--lectura]="!draftSvc.draft().esEditable">
       <router-outlet />
     </main>
 
+    @if (mostrarSidebar()) {
     <aside class="ficha-sidebar">
       <!-- ── Card: código + totales ──────────────────────────────────────── -->
       <div class="sidebar-card sidebar-card--totales">
@@ -122,7 +123,9 @@
               <span>Sector Minero · Nivel A1</span>
             </div>
           </div>
-          <button class="btn-sidebar" type="button">Abrir Expediente</button>
+          <app-button variant="secondary" tamano="sm" ancho="full">
+            Abrir Expediente
+          </app-button>
         } @else {
           <p class="sidebar-card__hint">Sin expediente vinculado todavía</p>
         }
@@ -156,41 +159,65 @@
         </div>
       </div>
     </aside>
+    }
   </div>
 
   <!-- ── Footer con navegación ───────────────────────────────────────────────── -->
   <div class="ficha-footer">
     <div class="wizard__footer">
-      <button class="btn-footer btn-footer--secundario" type="button" (click)="irAnterior()">
-        <span class="material-symbols-outlined">arrow_back</span>
+      <app-button variant="secondary" tamano="md" icono="arrow_back"
+                  (clic)="irAnterior()">
         {{ pasoActual() === pasos[0].id ? 'Cancelar y Volver al RQ' : 'Volver al paso anterior' }}
-      </button>
+      </app-button>
       <div class="wizard__footer-der">
-        @if (draftSvc.draft().esEditable) {
-          <button class="btn-footer btn-footer--terciario" type="button"
-                  [disabled]="guardando()"
-                  (click)="guardarBorrador()">
-            <span class="material-symbols-outlined">save</span>
-            {{ guardando() ? 'Guardando...' : 'Guardar borrador' }}
-          </button>
+        <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
+        @if (!esNuevo() && draftSvc.draft().esEditable) {
+          <app-button variant="ghost" tamano="md" icono="save"
+                      [disabled]="guardando()"
+                      [cargando]="guardando()"
+                      (clic)="guardarCambios()">
+            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+          </app-button>
         }
-        <button class="btn-footer btn-footer--terciario" type="button" (click)="verPreviaPdf()">
-          <span class="material-symbols-outlined">picture_as_pdf</span>
+
+        <app-button variant="ghost" tamano="md" icono="picture_as_pdf"
+                    (clic)="verPreviaPdf()">
           Vista Previa PDF
-        </button>
+        </app-button>
+
+        <!-- No último paso: Continuar al siguiente -->
         @if (!esUltimoPaso()) {
-          <button class="btn-footer btn-footer--primario" type="button" (click)="irSiguiente()">
+          <app-button variant="primary" tamano="md" iconoDer="arrow_forward"
+                      (clic)="irSiguiente()">
             Continuar
-            <span class="material-symbols-outlined">arrow_forward</span>
-          </button>
+          </app-button>
         } @else if (draftSvc.draft().esEditable) {
-          <button class="btn-footer btn-footer--exito" type="button">
-            <span class="material-symbols-outlined">task_alt</span>
-            Finalizar y Generar Propuesta
-          </button>
+          <!-- Último paso: en create → "Generar Propuesta". En edit → "Enviar a Visto Bueno". -->
+          @if (esNuevo()) {
+            <app-button variant="success" tamano="md" icono="task_alt"
+                        [disabled]="guardando()"
+                        [cargando]="guardando()"
+                        (clic)="generarPropuesta()">
+              {{ guardando() ? 'Generando...' : 'Generar Propuesta' }}
+            </app-button>
+          } @else {
+            <app-button variant="success" tamano="md" icono="send"
+                        (clic)="enviarAVistoBueno()">
+              Enviar a Visto Bueno
+            </app-button>
+          }
         }
       </div>
     </div>
   </div>
 
 </div>
+
+<!-- ── Modal "Restaurar borrador" ──────────────────────────────────────────── -->
+@if (borradorDisponible(); as b) {
+  <app-modal-borrador
+    [fechaGuardado]="b.fechaGuardado"
+    (restaurar)="restaurarBorrador()"
+    (descartar)="descartarBorrador()"
+  />
+}

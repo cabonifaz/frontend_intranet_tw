@@ -38,6 +38,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'styleguide',
+        loadComponent: () =>
+          import('./features/styleguide/styleguide.component').then(
+            m => m.StyleguideComponent
+          ),
+      },
+      {
         path: 'maestros',
         loadComponent: () =>
           import('./features/maestros/maestros-hub/maestros-hub.component').then(

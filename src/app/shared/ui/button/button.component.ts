@@ -1,8 +1,19 @@
 import { Component, input, output } from '@angular/core';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
-type Tamano  = 'sm' | 'md' | 'lg';
-type Tipo    = 'button' | 'submit';
+type Variant =
+  | 'primary'       // Azul lleno — acción principal
+  | 'secondary'     // Blanco con borde gris — acción secundaria
+  | 'ghost'         // Casi transparente — acción terciaria
+  | 'danger'        // Rojo lleno — eliminar/anular con énfasis
+  | 'danger-ghost'  // Rojo plano, sin fondo — eliminar/anular suave
+  | 'success'       // Verde lleno — finalizar/aprobar
+  | 'dark'          // Negro — filtros/acciones destacadas sobre fondo blanco
+  | 'warning'       // Ámbar lleno — alertas/acciones correctivas
+  | 'link'          // Solo texto azul — navegación/acción liviana
+  | 'dashed';       // Borde discontinuo azul claro — "nuevo item", "agregar"
+type Tamano   = 'xs' | 'sm' | 'md' | 'lg';
+type Tipo     = 'button' | 'submit';
+type SoloIcon = boolean;
 
 @Component({
   selector: 'app-button',
@@ -19,6 +30,10 @@ export class ButtonComponent {
   readonly icono     = input<string>('');
   readonly iconoDer  = input<string>('');
   readonly ancho     = input<'auto' | 'full'>('auto');
+  /** Solo ícono (sin texto). Debe pasarse icono + ariaLabel. */
+  readonly soloIcon  = input<SoloIcon>(false);
+  readonly ariaLabel = input<string>('');
+  readonly title     = input<string>('');
 
   readonly clic = output<Event>();
 

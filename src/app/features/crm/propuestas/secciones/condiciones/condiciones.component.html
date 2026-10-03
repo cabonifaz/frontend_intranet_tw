@@ -1,6 +1,6 @@
 <app-seccion
   icono="gavel"
-  titulo="8. Condiciones del Servicio y Cláusulas Contractuales"
+  titulo="{{ draftSvc.numeroSecuencial('condiciones') }}. Condiciones del Servicio y Cláusulas Contractuales"
   subtitulo="Selecciona, ordena y personaliza los términos contractuales aplicables a esta cotización"
 >
   <div class="header-cond">
@@ -39,10 +39,7 @@
           <li class="lista-clausulas__item"
               [class.lista-clausulas__item--activa]="seleccionada() === c.id"
               (click)="seleccionada.set(c.id)">
-            <div class="lista-clausulas__meta">
-              <span class="chip-sub">{{ c.subtipo }}</span>
-              <span class="codigo">{{ c.codigo }}</span>
-            </div>
+            <span class="lista-clausulas__bullet"></span>
             <span class="lista-clausulas__texto">{{ c.texto }}</span>
           </li>
         }
@@ -55,7 +52,10 @@
         <div class="vacio-cond">
           <span class="material-symbols-outlined">gavel</span>
           <p>Sin cláusulas en la propuesta</p>
-          <button type="button" class="btn-restablecer" (click)="restablecerMarco()">Restablecer cláusulas marco</button>
+          <app-button variant="secondary" tamano="sm" icono="restart_alt"
+                      (clic)="restablecerMarco()">
+            Restablecer cláusulas marco
+          </app-button>
         </div>
       } @else {
         <ol class="clausulas-prop">
@@ -66,17 +66,17 @@
               <span class="clausulas-prop__num">{{ i + 1 }}</span>
               <textarea
                 [value]="c.texto"
-                rows="2"
+                rows="1"
                 (change)="actualizarTexto(i, $any($event.target).value)"
                 (click)="$event.stopPropagation()"
               ></textarea>
-              <div class="clausulas-prop__acciones">
-                <button type="button" class="btn-icono-mini" (click)="$event.stopPropagation(); moverArriba(i)" title="Subir">
-                  <span class="material-symbols-outlined">arrow_upward</span>
-                </button>
-                <button type="button" class="btn-icono-mini" (click)="$event.stopPropagation(); moverAbajo(i)" title="Bajar">
-                  <span class="material-symbols-outlined">arrow_downward</span>
-                </button>
+              <div class="clausulas-prop__acciones" (click)="$event.stopPropagation()">
+                <app-button variant="ghost" tamano="xs" icono="arrow_upward" [soloIcon]="true"
+                            ariaLabel="Subir" title="Subir"
+                            (clic)="moverArriba(i)" />
+                <app-button variant="ghost" tamano="xs" icono="arrow_downward" [soloIcon]="true"
+                            ariaLabel="Bajar" title="Bajar"
+                            (clic)="moverAbajo(i)" />
               </div>
             </li>
           }
@@ -86,9 +86,11 @@
 
     <div dpanel-footer>
       <div class="footer-cond">
-        <button type="button" class="btn-pequeno">Nueva Cláusula</button>
-        <button type="button" class="btn-pequeno">Actualizar Catálogo</button>
-        <button type="button" class="btn-pequeno" (click)="restablecerMarco()">Restablecer Cláusulas Marco</button>
+        <app-button variant="secondary" tamano="sm">Nueva Cláusula</app-button>
+        <app-button variant="secondary" tamano="sm">Actualizar Catálogo</app-button>
+        <app-button variant="secondary" tamano="sm" (clic)="restablecerMarco()">
+          Restablecer Cláusulas Marco
+        </app-button>
         <span class="footer-cond__hint">Última sincronización con Contrato Marco: Hoy 05:19</span>
       </div>
     </div>

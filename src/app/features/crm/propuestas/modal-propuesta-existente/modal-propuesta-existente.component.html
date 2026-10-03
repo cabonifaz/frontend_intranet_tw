@@ -1,0 +1,56 @@
+<app-modal titulo="Propuesta existente detectada" ancho="md" (cerrar)="cerrar.emit()">
+  <div class="mpe-body">
+    <div class="mpe-body__icono">
+      <span class="material-symbols-outlined">warning</span>
+    </div>
+
+    <p class="mpe-body__texto">
+      El requerimiento <strong>{{ codigoRq() }}</strong> ya tiene una propuesta vinculada:
+      <strong>{{ codigoPropuesta() }}</strong>.
+    </p>
+
+    <p class="mpe-body__pregunta">
+      ¿Cómo deseas proceder? <span class="mpe-body__hint">Elige una opción</span>
+    </p>
+
+    <div class="mpe-opciones">
+      <button
+        type="button"
+        class="mpe-opcion"
+        [class.mpe-opcion--activa]="opcion() === 'nueva-version'"
+        (click)="seleccionar('nueva-version')"
+      >
+        <span class="material-symbols-outlined mpe-opcion__icono">difference</span>
+        <strong class="mpe-opcion__titulo">Nueva versión ({{ versionSiguiente }})</strong>
+        <span class="mpe-opcion__detalle">
+          Hereda el contenido de <em>{{ codigoPropuesta() }}</em> para que solo ajustes lo
+          necesario. Queda vinculada como su siguiente versión.
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="mpe-opcion"
+        [class.mpe-opcion--activa]="opcion() === 'independiente'"
+        (click)="seleccionar('independiente')"
+      >
+        <span class="material-symbols-outlined mpe-opcion__icono">note_add</span>
+        <strong class="mpe-opcion__titulo">Propuesta independiente</strong>
+        <span class="mpe-opcion__detalle">
+          Crea una propuesta desde cero sobre el mismo requerimiento, sin vínculo con la
+          propuesta anterior.
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div modalFooter class="mpe-footer">
+    <app-button variant="secondary" tamano="md" (clic)="cerrar.emit()">
+      Cancelar
+    </app-button>
+    <app-button variant="primary" tamano="md" icono="add" [disabled]="!opcion()"
+                (clic)="confirmar()">
+      Crear propuesta
+    </app-button>
+  </div>
+</app-modal>

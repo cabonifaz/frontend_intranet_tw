@@ -1,0 +1,150 @@
+.mpe-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px 8px;
+
+  &__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--tw-warning-50, #FFFBEB);
+    color: var(--tw-warning-500, #D97706);
+    margin: 0 auto;
+
+    .material-symbols-outlined { font-size: 30px; }
+  }
+
+  &__texto {
+    margin: 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--tw-text-secondary, #475569);
+    line-height: 1.5;
+
+    strong { color: var(--tw-text-primary, #0F172A); font-weight: 600; }
+  }
+
+  &__pregunta {
+    margin: 2px 0 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tw-text-primary, #0F172A);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__hint {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--tw-text-secondary, #94A3B8);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+}
+
+// ── Cards seleccionables (lado a lado) ─────────────────────────────────────
+.mpe-opciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mpe-opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--tw-border-base, #E2E8F0);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: var(--tw-primary-300, #93C5FD);
+    background: #F8FAFC;
+  }
+
+  &--activa {
+    border-color: var(--tw-primary-600, #1D4ED8);
+    background: var(--tw-primary-500, #2563EB);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+
+    &:hover {
+      background: var(--tw-primary-600, #1D4ED8);
+      border-color: var(--tw-primary-700, #1E40AF);
+    }
+
+    .mpe-opcion__icono {
+      background: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+    }
+
+    .mpe-opcion__titulo  { color: #FFFFFF; }
+    .mpe-opcion__detalle { color: rgba(255, 255, 255, 0.9); }
+    .mpe-opcion__detalle em {
+      color: #FFFFFF;
+      font-weight: 700;
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  &__icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--tw-primary-50, #EFF6FF);
+    color: var(--tw-primary-600, #1D4ED8);
+    margin-bottom: 4px;
+    transition: background 0.15s, color 0.15s;
+
+    .material-symbols-outlined { font-size: 20px; }
+  }
+
+  &__titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tw-text-primary, #0F172A);
+    transition: color 0.15s;
+  }
+
+  &__detalle {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--tw-text-secondary, #475569);
+    transition: color 0.15s;
+
+    em {
+      color: var(--tw-primary-600, #1D4ED8);
+      font-style: normal;
+      font-weight: 600;
+    }
+  }
+}
+
+.mpe-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--tw-border-base, #E2E8F0);
+  background: #F8FAFC;
+}

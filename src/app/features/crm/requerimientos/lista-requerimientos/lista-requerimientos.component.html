@@ -7,10 +7,9 @@
       <h1 class="pagina__titulo">CRM / Requerimientos</h1>
       <p class="pagina__subtitulo">Gestión centralizada de solicitudes comerciales y técnicas de clientes</p>
     </div>
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
-      <span class="material-symbols-outlined">add</span>
+    <app-button variant="primary" icono="add" (clic)="irANuevo()">
       Nuevo Requerimiento
-    </button>
+    </app-button>
   </div>
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
@@ -67,12 +66,11 @@
           (keyup.enter)="aplicarFiltros()"
         />
       </div>
-      <button class="filtros-bar__btn-icon" type="button" title="Actualizar" (click)="aplicarFiltros()">
-        <span class="material-symbols-outlined">refresh</span>
-      </button>
-      <button class="filtros-bar__btn-icon" type="button" title="Exportar">
-        <span class="material-symbols-outlined">download</span>
-      </button>
+      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
+                  ariaLabel="Actualizar" title="Actualizar"
+                  (clic)="aplicarFiltros()" />
+      <app-button variant="secondary" tamano="md" icono="download" [soloIcon]="true"
+                  ariaLabel="Exportar" title="Exportar" />
     </div>
   </div>
 
@@ -158,14 +156,14 @@
                 </td>
                 <td class="tabla__td tabla__td--centro" (click)="$event.stopPropagation()">
                   <div class="tabla__acciones">
-                    <button class="tabla__btn-accion" type="button" title="Ver detalle"
-                            (click)="irADetalle(item.idRequerimiento)">
-                      <span class="material-symbols-outlined">visibility</span>
-                    </button>
-                    <button class="tabla__btn-accion" type="button" title="Editar"
-                            (click)="irAEditar(item.idRequerimiento)">
-                      <span class="material-symbols-outlined">edit</span>
-                    </button>
+                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                                ariaLabel="Ver detalle" title="Ver detalle"
+                                (clic)="irADetalle(item.idRequerimiento)" />
+                    @if (esAccionable(item.estado)) {
+                      <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                                  ariaLabel="Editar" title="Editar"
+                                  (clic)="irAEditar(item.idRequerimiento)" />
+                    }
                   </div>
                 </td>
               </tr>
@@ -182,22 +180,18 @@
           Mostrando {{ inicio() }}-{{ fin() }} de {{ total() }} requerimientos
         </span>
         <div class="paginacion__btns">
-          <button class="paginacion__btn" type="button"
-                  [disabled]="pagina() === 1"
-                  (click)="irPagina(pagina() - 1)">
-            <span class="material-symbols-outlined">chevron_left</span>
-          </button>
+          <app-button variant="secondary" tamano="sm" icono="chevron_left" [soloIcon]="true"
+                      ariaLabel="Anterior"
+                      [disabled]="pagina() === 1"
+                      (clic)="irPagina(pagina() - 1)" />
           @for (p of paginas; track p) {
-            <button class="paginacion__btn"
-                    [class.paginacion__btn--activo]="p === pagina()"
-                    type="button"
-                    (click)="irPagina(p)">{{ p }}</button>
+            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm"
+                        (clic)="irPagina(p)">{{ p }}</app-button>
           }
-          <button class="paginacion__btn" type="button"
-                  [disabled]="pagina() === totalPaginas()"
-                  (click)="irPagina(pagina() + 1)">
-            <span class="material-symbols-outlined">chevron_right</span>
-          </button>
+          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true"
+                      ariaLabel="Siguiente"
+                      [disabled]="pagina() === totalPaginas()"
+                      (clic)="irPagina(pagina() + 1)" />
         </div>
       </div>
     }

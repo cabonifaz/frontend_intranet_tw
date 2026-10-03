@@ -6,9 +6,8 @@
         <h2 class="modal__titulo">Elegir Requerimiento</h2>
         <p class="modal__sub">Selecciona el RQ sobre el que se armará la nueva propuesta comercial</p>
       </div>
-      <button type="button" class="modal__cerrar" (click)="cerrar.emit()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+      <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
+                  ariaLabel="Cerrar" (clic)="cerrar.emit()" />
     </header>
 
     <div class="modal__body">
@@ -67,11 +66,14 @@
     </div>
 
     <footer class="modal__footer">
-      <button type="button" class="btn-secundario" (click)="cerrar.emit()">Cancelar</button>
-      <button type="button" class="btn-primario" [disabled]="elegido() == null" (click)="confirmar()">
-        <span class="material-symbols-outlined">arrow_forward</span>
-        Continuar al wizard
-      </button>
+      <app-button variant="secondary" tamano="md" (clic)="cerrar.emit()">
+        Cancelar
+      </app-button>
+      <app-button variant="primary" tamano="md" icono="arrow_forward"
+                  [disabled]="elegido() == null"
+                  (clic)="confirmar()">
+        Crear Propuesta
+      </app-button>
     </footer>
 
   </div>

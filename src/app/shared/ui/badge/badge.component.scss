@@ -10,13 +10,22 @@
   &--sm { padding: 2px 8px; font-size: 10px; }
   &--md { padding: 4px 10px; font-size: 11px; }
 
-  &--azul   { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
-  &--verde  { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
-  &--rojo   { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
-  &--ambar  { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
-  &--gris   { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
-  &--dark   { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
-  &--morado { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+  // ── Variants mapeados a tokens semánticos ─────────────────────────────────
+  // Nombres legacy (azul/verde/rojo/ambar/gris) se mantienen por compatibilidad.
+  // Nuevos consumidores pueden usar los semánticos (info/success/danger/
+  // warning/neutral) para que la intención sea clara.
+  &--azul,
+  &--info    { background: var(--tw-primary-50);  color: var(--tw-primary-700); border: 1px solid var(--tw-primary-200); }
+  &--verde,
+  &--success { background: var(--tw-success-50);  color: var(--tw-success-700); border: 1px solid var(--tw-success-200); }
+  &--rojo,
+  &--danger  { background: var(--tw-danger-50);   color: var(--tw-danger-500);  border: 1px solid var(--tw-danger-200); }
+  &--ambar,
+  &--warning { background: var(--tw-warning-50);  color: var(--tw-warning-700); border: 1px solid var(--tw-warning-200); }
+  &--gris,
+  &--neutral { background: var(--tw-neutral-100); color: var(--tw-neutral-600); border: 1px solid var(--tw-neutral-200); }
+  &--dark    { background: var(--tw-neutral-800); color: var(--tw-text-inverse); border: 1px solid var(--tw-neutral-900); }
+  &--morado  { background: #FAF5FF; color: #6B21A8; border: 1px solid #E9D5FF; }
 
   &--mono { font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; }
 

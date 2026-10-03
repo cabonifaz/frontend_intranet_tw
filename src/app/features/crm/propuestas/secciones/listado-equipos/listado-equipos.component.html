@@ -1,6 +1,6 @@
 <app-seccion
   icono="precision_manufacturing"
-  titulo="9. Listado de Equipos Asociados al Servicio / Propuesta"
+  titulo="{{ draftSvc.numeroSecuencial('listado-equipos') }}. Listado de Equipos Asociados al Servicio / Propuesta"
   subtitulo="Selecciona los activos de la sede del cliente disponibles para incluir a mantenimiento, calibración o reparación"
 >
   <div class="header-eq">
@@ -16,14 +16,12 @@
           <option [value]="s">{{ s }}</option>
         }
       </select>
-      <button type="button" class="btn-pequeno" (click)="editarEquipos()">
-        <span class="material-symbols-outlined">edit</span>
+      <app-button variant="secondary" tamano="sm" icono="edit" (clic)="editarEquipos()">
         Editar Equipos
-      </button>
-      <button type="button" class="btn-pequeno btn-pequeno--azul" (click)="importarXls()">
-        <span class="material-symbols-outlined">upload_file</span>
+      </app-button>
+      <app-button variant="primary" tamano="sm" icono="upload_file" (clic)="importarXls()">
         Importar de XLS
-      </button>
+      </app-button>
     </div>
   </div>
 
@@ -97,13 +95,12 @@
           }
         </div>
         <div class="footer-eq__der">
-          <button type="button" class="btn-pequeno" (click)="exportarLista()">
-            <span class="material-symbols-outlined">download</span>
+          <app-button variant="secondary" tamano="sm" icono="download" (clic)="exportarLista()">
             Exportar
-          </button>
-          <button type="button" class="btn-pequeno btn-pequeno--rojo" (click)="limpiarLista()">
+          </app-button>
+          <app-button variant="danger-ghost" tamano="sm" (clic)="limpiarLista()">
             Limpiar lista
-          </button>
+          </app-button>
         </div>
       </div>
     </div>

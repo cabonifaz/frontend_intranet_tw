@@ -52,7 +52,7 @@
   strong { color: #0F172A; font-weight: 700; }
 }
 
-// ── Catálogo (izq) ──────────────────────────────────────────────────────────
+// ── Catálogo (izq) — mismo patrón que lista-textos de bloques-textos ────────
 .lista-clausulas {
   list-style: none;
   padding: 0;
@@ -60,8 +60,7 @@
 
   &__item {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     padding: 10px 14px;
     border-bottom: 1px solid #F1F5F9;
     cursor: pointer;
@@ -73,13 +72,19 @@
       background: #EFF6FF;
       border-left: 3px solid #2563EB;
       padding-left: 11px;
+
+      .lista-clausulas__bullet { background: #2563EB; }
+      .lista-clausulas__texto  { color: #0F172A; font-weight: 500; }
     }
   }
 
-  &__meta {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  &__bullet {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #94A3B8;
+    flex-shrink: 0;
+    margin-top: 7px;
   }
 
   &__texto {
@@ -87,22 +92,6 @@
     color: #475569;
     line-height: 1.5;
   }
-}
-
-.chip-sub {
-  padding: 2px 7px;
-  background: #F1F5F9;
-  color: #475569;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-.codigo {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 10px;
-  color: #94A3B8;
 }
 
 // ── Cláusulas en la propuesta (der) ─────────────────────────────────────────
@@ -153,8 +142,11 @@
     color: #475569;
     font-family: inherit;
     line-height: 1.5;
-    resize: vertical;
-    min-height: 50px;
+    resize: none;                 // sin handle de resize manual
+    overflow: hidden;             // oculta la scrollbar interna
+    white-space: pre-wrap;        // wrap de texto largo
+    field-sizing: content;        // auto-ajusta altura al contenido
+    min-height: 1.6em;
 
     &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; }
     &:hover { background: #FFFFFF; border-color: #E2E8F0; }

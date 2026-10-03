@@ -1,0 +1,195 @@
+<div class="sg">
+
+  <!-- ─── Header ─────────────────────────────────────────────────────────── -->
+  <header class="sg__header">
+    <h1>Design System · TW Intranet</h1>
+    <p>Catálogo visual de los tokens de color, componentes compartidos y mapeos semánticos del sistema. Click en cualquier swatch para copiar el nombre del token.</p>
+  </header>
+
+  <!-- ─── Navegación interna ─────────────────────────────────────────────── -->
+  <nav class="sg__nav">
+    <a href="#paletas">🎨 Paletas</a>
+    <a href="#alias">🏷️ Alias semánticos</a>
+    <a href="#botones">🔘 Botones</a>
+    <a href="#badges">🏷 Badges</a>
+    <a href="#estados">🚦 Mapeo semántico de estados</a>
+  </nav>
+
+  <!-- ═════════════════════════════ PALETAS ═════════════════════════════════ -->
+  <section id="paletas" class="sg__seccion">
+    <h2>🎨 Paletas de color</h2>
+    <p class="sg__hint">Las paletas semánticas con todos sus tonos. El ★ marca el tono "default" (el que se usa cuando sólo digo "primary" sin tono específico).</p>
+
+    @for (p of paletas; track p.tokenBase) {
+      <div class="paleta">
+        <h3 class="paleta__nombre">{{ p.nombre }}</h3>
+        <div class="paleta__grid">
+          @for (t of p.tonos; track t.var) {
+            <button type="button"
+                    class="swatch"
+                    [style.background]="'var(' + t.var + ')'"
+                    [title]="'Click para copiar var(' + t.var + ')'"
+                    (click)="copiarAlPortapapeles('var(' + t.var + ')')">
+              <span class="swatch__label">{{ t.label }}</span>
+              <span class="swatch__var">{{ t.var }}</span>
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ═════════════════════════════ ALIAS ═══════════════════════════════════ -->
+  <section id="alias" class="sg__seccion">
+    <h2>🏷️ Alias semánticos</h2>
+    <p class="sg__hint">Nombres cortos que apuntan al tono apropiado de la paleta correspondiente. Preferirlos sobre los tonos crudos cuando la intención sea clara.</p>
+
+    <div class="alias-grid">
+      @for (a of aliases; track a.var) {
+        <button type="button"
+                class="alias-row"
+                (click)="copiarAlPortapapeles('var(' + a.var + ')')"
+                [title]="'Click para copiar var(' + a.var + ')'">
+          <span class="alias-row__preview" [style.background]="'var(' + a.var + ')'"
+                [style.border]="a.var.startsWith('--tw-border') || a.var.startsWith('--tw-bg')
+                               ? '1px solid var(--tw-border-base)' : 'none'"></span>
+          <span class="alias-row__nombre">{{ a.nombre }}</span>
+          <span class="alias-row__var">{{ a.var }}</span>
+          <span class="alias-row__desc">{{ a.descripcion }}</span>
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════ BOTONES ═════════════════════════════════ -->
+  <section id="botones" class="sg__seccion">
+    <h2>🔘 Botones · <code>&lt;app-button&gt;</code></h2>
+    <p class="sg__hint">10 variants × 4 tamaños. Soportan íconos (izq y der), modo solo-ícono, estado cargando y disabled.</p>
+
+    <!-- Variantes × tamaños -->
+    <h3 class="sg__sub">Variantes × tamaños</h3>
+    <table class="matriz">
+      <thead>
+        <tr>
+          <th>Variant</th>
+          @for (tam of tamanosBoton; track tam) {
+            <th>{{ tam }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (variant of variantsBoton; track variant) {
+          <tr>
+            <td class="matriz__label">{{ variant }}</td>
+            @for (tam of tamanosBoton; track tam) {
+              <td>
+                <app-button [variant]="variant" [tamano]="tam" icono="star">
+                  Acción
+                </app-button>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Modificadores -->
+    <h3 class="sg__sub">Estados y modificadores</h3>
+    <div class="demo-row">
+      <app-button variant="primary">Normal</app-button>
+      <app-button variant="primary" [disabled]="true">Disabled</app-button>
+      <app-button variant="primary" [cargando]="true">Guardando...</app-button>
+      <app-button variant="primary" icono="save">Con ícono izq</app-button>
+      <app-button variant="primary" iconoDer="arrow_forward">Con ícono der</app-button>
+      <app-button variant="primary" icono="save" iconoDer="arrow_forward">Ambos</app-button>
+    </div>
+
+    <!-- Solo ícono -->
+    <h3 class="sg__sub">Solo ícono (<code>soloIcon</code>)</h3>
+    <div class="demo-row">
+      @for (variant of variantsBoton; track variant) {
+        <app-button [variant]="variant" tamano="md" icono="edit" [soloIcon]="true"
+                    [ariaLabel]="variant" [title]="variant" />
+      }
+    </div>
+
+    <!-- Full width -->
+    <h3 class="sg__sub">Ancho completo (<code>ancho="full"</code>)</h3>
+    <div style="max-width: 420px;">
+      <app-button variant="primary" ancho="full" icono="task_alt">
+        Finalizar y Generar Propuesta
+      </app-button>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════ BADGES ══════════════════════════════════ -->
+  <section id="badges" class="sg__seccion">
+    <h2>🏷 Badges · <code>&lt;app-badge&gt;</code></h2>
+
+    <h3 class="sg__sub">Variantes (sm · md)</h3>
+    <div class="demo-row">
+      @for (v of variantsBadge; track v) {
+        <div class="demo-col">
+          <app-badge [texto]="v" [variant]="v" tamano="sm" />
+          <app-badge [texto]="v" [variant]="v" tamano="md" />
+        </div>
+      }
+    </div>
+
+    <h3 class="sg__sub">Con dot (<code>[conDot]="true"</code>)</h3>
+    <div class="demo-row">
+      @for (v of variantsBadge; track v) {
+        <app-badge [texto]="v" [variant]="v" [conDot]="true" />
+      }
+    </div>
+
+    <h3 class="sg__sub">Mono (<code>[mono]="true"</code>)</h3>
+    <div class="demo-row">
+      <app-badge texto="PROP-002581" variant="info" [mono]="true" />
+      <app-badge texto="RQ-2026-0001" variant="neutral" [mono]="true" />
+      <app-badge texto="EQ-TW-2026-0001" variant="success" [mono]="true" />
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════ ESTADOS ═════════════════════════════════ -->
+  <section id="estados" class="sg__seccion">
+    <h2>🚦 Mapeo semántico de estados</h2>
+    <p class="sg__hint">Helpers en <code>core/utils/estado-visual.ts</code>. Reciben el valor de dominio y devuelven el variant adecuado.</p>
+
+    <h3 class="sg__sub">Estado de Requerimiento · <code>variantEstadoRq(estado)</code></h3>
+    <div class="demo-row">
+      @for (e of estadosRq; track e) {
+        <app-badge [texto]="e" [variant]="variantEstadoRq(e)" />
+      }
+    </div>
+
+    <h3 class="sg__sub">Estado de Propuesta · <code>variantEstadoPropuesta(estado)</code></h3>
+    <div class="demo-row">
+      @for (e of estadosPropuesta; track e) {
+        <app-badge [texto]="e" [variant]="variantEstadoPropuesta(e)" />
+      }
+    </div>
+
+    <h3 class="sg__sub">Prioridad · <code>variantPrioridad(id)</code></h3>
+    <div class="demo-row">
+      @for (p of prioridades; track p.id) {
+        <app-badge [texto]="p.label" [variant]="variantPrioridad(p.id)" [conDot]="true" />
+      }
+    </div>
+
+    <h3 class="sg__sub">Tipo de Propuesta · <code>variantTipoPropuesta(tipo)</code></h3>
+    <div class="demo-row">
+      @for (t of tiposPropuesta; track t) {
+        <app-badge [texto]="t" [variant]="variantTipoPropuesta(t)" />
+      }
+    </div>
+
+    <h3 class="sg__sub">SLA · <code>variantSla(diasRestantes)</code></h3>
+    <div class="demo-row">
+      @for (s of slas; track s.dias) {
+        <app-badge [texto]="s.label" [variant]="variantSla(s.dias)" [conDot]="true" />
+      }
+    </div>
+  </section>
+
+</div>

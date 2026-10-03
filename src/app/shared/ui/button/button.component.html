@@ -2,8 +2,11 @@
   class="btn btn--{{ variant() }} btn--{{ tamano() }}"
   [class.btn--full]="ancho() === 'full'"
   [class.btn--cargando]="cargando()"
+  [class.btn--solo-icon]="soloIcon()"
   [type]="tipo()"
   [disabled]="disabled() || cargando()"
+  [attr.aria-label]="ariaLabel() || null"
+  [attr.title]="title() || null"
   (click)="onClick($event)"
 >
   @if (cargando()) {
@@ -11,8 +14,10 @@
   } @else if (icono()) {
     <span class="material-symbols-outlined">{{ icono() }}</span>
   }
-  <span class="btn__label"><ng-content></ng-content></span>
-  @if (iconoDer() && !cargando()) {
+  @if (!soloIcon()) {
+    <span class="btn__label"><ng-content></ng-content></span>
+  }
+  @if (iconoDer() && !cargando() && !soloIcon()) {
     <span class="material-symbols-outlined">{{ iconoDer() }}</span>
   }
 </button>

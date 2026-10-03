@@ -1,45 +1,55 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
+import { SuministrosService } from '../../../../../core/services/suministros.service';
 import { LineaItemPropuesta } from '../../../../../core/models/propuesta-detalle.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
+import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 
 interface SumCatalogo {
-  id:       number;
-  codigo:   string;
+  id:          number;
+  codigo:      string;
   descripcion: string;
-  tipo:     string;
-  subtipo:  string;
-  precio:   number;
+  tipo:        string;
+  subtipo:     string;
+  precio:      number;
 }
-
-const CATALOGO_MOCK: SumCatalogo[] = [
-  { id: 6627,  codigo: 'SUM-0001', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-6000', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 150.00 },
-  { id: 13057, codigo: 'SUM-0057', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-15KG', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 850.00 },
-  { id: 6434,  codigo: 'SUM-0034', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-2000', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 420.00 },
-  { id: 6628,  codigo: 'SUM-0028', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-300',  tipo: 'Balanza', subtipo: 'Laboratorio', precio: 580.00 },
-  { id: 16959, codigo: 'SUM-0159', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-6000', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 320.00 },
-  { id: 16552, codigo: 'SUM-0152', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-6300', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 85.00 },
-  { id: 8679,  codigo: 'SUM-0079', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-6600', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 290.00 },
-  { id: 11640, codigo: 'SUM-0140', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo EK-180A', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 390.00 },
-  { id: 8723,  codigo: 'SUM-0123', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo FX-1200', tipo: 'Balanza', subtipo: 'Laboratorio', precio: 450.00 },
-  { id: 9980,  codigo: 'SUM-0180', descripcion: 'Suministro Balanza Laboratorio Marca AND Modelo FX-120',  tipo: 'Balanza', subtipo: 'Laboratorio', precio: 230.00 },
-];
 
 @Component({
   selector: 'app-seccion-propuesta',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent],
   templateUrl: './propuesta.component.html',
   styleUrl: './propuesta.component.scss',
 })
-export class PropuestaComponent {
-  readonly draftSvc = inject(PropuestaDraftService);
+export class PropuestaComponent implements OnInit {
+  readonly draftSvc        = inject(PropuestaDraftService);
+  private readonly sumsSvc = inject(SuministrosService);
 
-  readonly catalogo = signal<SumCatalogo[]>(CATALOGO_MOCK);
-  readonly catalogoFiltrado = signal<SumCatalogo[]>(CATALOGO_MOCK);
-  readonly seleccionado = signal<number | null>(null);
+  readonly catalogo         = signal<SumCatalogo[]>([]);
+  readonly catalogoFiltrado = signal<SumCatalogo[]>([]);
+  readonly cargandoCatalogo = signal(false);
+  readonly seleccionado      = signal<number | null>(null);
   readonly seleccionadoLinea = signal<number | null>(null);
+
+  async ngOnInit(): Promise<void> {
+    this.cargandoCatalogo.set(true);
+    try {
+      // Solo suministros activos y marcados "usar en propuestas".
+      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', true, 1, 200);
+      const items: SumCatalogo[] = r.items.map(s => ({
+        id:          s.idSuministro,
+        codigo:      `SUM-${String(s.idSuministro).padStart(4, '0')}`,
+        descripcion: s.descripcion,
+        tipo:        s.tipoLabel    ?? '',
+        subtipo:     s.subtipoLabel ?? '',
+        precio:      0,
+      }));
+      this.catalogo.set(items);
+      this.catalogoFiltrado.set(items);
+    } catch { /* silencioso: el usuario puede reintentar con el buscador */ }
+    finally { this.cargandoCatalogo.set(false); }
+  }
 
   readonly lineas = computed(() => this.draftSvc.draft().lineasPropuesta);
 

@@ -6,11 +6,13 @@ import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdeRq } from '
 import { PASOS_WIZARD, PasoWizard } from '../../../../core/models/propuesta-detalle.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-propuesta-wizard',
-  imports: [RouterOutlet, RouterLink, BreadcrumbComponent, PageHeaderComponent],
+  imports: [RouterOutlet, RouterLink, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent],
   templateUrl: './propuesta-wizard.component.html',
   styleUrl: './propuesta-wizard.component.scss',
 })
@@ -32,6 +34,11 @@ export class PropuestaWizardComponent implements OnInit {
 
   readonly bannerCerrado = signal(false);
 
+  // Modal "Restaurar borrador" cuando existe uno previo en localStorage.
+  readonly borradorDisponible = signal<{ fechaGuardado: string } | null>(null);
+  // Datos pendientes de aplicar si el usuario decide descartar el borrador.
+  private pendienteCargarRq: number = 0;
+
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => [
     { label: 'Inicio', ruta: '/dashboard' },
     { label: 'CRM' },
@@ -47,16 +54,24 @@ export class PropuestaWizardComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.idParam.set(this.route.snapshot.paramMap.get('id') ?? 'nueva');
 
-    // Observa cambios del child outlet para pintar el stepper activo
+    // Setea pasoActual al segmento actual (importante al refrescar la página,
+    // sin esto el stepper + sidebar quedan apuntando al paso por defecto).
+    const segInicial = this.router.url.split('?')[0].split('/').pop() ?? '';
+    const pasoInicial = this.pasos.find(p => p.ruta === segInicial);
+    if (pasoInicial) this.pasoActual.set(pasoInicial.id);
+
+    // Observa cambios del child outlet para pintar el stepper activo.
+    // Importante: comparar contra el ÚLTIMO segmento del path, no un includes,
+    // porque `/propuestas/` contiene `/propuesta` como substring y marcaba
+    // mal el paso activo cuando estabas en cualquier otra sección.
     this.router.events.subscribe(() => {
-      const url = this.router.url;
-      const seg = this.pasos.find(p => url.includes(`/${p.ruta}`));
-      if (seg) this.pasoActual.set(seg.id);
+      const segLast = this.router.url.split('?')[0].split('/').pop() ?? '';
+      const paso = this.pasos.find(p => p.ruta === segLast);
+      if (paso) this.pasoActual.set(paso.id);
     });
 
-    // Si no hay segmento, redirect a configuración
-    const url = this.router.url;
-    if (!this.pasos.some(p => url.includes(`/${p.ruta}`))) {
+    // Si no hay segmento válido en el path, redirect a configuración
+    if (!pasoInicial) {
       this.router.navigate([this.rutaBase(), 'configuracion'], { replaceUrl: true });
     }
 
@@ -79,13 +94,35 @@ export class PropuestaWizardComponent implements OnInit {
           });
         }
       } else if (idRequerimiento > 0) {
-        const datos = await this.propuestasSvc.obtenerDatosNueva(idRequerimiento);
-        this.draftSvc.cargarDraft(prellenarDraftDesdeRq(datos));
-        if (datos.propuestaExistente) {
-          this.propuestaPrevia.set({
-            codigo:           datos.propuestaExistente.numero,
-            versionSiguiente: `v${datos.propuestaExistente.version + 1}`,
-          });
+        // Si el usuario ya decidió (Restaurar/Descartar) en esta sesión del wizard,
+        // respetamos la decisión y no volvemos a mostrar el modal.
+        const flagResumido = sessionStorage.getItem('tw-propuesta-wizard-resumido');
+        const borrador = this.draftSvc.peekBorrador('nueva');
+        const esDelMismoRq = borrador?.idRequerimiento === idRequerimiento &&
+                             (borrador?.idPropuesta ?? null) === null;
+
+        if (esDelMismoRq && !flagResumido) {
+          // Hay borrador para este RQ y no se resolvió aún → mostramos modal.
+          this.pendienteCargarRq = idRequerimiento;
+          this.borradorDisponible.set({ fechaGuardado: borrador!.ultimaModificacion });
+          this.draftSvc.cargarDesdeStorage('nueva');
+          // La signal se carga ya para que mientras el modal esté abierto el sidebar
+          // y los campos no quede en blanco. Si descarta, hard-reload resetea todo.
+        } else if (esDelMismoRq && flagResumido) {
+          // Usuario ya eligió "Restaurar" en esta sesión → cargar directo sin preguntar.
+          sessionStorage.removeItem('tw-propuesta-wizard-resumido');
+          this.draftSvc.cargarDesdeStorage('nueva');
+        } else {
+          // Sin borrador útil → cargar fresco desde el RQ.
+          if (borrador) this.draftSvc.limpiarStorage('nueva');
+          const datos = await this.propuestasSvc.obtenerDatosNueva(idRequerimiento);
+          this.draftSvc.cargarDraft(prellenarDraftDesdeRq(datos));
+          if (datos.propuestaExistente) {
+            this.propuestaPrevia.set({
+              codigo:           datos.propuestaExistente.numero,
+              versionSiguiente: `v${datos.propuestaExistente.version + 1}`,
+            });
+          }
         }
       } else {
         this.draftSvc.cargarDesdeStorage(this.idParam());
@@ -122,12 +159,20 @@ export class PropuestaWizardComponent implements OnInit {
     return mapa[paso.id] ?? true;
   }
 
+  // Posición (1-based) del paso activo dentro de las secciones visibles.
   pasoActivoNumero = computed(() => {
-    const activo = this.pasos.find(p => p.id === this.pasoActual());
-    return activo?.numero ?? 1;
+    const idx = this.pasosVisibles().findIndex(p => p.id === this.pasoActual());
+    return idx >= 0 ? idx + 1 : 1;
   });
 
   pasosVisibles = computed(() => this.pasos.filter(p => this.esPasoIncluido(p)));
+
+  // Las secciones con tablas multi-columna ocupan todo el ancho (sin sidebar).
+  // Las de texto y formularios conservan el sidebar.
+  readonly mostrarSidebar = computed(() => {
+    const sinSidebar = new Set(['propuesta', 'opcionales', 'listado-equipos']);
+    return !sinSidebar.has(this.pasoActual());
+  });
 
   irAnterior(): void {
     const idx = this.pasos.findIndex(p => p.id === this.pasoActual());
@@ -145,15 +190,20 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  async guardarBorrador(): Promise<void> {
+  /**
+   * Persiste el draft completo al back. Comportamiento según modo:
+   *  - CREATE  (esNuevo=true)   → "Generar Propuesta": guarda + navega a la bandeja.
+   *  - EDIT    (esNuevo=false)  → "Guardar cambios": guarda + se queda en la misma vista.
+   */
+  private async persistir(): Promise<boolean> {
     const draft = this.draftSvc.draft();
     if (!draft.idRequerimiento) {
       this.toast.error('No se puede guardar: falta vincular un requerimiento.');
-      return;
+      return false;
     }
     this.guardando.set(true);
     try {
-      const dto      = mapDraftToGuardarDto(draft);
+      const dto       = mapDraftToGuardarDto(draft);
       const resultado = await this.propuestasSvc.guardarPropuesta(dto);
 
       // Refrescar draft con los IDs y totales recalculados que devolvió el back
@@ -163,22 +213,58 @@ export class PropuestaWizardComponent implements OnInit {
         version:     `v${resultado.version}`,
       });
 
-      this.toast.exito(
-        this.esNuevo() ? `Propuesta ${resultado.numero} creada como borrador.` : 'Cambios guardados.',
-      );
-
-      // Si era "nueva", pasamos a la ruta de edición ya con el id real
-      if (this.esNuevo() && resultado.idPropuesta > 0) {
-        this.idParam.set(String(resultado.idPropuesta));
-        this.router.navigate(['/crm/propuestas', resultado.idPropuesta, 'editar', this.pasoActual()], {
-          replaceUrl: true,
-        });
-      }
+      return true;
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'Error al guardar.');
+      return false;
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  /** Último paso en modo CREATE: guarda la propuesta como borrador y vuelve a la bandeja. */
+  async generarPropuesta(): Promise<void> {
+    const ok = await this.persistir();
+    if (!ok) return;
+    const codigo = this.draftSvc.draft().codigo;
+    // Ya quedó persistida en el back → limpio el borrador local.
+    this.draftSvc.limpiarStorage('nueva');
+    this.toast.exito(`Propuesta ${codigo} creada como borrador.`);
+    this.router.navigate(['/crm/propuestas']);
+  }
+
+  /**
+   * El usuario eligió restaurar el borrador. Como los <form> internos de las
+   * secciones no se re-patchean automáticamente al cambiar la signal `draft`,
+   * forzamos un reload de la página con un flag en sessionStorage para
+   * que el wizard cargue el draft sin volver a mostrar el modal.
+   */
+  restaurarBorrador(): void {
+    sessionStorage.setItem('tw-propuesta-wizard-resumido', '1');
+    this.borradorDisponible.set(null);
+    window.location.reload();
+  }
+
+  /**
+   * El usuario eligió descartar el borrador: lo borro de localStorage y hago
+   * hard reload para que las secciones re-inicialicen con la data fresca del RQ.
+   */
+  descartarBorrador(): void {
+    this.draftSvc.limpiarStorage('nueva');
+    this.borradorDisponible.set(null);
+    window.location.reload();
+  }
+
+  /** Modo EDIT: guarda los cambios y se queda en el mismo paso. */
+  async guardarCambios(): Promise<void> {
+    const ok = await this.persistir();
+    if (ok) this.toast.exito('Cambios guardados.');
+  }
+
+  /** Último paso en modo EDIT: abre modal "Enviar a Visto Bueno" (HU futura). */
+  enviarAVistoBueno(): void {
+    this.toast.exito('Modal "Enviar a Visto Bueno" — pendiente, otra HU.');
+    console.log('[propuesta] enviar a visto bueno (modal pendiente)');
   }
 
   verPreviaPdf(): void {

@@ -41,12 +41,8 @@
           </div>
         </div>
         <div class="modal__header-der">
-          <button class="btn-editar-header" type="button" (click)="editar.emit(f.idRequerimiento)">
-            <span class="material-symbols-outlined">edit</span> Editar
-          </button>
-          <button class="modal__cerrar" type="button" (click)="cerrar.emit()">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+          <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
+                      ariaLabel="Cerrar" (clic)="cerrar.emit()" />
         </div>
       </div>
 
@@ -542,24 +538,25 @@
 
       <!-- Footer -->
       <div class="modal__footer">
-        <button class="btn-anular" type="button"
-                [disabled]="f.estado === ESTADO_RQ.CERRADO || f.estado === ESTADO_RQ.ANULADO"
-                (click)="anular.emit(f.idRequerimiento)">
-          <span class="material-symbols-outlined">cancel</span>
-          Anular Requerimiento
-        </button>
+        @if (esAccionable(f.estado)) {
+          <app-button variant="danger-ghost" tamano="md" icono="cancel"
+                      (clic)="anular.emit(f.idRequerimiento)">
+            Anular Requerimiento
+          </app-button>
+        } @else {
+          <span class="footer-vacio"></span>
+        }
         <div class="modal__footer-der">
-          <button class="btn-secundario" type="button" (click)="cerrar.emit()">Cerrar</button>
-          <button class="btn-secundario" type="button" (click)="editar.emit(f.idRequerimiento)">
-            <span class="material-symbols-outlined">edit</span>
-            Editar
-          </button>
-          <button class="btn-primario" type="button"
-                  [disabled]="f.estado === ESTADO_RQ.CERRADO || f.estado === ESTADO_RQ.ANULADO"
-                  (click)="crearPropuesta.emit(f.idRequerimiento)">
-            <span class="material-symbols-outlined">description</span>
-            Crear Propuesta
-          </button>
+          @if (esAccionable(f.estado)) {
+            <app-button variant="secondary" tamano="md" icono="edit"
+                        (clic)="editar.emit(f.idRequerimiento)">
+              Editar
+            </app-button>
+            <app-button variant="primary" tamano="md" icono="description"
+                        (clic)="crearPropuesta.emit(f.idRequerimiento)">
+              Crear Propuesta
+            </app-button>
+          }
         </div>
       </div>
 

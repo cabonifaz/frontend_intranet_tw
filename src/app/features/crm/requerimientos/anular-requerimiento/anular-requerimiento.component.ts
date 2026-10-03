@@ -7,10 +7,11 @@ import { CrmService } from '../../../../core/services/crm.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { AutenticacionService } from '../../../../core/services/autenticacion.service';
 import { CatalogoItem } from '../../../../core/models/crm.model';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 @Component({
   selector: 'app-anular-requerimiento',
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonComponent],
   templateUrl: './anular-requerimiento.component.html',
   styleUrl:    './anular-requerimiento.component.scss',
 })

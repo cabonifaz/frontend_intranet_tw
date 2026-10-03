@@ -1,5 +1,18 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { crearDraftVacio, PropuestaDraft } from '../models/propuesta-detalle.model';
+import { crearDraftVacio, PropuestaDraft, PasoId } from '../models/propuesta-detalle.model';
+
+// Orden canónico de las secciones del wizard y su mapeo al flag en el draft.
+const ORDEN_SECCIONES: { id: PasoId; flag: keyof PropuestaDraft['seccionesIncluidas'] }[] = [
+  { id: 'configuracion',        flag: 'configuracion'        },
+  { id: 'propuesta',            flag: 'propuesta'            },
+  { id: 'opcionales',           flag: 'opcionales'           },
+  { id: 'detalle',              flag: 'detalle'              },
+  { id: 'recomendaciones',      flag: 'recomendaciones'      },
+  { id: 'forma-pago',           flag: 'formaPago'            },
+  { id: 'suministros-cliente',  flag: 'suministrosCliente'   },
+  { id: 'condiciones',          flag: 'condicionesServicio'  },
+  { id: 'listado-equipos',      flag: 'listadoEquipos'       },
+];
 
 const STORAGE_PREFIX = 'tw-propuesta-draft:';
 
@@ -53,6 +66,17 @@ export class PropuestaDraftService {
   readonly totalCuotas = computed(() =>
     this.draft().cuotas.reduce((acc, c) => acc + c.porcentaje, 0));
 
+  /**
+   * Devuelve la posición (1-based) de una sección dentro del listado de
+   * secciones activas en el draft. Si está desactivada o no existe, retorna 0.
+   */
+  numeroSecuencial(id: PasoId): number {
+    const s = this.draft().seccionesIncluidas;
+    const activas = ORDEN_SECCIONES.filter(o => s[o.flag]);
+    const idx = activas.findIndex(o => o.id === id);
+    return idx + 1;
+  }
+
   // ─── Carga ─────────────────────────────────────────────────────────────────
   cargarDesdeStorage(idOrNuevo: string): void {
     const key = STORAGE_PREFIX + idOrNuevo;
@@ -61,6 +85,37 @@ export class PropuestaDraftService {
       try { this.draft.set(JSON.parse(raw) as PropuestaDraft); return; } catch { /* ignore */ }
     }
     this.draft.set(crearDraftVacio());
+  }
+
+  /**
+   * Lee el borrador en localStorage sin aplicarlo al signal `draft`.
+   * Útil para decidir si mostrar el modal "Restaurar borrador" antes de cargar.
+   */
+  peekBorrador(idOrNuevo: string): PropuestaDraft | null {
+    const key = STORAGE_PREFIX + idOrNuevo;
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+    if (!raw) return null;
+    try { return JSON.parse(raw) as PropuestaDraft; }
+    catch { return null; }
+  }
+
+  /** Devuelve true si el borrador existente trae cambios significativos del usuario. */
+  tieneBorradorConCambios(idOrNuevo: string): boolean {
+    const d = this.peekBorrador(idOrNuevo);
+    if (!d) return false;
+    return (
+      d.lineasPropuesta.length > 0 ||
+      d.lineasOpcionales.length > 0 ||
+      d.bloquesDetalle.length > 0 ||
+      d.bloquesRecomendaciones.length > 0 ||
+      d.bloquesSuministrosCliente.length > 0 ||
+      d.clausulasContrato.length > 0 ||
+      d.equiposVinculados.length > 0 ||
+      (d.referencia?.trim().length ?? 0) > 0 ||
+      (d.notasGenerales?.trim().length ?? 0) > 0 ||
+      !!d.requiereTercerizacion ||
+      !!d.tipoPropuesta
+    );
   }
 
   cargarDraft(nuevo: PropuestaDraft): void {

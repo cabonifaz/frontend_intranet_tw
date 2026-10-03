@@ -3,7 +3,7 @@
   <!-- ── Condiciones Generales ───────────────────────────────────────────── -->
   <app-seccion
     icono="payments"
-    titulo="6. Condiciones Generales y Modalidad de Pago"
+    titulo="{{ draftSvc.numeroSecuencial('forma-pago') }}. Condiciones Generales y Modalidad de Pago"
     subtitulo="Define las condiciones comerciales, moneda, plazos de entrega y validez de la oferta económica"
   >
     <span headerActions class="badge-politica">POLÍTICA COMERCIAL TW</span>
@@ -54,10 +54,10 @@
     titulo="Forma de Pago / Método de Pago"
     subtitulo="Define cómo se dividirá el pago en hitos. El total debe sumar 100%"
   >
-    <button headerActions type="button" class="btn-add-cuota" (click)="agregarCuota()">
-      <span class="material-symbols-outlined">add</span>
+    <app-button variant="ghost" tamano="sm" icono="add"
+                headerActions (clic)="agregarCuota()">
       Agregar forma de pago
-    </button>
+    </app-button>
 
     <div class="cuotas">
       @for (c of cuotas(); track c.id; let i = $index) {
@@ -84,9 +84,8 @@
                    [value]="c.descripcion"
                    (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)" />
           }
-          <button type="button" class="cuota__eliminar" (click)="eliminarCuota(c.id)">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+          <app-button variant="ghost" tamano="sm" icono="close" [soloIcon]="true"
+                      ariaLabel="Eliminar hito" (clic)="eliminarCuota(c.id)" />
         </div>
       }
     </div>
@@ -101,14 +100,13 @@
     </div>
 
     <div class="footer-fp">
-      <button type="button" class="btn-link-fp" (click)="restablecerDefault()">
-        <span class="material-symbols-outlined">restart_alt</span>
+      <app-button variant="link" tamano="sm" icono="restart_alt"
+                  (clic)="restablecerDefault()">
         Restablecer valores predeterminados
-      </button>
-      <button type="button" class="btn-link-fp">
-        <span class="material-symbols-outlined">download</span>
+      </app-button>
+      <app-button variant="link" tamano="sm" icono="download">
         Cargar condiciones del Contrato Marco Antamina
-      </button>
+      </app-button>
     </div>
   </app-seccion>
 

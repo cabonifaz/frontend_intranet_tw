@@ -32,10 +32,9 @@
       <div class="vacio">
         <span class="material-symbols-outlined">format_list_bulleted</span>
         <p>Añade un grupo y luego inserta viñetas desde el catálogo</p>
-        <button type="button" class="btn-add" (click)="agregarGrupo()">
-          <span class="material-symbols-outlined">add</span>
+        <app-button variant="primary" tamano="sm" icono="add" (clic)="agregarGrupo()">
           Nuevo grupo
-        </button>
+        </app-button>
       </div>
     } @else {
       <div class="bloques">
@@ -61,16 +60,16 @@
               <ul class="bloque-grupo__vinetas">
                 @for (v of g.vinetas; track v.id) {
                   <li>
-                    <input
-                      type="text"
+                    <textarea
+                      rows="1"
                       [value]="v.texto"
+                      (input)="autogrow($any($event.target))"
                       (change)="actualizarTextoVineta(g.id, v.id, $any($event.target).value)"
                       (click)="$event.stopPropagation()"
-                    />
-                    <button type="button" class="btn-eliminar-mini"
-                            (click)="$event.stopPropagation(); eliminarVineta(g.id, v.id)">
-                      <span class="material-symbols-outlined">close</span>
-                    </button>
+                    ></textarea>
+                    <app-button variant="ghost" tamano="xs" icono="close" [soloIcon]="true"
+                                ariaLabel="Eliminar viñeta"
+                                (clic)="$event.stopPropagation(); eliminarVineta(g.id, v.id)" />
                   </li>
                 }
               </ul>
@@ -79,10 +78,9 @@
         }
       </div>
       <div class="acciones-abajo">
-        <button type="button" class="btn-add btn-add--outline" (click)="agregarGrupo()">
-          <span class="material-symbols-outlined">add</span>
+        <app-button variant="dashed" tamano="sm" icono="add" (clic)="agregarGrupo()">
           Nuevo título / grupo
-        </button>
+        </app-button>
       </div>
     }
   </div>

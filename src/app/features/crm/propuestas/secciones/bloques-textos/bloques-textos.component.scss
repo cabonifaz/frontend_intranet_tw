@@ -138,11 +138,11 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0;
 
     li {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
       padding-left: 30px;
       position: relative;
@@ -151,23 +151,34 @@
         content: '•';
         position: absolute;
         left: 18px;
+        top: 4px;
         color: #94A3B8;
       }
 
-      input {
+      input,
+      textarea {
         flex: 1;
-        padding: 5px 8px;
+        padding: 2px 6px;
         border: 1px solid transparent;
         border-radius: 4px;
         background: transparent;
         font-size: 12px;
         color: #475569;
         font-family: inherit;
+        line-height: 1.4;
+        resize: none;              // sin handle de resize manual
+        overflow: hidden;          // oculta la scrollbar que aparecería
+        white-space: pre-wrap;     // respeta saltos de línea y hace wrap
+        field-sizing: content;     // auto-ajusta altura al contenido (navegadores modernos)
+        min-height: 1.5em;
 
         &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; }
         &:hover { background: #FFFFFF; border-color: #E2E8F0; }
       }
     }
+
+    // Alinea el botón de eliminar al tope del textarea cuando ocupa varias líneas
+    li > app-button { align-self: flex-start; margin-top: 2px; }
   }
 }
 

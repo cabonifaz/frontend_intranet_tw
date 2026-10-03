@@ -6,10 +6,10 @@
     titulo="1. Datos verificados del RQ"
     subtitulo="Información cargada automáticamente desde el requerimiento"
   >
-    <button type="button" class="btn-inline" headerActions (click)="verOrigenRq()">
-      <span class="material-symbols-outlined">open_in_new</span>
+    <app-button variant="ghost" tamano="sm" icono="open_in_new"
+                headerActions (clic)="verOrigenRq()">
       Ver origen
-    </button>
+    </app-button>
 
     <div class="grid-cols-3">
       <app-campo label="Cliente">
@@ -35,10 +35,10 @@
     titulo="2. Configuración de la Propuesta"
     subtitulo="Elige las secciones que necesitarás; el stepper se ajustará automáticamente"
   >
-    <button type="button" class="btn-inline" headerActions (click)="restaurarDefault()">
-      <span class="material-symbols-outlined">restart_alt</span>
+    <app-button variant="ghost" tamano="sm" icono="restart_alt"
+                headerActions (clic)="restaurarDefault()">
       Restaurar default
-    </button>
+    </app-button>
 
     <div class="info-tip">
       <span class="material-symbols-outlined">info</span>
@@ -83,9 +83,9 @@
       <app-campo label="Responsable Comercial Asignado">
         <div class="input-con-boton">
           <input type="text" formControlName="responsableTecnico" readonly />
-          <button type="button" class="btn-inline" (click)="cambiarResponsable()">
+          <app-button variant="ghost" tamano="sm" (clic)="cambiarResponsable()">
             Cambiar
-          </button>
+          </app-button>
         </div>
       </app-campo>
     </div>
@@ -136,10 +136,10 @@
     titulo="4. Datos de la Propuesta — Carátula y Formalidades"
     subtitulo="Textos y datos que aparecerán en la primera página del PDF"
   >
-    <button type="button" class="btn-inline" headerActions (click)="verCaratulaPdf()">
-      <span class="material-symbols-outlined">picture_as_pdf</span>
+    <app-button variant="ghost" tamano="sm" icono="picture_as_pdf"
+                headerActions (clic)="verCaratulaPdf()">
       Vista previa carátula
-    </button>
+    </app-button>
 
     <div class="grid-cols-2">
       <app-campo label="Cliente">

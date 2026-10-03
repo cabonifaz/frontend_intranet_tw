@@ -6,10 +6,11 @@ import { CuotaPago } from '../../../../../core/models/propuesta-detalle.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { CampoComponent } from '../../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../../shared/ui/toggle/toggle.component';
+import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 
 @Component({
   selector: 'app-seccion-forma-pago',
-  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent],
+  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent, ButtonComponent],
   templateUrl: './forma-pago.component.html',
   styleUrl: './forma-pago.component.scss',
 })

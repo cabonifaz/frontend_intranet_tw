@@ -41,9 +41,11 @@
   }
 
   // ── Grid principal (catálogo | botones | selección) ─────────────────────
+  // Catálogo más angosto porque suele tener menos columnas; la selección
+  // (que tiene muchas más columnas editables) se queda con el ancho mayor.
   &__grid {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 2fr auto 3fr;
     gap: 12px;
     align-items: stretch;
   }
@@ -88,8 +90,8 @@
 
   &__panel-body {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: auto;      // scroll vertical y horizontal si las columnas no caben
+    max-height: 480px;   // tope de altura para activar scroll vertical
   }
 
   // ── Botones centrales ────────────────────────────────────────────────────

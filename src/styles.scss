@@ -1,33 +1,133 @@
-/* ─── Design tokens ──────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — TW Intranet
+   ═══════════════════════════════════════════════════════════════════════════
+   Convención de nombres:
+     --tw-{paleta}-{tono}   para colores crudos (ej. --tw-primary-500)
+     --tw-{semantico}       para alias de intención (ej. --tw-text-primary)
+   Tonos:
+     50/100/200  → fondos claros, acentos suaves
+     500         → color principal (default)
+     600/700     → hover / active
+     900         → textos oscuros / high contrast
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --tw-primario:       #1B2A48;
-  --tw-primario-dark:  #101E35;
-  --tw-acento:         #C8102E;
-  --tw-panel-oscuro:   #0C1622;
+  /* ─── Marca TW (identidad visual) ──────────────────────────────────────── */
+  --tw-brand-primary:        #1B2A48;
+  --tw-brand-primary-dark:   #101E35;
+  --tw-brand-accent:         #C8102E;
+  --tw-brand-panel:          #0C1622;
 
-  --tw-blanco:         #ffffff;
-  --tw-gris-50:        #f9fafb;
-  --tw-gris-100:       #f3f4f6;
-  --tw-gris-200:       #e5e7eb;
-  --tw-gris-400:       #9ca3af;
-  --tw-gris-500:       #6b7280;
-  --tw-gris-700:       #374151;
-  --tw-gris-900:       #111827;
+  /* ─── Paleta primary (azul · acción principal) ────────────────────────── */
+  --tw-primary-50:           #EFF6FF;
+  --tw-primary-100:          #DBEAFE;
+  --tw-primary-200:          #BFDBFE;
+  --tw-primary-300:          #93C5FD;
+  --tw-primary-500:          #2563EB;
+  --tw-primary-600:          #1D4ED8;
+  --tw-primary-700:          #1E40AF;
+  --tw-primary-900:          #0F172A;
 
-  --tw-error:          #dc2626;
-  --tw-exito:          #16a34a;
+  /* ─── Paleta neutral (grises · texto, bordes, fondos) ─────────────────── */
+  --tw-neutral-50:           #F8FAFC;
+  --tw-neutral-100:          #F1F5F9;
+  --tw-neutral-200:          #E2E8F0;
+  --tw-neutral-300:          #CBD5E1;
+  --tw-neutral-400:          #94A3B8;
+  --tw-neutral-500:          #64748B;
+  --tw-neutral-600:          #475569;
+  --tw-neutral-700:          #334155;
+  --tw-neutral-800:          #1E293B;
+  --tw-neutral-900:          #0F172A;
 
-  --tw-radio:          8px;
-  --tw-radio-lg:       12px;
-  --tw-sombra:         0 4px 24px rgba(0, 0, 0, 0.12);
-  --tw-sombra-lg:      0 8px 40px rgba(0, 0, 0, 0.18);
+  /* ─── Paleta danger (rojo · eliminar, anular, errores) ────────────────── */
+  --tw-danger-50:            #FEF2F2;
+  --tw-danger-100:           #FEE2E2;
+  --tw-danger-200:           #FECACA;
+  --tw-danger-500:           #DC2626;
+  --tw-danger-600:           #B91C1C;
+  --tw-danger-700:           #991B1B;
 
-  --tw-transicion:     0.2s ease;
+  /* ─── Paleta success (verde · aprobar, completado) ────────────────────── */
+  --tw-success-50:           #ECFDF5;
+  --tw-success-100:          #D1FAE5;
+  --tw-success-200:          #A7F3D0;
+  --tw-success-500:          #059669;
+  --tw-success-600:          #047857;
+  --tw-success-700:          #065F46;
 
-  --tw-fuente:         'Inter', system-ui, -apple-system, sans-serif;
+  /* ─── Paleta warning (ámbar · advertencia, SLA próximo) ───────────────── */
+  --tw-warning-50:           #FFFBEB;
+  --tw-warning-100:          #FEF3C7;
+  --tw-warning-200:          #FDE68A;
+  --tw-warning-500:          #D97706;
+  --tw-warning-600:          #B45309;
+  --tw-warning-700:          #92400E;
+
+  /* ─── Paleta info (celeste · nuevo, informativo) ──────────────────────── */
+  --tw-info-50:              #F0F9FF;
+  --tw-info-100:             #E0F2FE;
+  --tw-info-200:             #BAE6FD;
+  --tw-info-500:             #0EA5E9;
+  --tw-info-600:             #0284C7;
+  --tw-info-700:             #0369A1;
+
+  /* ─── Alias semánticos ────────────────────────────────────────────────── */
+  /* Texto */
+  --tw-text-primary:         var(--tw-neutral-900);   /* títulos, labels destacados */
+  --tw-text-secondary:       var(--tw-neutral-600);   /* texto cuerpo */
+  --tw-text-muted:           var(--tw-neutral-400);   /* placeholders, hints */
+  --tw-text-inverse:         #FFFFFF;                 /* sobre fondos oscuros */
+  --tw-text-link:            var(--tw-primary-500);
+
+  /* Fondos */
+  --tw-bg-base:              #FFFFFF;                 /* cards, inputs */
+  --tw-bg-surface:           var(--tw-neutral-50);    /* página, zonas secundarias */
+  --tw-bg-elevated:          #FFFFFF;                 /* modales, dropdowns con sombra */
+
+  /* Bordes */
+  --tw-border-light:         var(--tw-neutral-100);   /* separadores sutiles */
+  --tw-border-base:          var(--tw-neutral-200);   /* inputs, cards */
+  --tw-border-strong:        var(--tw-neutral-300);   /* inputs activos */
+
+  /* Estados semánticos (compat + atajos) */
+  --tw-error:                var(--tw-danger-500);
+  --tw-exito:                var(--tw-success-500);
+  --tw-advertencia:          var(--tw-warning-500);
+
+  /* Compat con nombres legacy del sistema (NO quitar hasta migración completa) */
+  --tw-primario:             var(--tw-brand-primary);
+  --tw-primario-dark:        var(--tw-brand-primary-dark);
+  --tw-acento:               var(--tw-brand-accent);
+  --tw-panel-oscuro:         var(--tw-brand-panel);
+  --tw-blanco:               #FFFFFF;
+  --tw-gris-50:              var(--tw-neutral-50);
+  --tw-gris-100:              var(--tw-neutral-100);
+  --tw-gris-200:              var(--tw-neutral-200);
+  --tw-gris-400:              var(--tw-neutral-400);
+  --tw-gris-500:              var(--tw-neutral-500);
+  --tw-gris-700:              var(--tw-neutral-700);
+  --tw-gris-900:              var(--tw-neutral-900);
+
+  /* ─── Formas y sombras ────────────────────────────────────────────────── */
+  --tw-radio-sm:             6px;
+  --tw-radio:                8px;
+  --tw-radio-lg:             12px;
+  --tw-radio-xl:             16px;
+
+  --tw-sombra-sm:            0 1px 2px rgba(0, 0, 0, 0.04);
+  --tw-sombra:               0 4px 24px rgba(0, 0, 0, 0.12);
+  --tw-sombra-lg:            0 8px 40px rgba(0, 0, 0, 0.18);
+
+  --tw-transicion:           0.15s ease;
+  --tw-transicion-lenta:     0.2s ease;
+
+  --tw-fuente:               'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* ─── Reset ──────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESET y base global
+   ═══════════════════════════════════════════════════════════════════════════ */
 *,
 *::before,
 *::after {
@@ -42,8 +142,8 @@ body {
   width: 100%;
   font-family: var(--tw-fuente);
   font-size: 16px;
-  color: var(--tw-gris-900);
-  background-color: var(--tw-blanco);
+  color: var(--tw-text-primary);
+  background-color: var(--tw-bg-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -67,7 +167,7 @@ select {
   font-size: 1rem;
 }
 
-/* ─── Utilitarios globales ───────────────────────────────────────────────── */
+/* ─── Utilitarios globales ────────────────────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -83,6 +183,6 @@ select {
 .campo__error {
   display: block;
   font-size: 12px;
-  color: var(--tw-error);
+  color: var(--tw-danger-500);
   margin-top: 4px;
 }

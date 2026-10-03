@@ -2,10 +2,11 @@ import { Component, Input, Output, EventEmitter, OnInit, inject, signal } from '
 import { CrmService } from '../../../../core/services/crm.service';
 import { RequerimientoFicha } from '../../../../core/models/crm.model';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 @Component({
   selector: 'app-detalle-requerimiento',
-  imports: [],
+  imports: [ButtonComponent],
   templateUrl: './detalle-requerimiento.component.html',
   styleUrl:    './detalle-requerimiento.component.scss',
 })
@@ -33,6 +34,11 @@ export class DetalleRequerimientoComponent implements OnInit {
   ];
 
   protected readonly ESTADO_RQ = ESTADO_RQ;
+
+  /** RQs cerrados o anulados son solo lectura — no se editan ni generan propuestas. */
+  esAccionable(estado: string): boolean {
+    return estado !== ESTADO_RQ.CERRADO && estado !== ESTADO_RQ.ANULADO;
+  }
 
   private readonly estadoAStep: Record<string, string> = {
     [ESTADO_RQ.NUEVO]:         'rq',

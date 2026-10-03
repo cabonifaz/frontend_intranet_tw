@@ -1,10 +1,12 @@
 import { Component, computed, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
+import { AutenticacionService } from '../../../../../core/services/autenticacion.service';
 import { TipoPropuesta } from '../../../../../core/models/propuestas.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { CampoComponent } from '../../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../../shared/ui/toggle/toggle.component';
+import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 
 type SeccionKey =
   | 'configuracion' | 'propuesta' | 'opcionales' | 'detalle' | 'recomendaciones'
@@ -22,13 +24,14 @@ const OBLIGATORIAS: SeccionKey[] = ['configuracion', 'propuesta', 'formaPago', '
 
 @Component({
   selector: 'app-seccion-configuracion',
-  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent],
+  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent, ButtonComponent],
   templateUrl: './configuracion.component.html',
   styleUrl: './configuracion.component.scss',
 })
 export class ConfiguracionComponent implements OnInit {
   readonly draftSvc = inject(PropuestaDraftService);
-  private readonly fb = inject(FormBuilder);
+  private readonly fb       = inject(FormBuilder);
+  private readonly authSvc  = inject(AutenticacionService);
 
   readonly SECCIONES: SeccionConfig[] = [
     { key: 'configuracion',       numero: 1, label: 'Configuración',         obligatoria: true  },
@@ -72,9 +75,11 @@ export class ConfiguracionComponent implements OnInit {
 
   ngOnInit(): void {
     const d = this.draftSvc.draft();
+    const u = this.authSvc.usuarioActual();
+    const nombreUsuario = u ? `${u.nombre} ${u.apellido}`.trim() : '';
     this.form.patchValue({
       tipoPropuesta:         d.tipoPropuesta,
-      responsableTecnico:    d.responsableTecnico || 'Ana Torres',
+      responsableTecnico:    d.responsableTecnico || nombreUsuario,
       requiereTercerizacion: d.requiereTercerizacion,
       terceroEmpresa:        d.terceroEmpresa,
       terceroRuc:            d.terceroRuc,

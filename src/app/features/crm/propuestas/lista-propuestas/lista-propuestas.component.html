@@ -7,10 +7,9 @@
       <h1 class="pagina__titulo">Propuestas Comerciales</h1>
       <p class="pagina__subtitulo">Gestión de propuestas, versiones y avance del ciclo comercial</p>
     </div>
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
-      <span class="material-symbols-outlined">add</span>
+    <app-button variant="primary" icono="add" (clic)="irANuevo()">
       Nueva Propuesta
-    </button>
+    </app-button>
   </div>
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
@@ -105,19 +104,17 @@
       </select>
     </div>
     <div class="filtros-card__acciones">
-      <button class="btn-filtrar" type="button" (click)="aplicarFiltros()">
-        <span class="material-symbols-outlined">filter_list</span>
+      <app-button variant="dark" tamano="md" icono="filter_list" (clic)="aplicarFiltros()">
         Filtrar
-      </button>
-      <button class="btn-limpiar" type="button" (click)="limpiarFiltros()">
+      </app-button>
+      <app-button variant="link" tamano="md" (clic)="limpiarFiltros()">
         Limpiar
-      </button>
-      <button class="btn-icon" type="button" title="Exportar">
-        <span class="material-symbols-outlined">download</span>
-      </button>
-      <button class="btn-icon" type="button" title="Actualizar" (click)="aplicarFiltros()">
-        <span class="material-symbols-outlined">refresh</span>
-      </button>
+      </app-button>
+      <app-button variant="secondary" tamano="md" icono="download" [soloIcon]="true"
+                  ariaLabel="Exportar" title="Exportar" />
+      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
+                  ariaLabel="Actualizar" title="Actualizar"
+                  (clic)="aplicarFiltros()" />
     </div>
   </div>
 
@@ -144,26 +141,27 @@
             <th class="tabla__th tabla__th--derecha">MONTO</th>
             <th class="tabla__th">MONEDA</th>
             <th class="tabla__th">COMERCIAL</th>
+            <th class="tabla__th tabla__th--centro">ACCIONES</th>
           </tr>
         </thead>
         <tbody>
           @if (cargando()) {
             <tr>
-              <td colspan="9" class="tabla__td tabla__td--vacio">
+              <td colspan="10" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
                 Cargando propuestas...
               </td>
             </tr>
           } @else if (items().length === 0) {
             <tr>
-              <td colspan="9" class="tabla__td tabla__td--vacio">
+              <td colspan="10" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined">inbox</span>
                 No se encontraron propuestas con los filtros aplicados.
               </td>
             </tr>
           } @else {
             @for (item of items(); track item.idPropuesta) {
-              <tr class="tabla__fila" (click)="irAEditar(item.idPropuesta)">
+              <tr class="tabla__fila">
                 <td class="tabla__td">
                   <span class="tabla__codigo">{{ item.codigo }}</span>
                 </td>
@@ -199,6 +197,21 @@
                     <span class="tabla__comercial-nombre">{{ item.comercial }}</span>
                   </div>
                 </td>
+                <td class="tabla__td tabla__td--centro">
+                  <div class="tabla__acciones">
+                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                                ariaLabel="Ver detalle" title="Ver detalle"
+                                (clic)="verDetalle(item.idPropuesta)" />
+                    <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                                ariaLabel="Editar" title="Editar"
+                                (clic)="editarPropuesta(item)" />
+                    @if (item.estado === 'borrador') {
+                      <app-button variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
+                                  ariaLabel="Enviar a Visto Bueno" title="Enviar a Visto Bueno"
+                                  (clic)="enviarAVistoBueno(item.idPropuesta)" />
+                    }
+                  </div>
+                </td>
               </tr>
             }
           }
@@ -213,22 +226,18 @@
           Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} propuestas
         </span>
         <div class="paginacion__btns">
-          <button class="paginacion__btn" type="button"
-                  [disabled]="pagina() === 1"
-                  (click)="irPagina(pagina() - 1)">
-            <span class="material-symbols-outlined">chevron_left</span>
-          </button>
+          <app-button variant="secondary" tamano="sm" icono="chevron_left" [soloIcon]="true"
+                      ariaLabel="Anterior"
+                      [disabled]="pagina() === 1"
+                      (clic)="irPagina(pagina() - 1)" />
           @for (p of paginas; track p) {
-            <button class="paginacion__btn"
-                    [class.paginacion__btn--activo]="p === pagina()"
-                    type="button"
-                    (click)="irPagina(p)">{{ p }}</button>
+            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm"
+                        (clic)="irPagina(p)">{{ p }}</app-button>
           }
-          <button class="paginacion__btn" type="button"
-                  [disabled]="pagina() === totalPaginas()"
-                  (click)="irPagina(pagina() + 1)">
-            <span class="material-symbols-outlined">chevron_right</span>
-          </button>
+          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true"
+                      ariaLabel="Siguiente"
+                      [disabled]="pagina() === totalPaginas()"
+                      (clic)="irPagina(pagina() + 1)" />
         </div>
       </div>
     }
@@ -240,5 +249,27 @@
   <app-modal-elegir-rq
     (cerrar)="modalRqAbierto.set(false)"
     (seleccionado)="onRqSeleccionado($event)"
+  />
+}
+
+<!-- ── Modal "Propuesta existente detectada" ──────────────────────────────── -->
+@if (propuestaExistenteCtx(); as ctx) {
+  <app-modal-propuesta-existente
+    [codigoRq]="ctx.codigoRq"
+    [codigoPropuesta]="ctx.codigoPropuesta"
+    [versionActual]="ctx.versionActual"
+    (nuevaVersion)="onElegirNuevaVersion()"
+    (independiente)="onElegirIndependiente()"
+    (cerrar)="propuestaExistenteCtx.set(null)"
+  />
+}
+
+<!-- ── Modal "Crear nueva versión" (editar propuesta enviada a VB) ────────── -->
+@if (nuevaVersionCtx(); as ctx) {
+  <app-modal-crear-nueva-version
+    [codigoPropuesta]="ctx.codigoPropuesta"
+    [versionActual]="ctx.versionActual"
+    (continuar)="onConfirmarNuevaVersion()"
+    (cerrar)="nuevaVersionCtx.set(null)"
   />
 }

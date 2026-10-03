@@ -2,10 +2,11 @@ import { Component, OnInit, computed, inject, output, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { CrmService } from '../../../../core/services/crm.service';
 import { RequerimientoListaItem } from '../../../../core/models/crm.model';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
 @Component({
   selector: 'app-modal-elegir-rq',
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonComponent],
   templateUrl: './modal-elegir-rq.component.html',
   styleUrl: './modal-elegir-rq.component.scss',
 })

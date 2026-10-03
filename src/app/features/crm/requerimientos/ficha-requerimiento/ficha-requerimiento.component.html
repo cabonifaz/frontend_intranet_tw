@@ -143,11 +143,11 @@
           titulo="Contacto y Cliente"
         >
           @if (!esSoloLectura()) {
-            <button headerActions class="btn-seleccionar-cliente" type="button"
-                    (click)="mostrarModalCliente.set(true)">
-              <span class="material-symbols-outlined">business</span>
+            <app-button variant="secondary" tamano="sm" icono="business"
+                        headerActions
+                        (clic)="mostrarModalCliente.set(true)">
               {{ cliente() ? 'CAMBIAR CLIENTE' : 'SELECCIONAR CLIENTE' }}
-            </button>
+            </app-button>
           }
 
           <div class="seccion__body">

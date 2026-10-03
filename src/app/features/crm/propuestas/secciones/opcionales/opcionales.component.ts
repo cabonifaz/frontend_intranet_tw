@@ -1,42 +1,55 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
+import { SuministrosService } from '../../../../../core/services/suministros.service';
 import { LineaItemPropuesta } from '../../../../../core/models/propuesta-detalle.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
+import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 
 interface SumCatalogo {
-  id:       number;
-  codigo:   string;
+  id:          number;
+  codigo:      string;
   descripcion: string;
-  tipo:     string;
-  subtipo:  string;
-  precio:   number;
+  tipo:        string;
+  subtipo:     string;
+  precio:      number;
 }
-
-const CATALOGO_MOCK: SumCatalogo[] = [
-  { id: 6627,  codigo: 'OPT-0001', descripcion: 'Impresora térmica de etiquetas con ribbon térmico',   tipo: 'Accesorio',  subtipo: 'Impresión',   precio: 420.00 },
-  { id: 13057, codigo: 'OPT-0057', descripcion: 'Certificado INACAL de trazabilidad externa',          tipo: 'Servicio',   subtipo: 'Certificación', precio: 350.00 },
-  { id: 6434,  codigo: 'OPT-0034', descripcion: 'Software de registro histórico 1 año licencia',       tipo: 'Software',   subtipo: 'Licencia',    precio: 1200.00 },
-  { id: 6628,  codigo: 'OPT-0028', descripcion: 'Capacitación on-site a operadores (4 horas)',         tipo: 'Capacitación', subtipo: 'Técnica',   precio: 580.00 },
-  { id: 16959, codigo: 'OPT-0159', descripcion: 'Extensión de garantía a 24 meses adicionales',        tipo: 'Garantía',   subtipo: 'Extendida',   precio: 420.00 },
-  { id: 16552, codigo: 'OPT-0152', descripcion: 'Kit de limpieza y mantenimiento preventivo',          tipo: 'Accesorio',  subtipo: 'Mantenimiento', precio: 85.00 },
-];
 
 @Component({
   selector: 'app-seccion-opcionales',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent],
   styles: `:host { display: block; }`,
   templateUrl: './opcionales.component.html',
   styleUrl: '../propuesta/propuesta.component.scss',
 })
-export class OpcionalesComponent {
-  readonly draftSvc = inject(PropuestaDraftService);
+export class OpcionalesComponent implements OnInit {
+  readonly draftSvc        = inject(PropuestaDraftService);
+  private readonly sumsSvc = inject(SuministrosService);
 
-  readonly catalogo = signal<SumCatalogo[]>(CATALOGO_MOCK);
-  readonly catalogoFiltrado = signal<SumCatalogo[]>(CATALOGO_MOCK);
-  readonly seleccionado = signal<number | null>(null);
+  readonly catalogo         = signal<SumCatalogo[]>([]);
+  readonly catalogoFiltrado = signal<SumCatalogo[]>([]);
+  readonly cargandoCatalogo = signal(false);
+  readonly seleccionado      = signal<number | null>(null);
   readonly seleccionadoLinea = signal<number | null>(null);
+
+  async ngOnInit(): Promise<void> {
+    this.cargandoCatalogo.set(true);
+    try {
+      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', true, 1, 200);
+      const items: SumCatalogo[] = r.items.map(s => ({
+        id:          s.idSuministro,
+        codigo:      `SUM-${String(s.idSuministro).padStart(4, '0')}`,
+        descripcion: s.descripcion,
+        tipo:        s.tipoLabel    ?? '',
+        subtipo:     s.subtipoLabel ?? '',
+        precio:      0,
+      }));
+      this.catalogo.set(items);
+      this.catalogoFiltrado.set(items);
+    } catch { /* silencioso */ }
+    finally { this.cargandoCatalogo.set(false); }
+  }
 
   readonly lineas = computed(() => this.draftSvc.draft().lineasOpcionales);
 

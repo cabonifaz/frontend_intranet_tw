@@ -19,6 +19,10 @@ export class ToastService {
     this._agregar(mensaje, 'error', duracion);
   }
 
+  info(mensaje: string, duracion = 3500): void {
+    this._agregar(mensaje, 'info', duracion);
+  }
+
   cerrar(id: number): void {
     this.toasts.update(t => t.filter(x => x.id !== id));
   }

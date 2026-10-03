@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
 import { GrupoBloque } from '../../../../../core/models/propuesta-detalle.model';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
+import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 
 export interface TextoCatalogo {
   id:       number;
@@ -17,7 +18,7 @@ export interface TextoCatalogo {
  */
 @Component({
   selector: 'app-bloques-textos',
-  imports: [FormsModule, DoblePanelComponent],
+  imports: [FormsModule, DoblePanelComponent, ButtonComponent],
   templateUrl: './bloques-textos.component.html',
   styleUrl: './bloques-textos.component.scss',
 })
@@ -123,4 +124,11 @@ export class BloquesTextosComponent {
   }
 
   totalVinetas = computed(() => this.grupos().reduce((acc, g) => acc + g.vinetas.length, 0));
+
+  // Ajusta la altura del textarea al contenido para que el texto largo
+  // se vea en varias líneas sin recorte.
+  autogrow(el: HTMLTextAreaElement): void {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
 }

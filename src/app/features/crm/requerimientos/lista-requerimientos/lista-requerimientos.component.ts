@@ -5,13 +5,14 @@ import { CrmService } from '../../../../core/services/crm.service';
 import { KpisRequerimientos, RequerimientoListaItem, CatalogoItem } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-requerimiento.component';
 import { AnularRequerimientoComponent } from '../anular-requerimiento/anular-requerimiento.component';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent],
+  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })
@@ -121,6 +122,11 @@ export class ListaRequerimientosComponent implements OnInit {
     this.router.navigate(['/crm/propuestas/nueva'], {
       queryParams: { idRequerimiento },
     });
+  }
+
+  /** RQs cerrados o anulados no se editan ni generan propuestas nuevas. */
+  esAccionable(estado: string): boolean {
+    return estado !== ESTADO_RQ.CERRADO && estado !== ESTADO_RQ.ANULADO;
   }
 
   estadoClase(estado: string): string {

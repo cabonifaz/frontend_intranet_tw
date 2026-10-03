@@ -1,0 +1,33 @@
+<app-modal titulo="Propuesta enviada a Visto Bueno" ancho="sm" (cerrar)="cerrar.emit()">
+  <div class="mcnv-body">
+    <div class="mcnv-body__icono">
+      <span class="material-symbols-outlined">warning</span>
+    </div>
+
+    <p class="mcnv-body__texto">
+      La propuesta <strong>{{ codigoPropuesta() }}</strong> ya fue enviada a Visto Bueno.
+      Si continúas, se creará una <strong>nueva versión ({{ versionSiguiente }})</strong>
+      que heredará su contenido actual.
+    </p>
+
+    <div class="mcnv-body__alerta">
+      <span class="material-symbols-outlined">priority_high</span>
+      <div>
+        <strong>La versión actual quedará anulada.</strong>
+        Tendrás que repetir el flujo: completar la propuesta y enviarla nuevamente a
+        Visto Bueno para que sea aprobada.
+      </div>
+    </div>
+
+    <p class="mcnv-body__pregunta">¿Deseas continuar?</p>
+  </div>
+
+  <div modalFooter class="mcnv-footer">
+    <app-button variant="secondary" tamano="md" (clic)="cerrar.emit()">
+      Cancelar
+    </app-button>
+    <app-button variant="primary" tamano="md" icono="edit" (clic)="continuar.emit()">
+      Crear nueva versión ({{ versionSiguiente }})
+    </app-button>
+  </div>
+</app-modal>

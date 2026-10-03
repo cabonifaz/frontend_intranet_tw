@@ -9,9 +9,8 @@
         </div>
         <span class="modal__titulo">Anular Requerimiento</span>
       </div>
-      <button class="modal__cerrar" type="button" (click)="cerrar.emit()">
-        <span class="material-symbols-outlined">close</span>
-      </button>
+      <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
+                  ariaLabel="Cerrar" (clic)="cerrar.emit()" />
     </div>
 
     <!-- Body -->
@@ -106,22 +105,17 @@
         </span>
       </div>
       <div class="footer-btns">
-        <button class="btn-cancelar" type="button" (click)="cerrar.emit()" [disabled]="guardando()">
+        <app-button variant="secondary" tamano="md"
+                    [disabled]="guardando()"
+                    (clic)="cerrar.emit()">
           Cancelar
-        </button>
-        <button
-          class="btn-anular"
-          type="button"
-          [disabled]="!habilitado()"
-          (click)="confirmar()"
-        >
-          @if (guardando()) {
-            <span class="material-symbols-outlined btn-anular__spin">progress_activity</span>
-          } @else {
-            <span class="material-symbols-outlined">cancel</span>
-          }
+        </app-button>
+        <app-button variant="danger" tamano="md" icono="cancel"
+                    [disabled]="!habilitado()"
+                    [cargando]="guardando()"
+                    (clic)="confirmar()">
           Anular Requerimiento
-        </button>
+        </app-button>
       </div>
     </div>
 

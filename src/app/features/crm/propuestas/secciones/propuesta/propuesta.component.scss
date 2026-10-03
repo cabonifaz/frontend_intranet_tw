@@ -10,7 +10,7 @@
 
   th {
     text-align: left;
-    padding: 8px 10px;
+    padding: 8px 6px;
     font-size: 10px;
     font-weight: 700;
     color: #64748B;
@@ -19,7 +19,7 @@
   }
 
   td {
-    padding: 8px 10px;
+    padding: 8px 6px;
     color: #475569;
     border-bottom: 1px solid #F1F5F9;
   }
@@ -35,6 +35,11 @@
 
     &:hover { background: #F8FAFC; }
   }
+
+  // Descripción (col 1) toma todo el ancho sobrante; tipo y subtipo quedan compactos.
+  th:nth-child(1), td:nth-child(1) { width: auto; }
+  th:nth-child(2), td:nth-child(2) { width: 90px; max-width: 90px; white-space: normal; }
+  th:nth-child(3), td:nth-child(3) { width: 85px; max-width: 85px; white-space: normal; }
 }
 
 .mono {
@@ -46,8 +51,11 @@
 .celda-tipo { font-size: 11px; color: #94A3B8; }
 
 // ── Tabla editable (der) ────────────────────────────────────────────────────
+// Misma estética que .tabla-min para que ambas se sientan parte del mismo
+// catálogo. La única diferencia funcional son los inputs editables.
 .tabla-editable {
   width: 100%;
+  min-width: 680px;      // fuerza scroll horizontal cuando el panel es angosto
   border-collapse: collapse;
   font-size: 12px;
 
@@ -56,10 +64,10 @@
   th {
     text-align: left;
     padding: 8px 6px;
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     color: #64748B;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
     border-bottom: 1px solid #E2E8F0;
     line-height: 1.2;
 
@@ -68,7 +76,7 @@
   }
 
   td {
-    padding: 6px 6px;
+    padding: 8px 6px;
     color: #475569;
     border-bottom: 1px solid #F1F5F9;
     vertical-align: middle;
@@ -78,6 +86,8 @@
 
   &__fila--activa {
     background: #EFF6FF;
+
+    td { color: #0F172A; font-weight: 500; }
   }
 
   tbody tr {
@@ -87,29 +97,47 @@
   }
 
   .celda-desc {
-    font-size: 11px;
-    color: #0F172A;
-    max-width: 180px;
+    color: #475569;
+    min-width: 220px;
+    max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  // Ajustes finos de ancho por columna:
+  // Alcance (col 2) y Ptos Calib (col 3) son más angostas.
+  th:nth-child(2), td:nth-child(2) { width: 90px; max-width: 90px; }  // Alcance
+  th:nth-child(3), td:nth-child(3) { width: 60px; max-width: 60px; }  // Ptos Calib
+  // V. Unit (col 6) un poco más ancha para montos de 4-5 dígitos
+  th:nth-child(6), td:nth-child(6) { width: 85px; input { max-width: 85px; } }
+
+  // Inputs "invisibles" por defecto — se muestran como texto plano hasta
+  // hover/focus para que ambas tablas se sientan iguales en reposo.
   input {
     width: 100%;
-    padding: 4px 6px;
+    padding: 2px 4px;
     border: 1px solid transparent;
     border-radius: 4px;
     background: transparent;
     font-size: 12px;
-    color: #0F172A;
-    text-align: center;
+    color: inherit;
+    text-align: inherit;
     font-family: inherit;
 
-    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; }
-    &:hover { background: #FFFFFF; border-color: #E2E8F0; }
+    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; color: #0F172A; }
+    &:hover:not(:focus) { background: #FFFFFF; border-color: #E2E8F0; }
 
-    &[type="number"] { max-width: 60px; }
+    &[type="number"] {
+      max-width: 70px;
+      text-align: center;
+      -moz-appearance: textfield;              // Firefox
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {           // Chrome/Edge/Safari
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    }
   }
 }
 
@@ -198,7 +226,7 @@
 // ── Fila de totales + acciones ──────────────────────────────────────────────
 .totales-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 20px;
   padding: 12px 16px;
@@ -210,6 +238,7 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    margin-right: auto;    // mantiene la izquierda si hubiera botones a futuro
   }
 
   &__der {

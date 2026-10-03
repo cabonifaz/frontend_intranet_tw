@@ -10,13 +10,13 @@
     <p class="mb-body__pregunta">¿Querés continuar donde lo dejaste o empezar en blanco?</p>
   </div>
   <div modalFooter class="mb-footer">
-    <button type="button" class="mb-btn mb-btn--descartar" (click)="descartar.emit()">
-      <span class="material-symbols-outlined">delete_sweep</span>
+    <app-button variant="danger-ghost" tamano="md" icono="delete_sweep"
+                (clic)="descartar.emit()">
       Descartar borrador
-    </button>
-    <button type="button" class="mb-btn mb-btn--restaurar" (click)="restaurar.emit()">
-      <span class="material-symbols-outlined">restore</span>
+    </app-button>
+    <app-button variant="primary" tamano="md" icono="restore"
+                (clic)="restaurar.emit()">
       Restaurar borrador
-    </button>
+    </app-button>
   </div>
 </app-modal>

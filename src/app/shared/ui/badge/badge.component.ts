@@ -1,7 +1,11 @@
 import { Component, input } from '@angular/core';
 
-type Variant = 'azul' | 'verde' | 'rojo' | 'ambar' | 'gris' | 'dark' | 'morado';
-type Tamano  = 'sm' | 'md';
+type Variant =
+  // Legacy (nombres de color) — se mantienen por compat
+  | 'azul' | 'verde' | 'rojo' | 'ambar' | 'gris' | 'dark' | 'morado'
+  // Semánticos (recomendados para código nuevo)
+  | 'info' | 'success' | 'danger' | 'warning' | 'neutral';
+type Tamano = 'sm' | 'md';
 
 @Component({
   selector: 'app-badge',
