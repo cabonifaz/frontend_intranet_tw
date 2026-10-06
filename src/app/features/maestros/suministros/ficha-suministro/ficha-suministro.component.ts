@@ -10,7 +10,6 @@ import { FormatosVentanaService } from '../../../../core/services/formatos-venta
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   GuardarSuministroRequest,
-  NIVELES_TARIFA,
   OpcionCatalogo,
   esServicio,
 } from '../../../../core/models/suministros.model';
@@ -85,7 +84,10 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   // Unidad fue removida del formulario (pedido cliente 2026-10-06) → no se carga catálogo.
   readonly clasesOpciones       = signal<OpcionCatalogo[]>([]);
   readonly tiposOpciones        = signal<OpcionCatalogo[]>([]);
-  readonly nivelesTarifa        = NIVELES_TARIFA;
+  // nivelesTarifa removido — las 3 escalas (estandar/volumen/corporativo_alto)
+  // se renderizan como inputs hardcoded en el HTML. Si en el futuro un admin
+  // debe editar las etiquetas, consumir NIVEL_TARIFA_SUMINISTRO (tabla_maestra 86).
+
 
   readonly marcasSignal         = signal<OpcionCatalogo[]>([]);
   readonly modelosSignal        = signal<OpcionCatalogo[]>([]);

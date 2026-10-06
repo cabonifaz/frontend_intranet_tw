@@ -226,25 +226,25 @@
             <label class="check-simple">
               <input type="checkbox" formControlName="aplicaCalibracionLab" />
               <span class="check-simple__box"></span>
-              <span class="check-simple__texto">Calibración en Laboratorio</span>
+              <span class="check-simple__texto">{{ labelsServicios()['calibracion_lab'] }}</span>
             </label>
 
             <label class="check-simple">
               <input type="checkbox" formControlName="aplicaCalibracionPlanta" />
               <span class="check-simple__box"></span>
-              <span class="check-simple__texto">Calibración en Planta / Camiones</span>
+              <span class="check-simple__texto">{{ labelsServicios()['calibracion_planta'] }}</span>
             </label>
 
             <label class="check-simple">
               <input type="checkbox" formControlName="aplicaMantenimiento" />
               <span class="check-simple__box"></span>
-              <span class="check-simple__texto">Mantenimiento Preventivo &amp; Correctivo</span>
+              <span class="check-simple__texto">{{ labelsServicios()['mantenimiento'] }}</span>
             </label>
 
             <label class="check-simple">
               <input type="checkbox" formControlName="aplicaVentaSuministros" />
               <span class="check-simple__box"></span>
-              <span class="check-simple__texto">Venta e Instalación de Suministros</span>
+              <span class="check-simple__texto">{{ labelsServicios()['venta_suministros'] }}</span>
             </label>
           </div>
 

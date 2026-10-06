@@ -100,23 +100,19 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
 
   idUsuario = 0;
 
-  // Roles simplificados a 4 niveles por pedido del cliente (2026-10-05).
-  // El esquema de permisos reales se construye en el back combinando Rol + Área.
-  // El flag `esComercial` queda deprecado y siempre false — las suplencias ahora
-  // están abiertas a cualquier rol.
-  readonly rolOpciones: RolOpcion[] = [
-    { value: 'administrador', label: 'Administrador', esComercial: false },
-    { value: 'supervisor',    label: 'Supervisor',    esComercial: false },
-    { value: 'usuario',       label: 'Usuario',       esComercial: false },
-    { value: 'visor',         label: 'Visor',         esComercial: false },
-  ];
+  // Roles consumidos de ROL_SISTEMA (tabla_maestra IdMaestro=68, poblado por
+  // la migración 34 del back). El flag `esComercial` quedó deprecado y siempre
+  // es false — las suplencias están abiertas a cualquier rol.
+  readonly rolOpciones = signal<RolOpcion[]>([]);
 
   // Tipos de documento: cargados desde tabla_maestra (categoria TIPO_DOC_IDENTIDAD).
   // Códigos en BD: DNI, CE, PASAPORTE, RUC.
   readonly tipoDocOpciones = signal<CatalogoItem[]>([]);
 
-  // Troncales de la central telefónica corporativa (al interno se le antepone uno de estos).
-  readonly anexoTroncales = ['5699750', '5699751'];
+  // Troncales de la central telefónica corporativa (al interno se le antepone
+  // uno de estos). Consumido de TRONCAL_TW (tabla_maestra IdMaestro=84, poblado
+  // por la migración 34 del back). Fallback con los 2 troncales conocidos.
+  readonly anexoTroncales = signal<string[]>(['5699750', '5699751']);
 
   // Catálogos dinámicos de tabla_maestra (back real).
   // Se cargan en ngOnInit vía MaestrosService.obtenerCatalogo(descripcion).
@@ -219,7 +215,7 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
 
   readonly rolLabelActual = computed(() => {
     const rol = this.rolSistemaActual();
-    return this.rolOpciones.find(r => r.value === rol)?.label ?? 'Sin rol asignado';
+    return this.rolOpciones().find(r => r.value === rol)?.label ?? 'Sin rol asignado';
   });
 
   readonly nombreCompleto = computed(() => {
@@ -277,12 +273,26 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
       // (que a su vez usa AREA_USUARIO de tabla_maestra). Cargo pasó a texto libre y
       // el "Supervisor Directo" lo calcula el back según área + rol, así que ya no
       // cargamos ni jefes ni CARGO_USUARIO.
-      const [sedes, tiposDoc, areas] = await Promise.all([
+      const [sedes, tiposDoc, areas, roles, troncales] = await Promise.all([
         this.maestrosSvc.obtenerCatalogo('SEDE_OPERATIVA_TW').catch(() => []),
         this.maestrosSvc.obtenerCatalogo('TIPO_DOC_IDENTIDAD').catch(() => []),
         this.areasSvc.listar().catch(() => []),
+        this.maestrosSvc.obtenerCatalogo('ROL_SISTEMA').catch(() => []),
+        this.maestrosSvc.obtenerCatalogo('TRONCAL_TW').catch(() => []),
       ]);
       this.sedesOperativas.set(sedes);
+      // Roles: mapeo CatalogoItem → RolOpcion (esComercial deprecado = false siempre)
+      if (roles.length > 0) {
+        this.rolOpciones.set(roles.map(r => ({
+          value:       r.codigo ?? r.nombre,
+          label:       r.nombre,
+          esComercial: false,
+        })));
+      }
+      // Troncales: solo necesitamos los códigos (String2) para el dropdown.
+      if (troncales.length > 0) {
+        this.anexoTroncales.set(troncales.map(t => t.codigo ?? t.nombre).filter((v): v is string => !!v));
+      }
       this.tipoDocOpciones.set(tiposDoc);
       this.areasUsuario.set(areas);
 
@@ -433,12 +443,13 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
    */
   private descomponerAnexo(anexoCompleto: string | null | undefined): { troncal: string; interno: string } {
     const s = anexoCompleto?.trim() ?? '';
-    for (const t of this.anexoTroncales) {
+    const troncales = this.anexoTroncales();
+    for (const t of troncales) {
       if (s.startsWith(t) && s.length === t.length + 3) {
         return { troncal: t, interno: s.slice(t.length) };
       }
     }
-    return { troncal: this.anexoTroncales[0], interno: '' };
+    return { troncal: troncales[0] ?? '', interno: '' };
   }
 
   filtrarUsername(event: Event): void {

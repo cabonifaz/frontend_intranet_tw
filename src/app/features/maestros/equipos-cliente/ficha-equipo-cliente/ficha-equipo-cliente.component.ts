@@ -12,8 +12,6 @@ import { FormatosVentanaService } from '../../../../core/services/formatos-venta
 import { SuministrosService } from '../../../../core/services/suministros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
-  CLASES_EXACTITUD,
-  ESTADOS_OPERATIVOS,
   FotoEquipo,
   GuardarEquipoClienteRequest,
   OrdenTrabajoResumen,
@@ -96,8 +94,11 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   // filtrando "Servicio" porque un equipo del cliente no puede ser un servicio.
   // Reutiliza el mismo catálogo que la ficha de Suministros.
   readonly clasificacionesOpciones = signal<OpcionCatalogo[]>([]);
-  readonly clasesExactitud         = CLASES_EXACTITUD;
-  readonly estadosOperativos       = ESTADOS_OPERATIVOS;
+  // Clase de exactitud (I, II, III, IV) desde CLASE_EXACTITUD (tabla_maestra 82).
+  readonly clasesExactitud         = signal<OpcionCatalogo[]>([]);
+  // Estados operativos del timeline (ya solo informativos, el back los mueve)
+  // desde ESTADO_OPERATIVO_EQUIPO (tabla_maestra 83).
+  readonly estadosOperativos       = signal<OpcionCatalogo[]>([]);
 
   // Dropdowns dinámicos
   readonly clientes          = signal<ClienteListaItem[]>([]);
@@ -191,6 +192,13 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     this.suministrosSvc.obtenerClases()
       .then(clases => this.clasificacionesOpciones.set(clases.filter(c => c.value !== 'servicio')))
       .catch(() => this.clasificacionesOpciones.set([]));
+    // Clase de exactitud + Estados operativos del timeline (desde tabla_maestra).
+    this.maestrosSvc.obtenerCatalogo('CLASE_EXACTITUD')
+      .then(c => this.clasesExactitud.set(c.map(i => ({ value: i.codigo ?? i.nombre, label: i.nombre }))))
+      .catch(() => this.clasesExactitud.set([]));
+    this.maestrosSvc.obtenerCatalogo('ESTADO_OPERATIVO_EQUIPO')
+      .then(c => this.estadosOperativos.set(c.map(i => ({ value: i.codigo ?? i.nombre, label: i.nombre }))))
+      .catch(() => this.estadosOperativos.set([]));
 
     // Reaccionar al cambio de Clasificación técnica: recarga la lista de suministros
     // filtrada por esa clase (equipo / instrumento / pesa). Y resetea el suministro
@@ -354,7 +362,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
 
   getIndiceEstado(): number {
     const actual = this.formulario.get('estadoOperativo')?.value;
-    return this.estadosOperativos.findIndex(e => e.value === actual);
+    return this.estadosOperativos().findIndex(e => e.value === actual);
   }
 
   // Foto placeholder — upload real pendiente (ver memoria: project_hu86_upload_pendiente)

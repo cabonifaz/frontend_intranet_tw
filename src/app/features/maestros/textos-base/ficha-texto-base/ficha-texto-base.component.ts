@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { TextosBaseService } from '../../../../core/services/textos-base.service';
+import { MaestrosService } from '../../../../core/services/maestros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   CATEGORIAS_TEXTO_BASE,
@@ -47,7 +48,19 @@ import { ToastService } from '../../../../core/services/toast.service';
 export class FichaTextoBaseComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly textosSvc   = inject(TextosBaseService);
+  private readonly maestrosSvc = inject(MaestrosService);
   private readonly borradorSvc = inject(BorradorService);
+
+  // Etiquetas de los 4 checkboxes "Servicios Aplicables" vienen del catálogo
+  // SERVICIO_TEXTO_BASE (tabla_maestra 87). Las columnas booleanas en el form
+  // (aplica_calibracion_lab, etc.) son FIJAS — solo el label visible es dinámico.
+  // Si el catálogo falla, se usan los labels de fallback hardcoded.
+  readonly labelsServicios = signal<Record<string, string>>({
+    calibracion_lab:    'Calibración en Laboratorio',
+    calibracion_planta: 'Calibración en Planta / Camiones',
+    mantenimiento:      'Mantenimiento Preventivo & Correctivo',
+    venta_suministros:  'Venta e Instalación de Suministros',
+  });
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
@@ -126,6 +139,18 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
+    // Catálogo de servicios aplicables (etiquetas de los 4 checkboxes).
+    this.maestrosSvc.obtenerCatalogo('SERVICIO_TEXTO_BASE')
+      .then(items => {
+        const dict: Record<string, string> = { ...this.labelsServicios() };
+        for (const it of items) {
+          const key = it.codigo;
+          if (key) dict[key] = it.nombre;
+        }
+        this.labelsServicios.set(dict);
+      })
+      .catch(() => { /* fallback a los labels hardcoded */ });
+
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);

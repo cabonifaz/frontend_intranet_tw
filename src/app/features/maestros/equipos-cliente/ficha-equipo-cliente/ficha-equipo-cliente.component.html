@@ -169,7 +169,7 @@
           <div class="grid-cols-3">
             <app-campo label="Clase de Exactitud">
               <select formControlName="claseExactitud">
-                @for (opt of clasesExactitud; track opt.value) {
+                @for (opt of clasesExactitud(); track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
               </select>
@@ -238,7 +238,7 @@
                      subtitulo="Se actualiza automáticamente según el flujo CIE / Evaluación / Servicio.">
 
           <div class="timeline timeline--readonly" title="El estado lo administra el back según el flujo del equipo.">
-            @for (estado of estadosOperativos; track estado.value; let i = $index; let last = $last) {
+            @for (estado of estadosOperativos(); track estado.value; let i = $index; let last = $last) {
               <div class="timeline__paso"
                    [class.timeline__paso--activo]="formulario.get('estadoOperativo')?.value === estado.value"
                    [class.timeline__paso--completado]="getIndiceEstado() > i">

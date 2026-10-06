@@ -142,7 +142,7 @@
             <label class="campo__label">Anexo corporativo</label>
             <div class="campo-anexo">
               <select class="campo__select campo__select--sm" formControlName="anexoTroncal">
-                @for (t of anexoTroncales; track t) {
+                @for (t of anexoTroncales(); track t) {
                   <option [value]="t">{{ t }}</option>
                 }
               </select>
@@ -195,7 +195,7 @@
             <label class="campo__label">Rol Principal en la Plataforma *</label>
             <select class="campo__select" formControlName="rolSistema">
               <option value="">Seleccionar rol de sistema...</option>
-              @for (rol of rolOpciones; track rol.value) {
+              @for (rol of rolOpciones(); track rol.value) {
                 <option [value]="rol.value">{{ rol.label }}</option>
               }
             </select>
