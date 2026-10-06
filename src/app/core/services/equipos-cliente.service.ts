@@ -5,7 +5,6 @@ import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoEquipoClienteRequest,
-  CLASIFICACIONES_EQUIPO,
   EquipoClienteDetalle,
   EquipoClienteListaItem,
   EquiposClientePaginado,
@@ -464,7 +463,9 @@ export class EquiposClienteService {
   private async mockGuardar(dto: GuardarEquipoClienteRequest): Promise<number> {
     await this.mockDelay();
 
-    const clasifLabel = CLASIFICACIONES_EQUIPO.find(c => c.value === dto.clasificacion)?.label ?? dto.clasificacion;
+    // Capitalización simple del código (ej. "equipo" → "Equipo"). Solo se usa en
+    // los mocks locales; en producción el label viene del back ya resuelto.
+    const clasifLabel = dto.clasificacion.charAt(0).toUpperCase() + dto.clasificacion.slice(1);
 
     if (dto.idEquipo === 0) {
       const nuevoId = EquiposClienteService.nextId++;

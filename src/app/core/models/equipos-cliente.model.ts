@@ -130,14 +130,9 @@ export interface OpcionCatalogo {
   label: string;
 }
 
-// Clasificación técnica (simplificada a 3 valores por pedido cliente 2026-10-06).
-// Coincide con las clases principales del catálogo de Suministros (menos 'servicio').
-// Determina qué campos extra se piden en la Sección 2 "Especificaciones".
-export const CLASIFICACIONES_EQUIPO: OpcionCatalogo[] = [
-  { value: 'equipo',       label: 'Equipo' },
-  { value: 'instrumento',  label: 'Instrumento' },
-  { value: 'pesa',         label: 'Pesa' },
-];
+// Clasificación técnica: ya NO vive aquí. Se consume el catálogo CLASE_SUMINISTRO
+// de tabla_maestra via SuministrosService.obtenerClases() y se filtra "Servicio".
+// Reutilizado así en ficha-equipo-cliente y lista-equipos-cliente.
 
 export const CLASES_EXACTITUD: OpcionCatalogo[] = [
   { value: 'I',    label: 'Clase I (Especial)' },

@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EquiposClienteService } from '../../../../core/services/equipos-cliente.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
+import { SuministrosService } from '../../../../core/services/suministros.service';
 import {
-  CLASIFICACIONES_EQUIPO,
   EquipoClienteListaItem,
 } from '../../../../core/models/equipos-cliente.model';
+import { OpcionCatalogo } from '../../../../core/models/suministros.model';
 import { ClienteListaItem, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent }  from '../../../../shared/ui/page-header/page-header.component';
@@ -36,9 +37,10 @@ const POR_PAGINA = 10;
   styleUrl: './lista-equipos-cliente.component.scss',
 })
 export class ListaEquiposClienteComponent implements OnInit {
-  private readonly equiposSvc  = inject(EquiposClienteService);
-  private readonly maestrosSvc = inject(MaestrosService);
-  private readonly router      = inject(Router);
+  private readonly equiposSvc    = inject(EquiposClienteService);
+  private readonly maestrosSvc   = inject(MaestrosService);
+  private readonly suministrosSvc = inject(SuministrosService);
+  private readonly router        = inject(Router);
 
   readonly cargando  = signal(true);
   readonly error     = signal('');
@@ -53,7 +55,8 @@ export class ListaEquiposClienteComponent implements OnInit {
   readonly breadcrumb = breadcrumbMaestros('Equipos de Cliente');
 
   readonly estadoOpciones         = ESTADO_OPCIONES;
-  readonly clasificacionesOpciones = CLASIFICACIONES_EQUIPO;
+  // Clasificación técnica = clases de suministro excepto "Servicio" (desde BD).
+  readonly clasificacionesOpciones = signal<OpcionCatalogo[]>([]);
 
   busqueda              = '';
   clienteFiltro         = 0;
@@ -63,6 +66,9 @@ export class ListaEquiposClienteComponent implements OnInit {
   soloVigentesEnServicio = true;
 
   async ngOnInit(): Promise<void> {
+    this.suministrosSvc.obtenerClases()
+      .then(c => this.clasificacionesOpciones.set(c.filter(x => x.value !== 'servicio')))
+      .catch(() => this.clasificacionesOpciones.set([]));
     await Promise.all([this.cargar(), this.cargarClientes()]);
   }
 

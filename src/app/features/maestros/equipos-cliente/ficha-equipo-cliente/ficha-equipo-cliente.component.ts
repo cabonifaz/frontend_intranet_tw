@@ -9,15 +9,16 @@ import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
 import { SiguienteCodigoService } from '../../../../core/services/siguiente-codigo.service';
 import { FormatosVentanaService } from '../../../../core/services/formatos-ventana.service';
+import { SuministrosService } from '../../../../core/services/suministros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   CLASES_EXACTITUD,
-  CLASIFICACIONES_EQUIPO,
   ESTADOS_OPERATIVOS,
   FotoEquipo,
   GuardarEquipoClienteRequest,
   OrdenTrabajoResumen,
 } from '../../../../core/models/equipos-cliente.model';
+import { OpcionCatalogo } from '../../../../core/models/suministros.model';
 import { AreaCliente, ClienteListaItem, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -56,6 +57,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   private readonly areasSvc    = inject(AreasClienteService);
   private readonly siguienteCodSvc = inject(SiguienteCodigoService);
   private readonly formatoSvc  = inject(FormatosVentanaService);
+  private readonly suministrosSvc = inject(SuministrosService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
@@ -89,8 +91,11 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   readonly proximaCalibracion = signal('');
   readonly clienteRazonSocial = signal('');
 
-  // Catálogos
-  readonly clasificacionesOpciones = CLASIFICACIONES_EQUIPO;
+  // Catálogos.
+  // Clasificación técnica se consume de BD (CLASE_SUMINISTRO de tabla_maestra),
+  // filtrando "Servicio" porque un equipo del cliente no puede ser un servicio.
+  // Reutiliza el mismo catálogo que la ficha de Suministros.
+  readonly clasificacionesOpciones = signal<OpcionCatalogo[]>([]);
   readonly clasesExactitud         = CLASES_EXACTITUD;
   readonly estadosOperativos       = ESTADOS_OPERATIVOS;
 
@@ -181,6 +186,11 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     await this.cargarClientes();
+    // Clasificación técnica = clases de suministro excepto "Servicio"
+    // (un equipo del cliente no es un servicio).
+    this.suministrosSvc.obtenerClases()
+      .then(clases => this.clasificacionesOpciones.set(clases.filter(c => c.value !== 'servicio')))
+      .catch(() => this.clasificacionesOpciones.set([]));
 
     // Reaccionar al cambio de Clasificación técnica: recarga la lista de suministros
     // filtrada por esa clase (equipo / instrumento / pesa). Y resetea el suministro

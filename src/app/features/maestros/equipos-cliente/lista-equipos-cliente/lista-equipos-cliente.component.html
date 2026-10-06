@@ -32,7 +32,7 @@
     </select>
     <select [(ngModel)]="clasificacionFiltro" (change)="cargar(true)">
       <option value="">Clasificación: Todas</option>
-      @for (opt of clasificacionesOpciones; track opt.value) {
+      @for (opt of clasificacionesOpciones(); track opt.value) {
         <option [value]="opt.value">{{ opt.label }}</option>
       }
     </select>

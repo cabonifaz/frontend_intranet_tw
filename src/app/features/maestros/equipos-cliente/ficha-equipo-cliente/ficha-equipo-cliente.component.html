@@ -51,7 +51,7 @@
                        [error]="formulario.get('clasificacion')?.touched && formulario.get('clasificacion')?.invalid ? 'Selecciona una clasificación' : ''">
               <select formControlName="clasificacion">
                 <option value="">Selecciona…</option>
-                @for (opt of clasificacionesOpciones; track opt.value) {
+                @for (opt of clasificacionesOpciones(); track opt.value) {
                   <option [value]="opt.value">{{ opt.label }}</option>
                 }
               </select>
