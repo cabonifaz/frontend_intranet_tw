@@ -1,0 +1,140 @@
+.mma-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 2px 8px;
+}
+
+// ── Crear ──────────────────────────────────────────────────────────────────
+.mma-crear {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--tw-text-secondary, #64748B);
+  }
+
+  &__fila {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+}
+
+// ── Lista ──────────────────────────────────────────────────────────────────
+.mma-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--tw-text-secondary, #64748B);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--tw-border-base, #E2E8F0);
+  }
+
+  &__count {
+    background: var(--tw-primary-50, #EFF6FF);
+    color: var(--tw-primary-700, #1D4ED8);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+}
+
+.mma-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.mma-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--tw-border-base, #E2E8F0);
+  border-radius: 8px;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: var(--tw-primary-300, #93C5FD); }
+
+  &__nombre {
+    flex: 1;
+    font-size: 13px;
+    color: var(--tw-text-primary, #0F172A);
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.mma-vacio {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--tw-text-secondary, #94A3B8);
+  font-size: 13px;
+  background: #F8FAFC;
+  border: 1px dashed var(--tw-border-base, #E2E8F0);
+  border-radius: 8px;
+
+  .material-symbols-outlined {
+    display: block;
+    font-size: 32px;
+    margin-bottom: 6px;
+    opacity: 0.6;
+  }
+}
+
+// ── Input estándar del modal ───────────────────────────────────────────────
+.mma-input {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--tw-border-base, #CBD5E1);
+  border-radius: 8px;
+  background: #FFFFFF;
+  font-size: 13px;
+  color: var(--tw-text-primary, #0F172A);
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--tw-primary-500, #2563EB);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &--editar {
+    height: 32px;
+    font-size: 12px;
+  }
+}
+
+// ── Footer ─────────────────────────────────────────────────────────────────
+.mma-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 18px;
+  border-top: 1px solid var(--tw-border-base, #E2E8F0);
+  background: #F8FAFC;
+}

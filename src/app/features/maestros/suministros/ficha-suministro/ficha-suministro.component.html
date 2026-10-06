@@ -51,36 +51,29 @@
             </app-campo>
           </div>
 
-          <!-- Fila 2+: Tipo · SubTipo · Marca · Modelo -->
+          <!-- Fila 2+: Tipo (filtrado por Clase) · SubTipo (texto libre) · Marca · Modelo -->
           <div class="grid-cols-2">
-            <app-campo label="Tipo" [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''">
+            <app-campo
+              label="Tipo"
+              [hint]="claseActual() ? '' : 'Selecciona primero una Clase Principal'"
+              [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''"
+            >
               <div class="input-con-boton">
-                <select formControlName="tipo">
+                <select formControlName="tipo" [disabled]="!claseActual()">
                   <option value="">Selecciona…</option>
-                  @for (opt of tiposOpciones(); track opt.value) {
+                  @for (opt of tiposFiltrados(); track opt.value) {
                     <option [value]="opt.value">{{ opt.label }}</option>
                   }
                 </select>
-                <button class="btn-inline" type="button" (click)="abrirModalTipo()">
+                <button class="btn-inline" type="button" (click)="abrirModalTipo()" [disabled]="!claseActual()">
                   <span class="material-symbols-outlined">add</span>
                   Nuevo Tipo
                 </button>
               </div>
             </app-campo>
 
-            <app-campo label="Sub-Tipo" [error]="formulario.get('subtipo')?.touched && formulario.get('subtipo')?.invalid ? 'Selecciona un subtipo' : ''">
-              <div class="input-con-boton">
-                <select formControlName="subtipo">
-                  <option value="">Selecciona…</option>
-                  @for (opt of subtiposOpciones(); track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
-                  }
-                </select>
-                <button class="btn-inline" type="button" (click)="abrirModalSubtipo()">
-                  <span class="material-symbols-outlined">add</span>
-                  Nuevo Sub-Tipo
-                </button>
-              </div>
+            <app-campo label="Sub-Tipo" [error]="formulario.get('subtipo')?.touched && formulario.get('subtipo')?.invalid ? 'Ingresa el subtipo (máx. 80)' : ''">
+              <input type="text" formControlName="subtipo" placeholder="Ej: De Plataforma" maxlength="80" />
             </app-campo>
 
             <!-- Marca y Modelo: solo si clase !== 'servicio' -->
@@ -145,35 +138,26 @@
                       placeholder="Descripción comercial extendida, uso, aplicaciones, condiciones especiales…"></textarea>
           </app-campo>
 
-          <app-campo label="Alcance / Rango Operativo">
+          <app-campo label="Alcance / Capacidad">
             <input type="text" formControlName="alcance" placeholder="Ej: hasta 30 kg · 0 a 6000 g" />
           </app-campo>
 
-          <div class="grid-cols-4">
-            <app-campo label="Unidad">
-              <select formControlName="unidad">
-                @for (opt of unidadesOpciones(); track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-            </app-campo>
+          <!-- Procedencia: texto libre + solo visible fuera de Servicio -->
+          @if (!esClaseServicio()) {
+            <div class="grid-cols-2">
+              <app-campo label="Cta. Contable">
+                <input type="text" formControlName="ctaContable" placeholder="Ej: 7011109" />
+              </app-campo>
 
+              <app-campo label="Procedencia">
+                <input type="text" formControlName="procedencia" placeholder="Ej: Importado · Nacional · USA" maxlength="80" />
+              </app-campo>
+            </div>
+          } @else {
             <app-campo label="Cta. Contable">
               <input type="text" formControlName="ctaContable" placeholder="Ej: 7011109" />
             </app-campo>
-
-            <app-campo label="Procedencia">
-              <select formControlName="procedencia">
-                @for (opt of procedenciasOpciones(); track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-            </app-campo>
-
-            <app-campo label="Casillero">
-              <input type="text" formControlName="casillero" placeholder="Ej: A-12" />
-            </app-campo>
-          </div>
+          }
 
         </app-seccion>
 
@@ -193,15 +177,9 @@
             </span>
           </div>
 
-          <div class="grid-cols-2">
-            <app-campo label="Código Estándar UNSPSC" hint="Opcional · Clasificación universal de productos y servicios">
-              <input type="text" formControlName="codigoUnspsc" placeholder="Ej: 41111509 - BÁSCULAS DE PISO" />
-            </app-campo>
-
-            <app-campo label="Precio Mínimo de Referencia (S/)">
-              <input type="number" formControlName="precioMinReferencia" min="0" step="0.01" placeholder="0.00" />
-            </app-campo>
-          </div>
+          <app-campo label="Precio Mínimo de Referencia (S/)">
+            <input type="number" formControlName="precioMinReferencia" min="0" step="0.01" placeholder="0.00" />
+          </app-campo>
 
           <app-campo label="Escalas de Tarifa / Niveles de Precio (S/)">
             <div class="grid-cols-3">
@@ -220,25 +198,22 @@
             </div>
           </app-campo>
 
-          <app-campo label="Áreas de Ejecución">
-            <div class="checks-row">
-              <label class="check-op">
-                <input type="checkbox" formControlName="aplicaComercial" />
-                <span class="check-op__box"></span>
-                <span class="check-op__texto">Comercial</span>
-              </label>
-              <label class="check-op">
-                <input type="checkbox" formControlName="aplicaServicio" />
-                <span class="check-op__box"></span>
-                <span class="check-op__texto">Servicio</span>
-              </label>
-              <label class="check-op">
-                <input type="checkbox" formControlName="aplicaMetrologia" />
-                <span class="check-op__box"></span>
-                <span class="check-op__texto">Metrología</span>
-              </label>
-            </div>
-          </app-campo>
+          @if (esClaseServicio()) {
+            <app-campo label="Áreas de Ejecución">
+              <div class="checks-row">
+                <label class="check-op">
+                  <input type="checkbox" formControlName="aplicaServicio" />
+                  <span class="check-op__box"></span>
+                  <span class="check-op__texto">Servicio</span>
+                </label>
+                <label class="check-op">
+                  <input type="checkbox" formControlName="aplicaMetrologia" />
+                  <span class="check-op__box"></span>
+                  <span class="check-op__texto">Metrología</span>
+                </label>
+              </div>
+            </app-campo>
+          }
 
         </app-seccion>
 

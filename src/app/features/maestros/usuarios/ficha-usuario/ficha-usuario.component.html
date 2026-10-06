@@ -7,7 +7,7 @@
   } @else {
 
     <app-hero-header
-      [titulo]="esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema'"
+      [titulo]="(esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema') + (codigoFicha() ? ' · ' + codigoFicha() : '')"
       descripcion="Complete la información para dar de alta una cuenta institucional y configurar permisos de acceso corporativos."
       [badgeTexto]="esNuevo() ? 'Modo Creación' : ''"
       badgeVariant="verde-dot"
@@ -43,6 +43,7 @@
           badgeTexto="* CAMPOS OBLIGATORIOS"
           badgeVariant="rojo"
         >
+          <!-- Nombres + Apellidos -->
           <div class="campo-duo">
             <div class="campo">
               <label class="campo__label">Nombres Completos *</label>
@@ -68,13 +69,14 @@
             </div>
           </div>
 
+          <!-- Tipo y N° Documento + Fecha de Nacimiento -->
           <div class="campo-duo">
             <div class="campo">
               <label class="campo__label">Tipo y N° de Documento *</label>
               <div class="campo-doc">
                 <select class="campo__select campo__select--sm" formControlName="tipoDocumento">
-                  @for (t of tipoDocOpciones; track t) {
-                    <option [value]="t">{{ t }}</option>
+                  @for (t of tipoDocOpciones(); track t.codigo) {
+                    <option [value]="t.codigo">{{ t.nombre }}</option>
                   }
                 </select>
                 <input class="campo__input" type="text" placeholder="Ej. 45892134"
@@ -91,11 +93,28 @@
               }
             </div>
             <div class="campo">
+              <label class="campo__label">Fecha de Nacimiento</label>
+              <input class="campo__input" type="text"
+                     placeholder="DD/MM/AAAA"
+                     formControlName="fechaNacimiento"
+                     maxlength="10"
+                     inputmode="numeric"
+                     (input)="formatearFechaNacimiento($event)"
+                     (blur)="validarFechaNacimiento()" />
+              @if (fechaNacimientoInvalida()) {
+                <span class="campo__error">Fecha inválida (año máximo 100 años atrás).</span>
+              }
+            </div>
+          </div>
+
+          <!-- Correo + Teléfono -->
+          <div class="campo-duo">
+            <div class="campo">
               <label class="campo__label">Correo Corporativo *</label>
               <div class="campo-correo">
                 <input class="campo__input" type="text" placeholder="cmendoza"
                        formControlName="correo" maxlength="60" (input)="filtrarUsername($event)" />
-                <span class="campo-correo__suffix">&#64;totalweight.pe</span>
+                <span class="campo-correo__suffix">&#64;totalweight.com</span>
               </div>
               @if (formulario.get('correo')?.touched && formulario.get('correo')?.hasError('required')) {
                 <span class="campo__error">El correo es obligatorio.</span>
@@ -104,18 +123,35 @@
                 <span class="campo__error">Solo letras, números, punto, guion o guion bajo.</span>
               }
             </div>
+            <div class="campo">
+              <label class="campo__label">Teléfono / Celular Flota *</label>
+              <div class="campo-icono">
+                <span class="material-symbols-outlined campo-icono__glyph">call</span>
+                <input class="campo__input campo__input--pl" type="tel" placeholder="Ej. +51 984 123 456"
+                       formControlName="telefono" maxlength="20"
+                       inputmode="tel" (input)="filtrarTelefono($event)" />
+              </div>
+              @if (formulario.get('telefono')?.touched && formulario.get('telefono')?.hasError('pattern')) {
+                <span class="campo__error">Solo números y símbolos de teléfono (+ ( ) - espacio).</span>
+              }
+            </div>
           </div>
 
+          <!-- Anexo corporativo -->
           <div class="campo">
-            <label class="campo__label">Teléfono / Celular Flota *</label>
-            <div class="campo-icono">
-              <span class="material-symbols-outlined campo-icono__glyph">call</span>
-              <input class="campo__input campo__input--pl" type="tel" placeholder="Ej. +51 984 123 456"
-                     formControlName="telefono" maxlength="20"
-                     inputmode="tel" (input)="filtrarTelefono($event)" />
+            <label class="campo__label">Anexo corporativo</label>
+            <div class="campo-anexo">
+              <select class="campo__select campo__select--sm" formControlName="anexoTroncal">
+                @for (t of anexoTroncales; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+              <input class="campo__input" type="text" placeholder="123"
+                     formControlName="anexoInterno" maxlength="3"
+                     inputmode="numeric" (input)="filtrarAnexoInterno($event)" />
             </div>
-            @if (formulario.get('telefono')?.touched && formulario.get('telefono')?.hasError('pattern')) {
-              <span class="campo__error">Solo números y símbolos de teléfono (+ ( ) - espacio).</span>
+            @if (formulario.get('anexoInterno')?.touched && formulario.get('anexoInterno')?.hasError('pattern')) {
+              <span class="campo__error">Solo 3 dígitos numéricos.</span>
             }
           </div>
         </app-seccion>
@@ -126,74 +162,55 @@
           titulo="2. Asignación Operativa y Rol de Sistema"
           subtitulo="Defina el nivel jerárquico, privilegios de acceso y unidades operativas autorizadas."
         >
-          <!-- Área → Cargo (filtrado por área) → Rol -->
+          <!-- Área (dropdown + botón "+" para mantenimiento) → Cargo (texto libre) -->
           <div class="campo-duo">
             <div class="campo">
               <label class="campo__label">Área *</label>
-              <select class="campo__select" formControlName="area">
-                <option value="">Seleccione área...</option>
-                @for (a of areasUsuario(); track a.id) {
-                  <option [value]="a.codigo">{{ a.nombre }}</option>
-                }
-              </select>
+              <div class="campo-area">
+                <select class="campo__select" formControlName="area">
+                  <option value="">Seleccione área...</option>
+                  @for (a of areasUsuario(); track a.codigo) {
+                    <option [value]="a.codigo">{{ a.nombre }}</option>
+                  }
+                </select>
+                <app-button variant="secondary" tamano="md" icono="add" [soloIcon]="true"
+                            ariaLabel="Gestionar áreas" title="Crear / editar áreas"
+                            (clic)="abrirMantenimientoAreas()" />
+              </div>
               @if (formulario.get('area')?.touched && formulario.get('area')?.hasError('required')) {
                 <span class="campo__error">Debes seleccionar un área.</span>
               }
             </div>
             <div class="campo">
               <label class="campo__label">Cargo / Puesto Interno *</label>
-              <select class="campo__select" formControlName="cargo" [attr.disabled]="!areaActual() ? true : null">
-                <option value="">
-                  {{ areaActual() ? 'Seleccione cargo...' : 'Primero elegí un área...' }}
-                </option>
-                @for (c of cargosFiltrados(); track c.id) {
-                  <option [value]="c.codigo">{{ c.nombre }}</option>
-                }
-              </select>
+              <input class="campo__input" type="text" placeholder="Ej. Analista de Operaciones"
+                     formControlName="cargo" maxlength="80" />
               @if (formulario.get('cargo')?.touched && formulario.get('cargo')?.hasError('required')) {
-                <span class="campo__error">Debes seleccionar un cargo.</span>
-              }
-            </div>
-          </div>
-
-          <div class="campo-duo">
-            <div class="campo">
-              <label class="campo__label">Rol Principal en la Plataforma *</label>
-              <select class="campo__select" formControlName="rolSistema">
-                <option value="">Seleccionar rol de sistema...</option>
-                @for (rol of rolOpciones; track rol.value) {
-                  <option [value]="rol.value">{{ rol.label }}</option>
-                }
-              </select>
-              @if (formulario.get('rolSistema')?.touched && formulario.get('rolSistema')?.hasError('required')) {
-                <span class="campo__error">Debes seleccionar un rol.</span>
-              }
-            </div>
-            <div class="campo">
-              <label class="campo__label">Sede Operativa Principal *</label>
-              <select class="campo__select" formControlName="sedeOperativa">
-                <option value="">Seleccione sede operativa...</option>
-                @for (s of sedesOperativas(); track s.id) {
-                  <option [value]="s.codigo">{{ s.nombre }}</option>
-                }
-              </select>
-              @if (formulario.get('sedeOperativa')?.touched && formulario.get('sedeOperativa')?.hasError('required')) {
-                <span class="campo__error">Debes seleccionar una sede.</span>
+                <span class="campo__error">Debes ingresar el cargo.</span>
               }
             </div>
           </div>
 
           <div class="campo">
-            <label class="campo__label">Supervisor Directo a Reportar *</label>
-            <select class="campo__select" formControlName="idSupervisorDirecto">
-              <option [ngValue]="null">Seleccione jefatura directa o supervisor...</option>
-              @for (jefe of jefes(); track jefe.idUsuario) {
-                <option [ngValue]="jefe.idUsuario">
-                  {{ jefe.nombre }} {{ jefe.apellido }} · {{ jefe.rolSistemaLabel }}
-                </option>
+            <label class="campo__label">Rol Principal en la Plataforma *</label>
+            <select class="campo__select" formControlName="rolSistema">
+              <option value="">Seleccionar rol de sistema...</option>
+              @for (rol of rolOpciones; track rol.value) {
+                <option [value]="rol.value">{{ rol.label }}</option>
               }
             </select>
+            @if (formulario.get('rolSistema')?.touched && formulario.get('rolSistema')?.hasError('required')) {
+              <span class="campo__error">Debes seleccionar un rol.</span>
+            }
           </div>
+
+          <!-- Sede Operativa: oculta por pedido del cliente (2026-10-05).
+               Default "lima" en el form, se sigue enviando al back. -->
+          <input type="hidden" formControlName="sedeOperativa" />
+
+          <!-- "Supervisor Directo a Reportar" removido (2026-10-05).
+               Ahora el back lo calcula automáticamente según área + rol: los administradores
+               y supervisores del área del usuario son automáticamente sus supervisores. -->
 
           <!-- "Sedes y Unidades Mineras Autorizadas" removido:
                el concepto estaba mal diseñado (los seeds eran Minas = clientes, no sedes de TW).
@@ -305,23 +322,13 @@
             </label>
           }
 
-          <div class="toggle-row">
-            <div class="toggle-row__texto">
-              <div class="toggle-row__titulo-row">
-                <span class="toggle-row__titulo">Autenticación en dos pasos (2FA) obligatoria</span>
-                <app-badge texto="Recomendado" variant="verde" tamano="sm" />
-              </div>
-              <span class="toggle-row__desc">Exige enrolamiento de Microsoft Authenticator o Google Authenticator previo al primer acceso.</span>
-            </div>
-            <app-toggle formControlName="autenticacion2fa" />
-          </div>
         </app-seccion>
 
-        <!-- SECCIÓN 05: SUPLENCIAS (solo edición + solo si rol es comercial o jefe_comercial) -->
+        <!-- SECCIÓN 05: SUPLENCIAS — abierta a cualquier rol en modo edición. -->
         @if (!esNuevo() && esRolComercial()) {
           <app-seccion
             icono="swap_horiz"
-            [titulo]="numSuplencias() + '. Suplencias y Delegación Comercial'"
+            [titulo]="numSuplencias() + '. Suplencias y Delegación'"
             subtitulo="Gestiona quién cubre a este usuario y a quién este usuario suple. Las asignaciones activas otorgan permisos operativos temporales."
           >
             <!-- Sub-lista 1: Suplentes que lo cubren (user es titular) -->
@@ -404,12 +411,12 @@
 
                   <div class="sup-form__cuerpo">
                     <app-campo
-                      label="Suplente (Comercial Asignado) *"
-                      hint="Solo comerciales activos, excluyendo este usuario."
-                      [error]="formSuplente.get('idSuplente')?.invalid && formSuplente.get('idSuplente')?.touched ? 'Selecciona un comercial suplente.' : ''"
+                      label="Suplente asignado *"
+                      hint="Cualquier usuario activo, excluyendo este usuario."
+                      [error]="formSuplente.get('idSuplente')?.invalid && formSuplente.get('idSuplente')?.touched ? 'Selecciona un usuario suplente.' : ''"
                     >
                       <select formControlName="idSuplente">
-                        <option [ngValue]="null">Selecciona un comercial suplente...</option>
+                        <option [ngValue]="null">Selecciona un usuario suplente...</option>
                         @for (c of comerciales(); track c.idUsuario) {
                           <option [ngValue]="c.idUsuario">{{ c.nombre }} {{ c.apellido }} · {{ c.rolSistemaLabel }}</option>
                         }
@@ -622,5 +629,12 @@
     [fechaGuardado]="draft.fechaGuardado"
     (restaurar)="restaurarBorrador()"
     (descartar)="descartarBorrador()"
+  />
+}
+
+@if (mostrarModalAreas()) {
+  <app-modal-mantenimiento-areas
+    (cerrar)="mostrarModalAreas.set(false)"
+    (actualizado)="onAreasActualizadas($event)"
   />
 }

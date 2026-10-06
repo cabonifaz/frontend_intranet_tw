@@ -132,3 +132,128 @@
   font-size: 11px;
   color: #94A3B8;
 }
+
+// ── Sedes vinculadas al contacto (multi-select con chips) ─────────────────
+.sedes-contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__vacio {
+    padding: 16px;
+    background: #FEF9C3;
+    border: 1px dashed #FBBF24;
+    border-radius: 8px;
+    color: #78350F;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  &__aviso {
+    padding: 10px 14px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    border-radius: 6px;
+    color: #991B1B;
+    font-size: 12px;
+  }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__agregar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    select {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+      color: #1E293B;
+    }
+  }
+}
+
+.sede-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
+
+  &--principal {
+    background: #FEF3C7;
+    border-color: #FBBF24;
+  }
+
+  &__nombre {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1E293B;
+  }
+
+  &__principal {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid #CBD5E1;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #64748B;
+    transition: all 0.15s;
+
+    .material-symbols-outlined { font-size: 14px; }
+
+    &:hover {
+      border-color: #FBBF24;
+      color: #B45309;
+    }
+
+    &--on {
+      background: #F59E0B;
+      border-color: #F59E0B;
+      color: white;
+
+      &:hover {
+        background: #D97706;
+        border-color: #D97706;
+        color: white;
+      }
+    }
+  }
+
+  &__quitar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #94A3B8;
+    transition: all 0.15s;
+
+    &:hover {
+      background: #FEE2E2;
+      color: #B91C1C;
+    }
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+}

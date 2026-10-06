@@ -161,6 +161,25 @@
 
 .campo-doc { display: flex; gap: 8px; }
 
+// Área: dropdown + botón "+" al lado para gestionar el catálogo
+.campo-area {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+
+  .campo__select { flex: 1; }
+}
+
+// Anexo corporativo: dropdown de troncal (ancho fijo) + input de 3 dígitos (compacto)
+.campo-anexo {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .campo__select { max-width: 130px; }
+  .campo__input  { max-width: 90px;  text-align: center; letter-spacing: 2px; }
+}
+
 .campo-correo {
   position: relative;
   display: flex;

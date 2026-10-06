@@ -390,33 +390,14 @@
   to { transform: rotate(360deg); }
 }
 
-// Acceso seguro (border-top + líneas flanqueadoras + texto)
-.acceso-seguro {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding-top: 32px;
-  border-top: 1px solid #E5E7EB;
-
-  &__linea {
-    flex: 1;
-    height: 1px;
-    background: #E5E7EB;
-  }
-
-  &__texto {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 11px;
-    line-height: 16px;
-    letter-spacing: 0.55px;
-    text-transform: uppercase;
-    color: #94A3B8;
-    white-space: nowrap;
-  }
+// Footer del card: solo texto centrado, pegado al borde inferior
+.card-footer {
+  margin: 10px 0 0;
+  width: 100%;              // el card es flex con items a la izq, forzamos full width
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94A3B8;
 }
 
 // Footer copyright (absoluto en el panel derecho)

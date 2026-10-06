@@ -55,9 +55,21 @@
             </app-campo>
           </div>
 
-          <app-campo label="Ubicación Específica en Planta / Área Operativa">
-            <input type="text" formControlName="ubicacionEspecifica"
-                   placeholder="Ej: Zona de Recepción de Carnes y Frescos · Muelle 4" />
+          <app-campo
+            label="Ubicación / Área del Cliente"
+            [hint]="formulario.get('idCliente')?.value ? '' : 'Selecciona primero un cliente'"
+          >
+            <select formControlName="ubicacionEspecifica" [disabled]="!formulario.get('idCliente')?.value">
+              <option value="">— Sin área asignada —</option>
+              @for (a of areasCliente(); track a.codigo) {
+                <option [value]="a.codigo">{{ a.nombre }}</option>
+              }
+            </select>
+            @if (formulario.get('idCliente')?.value && areasCliente().length === 0) {
+              <small class="hint-vacio">
+                Este cliente aún no tiene áreas asignadas. Agrégalas desde su ficha de Cliente.
+              </small>
+            }
           </app-campo>
 
           <div class="checks-row">
@@ -83,16 +95,54 @@
         <app-seccion icono="precision_manufacturing" titulo="2. Especificaciones Metrológicas y Técnicas"
                      subtitulo="Parámetros técnicos de calibración, división de verificación y clase de exactitud">
 
-          <app-campo label="Suministro / Ficha de Modelo Fabricante"
-                     hint="Vincula a un modelo del catálogo de Suministros (HU-86)">
-            <select formControlName="idSuministro">
-              <option [ngValue]="null">— Sin vinculación —</option>
-              @for (s of suministros(); track s.value) {
-                <option [ngValue]="s.value">{{ s.label }}</option>
+          <!-- Suministro: dropdown searchable (filtrado por Clasificación técnica) -->
+          <app-campo
+            label="Suministro / Ficha de Modelo Fabricante"
+            [hint]="clasificacionActual() ? 'Marca y modelo se derivan del suministro vinculado' : 'Selecciona primero una Clasificación técnica'"
+          >
+            <div class="busqueda-suministro">
+              @if (suministroSeleccionadoLabel()) {
+                <div class="busqueda-suministro__chip">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  <span>{{ suministroSeleccionadoLabel() }}</span>
+                  <button type="button" class="busqueda-suministro__quitar" (click)="limpiarSuministro()" title="Quitar vinculación">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              } @else {
+                <input
+                  type="text"
+                  [value]="suministroQuery()"
+                  (input)="onSuministroQueryInput($event)"
+                  (focus)="suministroDropdownAbierto.set(true)"
+                  (blur)="cerrarSuministroDropdown()"
+                  [placeholder]="clasificacionActual() ? 'Buscar suministro…' : 'Elige una Clasificación técnica primero'"
+                  [disabled]="!clasificacionActual()"
+                />
+                @if (suministroDropdownAbierto() && clasificacionActual()) {
+                  <div class="busqueda-suministro__dropdown">
+                    @if (suministrosFiltrados().length === 0) {
+                      <div class="busqueda-suministro__vacio">
+                        @if (suministros().length === 0) {
+                          Sin suministros de clase "{{ clasificacionActual() }}" en el catálogo.
+                        } @else {
+                          Sin coincidencias para "{{ suministroQuery() }}".
+                        }
+                      </div>
+                    } @else {
+                      @for (s of suministrosFiltrados(); track s.value) {
+                        <button type="button" class="busqueda-suministro__opcion" (click)="seleccionarSuministro(s)">
+                          {{ s.label }}
+                        </button>
+                      }
+                    }
+                  </div>
+                }
               }
-            </select>
+            </div>
           </app-campo>
 
+          <!-- Fijos (siempre visibles): identificación -->
           <div class="grid-cols-3">
             <app-campo label="N.º de Serie Fabricante"
                        [error]="formulario.get('numSerie')?.touched && formulario.get('numSerie')?.invalid ? 'Serie requerida' : ''"
@@ -112,19 +162,8 @@
             </app-campo>
           </div>
 
+          <!-- Fijos (siempre): clase exactitud + d + e -->
           <div class="grid-cols-3">
-            <app-campo label="Marca"
-                       [error]="formulario.get('marca')?.touched && formulario.get('marca')?.invalid ? 'Marca requerida' : ''"
-                       [hint]="!esNuevo() ? '🔒 Bloqueado tras registro' : ''">
-              <input type="text" formControlName="marca" placeholder="Ej: METTLER TOLEDO" />
-            </app-campo>
-
-            <app-campo label="Modelo"
-                       [error]="formulario.get('modelo')?.touched && formulario.get('modelo')?.invalid ? 'Modelo requerido' : ''"
-                       [hint]="!esNuevo() ? '🔒 Bloqueado tras registro' : ''">
-              <input type="text" formControlName="modelo" placeholder="Ej: IND570 (PUA579)" />
-            </app-campo>
-
             <app-campo label="Clase de Exactitud">
               <select formControlName="claseExactitud">
                 @for (opt of clasesExactitud; track opt.value) {
@@ -132,9 +171,7 @@
                 }
               </select>
             </app-campo>
-          </div>
 
-          <div class="grid-cols-3">
             <app-campo label="División Mínima (d)">
               <input type="text" formControlName="divisionMinima" placeholder="Ej: 0.05 kg" />
             </app-campo>
@@ -142,33 +179,54 @@
             <app-campo label="División Verif (e)">
               <input type="text" formControlName="divisionVerif" placeholder="Ej: 0.05 kg" />
             </app-campo>
+          </div>
 
+          <!-- Campos condicionales por Clasificación técnica -->
+          @if (esClasifEquipo() || esClasifInstrumento()) {
             <app-campo label="Alcance Máximo (Max)">
               <input type="text" formControlName="alcanceMaximo" placeholder="Ej: 1500 kg" />
             </app-campo>
-          </div>
+          }
 
-          <div class="grid-cols-2">
-            <app-campo label="Escala / Graduación de Aforo">
-              <input type="text" formControlName="escalaGraduacion"
-                     placeholder="Ej: Monorango (Niveles simple cronico)" />
+          @if (esClasifInstrumento()) {
+            <div class="grid-cols-2">
+              <app-campo label="Escala / Graduación de Aforo">
+                <input type="text" formControlName="escalaGraduacion"
+                       placeholder="Ej: Monorango (Niveles simple cronico)" />
+              </app-campo>
+
+              <app-campo label="Puntos de Calibración Sugeridos">
+                <input type="text" formControlName="puntosCalibracion"
+                       placeholder="Ej: 15%, 25%, 50%, 75%, 100%" />
+              </app-campo>
+            </div>
+
+            <app-campo label="Rango Operativo Real en Proceso">
+              <input type="text" formControlName="rangoOperativoReal"
+                     placeholder="Ej: 50 kg hasta 1200 kg" />
             </app-campo>
+          }
 
-            <app-campo label="Puntos de Calibración Sugeridos">
-              <input type="text" formControlName="puntosCalibracion"
-                     placeholder="Ej: 15%, 25%, 50%, 75%, 100%" />
+          @if (esClasifPesa()) {
+            <div class="grid-cols-2">
+              <app-campo label="Material">
+                <input type="text" formControlName="material"
+                       placeholder="Ej: Acero inoxidable · Hierro fundido" />
+              </app-campo>
+
+              <app-campo label="Valor Nominal">
+                <input type="text" formControlName="valorNominal"
+                       placeholder="Ej: 500 g · 1 kg · 20 kg" />
+              </app-campo>
+            </div>
+          }
+
+          @if (esClasifEquipo() || esClasifInstrumento()) {
+            <app-campo label="Observaciones Metrológicas y Condiciones Ambientales">
+              <textarea formControlName="observaciones" rows="3"
+                        placeholder="Condiciones de instalación, exposición ambiental, humedad, vibraciones, etc."></textarea>
             </app-campo>
-          </div>
-
-          <app-campo label="Rango Operativo Real en Proceso">
-            <input type="text" formControlName="rangoOperativoReal"
-                   placeholder="Ej: 50 kg hasta 1200 kg (Balanzas de carne)" />
-          </app-campo>
-
-          <app-campo label="Observaciones Metrológicas y Condiciones Ambientales">
-            <textarea formControlName="observaciones" rows="3"
-                      placeholder="Condiciones de instalación, exposición ambiental, humedad, vibraciones, etc."></textarea>
-          </app-campo>
+          }
 
         </app-seccion>
 

@@ -64,20 +64,74 @@
       </div>
     </div>
 
-    <!-- 3. Sede asignada -->
+    <!-- 3. Sedes vinculadas (multi, mínimo 1) -->
     <div class="bloque">
       <div class="bloque__cabecera">
         <span class="bloque__dot"></span>
-        <span class="bloque__titulo">3. SEDE O MINA ASIGNADA</span>
+        <span class="bloque__titulo">3. SEDES VINCULADAS *</span>
       </div>
-      <app-campo>
-        <select formControlName="idSede">
-          <option [ngValue]="null">— Sin sede específica —</option>
-          @for (s of sedesCliente(); track s.idSede) {
-            <option [ngValue]="s.idSede">{{ s.nombre }}</option>
-          }
-        </select>
-      </app-campo>
+
+      <div class="sedes-contacto">
+        @if (sedesAsignadas().length === 0) {
+          <div class="sedes-contacto__vacio">
+            Asigna al menos una sede. Marca "Principal" en las sedes donde este contacto sea el responsable.
+          </div>
+        } @else {
+          <div class="sedes-contacto__lista">
+            @for (s of sedesAsignadas(); track s.idSede) {
+              <div class="sede-chip" [class.sede-chip--principal]="s.esPrincipalSede">
+                <span class="sede-chip__nombre">{{ s.nombreSede }}</span>
+                <button
+                  type="button"
+                  class="sede-chip__principal"
+                  [class.sede-chip__principal--on]="s.esPrincipalSede"
+                  (click)="togglePrincipalSede(s.idSede)"
+                  [title]="s.esPrincipalSede ? 'Quitar como principal de esta sede' : 'Marcar como principal de esta sede'"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ s.esPrincipalSede ? 'star' : 'star_outline' }}
+                  </span>
+                  Principal
+                </button>
+                <button
+                  type="button"
+                  class="sede-chip__quitar"
+                  (click)="quitarSede(s.idSede)"
+                  title="Quitar sede"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="sedes-contacto__agregar">
+          <select
+            [value]="sedeSeleccionada()"
+            (change)="sedeSeleccionada.set($any($event.target).value)"
+          >
+            <option value="">Elegir sede…</option>
+            @for (s of sedesDisponibles(); track s.idSede) {
+              <option [value]="s.idSede">{{ s.nombre }}</option>
+            }
+          </select>
+          <app-button
+            variante="secundario"
+            icono="add"
+            (clic)="agregarSede()"
+            [disabled]="!sedeSeleccionada()"
+          >
+            Agregar sede
+          </app-button>
+        </div>
+
+        @if (sedesCliente().length === 0) {
+          <div class="sedes-contacto__aviso">
+            Este cliente aún no tiene sedes registradas. Agrégalas primero en la sección "Sedes y Plantas Operativas".
+          </div>
+        }
+      </div>
     </div>
 
     <!-- 4. Permisos -->
@@ -89,10 +143,10 @@
 
       <div class="permisos-grid">
         <label class="permiso-card">
-          <input class="permiso-card__cb" type="checkbox" formControlName="esContactoPrincipal" />
+          <input class="permiso-card__cb" type="checkbox" formControlName="esPrincipalEmpresa" />
           <div class="permiso-card__texto">
-            <span class="permiso-card__nombre">Contacto Principal de la Cuenta</span>
-            <span class="permiso-card__desc">Interlocutor primario para toda gestión comercial y contractual</span>
+            <span class="permiso-card__nombre">Contacto principal de la empresa</span>
+            <span class="permiso-card__desc">Interlocutor primario del cliente a nivel corporativo (independiente de las sedes)</span>
           </div>
         </label>
 
@@ -131,7 +185,7 @@
       <app-button
         variant="primary"
         icono="save"
-        [disabled]="formulario.invalid"
+        [disabled]="formulario.invalid || faltaSede()"
         [cargando]="guardando()"
         (clic)="guardar()"
       >

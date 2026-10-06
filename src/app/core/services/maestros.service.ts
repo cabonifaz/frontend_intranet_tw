@@ -70,6 +70,29 @@ export class MaestrosService {
     return r.datos;
   }
 
+  /**
+   * Agrega un valor a una categoría genérica de tabla_maestra via SP_AgregarItemCatalogo.
+   * Usado por el modal "Nueva área" de Usuarios, y los modales de Suministros ya existentes.
+   */
+  async agregarItemCatalogo(descripcion: string, string1: string, string2?: string): Promise<{ id: number; nombre: string; codigo: string }> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<{ id: number; nombre: string; codigo: string }>>(
+        `${this.base}/catalogos/${descripcion}`,
+        { string1, string2: string2 ?? this.slugificar(string1) },
+      )
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  /** Genera un código estable para `string2` a partir del nombre (igual al patrón que usa el back). */
+  private slugificar(nombre: string): string {
+    return nombre.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+  }
+
   async obtenerSedesPorCliente(idCliente: number): Promise<SedeListaItem[]> {
     const r = await firstValueFrom(
       this.http.get<RespuestaApi<SedeListaItem[]>>(`${this.base}/clientes/${idCliente}/sedes`)

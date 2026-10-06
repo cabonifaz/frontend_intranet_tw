@@ -44,7 +44,7 @@
           <tr>
             <th>Cliente</th>
             <th>Tipo</th>
-            <th>Condición Fiscal</th>
+            <th>Contacto Principal</th>
             <th>Estado</th>
             <th class="tabla__th--acciones">Acciones</th>
           </tr>
@@ -70,15 +70,14 @@
                 <span class="badge-tipo">{{ c.tipoCliente }}</span>
               </td>
               <td>
-                <div class="condicion-badges">
-                  <span class="badge-fiscal" [class.badge-fiscal--activo]="c.condicionFiscal === 'Activo'">
-                    {{ c.condicionFiscal }}
-                  </span>
-                  <span class="badge-fiscal badge-fiscal--contribuyente"
-                        [class.badge-fiscal--habido]="c.condicionContribuyente === 'Habido'">
-                    {{ c.condicionContribuyente }}
-                  </span>
-                </div>
+                @if (c.contactoPrincipalTelefono || c.contactoPrincipalNombre) {
+                  <div class="contacto-ppal">
+                    <div class="contacto-ppal__tel">{{ c.contactoPrincipalTelefono || '—' }}</div>
+                    <div class="contacto-ppal__nombre">{{ c.contactoPrincipalNombre || '' }}</div>
+                  </div>
+                } @else {
+                  <span class="contacto-ppal__vacio">—</span>
+                }
               </td>
               <td>
                 <app-badge-estado [estado]="c.estado" />

@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { EquiposClienteService } from '../../../../core/services/equipos-cliente.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
+import { AreasService, AreaItem } from '../../../../core/services/areas.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   CLASES_EXACTITUD,
@@ -50,6 +51,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   private readonly fb         = inject(FormBuilder);
   private readonly equiposSvc  = inject(EquiposClienteService);
   private readonly maestrosSvc = inject(MaestrosService);
+  private readonly areasSvc    = inject(AreasService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
@@ -91,7 +93,32 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   // Dropdowns dinámicos
   readonly clientes          = signal<ClienteListaItem[]>([]);
   readonly sedes             = signal<SedeListaItem[]>([]);
-  readonly suministros       = signal<{ value: number; label: string; marca: string; modelo: string }[]>([]);
+  // Suministros filtrados por Clasificación técnica del equipo. Se recargan cada
+  // vez que cambia `clasificacion` en el form.
+  readonly suministros       = signal<{ value: number; label: string; clase: string; marca: string; modelo: string }[]>([]);
+  // Áreas asignadas al cliente seleccionado (catálogo AREA_USUARIO vinculado al
+  // cliente via tabla `cliente_area`). Pendiente back: hoy mientras Bryan no
+  // deploye ese endpoint traemos TODAS las áreas del catálogo general como
+  // fallback para que el dropdown no quede vacío.
+  readonly areasCliente      = signal<AreaItem[]>([]);
+
+  // ─── Searchable dropdown de Suministro (E4a) ──────────────────────────────
+  readonly suministroQuery           = signal('');
+  readonly suministroDropdownAbierto = signal(false);
+  readonly suministroSeleccionadoLabel = signal('');
+
+  readonly suministrosFiltrados = computed(() => {
+    const q = this.suministroQuery().trim().toLowerCase();
+    const todos = this.suministros();
+    if (!q) return todos.slice(0, 50);     // tope defensivo para render
+    return todos.filter(s => s.label.toLowerCase().includes(q)).slice(0, 50);
+  });
+
+  // Clasificación técnica reactiva (para computed de secciones condicionales).
+  readonly clasificacionActual = signal('');
+  readonly esClasifEquipo      = computed(() => this.clasificacionActual() === 'equipo');
+  readonly esClasifInstrumento = computed(() => this.clasificacionActual() === 'instrumento');
+  readonly esClasifPesa        = computed(() => this.clasificacionActual() === 'pesa');
 
   idEquipo = 0;
 
@@ -100,6 +127,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     idCliente:              [0, [Validators.required, Validators.min(1)]],
     idSede:                 [0, [Validators.required, Validators.min(1)]],
     clasificacion:          ['', Validators.required],
+    // Ubicación: ahora es un dropdown vinculado a las áreas del cliente.
     ubicacionEspecifica:    [''],
     esPreRevisado:          [false],
     bloqueadoParaServicios: [false],
@@ -108,17 +136,23 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     idSuministro:           [null],
     numSerie:               ['', [Validators.required, Validators.minLength(3)]],
     codigoCliente:          [''],
-    marca:                  ['', Validators.required],
-    modelo:                 ['', Validators.required],
+    // Marca y Modelo removidos del UI (pedido cliente 2026-10-06). Se derivan
+    // automáticamente del Suministro seleccionado. Se mantienen como campos
+    // (sin required) sólo para compat con el DTO del back hasta deprecación.
+    marca:                  [''],
+    modelo:                 [''],
     divisionMinima:         [''],
     divisionVerif:          [''],
     divisionVerifIgual:     [true],
     claseExactitud:         ['III'],
-    alcanceMaximo:          [''],
-    escalaGraduacion:       [''],
-    puntosCalibracion:      [''],
-    rangoOperativoReal:     [''],
-    observaciones:          [''],
+    alcanceMaximo:          [''],       // visible: equipo + instrumento
+    escalaGraduacion:       [''],       // visible: instrumento
+    puntosCalibracion:      [''],       // visible: instrumento
+    rangoOperativoReal:     [''],       // visible: instrumento
+    observaciones:          [''],       // visible: equipo + instrumento
+    // Específicos de Pesa (visibles solo si clasificacion === 'pesa')
+    material:               [''],
+    valorNominal:           [''],
 
     // 03 - Estado Operativo
     estadoOperativo:        ['oficina_tw'],
@@ -136,31 +170,30 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
-    this.suministros.set(await this.equiposSvc.obtenerSuministrosParaDropdown());
     await this.cargarClientes();
 
-    // Autofill de marca/modelo cuando el usuario elige un suministro del catálogo.
-    // En modo edición los controles ya están disabled por la regla de inmutabilidad,
-    // así que esta lógica solo tiene efecto en "Nuevo Equipo".
-    this.formulario.get('idSuministro')?.valueChanges.subscribe(idSum => {
-      const marcaCtrl  = this.formulario.get('marca');
-      const modeloCtrl = this.formulario.get('modelo');
-      if (!marcaCtrl || !modeloCtrl || !this.esNuevo()) return;
-
-      if (idSum != null && idSum !== '' && Number(idSum) > 0) {
-        const sum = this.suministros().find(s => s.value === Number(idSum));
-        if (sum) {
-          marcaCtrl.setValue(sum.marca,   { emitEvent: false });
-          modeloCtrl.setValue(sum.modelo, { emitEvent: false });
-          marcaCtrl.disable({ emitEvent: false });
-          modeloCtrl.disable({ emitEvent: false });
-        }
-      } else {
-        marcaCtrl.enable({ emitEvent: false });
-        modeloCtrl.enable({ emitEvent: false });
-        marcaCtrl.setValue('',  { emitEvent: false });
-        modeloCtrl.setValue('', { emitEvent: false });
+    // Reaccionar al cambio de Clasificación técnica: recarga la lista de suministros
+    // filtrada por esa clase (equipo / instrumento / pesa). Y resetea el suministro
+    // elegido si cambia la clase.
+    this.formulario.get('clasificacion')?.valueChanges.subscribe(async c => {
+      const nueva = c ?? '';
+      if (nueva !== this.clasificacionActual()) {
+        this.formulario.get('idSuministro')?.setValue(null, { emitEvent: false });
+        this.suministroSeleccionadoLabel.set('');
+        this.suministroQuery.set('');
       }
+      this.clasificacionActual.set(nueva);
+      await this.cargarSuministrosPorClase(nueva || undefined);
+    });
+
+    // Al cambiar de suministro seleccionado, sincronizar el label visible del input.
+    this.formulario.get('idSuministro')?.valueChanges.subscribe(idSum => {
+      if (idSum == null || idSum === '' || Number(idSum) === 0) {
+        this.suministroSeleccionadoLabel.set('');
+        return;
+      }
+      const s = this.suministros().find(x => x.value === Number(idSum));
+      if (s) this.suministroSeleccionadoLabel.set(s.label);
     });
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -172,8 +205,14 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
       if (!nuevo) {
         this.idEquipo = Number(idParam);
         const e = await this.equiposSvc.obtenerEquipoPorId(this.idEquipo);
-        // Cargar sedes del cliente antes de patchValue para que el dropdown tenga opciones
-        await this.cargarSedesDelCliente(e.idCliente);
+        // Pre-cargar: sedes del cliente, áreas del cliente, y suministros de la clase
+        // antes de patchValue para que todos los dropdowns tengan opciones.
+        await Promise.all([
+          this.cargarSedesDelCliente(e.idCliente),
+          this.cargarAreasDelCliente(e.idCliente),
+          this.cargarSuministrosPorClase(e.clasificacion),
+        ]);
+        this.clasificacionActual.set(e.clasificacion);
         this.formulario.patchValue({
           idCliente:              e.idCliente,
           idSede:                 e.idSede,
@@ -195,16 +234,18 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
           puntosCalibracion:      e.puntosCalibracion,
           rangoOperativoReal:     e.rangoOperativoReal,
           observaciones:          e.observaciones,
+          material:               e.material ?? '',
+          valorNominal:           e.valorNominal ?? '',
           estadoOperativo:        e.estadoOperativo,
           esActivo:               e.esActivo,
         });
-        // En modo edición: serie/marca/modelo quedan BLOQUEADOS (regla de negocio)
+        // En modo edición: serie queda BLOQUEADA (regla de negocio).
+        // Marca/Modelo ya no están en el UI, así que no se bloquean.
         this.formulario.get('numSerie')?.disable();
-        this.formulario.get('marca')?.disable();
-        this.formulario.get('modelo')?.disable();
         // Metadata readonly
         this.codigoTw.set(e.codigoTw);
         this.suministroLabel.set(e.suministroLabel);
+        this.suministroSeleccionadoLabel.set(e.suministroLabel);
         this.usuarioRegistro.set(e.usuarioRegistro);
         this.pcRegistro.set(e.pcRegistro);
         this.fechaRegistro.set(e.fechaRegistro);
@@ -217,13 +258,17 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         this.clienteRazonSocial.set(e.clienteRazonSocial);
       }
 
-      // Subscripción al cambio de cliente para refrescar sedes
+      // Subscripción al cambio de cliente para refrescar sedes + áreas vinculadas.
       this.formulario.get('idCliente')?.valueChanges.subscribe(async idCliente => {
         if (idCliente && idCliente > 0) {
-          await this.cargarSedesDelCliente(idCliente);
+          await Promise.all([
+            this.cargarSedesDelCliente(idCliente),
+            this.cargarAreasDelCliente(idCliente),
+          ]);
         } else {
           this.sedes.set([]);
-          this.formulario.patchValue({ idSede: 0 }, { emitEvent: false });
+          this.areasCliente.set([]);
+          this.formulario.patchValue({ idSede: 0, ubicacionEspecifica: '' }, { emitEvent: false });
         }
       });
 
@@ -237,6 +282,28 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el equipo.');
     } finally {
       this.cargando.set(false);
+    }
+  }
+
+  private async cargarSuministrosPorClase(clase: string | undefined): Promise<void> {
+    this.suministros.set(await this.equiposSvc.obtenerSuministrosParaDropdown(clase));
+  }
+
+  /**
+   * Carga las áreas vinculadas al cliente. Mientras Bryan no deploye el endpoint
+   * de `cliente_area`, caemos al catálogo general AREA_USUARIO como fallback —
+   * el back hoy devuelve la misma lista para todos los clientes.
+   */
+  private async cargarAreasDelCliente(idCliente: number): Promise<void> {
+    try {
+      // Pendiente back: endpoint específico `/api/maestros/clientes/{id}/areas`.
+      // Fallback: catálogo general.
+      const todas = await this.areasSvc.listar();
+      this.areasCliente.set(todas);
+      // Sin loguear el idCliente — ya está implícito en el contexto.
+      void idCliente;
+    } catch {
+      this.areasCliente.set([]);
     }
   }
 
@@ -280,7 +347,41 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
       divisionVerifIgual: true,
       esActivo: true,
     });
+    this.clasificacionActual.set('');
+    this.suministroQuery.set('');
+    this.suministroSeleccionadoLabel.set('');
     this.toastSvc.exito('Formulario limpiado.');
+  }
+
+  // ─── Searchable dropdown de Suministro (E4a) ──────────────────────────
+  onSuministroQueryInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.suministroQuery.set(value);
+    this.suministroDropdownAbierto.set(true);
+    // Al tipear, el usuario está buscando — invalidar la selección actual hasta
+    // que elija una opción explícitamente.
+    if (!value.trim()) {
+      this.formulario.get('idSuministro')?.setValue(null, { emitEvent: false });
+      this.suministroSeleccionadoLabel.set('');
+    }
+  }
+
+  seleccionarSuministro(s: { value: number; label: string }): void {
+    this.formulario.get('idSuministro')?.setValue(s.value);
+    this.suministroSeleccionadoLabel.set(s.label);
+    this.suministroQuery.set('');
+    this.suministroDropdownAbierto.set(false);
+  }
+
+  limpiarSuministro(): void {
+    this.formulario.get('idSuministro')?.setValue(null);
+    this.suministroSeleccionadoLabel.set('');
+    this.suministroQuery.set('');
+  }
+
+  cerrarSuministroDropdown(): void {
+    // delay para permitir que el click en una opción se procese antes de cerrar
+    setTimeout(() => this.suministroDropdownAbierto.set(false), 150);
   }
 
   // ─── Borrador local ─────────────────────────────────────────────────
@@ -340,6 +441,9 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     this.error.set('');
     try {
       const v = this.formulario.getRawValue(); // getRawValue incluye los disabled
+      const esPesa  = v.clasificacion === 'pesa';
+      const esEq    = v.clasificacion === 'equipo';
+      const esInstr = v.clasificacion === 'instrumento';
       const dto: GuardarEquipoClienteRequest = {
         idEquipo:               this.idEquipo,
         numSerie:               v.numSerie?.trim() ?? '',
@@ -347,8 +451,10 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         idSede:                 Number(v.idSede) || 0,
         codigoCliente:          v.codigoCliente?.trim() ?? '',
         clasificacion:          v.clasificacion,
-        marca:                  v.marca?.trim() ?? '',
-        modelo:                 v.modelo?.trim() ?? '',
+        // Marca y Modelo deprecados en el UI (2026-10-06). Siempre '' hasta
+        // que Bryan elimine los campos del DTO del back.
+        marca:                  '',
+        modelo:                 '',
 
         ubicacionEspecifica:    v.ubicacionEspecifica?.trim() ?? '',
         esPreRevisado:          !!v.esPreRevisado,
@@ -359,11 +465,16 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         divisionVerif:          v.divisionVerif?.trim() ?? '',
         divisionVerifIgual:     !!v.divisionVerifIgual,
         claseExactitud:         v.claseExactitud,
-        alcanceMaximo:          v.alcanceMaximo?.trim() ?? '',
-        escalaGraduacion:       v.escalaGraduacion?.trim() ?? '',
-        puntosCalibracion:      v.puntosCalibracion?.trim() ?? '',
-        rangoOperativoReal:     v.rangoOperativoReal?.trim() ?? '',
-        observaciones:          v.observaciones?.trim() ?? '',
+        // Alcance y Observación: equipo + instrumento
+        alcanceMaximo:          (esEq || esInstr) ? (v.alcanceMaximo?.trim() ?? '') : '',
+        observaciones:          (esEq || esInstr) ? (v.observaciones?.trim() ?? '') : '',
+        // Escala, puntos, rango: solo instrumento
+        escalaGraduacion:       esInstr ? (v.escalaGraduacion?.trim()   ?? '') : '',
+        puntosCalibracion:      esInstr ? (v.puntosCalibracion?.trim()  ?? '') : '',
+        rangoOperativoReal:     esInstr ? (v.rangoOperativoReal?.trim() ?? '') : '',
+        // Material y valor nominal: solo pesa
+        material:               esPesa ? (v.material?.trim()     ?? '') : undefined,
+        valorNominal:           esPesa ? (v.valorNominal?.trim() ?? '') : undefined,
 
         estadoOperativo:        v.estadoOperativo,
         esActivo:               !!v.esActivo,

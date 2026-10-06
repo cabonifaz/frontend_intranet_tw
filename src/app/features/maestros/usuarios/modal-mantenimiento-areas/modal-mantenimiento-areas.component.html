@@ -1,0 +1,68 @@
+<app-modal titulo="Mantenimiento de Áreas" ancho="md" (cerrar)="cerrarYNotificar()">
+  <div class="mma-body">
+
+    <!-- Crear nueva área -->
+    <div class="mma-crear">
+      <label class="mma-crear__label">Nueva área</label>
+      <div class="mma-crear__fila">
+        <input class="mma-input" type="text" placeholder="Nombre del área (ej. Operaciones Lima)"
+               [ngModel]="nombreNuevo()" (ngModelChange)="nombreNuevo.set($event)"
+               (keyup.enter)="crear()" maxlength="60" />
+        <app-button variant="primary" tamano="md" icono="add"
+                    [disabled]="guardando() || !nombreNuevo().trim()"
+                    (clic)="crear()">
+          Crear
+        </app-button>
+      </div>
+    </div>
+
+    <!-- Listado + edición inline -->
+    <div class="mma-lista">
+      <div class="mma-lista__header">
+        <span>Áreas existentes</span>
+        <span class="mma-lista__count">{{ areas().length }}</span>
+      </div>
+
+      @if (areas().length === 0) {
+        <div class="mma-vacio">
+          <span class="material-symbols-outlined">domain_add</span>
+          Aún no hay áreas creadas. Agrega la primera arriba.
+        </div>
+      } @else {
+        <ul class="mma-items">
+          @for (a of areas(); track a.codigo) {
+            <li class="mma-item">
+              @if (idEditando() === a.codigo) {
+                <input class="mma-input mma-input--editar" type="text" maxlength="60"
+                       [ngModel]="nombreEditando()" (ngModelChange)="nombreEditando.set($event)"
+                       (keyup.enter)="confirmarEdicion()" />
+                <div class="mma-item__acciones">
+                  <app-button variant="primary" tamano="sm" icono="check" [soloIcon]="true"
+                              ariaLabel="Guardar"
+                              [disabled]="guardando()"
+                              (clic)="confirmarEdicion()" />
+                  <app-button variant="ghost" tamano="sm" icono="close" [soloIcon]="true"
+                              ariaLabel="Cancelar"
+                              (clic)="cancelarEdicion()" />
+                </div>
+              } @else {
+                <span class="mma-item__nombre">{{ a.nombre }}</span>
+                <div class="mma-item__acciones">
+                  <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                              ariaLabel="Renombrar"
+                              (clic)="comenzarEdicion(a)" />
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+
+  <div modalFooter class="mma-footer">
+    <app-button variant="primary" tamano="md" (clic)="cerrarYNotificar()">
+      Listo
+    </app-button>
+  </div>
+</app-modal>

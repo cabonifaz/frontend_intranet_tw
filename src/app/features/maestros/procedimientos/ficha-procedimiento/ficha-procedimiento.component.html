@@ -51,16 +51,6 @@
             <app-campo label="Norma (opcional)" hint="Estándar técnico base">
               <input type="text" formControlName="normaBase" placeholder="Ej: OIML R76 · ISO 17025 · NMP 002" />
             </app-campo>
-
-            <app-campo label="Tipo de Procedimiento"
-                       [error]="formulario.get('tipoProcedimiento')?.touched && formulario.get('tipoProcedimiento')?.invalid ? 'Selecciona un tipo' : ''">
-              <select formControlName="tipoProcedimiento">
-                <option value="">Selecciona…</option>
-                @for (opt of tiposProcedimiento; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-            </app-campo>
           </div>
 
           <div class="grid-cols-2">
@@ -81,25 +71,13 @@
 
         </app-seccion>
 
-        <!-- ── SECCIÓN 02 — Descripción y Alcance ────────────────────────── -->
-        <app-seccion icono="description" titulo="2. Descripción y Alcance">
-
-          <app-campo label="Alcance / Rango de Aplicabilidad"
-                     hint="Define cuándo aplica este procedimiento (ej: rango de capacidad, clase, tipo de equipo)">
-            <input type="text" formControlName="alcance"
-                   placeholder="Ej: 0 a 300 kg · Clase III-IIII" />
-          </app-campo>
+        <!-- ── SECCIÓN 02 — Descripción ──────────────────────────────────── -->
+        <app-seccion icono="description" titulo="2. Descripción">
 
           <app-campo label="Descripción"
                      [error]="formulario.get('descripcion')?.touched && formulario.get('descripcion')?.invalid ? 'Descripción requerida (mín. 10 caracteres)' : ''">
             <textarea formControlName="descripcion" rows="3"
                       placeholder="Detalle completo del procedimiento, aplicaciones y contexto técnico…"></textarea>
-          </app-campo>
-
-          <app-campo label="Aprobado por"
-                     hint="Persona autorizada que validó el procedimiento (requerido para QMS/ISO 17025)">
-            <input type="text" formControlName="aprobadoPor"
-                   placeholder="Ej: Ing. Ana Torres · Jefe de Metrología" />
           </app-campo>
 
           <app-campo label="Adjuntar Documento PDF Aprobado"

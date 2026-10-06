@@ -83,26 +83,32 @@ export class EquiposClienteService {
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
   }
 
-  // ─── Suministros clase "equipo" para linkear la ficha con el catálogo HU-86 ──
-  //   Incluye marca y modelo (ya resueltos a labels del catálogo) para que la ficha
-  //   los autorellene y bloquee cuando el usuario elige un suministro.
-  async obtenerSuministrosParaDropdown(): Promise<
-    { value: number; label: string; marca: string; modelo: string }[]
+  // ─── Suministros filtrados por Clasificación técnica del equipo ──────────
+  //   Filtra por la clasificación técnica elegida en la ficha (equipo / instrumento
+  //   / pesa). Si no se pasa clase, trae todas las clases excepto "servicio" (que
+  //   no es un bien tangible y no corresponde al maestro de Equipos del Cliente).
+  //   Incluye `clase` para permitir filtrado adicional en el componente.
+  async obtenerSuministrosParaDropdown(clase?: string): Promise<
+    { value: number; label: string; clase: string; marca: string; modelo: string }[]
   > {
     try {
       const [r, marcas, modelos] = await Promise.all([
-        this.suministrosSvc.obtenerSuministros(undefined, 'equipo', undefined, 'Activo', false, 1, 200),
+        this.suministrosSvc.obtenerSuministros(undefined, clase, undefined, 'Activo', false, 1, 500),
         this.suministrosSvc.obtenerMarcas().catch(() => []),
         this.suministrosSvc.obtenerModelos().catch(() => []),
       ]);
       const labelDe = (lista: { value: string; label: string }[], code: string) =>
         lista.find(o => o.value === code)?.label ?? code ?? '';
-      return r.items.map(s => ({
-        value:  s.idSuministro,
-        label:  s.descripcion || `${s.marca} ${s.modelo}`.trim(),
-        marca:  labelDe(marcas,  s.marca),
-        modelo: labelDe(modelos, s.modelo),
-      }));
+      // "servicio" nunca corresponde a Equipos del Cliente (no es activo físico).
+      return r.items
+        .filter(s => s.clase !== 'servicio')
+        .map(s => ({
+          value:  s.idSuministro,
+          label:  s.descripcion || `${s.marca} ${s.modelo}`.trim(),
+          clase:  s.clase,
+          marca:  labelDe(marcas,  s.marca),
+          modelo: labelDe(modelos, s.modelo),
+        }));
     } catch {
       return [];
     }

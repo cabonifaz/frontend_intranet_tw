@@ -7,7 +7,7 @@
     } @else {
 
     <app-hero-header
-      [titulo]="esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente'"
+      [titulo]="(esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente') + (codigoFicha() ? ' · ' + codigoFicha() : '')"
       [descripcion]="esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.'"
       [badgeTexto]="'Estado: ' + estadoCliente()"
       badgeVariant="azul"
@@ -120,21 +120,8 @@
             </div>
           </div>
 
-          <!-- Fila 3: Condición Fiscal + Condición Pago + Crédito + Teléfono -->
-          <div class="campo-cuarteto">
-            <div class="campo">
-              <label class="campo__label">Condición Fiscal SUNAT</label>
-              <div class="condicion-badges">
-                <span class="badge-fiscal" [class.badge-fiscal--habido]="formulario.get('condicionContribuyente')?.value === 'Habido'">
-                  <span class="badge-fiscal__dot"></span>
-                  {{ formulario.get('condicionContribuyente')?.value || 'Habido' }}
-                </span>
-                <span class="badge-fiscal" [class.badge-fiscal--activo]="formulario.get('condicionFiscal')?.value === 'Activo'">
-                  <span class="badge-fiscal__dot"></span>
-                  {{ formulario.get('condicionFiscal')?.value || 'Activo' }}
-                </span>
-              </div>
-            </div>
+          <!-- Fila 3: Condición Pago + Crédito + Teléfono -->
+          <div class="campo-trio">
             <div class="campo">
               <label class="campo__label">Condición de Pago Habitual</label>
               <select class="campo__select" formControlName="condicionPago">
@@ -182,10 +169,69 @@
         </div>
       </app-seccion>
 
-      <!-- ── Section 2: Sedes ─────────────────────────────────────────────── -->
+      <!-- ── Section 2: Áreas de Operación ────────────────────────────────── -->
+      <app-seccion
+        icono="apartment"
+        titulo="2. Áreas de Operación"
+        subtitulo="Áreas de negocio donde el cliente requiere servicio (ej. pesaje, refrigeración, minería)"
+      >
+        <div class="areas-cliente">
+          @if (areasAsignadas().length === 0) {
+            <div class="areas-cliente__vacio">
+              Aún no se asignaron áreas. Elige una del catálogo o crea una nueva.
+            </div>
+          } @else {
+            <div class="areas-cliente__chips">
+              @for (codigo of areasAsignadas(); track codigo) {
+                <span class="chip-area">
+                  {{ nombreArea(codigo) }}
+                  <button
+                    type="button"
+                    class="chip-area__quitar"
+                    (click)="quitarArea(codigo)"
+                    title="Quitar área"
+                  >
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </span>
+              }
+            </div>
+          }
+
+          <div class="areas-cliente__agregar">
+            <select
+              class="campo__select"
+              [value]="areaSeleccionada()"
+              (change)="areaSeleccionada.set($any($event.target).value)"
+            >
+              <option value="">Agregar área del catálogo…</option>
+              @for (a of areasDisponibles; track a.codigo) {
+                <option [value]="a.codigo">{{ a.nombre }}</option>
+              }
+            </select>
+            <app-button
+              variante="secundario"
+              icono="add"
+              (click)="agregarArea()"
+              [disabled]="!areaSeleccionada()"
+            >
+              Agregar
+            </app-button>
+            <app-button
+              variante="texto"
+              icono="settings"
+              (click)="abrirModalAreas()"
+            >
+              Gestionar catálogo
+            </app-button>
+          </div>
+        </div>
+      </app-seccion>
+
+      <!-- ── Section 3: Sedes ─────────────────────────────────────────────── -->
       <app-seccion
         icono="location_city"
-        titulo="2. Sedes y Plantas Operativas"
+        titulo="3. Sedes y Plantas Operativas"
         subtitulo="Ubicaciones del cliente donde se prestan servicios de calibración"
       >
         <button headerActions class="btn-agregar-sede" type="button" (click)="abrirModalNuevaSede()">
@@ -312,10 +358,10 @@
         }
       </app-seccion>
 
-      <!-- ── Section 3: Contactos ─────────────────────────────────────────── -->
+      <!-- ── Section 4: Contactos ─────────────────────────────────────────── -->
       <app-seccion
         icono="contacts"
-        titulo="3. Contactos Clave & Aprobadores"
+        titulo="4. Contactos Clave & Aprobadores"
         subtitulo="Interlocutores autorizados para gestión comercial y técnica"
       >
         <button headerActions class="btn-agregar-sede" type="button" (click)="abrirModalNuevoContacto()">
@@ -500,10 +546,10 @@
         }
       </app-seccion>
 
-      <!-- ── Section 4: SSOMA ─────────────────────────────────────────────── -->
+      <!-- ── Section 5: SSOMA ─────────────────────────────────────────────── -->
       <app-seccion
         icono="health_and_safety"
-        titulo="4. Normativa SSOMA & Requisitos Especiales"
+        titulo="5. Normativa SSOMA & Requisitos Especiales"
       >
         @if (esVip) {
           <span headerActions class="link-regla-vip">Convenio VIP</span>
@@ -526,30 +572,19 @@
         </div>
 
         <div class="ssoma-extras">
-          <div class="campo-2col">
-            <div class="campo">
-              <label class="campo__label">Descuento Convenio VIP (%)</label>
-              <div class="campo__input-suffix">
-                <input
-                  class="campo__input campo__input--con-suffix"
-                  type="number"
-                  placeholder="0"
-                  formControlName="descuentoVipPct"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-                <span class="campo__suffix">%</span>
-              </div>
-            </div>
-            <div class="campo">
-              <label class="campo__label">Patrón de Masas Asignado</label>
-              <select class="campo__select" formControlName="patronMasasAsignado">
-                <option value="">Seleccionar...</option>
-                @for (p of patronesMasas(); track p.id) {
-                  <option [value]="p.nombre">{{ p.nombre }}</option>
-                }
-              </select>
+          <div class="campo">
+            <label class="campo__label">Descuento Convenio VIP (%)</label>
+            <div class="campo__input-suffix">
+              <input
+                class="campo__input campo__input--con-suffix"
+                type="number"
+                placeholder="0"
+                formControlName="descuentoVipPct"
+                min="0"
+                max="100"
+                step="0.01"
+              />
+              <span class="campo__suffix">%</span>
             </div>
           </div>
 
@@ -624,5 +659,12 @@
     [fechaGuardado]="draft.fechaGuardado"
     (restaurar)="restaurarBorrador()"
     (descartar)="descartarBorrador()"
+  />
+}
+
+@if (modalAreasOpen()) {
+  <app-modal-mantenimiento-areas
+    (actualizado)="onAreasCatalogoActualizado($event)"
+    (cerrar)="modalAreasOpen.set(false)"
   />
 }

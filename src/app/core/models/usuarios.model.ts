@@ -13,8 +13,10 @@ export interface UsuarioListaItem {
 
 export interface UsuarioDetalle extends UsuarioListaItem {
   // Información personal
-  tipoDocumento:  string;
+  tipoDocumento:   string;
   numeroDocumento: string;
+  fechaNacimiento?: string | null;   // ISO yyyy-mm-dd (opcional)
+  anexo?:          string | null;    // Anexo completo (troncal + interno 3 dígitos)
   cargo:           string | null;
   area:            string | null;
 
@@ -49,6 +51,8 @@ export interface GuardarUsuarioRequest {
   numeroDocumento: string;
   correo:         string;
   telefono:       string | null;
+  fechaNacimiento?: string | null;   // ISO yyyy-mm-dd (opcional)
+  anexo?:         string | null;     // Anexo completo (troncal + interno 3 dígitos)
   cargo:          string | null;
   area:           string | null;
   rolSistema:     string;

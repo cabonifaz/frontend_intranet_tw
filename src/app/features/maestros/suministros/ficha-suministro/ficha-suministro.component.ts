@@ -75,12 +75,12 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   readonly firmaDigital      = signal('');
   readonly claseActual       = signal('');
 
-  // Catálogos cargados desde tabla_maestra on init
+  // Catálogos cargados desde tabla_maestra on init.
+  // Subtipo pasó a texto libre (pedido cliente 2026-10-06) → no se carga catálogo.
+  // Procedencia pasó a texto libre + solo visible fuera de Servicio → no se carga catálogo.
+  // Unidad fue removida del formulario (pedido cliente 2026-10-06) → no se carga catálogo.
   readonly clasesOpciones       = signal<OpcionCatalogo[]>([]);
   readonly tiposOpciones        = signal<OpcionCatalogo[]>([]);
-  readonly subtiposOpciones     = signal<OpcionCatalogo[]>([]);
-  readonly procedenciasOpciones = signal<OpcionCatalogo[]>([]);
-  readonly unidadesOpciones     = signal<OpcionCatalogo[]>([]);
   readonly nivelesTarifa        = NIVELES_TARIFA;
 
   readonly marcasSignal         = signal<OpcionCatalogo[]>([]);
@@ -91,6 +91,22 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   // Si clase !== 'servicio' → con Marca/Modelo, sin Procedimientos.
   readonly esClaseServicio = computed(() => esServicio(this.claseActual()));
 
+  /**
+   * Tipos filtrados por Clase Principal. El filtro usa `OpcionCatalogo.parentCode`
+   * (mapeado desde `tabla_maestra.string3`). Fallback: si NINGÚN tipo tiene
+   * parentCode poblado todavía (Bryan aún no actualizó los seeds) devuelve todos
+   * para no romper la UX; el filtro se activa automáticamente cuando el seed
+   * incluya el código de clase padre.
+   */
+  readonly tiposFiltrados = computed(() => {
+    const clase = this.claseActual();
+    const todos = this.tiposOpciones();
+    if (!clase) return [];
+    const conPadre = todos.filter(t => !!t.parentCode);
+    if (conPadre.length === 0) return todos;        // fallback mientras el back no tenga string3
+    return todos.filter(t => t.parentCode === clase);
+  });
+
   idSuministro = 0;
 
   formulario: FormGroup = this.fb.group({
@@ -98,7 +114,8 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     clase:              ['', Validators.required],
     esActivoEnCatalogo: [true],
     tipo:               ['', Validators.required],
-    subtipo:            ['', Validators.required],
+    // Subtipo pasó a texto libre (pedido cliente 2026-10-06)
+    subtipo:            ['', [Validators.required, Validators.maxLength(80)]],
     marca:              [''],   // requerido solo si clase !== 'servicio' (validación dinámica)
     modelo:             [''],   // idem
 
@@ -106,19 +123,18 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     descripcionAuto:    [''],
     descripcionManual:  ['', [Validators.required, Validators.minLength(10)]],
     alcance:            [''],
-    unidad:             ['unidad_bienes'],
     ctaContable:        [''],
-    procedencia:        ['nacional'],
-    casillero:          [''],
+    // Procedencia es texto libre + solo visible si clase !== 'servicio'
+    procedencia:        [''],
 
     // 03 - Parámetros de Cotización
     usarEnPropuestas:    [true],
-    codigoUnspsc:        [''],
     precioMinReferencia: [null],
     escalaEstandar:         [null],
     escalaVolumen:          [null],
     escalaCorporativoAlto:  [null],
-    aplicaComercial:  [false],
+    // Áreas de aplicación: 'Comercial' removida (pedido cliente). aplicaComercial
+    // queda en el modelo con false fijo para compat de DTO hasta que Bryan limpie.
     aplicaServicio:   [false],
     aplicaMetrologia: [false],
 
@@ -143,35 +159,36 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     titulo: string;
     etiqueta: string;
     placeholder: string;
-    campoFormulario: 'tipo' | 'subtipo' | 'marca' | 'modelo';
+    campoFormulario: 'tipo' | 'marca' | 'modelo';
   } | null>(null);
   readonly guardandoCatalogo = signal(false);
 
   async ngOnInit(): Promise<void> {
-    // Carga paralela de los 7 catálogos de tabla_maestra + procedimientos (del maestro HU-87)
-    const [clases, tipos, subtipos, marcas, modelos, procedencias, unidades, procedimientos] = await Promise.all([
+    // Carga paralela de los catálogos usados en el UI actual + procedimientos (HU-87).
+    // Subtipo (texto libre), Procedencia (texto libre), Unidad (removida) ya no cargan catálogo.
+    const [clases, tipos, marcas, modelos, procedimientos] = await Promise.all([
       this.suministrosSvc.obtenerClases(),
       this.suministrosSvc.obtenerTipos(),
-      this.suministrosSvc.obtenerSubtipos(),
       this.suministrosSvc.obtenerMarcas(),
       this.suministrosSvc.obtenerModelos(),
-      this.suministrosSvc.obtenerProcedencias(),
-      this.suministrosSvc.obtenerUnidades(),
       this.suministrosSvc.obtenerProcedimientos().catch(() => []),
     ]);
     this.clasesOpciones.set(clases);
     this.tiposOpciones.set(tipos);
-    this.subtiposOpciones.set(subtipos);
     this.marcasSignal.set(marcas);
     this.modelosSignal.set(modelos);
-    this.procedenciasOpciones.set(procedencias);
-    this.unidadesOpciones.set(unidades);
     this.procedimientosSignal.set(procedimientos);
 
-    // Sincronizar claseActual con el FormControl para que el computed reaccione
+    // Sincronizar claseActual con el FormControl para que el computed reaccione.
+    // Al cambiar la clase, el filtro de Tipo puede dejar inválido el tipo elegido
+    // → reseteamos el tipo para forzar re-selección dentro de la nueva clase.
     this.formulario.get('clase')?.valueChanges.subscribe(v => {
-      this.claseActual.set(v ?? '');
-      this.actualizarValidadoresPorClase(v ?? '');
+      const nuevaClase = v ?? '';
+      if (nuevaClase !== this.claseActual()) {
+        this.formulario.get('tipo')?.setValue('', { emitEvent: false });
+      }
+      this.claseActual.set(nuevaClase);
+      this.actualizarValidadoresPorClase(nuevaClase);
       this.actualizarDescripcionAuto();
     });
     // Descripción automática en vivo al cambiar cualquiera de los campos relevantes
@@ -198,17 +215,13 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
           descripcionAuto:    s.descripcionAuto,
           descripcionManual:  s.descripcionManual,
           alcance:            s.alcance,
-          unidad:             s.unidad,
           ctaContable:        s.ctaContable,
           procedencia:        s.procedencia,
-          casillero:          s.casillero,
           usarEnPropuestas:    s.usarEnPropuestas,
-          codigoUnspsc:        s.codigoUnspsc,
           precioMinReferencia: s.precioMinReferencia,
           escalaEstandar:         s.escalas.find(e => e.nivel === 'estandar')?.precio         ?? null,
           escalaVolumen:          s.escalas.find(e => e.nivel === 'volumen')?.precio          ?? null,
           escalaCorporativoAlto:  s.escalas.find(e => e.nivel === 'corporativo_alto')?.precio ?? null,
-          aplicaComercial:  s.aplicaComercial,
           aplicaServicio:   s.aplicaServicio,
           aplicaMetrologia: s.aplicaMetrologia,
           idPrimerProcedimiento:  s.idPrimerProcedimiento  ?? '',
@@ -277,13 +290,6 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     });
   }
 
-  abrirModalSubtipo(): void {
-    this.modalCatalogo.set({
-      descripcion: 'SUBTIPO_SUMINISTRO', titulo: 'Nuevo Sub-Tipo', etiqueta: 'Nombre del Sub-Tipo',
-      placeholder: 'Ej: De Plataforma', campoFormulario: 'subtipo',
-    });
-  }
-
   abrirModalMarca(): void {
     this.modalCatalogo.set({
       descripcion: 'MARCA_SUMINISTRO', titulo: 'Nueva Marca', etiqueta: 'Nombre de la Marca',
@@ -309,7 +315,6 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
       // Refrescar el signal correspondiente desde el cache del service
       switch (m.campoFormulario) {
         case 'tipo':    this.tiposOpciones.set(await this.suministrosSvc.obtenerTipos()); break;
-        case 'subtipo': this.subtiposOpciones.set(await this.suministrosSvc.obtenerSubtipos()); break;
         case 'marca':   this.marcasSignal.set(await this.suministrosSvc.obtenerMarcas()); break;
         case 'modelo':  this.modelosSignal.set(await this.suministrosSvc.obtenerModelos()); break;
       }
@@ -333,14 +338,12 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   limpiarFormulario(): void {
     this.formulario.reset({
       esActivoEnCatalogo: true,
-      unidad: 'unidad_bienes',
-      procedencia: 'nacional',
+      procedencia: '',
       usarEnPropuestas: true,
       precioMinReferencia: null,
       escalaEstandar: null,
       escalaVolumen: null,
       escalaCorporativoAlto: null,
-      aplicaComercial: false,
       aplicaServicio: false,
       aplicaMetrologia: false,
     });
@@ -408,34 +411,42 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     this.error.set('');
     try {
       const v = this.formulario.value;
+      // Áreas de ejecución (aplicaServicio / aplicaMetrologia) solo tienen sentido
+      // para clase 'servicio'. Para el resto se fuerzan a false en el DTO.
+      const esServ = esServicio(v.clase);
       const dto: GuardarSuministroRequest = {
         idSuministro:       this.idSuministro,
         clase:              v.clase,
         tipo:               v.tipo,
-        subtipo:            v.subtipo,
-        marca:              esServicio(v.clase) ? '' : (v.marca ?? ''),
-        modelo:             esServicio(v.clase) ? '' : (v.modelo ?? ''),
+        subtipo:            v.subtipo?.trim() ?? '',
+        marca:              esServ ? '' : (v.marca ?? ''),
+        modelo:             esServ ? '' : (v.modelo ?? ''),
         descripcionAuto:    v.descripcionAuto ?? '',
         descripcionManual:  v.descripcionManual?.trim() ?? '',
         alcance:            v.alcance ?? '',
-        unidad:             v.unidad,
+        // Unidad, Casillero y UNSPSC fueron removidos del UI (2026-10-06).
+        // Enviamos defaults vacíos para compat hasta que Bryan deprecie los campos.
+        unidad:             '',
         ctaContable:        v.ctaContable ?? '',
-        procedencia:        v.procedencia,
-        casillero:          v.casillero ?? '',
+        // Procedencia solo tiene sentido fuera de Servicio.
+        procedencia:        esServ ? '' : (v.procedencia?.trim() ?? ''),
+        casillero:          '',
         esActivoEnCatalogo: !!v.esActivoEnCatalogo,
         usarEnPropuestas:    !!v.usarEnPropuestas,
-        codigoUnspsc:        v.codigoUnspsc ?? '',
+        codigoUnspsc:        '',
         precioMinReferencia: v.precioMinReferencia != null && v.precioMinReferencia !== '' ? Number(v.precioMinReferencia) : null,
         escalas: [
           { nivel: 'estandar',         precio: v.escalaEstandar != null && v.escalaEstandar !== '' ? Number(v.escalaEstandar) : null },
           { nivel: 'volumen',          precio: v.escalaVolumen != null && v.escalaVolumen !== '' ? Number(v.escalaVolumen) : null },
           { nivel: 'corporativo_alto', precio: v.escalaCorporativoAlto != null && v.escalaCorporativoAlto !== '' ? Number(v.escalaCorporativoAlto) : null },
         ],
-        aplicaComercial:  !!v.aplicaComercial,
-        aplicaServicio:   !!v.aplicaServicio,
-        aplicaMetrologia: !!v.aplicaMetrologia,
-        idPrimerProcedimiento:  esServicio(v.clase) ? (v.idPrimerProcedimiento  || undefined) : undefined,
-        idSegundoProcedimiento: esServicio(v.clase) ? (v.idSegundoProcedimiento || undefined) : undefined,
+        // 'Comercial' removida del UI; se envía fijo false. Las áreas de ejecución
+        // además solo aplican a Servicio → false para el resto.
+        aplicaComercial:  false,
+        aplicaServicio:   esServ ? !!v.aplicaServicio   : false,
+        aplicaMetrologia: esServ ? !!v.aplicaMetrologia : false,
+        idPrimerProcedimiento:  esServ ? (v.idPrimerProcedimiento  || undefined) : undefined,
+        idSegundoProcedimiento: esServ ? (v.idSegundoProcedimiento || undefined) : undefined,
         guardarComoBorrador: false,
       };
       await this.suministrosSvc.guardarSuministro(dto);

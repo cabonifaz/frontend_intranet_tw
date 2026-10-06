@@ -49,6 +49,11 @@ export interface EquipoClienteDetalle extends EquipoClienteListaItem {
   rangoOperativoReal:       string;         // Ej: "50 kg hasta 1200 kg"
   observaciones:            string;
 
+  // Específicos de Pesa (opcionales, solo si clasificacion === 'pesa'). Pendientes
+  // en back hasta que Bryan agregue las columnas.
+  material?:                string;
+  valorNominal?:            string;
+
   // 03 - Estado Operativo Actual
   estadoOperativo:          string;         // 'oficina_tw' | 'evaluacion' | 'ejecucion' | 'operativo_planta'
 
@@ -80,7 +85,9 @@ export interface GuardarEquipoClienteRequest {
   idSede:                   number;
   codigoCliente:            string;
   clasificacion:            string;
+  /** @deprecated Marca y modelo se derivan del suministro. UI los quitó 2026-10-06. */
   marca:                    string;
+  /** @deprecated */
   modelo:                   string;
 
   ubicacionEspecifica:      string;
@@ -97,6 +104,11 @@ export interface GuardarEquipoClienteRequest {
   puntosCalibracion:        string;
   rangoOperativoReal:       string;
   observaciones:            string;
+
+  // Específicos de Pesa (opcionales, solo se envían si clasificacion === 'pesa').
+  // Pendiente back: agregar columnas material/valor_nominal a tabla equipo_cliente.
+  material?:                string;
+  valorNominal?:            string;
 
   estadoOperativo:          string;
   esActivo:                 boolean;
@@ -118,17 +130,13 @@ export interface OpcionCatalogo {
   label: string;
 }
 
+// Clasificación técnica (simplificada a 3 valores por pedido cliente 2026-10-06).
+// Coincide con las clases principales del catálogo de Suministros (menos 'servicio').
+// Determina qué campos extra se piden en la Sección 2 "Especificaciones".
 export const CLASIFICACIONES_EQUIPO: OpcionCatalogo[] = [
-  { value: 'balanza_plataforma_industrial',   label: 'Balanza de Plataforma Industrial' },
-  { value: 'bascula_camionera',                label: 'Báscula Camionera' },
-  { value: 'balanza_precision_analitica',      label: 'Balanza de Precisión Analítica' },
-  { value: 'balanza_comercial_sobremesa',      label: 'Balanza Comercial de Sobremesa' },
-  { value: 'tolva_pesaje_industrial',          label: 'Tolva de Pesaje Industrial' },
-  { value: 'balanza_dosificador_gancho',       label: 'Balanza Dosificadora de Gancho / Grua' },
-  { value: 'balanza_colgante_etiquetadora',    label: 'Balanza Colgante Etiquetadora Comercial' },
-  { value: 'balanza_laboratorio',              label: 'Balanza de Laboratorio' },
-  { value: 'pesa_patron',                       label: 'Pesa Patrón' },
-  { value: 'indicador_pesaje',                  label: 'Indicador de Pesaje' },
+  { value: 'equipo',       label: 'Equipo' },
+  { value: 'instrumento',  label: 'Instrumento' },
+  { value: 'pesa',         label: 'Pesa' },
 ];
 
 export const CLASES_EXACTITUD: OpcionCatalogo[] = [

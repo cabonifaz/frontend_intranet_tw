@@ -29,6 +29,12 @@ export interface ClienteListaItem {
   sedeNombre: string | null;
   sedeRegion: string | null;
   cantidadContactos: number;
+  // Contacto principal de la empresa (nivel cliente, no por sede). Pendiente
+  // de que Bryan modifique SP_ObtenerClientes para hacer LEFT JOIN con
+  // contacto_cliente WHERE es_principal_empresa=1. Mientras no venga, se
+  // renderiza "—" en la celda.
+  contactoPrincipalNombre?: string | null;
+  contactoPrincipalTelefono?: string | null;
 }
 
 export interface ClienteDetalle {
@@ -56,6 +62,10 @@ export interface ClienteDetalle {
   idCategoria: number | null;
   nombreCategoria: string | null;
   estado: string;
+  // Áreas de operación del cliente (ej. Pesaje, Refrigeración, Minería).
+  // Catálogo AREA_USUARIO (IdMaestro=79). Pendiente back: tabla cliente_area
+  // + SP_ObtenerClientePorId devolviendo este array.
+  areas?: string[];
 }
 
 export interface GuardarClienteRequest {
@@ -81,6 +91,9 @@ export interface GuardarClienteRequest {
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
   idCategoria: number | null;
+  // Códigos de áreas (string2 de tabla_maestra AREA_USUARIO). Pendiente back:
+  // SP_GuardarCliente debe aceptar el array y hacer delete+insert en cliente_area.
+  areas?: string[];
 }
 
 export interface CambiarEstadoClienteRequest {
@@ -118,9 +131,21 @@ export interface CambiarEstadoSedeRequest {
   estado: string;
 }
 
+/**
+ * Vinculación contacto ↔ sede. Un contacto puede estar vinculado a N sedes
+ * (mínimo 1 obligatoria) y ser principal de cada sede independientemente.
+ * Pendiente back: tabla puente `contacto_sede` + split de `es_contacto_principal`.
+ */
+export interface ContactoSede {
+  idSede: number;
+  nombreSede?: string;        // enriquecido para render en chips
+  esPrincipalSede: boolean;
+}
+
 export interface ContactoListaItem {
   idContacto: number;
   idCliente: number;
+  /** @deprecated Se mantiene por compat con back actual. Preferir `sedes[]`. */
   idSede: number | null;
   nombres: string;
   documentoIdentidad: string | null;
@@ -129,7 +154,12 @@ export interface ContactoListaItem {
   correo: string | null;
   telefonoMovil: string | null;
   telefonoAnexo: string | null;
+  /** @deprecated Se mantiene por compat con back actual. Preferir `esPrincipalEmpresa`. */
   esContactoPrincipal: boolean;
+  // Nuevos campos (modelo definitivo). Hasta que Bryan actualice los SPs,
+  // vienen opcionales/vacíos y el front los sintetiza desde los legacy.
+  sedes?: ContactoSede[];
+  esPrincipalEmpresa?: boolean;
   autorizadoAprobarCotizaciones: boolean;
   recibeAlertasCalibracion: boolean;
   autorizadoRecepcionTecnica: boolean;
@@ -139,6 +169,7 @@ export interface ContactoListaItem {
 export interface GuardarContactoRequest {
   idContacto: number;
   idCliente: number;
+  /** @deprecated Compat back actual: enviamos la primera sede del array. */
   idSede: number | null;
   nombres: string;
   documentoIdentidad: string | null;
@@ -147,7 +178,11 @@ export interface GuardarContactoRequest {
   correo: string | null;
   telefonoMovil: string | null;
   telefonoAnexo: string | null;
+  /** @deprecated Compat back actual: mirror de `esPrincipalEmpresa`. */
   esContactoPrincipal: boolean;
+  // Nuevos campos (modelo definitivo).
+  sedes?: ContactoSede[];
+  esPrincipalEmpresa?: boolean;
   autorizadoAprobarCotizaciones: boolean;
   recibeAlertasCalibracion: boolean;
   autorizadoRecepcionTecnica: boolean;

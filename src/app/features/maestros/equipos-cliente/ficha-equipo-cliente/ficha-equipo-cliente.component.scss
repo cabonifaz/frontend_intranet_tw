@@ -479,3 +479,113 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
   .timeline { flex-direction: column; align-items: stretch; }
   .timeline__linea { display: none; }
 }
+
+// ── Searchable dropdown de Suministro (E4a) ───────────────────────────────
+.busqueda-suministro {
+  position: relative;
+
+  input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 13px;
+    color: #1E293B;
+
+    &:focus {
+      outline: none;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    &:disabled {
+      background: #F1F5F9;
+      color: #94A3B8;
+      cursor: not-allowed;
+    }
+  }
+
+  &__chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px 8px 12px;
+    background: #DBEAFE;
+    border: 1px solid #93C5FD;
+    border-radius: 6px;
+    color: #1D4ED8;
+    font-size: 13px;
+    font-weight: 500;
+
+    > span:first-child {
+      font-size: 16px;
+    }
+
+    > span:nth-child(2) {
+      flex: 1;
+    }
+  }
+
+  &__quitar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #1D4ED8;
+
+    &:hover { background: #BFDBFE; }
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+  }
+
+  &__opcion {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #1E293B;
+
+    &:hover { background: #F1F5F9; }
+    & + & { border-top: 1px solid #F1F5F9; }
+  }
+
+  &__vacio {
+    padding: 14px;
+    text-align: center;
+    color: #94A3B8;
+    font-size: 12px;
+    font-style: italic;
+  }
+}
+
+// Hint pequeño debajo de un campo (ej. "cliente sin áreas asignadas")
+.hint-vacio {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #B45309;
+}

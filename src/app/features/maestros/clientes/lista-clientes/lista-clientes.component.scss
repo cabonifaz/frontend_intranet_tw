@@ -62,6 +62,32 @@
   }
 }
 
+// ── Contacto principal (celda tabla) ──────────────────────────────────────
+// Muestra teléfono grande + nombre pequeño. Vacío → "—".
+.contacto-ppal {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.2;
+
+  &__tel {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1E293B;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__nombre {
+    font-size: 11px;
+    color: #64748B;
+  }
+
+  &__vacio {
+    color: #94A3B8;
+    font-size: 13px;
+  }
+}
+
 // ── Badges específicos de clientes ─────────────────────────────────────────
 .badge-vip {
   display: inline-flex;

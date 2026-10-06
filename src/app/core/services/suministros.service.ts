@@ -126,6 +126,7 @@ export class SuministrosService {
     const items: OpcionCatalogo[] = r.datos.map(i => ({
       value: i.codigo ?? i.nombre,
       label: i.nombre,
+      parentCode: i.string3 ?? undefined,
     }));
     this.cacheCatalogos.set(descripcion, items);
     return items;

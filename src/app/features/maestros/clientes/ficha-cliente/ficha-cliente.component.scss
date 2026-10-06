@@ -953,3 +953,66 @@
     cursor: not-allowed;
   }
 }
+
+// ── Áreas de Operación (Section 2) ────────────────────────────────────────
+.areas-cliente {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &__vacio {
+    padding: 20px;
+    background: #F8FAFC;
+    border: 1px dashed #CBD5E1;
+    border-radius: 8px;
+    color: #64748B;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__agregar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .campo__select { max-width: 320px; }
+  }
+}
+
+.chip-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 12px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 9999px;
+  font-size: 13px;
+  color: #1D4ED8;
+  font-weight: 500;
+
+  &__quitar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #1D4ED8;
+    transition: background 0.15s;
+
+    &:hover { background: #DBEAFE; }
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+}

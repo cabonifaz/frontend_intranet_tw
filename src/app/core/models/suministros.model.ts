@@ -111,6 +111,12 @@ export interface CambiarEstadoSuministroRequest {
 export interface OpcionCatalogo {
   value: string;
   label: string;
+  /**
+   * Código de la categoría padre (ej. TIPO_SUMINISTRO.parentCode = clase).
+   * Lo mapeamos desde `tabla_maestra.string3`. Si el back aún no lo poblara,
+   * queda undefined y el consumidor cae a mostrar todas las opciones.
+   */
+  parentCode?: string;
 }
 
 export const CLASES_SUMINISTRO: OpcionCatalogo[] = [

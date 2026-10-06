@@ -11,6 +11,7 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
+import { AreasService, AreaItem } from '../../../../core/services/areas.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
@@ -23,6 +24,7 @@ import { ButtonComponent }     from '../../../../shared/ui/button/button.compone
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
 import { ModalContactoComponent } from '../modal-contacto/modal-contacto.component';
+import { ModalMantenimientoAreasComponent } from '../../usuarios/modal-mantenimiento-areas/modal-mantenimiento-areas.component';
 import { ESTADO } from '../../../../core/constants/estados';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
@@ -59,6 +61,7 @@ interface BorradorCliente {
   form: Record<string, unknown>;
   sedesTemp: SedeListaItem[];
   contactosTemp: ContactoListaItem[];
+  areasAsignadas: string[];
 }
 
 function validarRuc(control: AbstractControl): ValidationErrors | null {
@@ -73,13 +76,14 @@ function validarRuc(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-ficha-cliente',
-  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalBorradorComponent, ModalSedeComponent, ModalContactoComponent],
+  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalBorradorComponent, ModalSedeComponent, ModalContactoComponent, ModalMantenimientoAreasComponent],
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
 export class FichaClienteComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
+  private readonly areasSvc    = inject(AreasService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
@@ -92,6 +96,9 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   readonly error             = signal('');
   readonly esNuevo           = signal(false);
   readonly estadoCliente     = signal('Borrador');
+  // Código de ficha visible en ambos modos (pedido cliente T1 2026-10-06).
+  // Nuevo: "CLI-{año}-NUEVO". Editar: codigo real del cliente, con fallback a ID.
+  readonly codigoFicha       = signal('');
 
   // Borrador local (incluye form + sedesTemp + contactosTemp)
   readonly borradorDisponible = signal<BorradorInfo<BorradorCliente> | null>(null);
@@ -116,8 +123,14 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   readonly tiposDocumento   = signal<CatalogoItem[]>([]);
   readonly tiposCliente     = signal<CatalogoItem[]>([]);
   readonly condicionesPago  = signal<CatalogoItem[]>([]);
-  readonly patronesMasas    = signal<CatalogoItem[]>([]);
   readonly categoriasCliente = signal<CategoriaCliente[]>([]);
+
+  // Áreas de operación del cliente (ej. Pesaje, Refrigeración, Minería).
+  // Catálogo AREA_USUARIO. Multi-select con chips.
+  readonly areasCatalogo       = signal<AreaItem[]>([]);
+  readonly areasAsignadas      = signal<string[]>([]);          // códigos (string2)
+  readonly areaSeleccionada    = signal<string>('');            // dropdown "Agregar"
+  readonly modalAreasOpen      = signal(false);
 
   idCliente = 0;
 
@@ -127,7 +140,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     tipoCliente:            ['', Validators.required],
     razonSocial:            ['', Validators.required],
     nombreComercial:        [''],
-    condicionFiscal:        [ESTADO.ACTIVO],
     condicionContribuyente: ['Habido'],
     condicionPago:          [''],
     lineaCreditoUsd:        [null],
@@ -136,7 +148,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     esVip:                  [false],
     reglaVip:               [''],
     descuentoVipPct:        [null],
-    patronMasasAsignado:    [''],
     ssomaPolizaSctr:        [false],
     ssomaCamioneta4x4:      [false],
     ssomaInduccionSsoma:    [false],
@@ -150,36 +161,41 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     const esNuevo  = !idParam || idParam === 'nuevo';
     this.esNuevo.set(esNuevo);
     this.borradorKey = `clientes:${esNuevo ? 'nuevo' : idParam}`;
+    this.codigoFicha.set(esNuevo ? `CLI-${new Date().getFullYear()}-NUEVO` : '');
 
     const catalogsTask = Promise.all([
       this.maestrosSvc.obtenerCatalogo('TIPO_DOC_CLIENTE'),
       this.maestrosSvc.obtenerCatalogo('TIPO_CLIENTE'),
       this.maestrosSvc.obtenerCatalogo('CONDICION_PAGO'),
-      this.maestrosSvc.obtenerCatalogo('PATRON_MASAS'),
       this.maestrosSvc.obtenerCategorias(),
+      this.areasSvc.listar().catch(() => []),
     ]);
 
     try {
       if (esNuevo) {
-        const [tiposDoc, tipos, condiciones, patrones, categorias] = await catalogsTask;
+        const [tiposDoc, tipos, condiciones, categorias, areas] = await catalogsTask;
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
-        this.patronesMasas.set(patrones);
         this.categoriasCliente.set(categorias);
+        this.areasCatalogo.set(areas);
       } else {
         this.idCliente = Number(idParam);
-        const [[tiposDoc, tipos, condiciones, patrones, categorias], detalle] = await Promise.all([
+        const [[tiposDoc, tipos, condiciones, categorias, areas], detalle] = await Promise.all([
           catalogsTask,
           this.maestrosSvc.obtenerClientePorId(this.idCliente),
         ]);
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
-        this.patronesMasas.set(patrones);
         this.categoriasCliente.set(categorias);
+        this.areasCatalogo.set(areas);
+        this.areasAsignadas.set(detalle.areas ?? []);
 
         this.estadoCliente.set(detalle.estado);
+        // Código de la ficha (ej. CLI-2026-0003). Fallback: `CLI-ID-${idCliente}`
+        // mientras el back no emita el código formateado.
+        this.codigoFicha.set(detalle.ruc ? `RUC ${detalle.ruc}` : `CLI-ID-${this.idCliente}`);
 
         const [listaSedes, listaContactos] = await Promise.all([
           this.maestrosSvc.obtenerSedesPorCliente(this.idCliente),
@@ -194,7 +210,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
           tipoCliente:            detalle.tipoCliente,
           razonSocial:            detalle.razonSocial,
           nombreComercial:        detalle.nombreComercial ?? '',
-          condicionFiscal:        detalle.condicionFiscal,
           condicionContribuyente: detalle.condicionContribuyente,
           condicionPago:          detalle.condicionPago ?? '',
           lineaCreditoUsd:        detalle.lineaCreditoUsd,
@@ -203,7 +218,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
           esVip:                  detalle.esVip,
           reglaVip:               detalle.reglaVip ?? '',
           descuentoVipPct:        detalle.descuentoVipPct,
-          patronMasasAsignado:    detalle.patronMasasAsignado ?? '',
           ssomaPolizaSctr:        detalle.ssomaPolizaSctr,
           ssomaCamioneta4x4:      detalle.ssomaCamioneta4x4,
           ssomaInduccionSsoma:    detalle.ssomaInduccionSsoma,
@@ -229,9 +243,10 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   // ─── Borrador local ─────────────────────────────────────────────────
   private snapshotBorrador(): BorradorCliente {
     return {
-      form:          this.formulario.getRawValue(),
-      sedesTemp:     this.sedesTemp(),
-      contactosTemp: this.contactosTemp(),
+      form:           this.formulario.getRawValue(),
+      sedesTemp:      this.sedesTemp(),
+      contactosTemp:  this.contactosTemp(),
+      areasAsignadas: this.areasAsignadas(),
     };
   }
 
@@ -265,6 +280,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     this.formulario.patchValue(draft.data.form, { emitEvent: false });
     this.sedesTemp.set(draft.data.sedesTemp ?? []);
     this.contactosTemp.set(draft.data.contactosTemp ?? []);
+    this.areasAsignadas.set(draft.data.areasAsignadas ?? []);
     this.autoguardadoActivo = true;
     this.borradorDisponible.set(null);
     this.toastSvc.exito('Borrador restaurado.');
@@ -299,7 +315,10 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         tipoCliente:            v.tipoCliente,
         razonSocial:            v.razonSocial,
         nombreComercial:        v.nombreComercial || null,
-        condicionFiscal:        v.condicionFiscal,
+        // Condición Fiscal se removió del UI (pedido cliente 2026-10-05). El back
+        // todavía requiere el campo: mandamos 'Activo' por default hasta que
+        // Bryan lo deprecie en el DTO.
+        condicionFiscal:        'Activo',
         condicionContribuyente: v.condicionContribuyente,
         condicionPago:          v.condicionPago || null,
         lineaCreditoUsd:        v.lineaCreditoUsd,
@@ -308,13 +327,17 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         esVip:                  v.esVip,
         reglaVip:               v.reglaVip || null,
         descuentoVipPct:        v.descuentoVipPct,
-        patronMasasAsignado:    v.patronMasasAsignado || null,
+        // Patrón de Masas se removió del UI (pedido cliente 2026-10-05). El
+        // back todavía requiere el campo: mandamos null hasta que Bryan lo
+        // deprecie en el DTO.
+        patronMasasAsignado:    null,
         ssomaPolizaSctr:        v.ssomaPolizaSctr,
         ssomaCamioneta4x4:      v.ssomaCamioneta4x4,
         ssomaInduccionSsoma:    v.ssomaInduccionSsoma,
         ssomaExamenMedico:      v.ssomaExamenMedico,
         ssomaNotas:             v.ssomaNotas || null,
         idCategoria:            v.idCategoria ? Number(v.idCategoria) : null,
+        areas:                  this.areasAsignadas(),
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);
@@ -350,13 +373,18 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
 
         await Promise.all(
           this.contactosTemp().map(c => {
-            const resolvedSede = c.idSede != null && c.idSede < 0
-              ? (sedeIdMap.get(c.idSede) ?? null)
-              : c.idSede;
+            // Resuelve ids temporales de sedes (< 0) a ids reales recién creados.
+            const sedesReales = (c.sedes ?? []).map(s => ({
+              idSede:          s.idSede < 0 ? (sedeIdMap.get(s.idSede) ?? null) : s.idSede,
+              esPrincipalSede: s.esPrincipalSede,
+            })).filter((s): s is { idSede: number; esPrincipalSede: boolean } => s.idSede != null);
+            const resolvedSedeLegacy = sedesReales[0]?.idSede
+              ?? (c.idSede != null && c.idSede < 0 ? (sedeIdMap.get(c.idSede) ?? null) : c.idSede);
+            const esPpalEmpresa = c.esPrincipalEmpresa ?? c.esContactoPrincipal;
             const req: GuardarContactoRequest = {
               idContacto:                    0,
               idCliente:                     id,
-              idSede:                        resolvedSede,
+              idSede:                        resolvedSedeLegacy,
               nombres:                       c.nombres,
               documentoIdentidad:            c.documentoIdentidad,
               cargo:                         c.cargo,
@@ -364,7 +392,9 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
               correo:                        c.correo,
               telefonoMovil:                 c.telefonoMovil,
               telefonoAnexo:                 c.telefonoAnexo,
-              esContactoPrincipal:           c.esContactoPrincipal,
+              esContactoPrincipal:           esPpalEmpresa,
+              esPrincipalEmpresa:            esPpalEmpresa,
+              sedes:                         sedesReales,
               autorizadoAprobarCotizaciones: c.autorizadoAprobarCotizaciones,
               recibeAlertasCalibracion:      c.recibeAlertasCalibracion,
               autorizadoRecepcionTecnica:    c.autorizadoRecepcionTecnica,
@@ -386,6 +416,42 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
 
   cancelar(): void {
     this.router.navigate(['/maestros/clientes']);
+  }
+
+  // ─── Áreas de operación del cliente (multi-select con chips) ────────────
+  get areasDisponibles(): AreaItem[] {
+    const asignadas = this.areasAsignadas();
+    return this.areasCatalogo().filter(a => !asignadas.includes(a.codigo));
+  }
+
+  nombreArea(codigo: string): string {
+    return this.areasCatalogo().find(a => a.codigo === codigo)?.nombre ?? codigo;
+  }
+
+  agregarArea(): void {
+    const codigo = this.areaSeleccionada().trim();
+    if (!codigo) return;
+    if (this.areasAsignadas().includes(codigo)) {
+      this.areaSeleccionada.set('');
+      return;
+    }
+    this.areasAsignadas.update(list => [...list, codigo]);
+    this.areaSeleccionada.set('');
+    this.marcarAutoguardadoManual();
+  }
+
+  quitarArea(codigo: string): void {
+    this.areasAsignadas.update(list => list.filter(c => c !== codigo));
+    this.marcarAutoguardadoManual();
+  }
+
+  abrirModalAreas(): void {
+    this.modalAreasOpen.set(true);
+  }
+
+  async onAreasCatalogoActualizado(nuevas: AreaItem[]): Promise<void> {
+    this.areasCatalogo.set(nuevas);
+    this.modalAreasOpen.set(false);
   }
 
   get sedesDisplay(): SedeListaItem[] {
@@ -431,6 +497,8 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
       telefonoMovil:                 dto.telefonoMovil,
       telefonoAnexo:                 dto.telefonoAnexo,
       esContactoPrincipal:           dto.esContactoPrincipal,
+      sedes:                         dto.sedes ?? [],
+      esPrincipalEmpresa:            dto.esPrincipalEmpresa ?? dto.esContactoPrincipal,
       autorizadoAprobarCotizaciones: dto.autorizadoAprobarCotizaciones,
       recibeAlertasCalibracion:      dto.recibeAlertasCalibracion,
       autorizadoRecepcionTecnica:    dto.autorizadoRecepcionTecnica,

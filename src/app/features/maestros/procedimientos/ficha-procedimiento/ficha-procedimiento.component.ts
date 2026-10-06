@@ -8,7 +8,6 @@ import { ProcedimientosService } from '../../../../core/services/procedimientos.
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   GuardarProcedimientoRequest,
-  TIPOS_PROCEDIMIENTO,
 } from '../../../../core/models/procedimientos.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
@@ -67,8 +66,6 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
   readonly fechaRegistro     = signal('');
   readonly fechaModificacion = signal('');
 
-  readonly tiposProcedimiento = TIPOS_PROCEDIMIENTO;
-
   idProcedimiento = 0;
 
   formulario: FormGroup = this.fb.group({
@@ -78,14 +75,15 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     version:             [1, [Validators.required, Validators.min(1)]],
     autorNorma:          ['', Validators.required],
     normaBase:           [''],
-    tipoProcedimiento:   ['', Validators.required],
+    // Campos removidos del UI (pedido cliente 2026-10-06):
+    //   - tipoProcedimiento → mandado como '' al back hasta deprecación
+    //   - alcance           → ídem
+    //   - aprobadoPor       → ídem
     esFormatoDigitalIso: [true],
     esActivo:            [true],
 
-    // 02 - Descripción y Alcance
-    alcance:             [''],
+    // 02 - Descripción
     descripcion:         ['', [Validators.required, Validators.minLength(10)]],
-    aprobadoPor:         [''],
   });
 
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
@@ -114,12 +112,9 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
           version:             p.version,
           autorNorma:          p.autorNorma,
           normaBase:           p.normaBase,
-          tipoProcedimiento:   p.tipoProcedimiento,
           esFormatoDigitalIso: p.esFormatoDigitalIso,
           esActivo:            p.esActivo,
-          alcance:             p.alcance,
           descripcion:         p.descripcion,
-          aprobadoPor:         p.aprobadoPor,
         });
         this.totalEdiciones.set(p.totalEdiciones);
         this.usuarioRegistro.set(p.usuarioRegistro);
@@ -216,10 +211,11 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
         version:             Number(v.version) || 1,
         autorNorma:          v.autorNorma?.trim() ?? '',
         normaBase:           v.normaBase?.trim() ?? '',
-        tipoProcedimiento:   v.tipoProcedimiento,
+        // Removidos del UI (2026-10-06). Enviamos '' para compat de DTO.
+        tipoProcedimiento:   '',
         descripcion:         v.descripcion?.trim() ?? '',
-        alcance:             v.alcance?.trim() ?? '',
-        aprobadoPor:         v.aprobadoPor?.trim() ?? '',
+        alcance:             '',
+        aprobadoPor:         '',
         esFormatoDigitalIso: !!v.esFormatoDigitalIso,
         urlPdfAprobado:      '',
         esActivo:            !!v.esActivo,
