@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
+import { UbigeoService, UbigeoItem } from '../../../../core/services/ubigeo.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CatalogoItem, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
@@ -20,6 +21,7 @@ import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 export class ModalSedeComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
+  private readonly ubigeoSvc   = inject(UbigeoService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly destroyRef  = inject(DestroyRef);
@@ -34,7 +36,13 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
   readonly guardando       = signal(false);
   readonly error           = signal('');
   readonly tiposInstalacion = signal<CatalogoItem[]>([]);
-  readonly regiones         = signal<CatalogoItem[]>([]);
+
+  // Ubigeo INEI (cascada): depende de la selección del padre.
+  readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly provincias    = signal<UbigeoItem[]>([]);
+  readonly distritos     = signal<UbigeoItem[]>([]);
+  readonly cargandoProvincias = signal(false);
+  readonly cargandoDistritos  = signal(false);
 
   // Borrador local (solo activo cuando idCliente > 0)
   readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
@@ -55,24 +63,74 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
   });
 
   async ngOnInit(): Promise<void> {
-    const [tipos, regs] = await Promise.all([
+    // Tipos de instalación sigue siendo catálogo tabla_maestra.
+    // Departamentos los trae del ubigeo INEI (reemplaza REGION_PERU que se usaba antes).
+    const [tipos, deps] = await Promise.all([
       this.maestrosSvc.obtenerCatalogo('TIPO_INSTALACION'),
-      this.maestrosSvc.obtenerCatalogo('REGION_PERU'),
+      this.ubigeoSvc.obtenerDepartamentos(),
     ]);
     this.tiposInstalacion.set(tipos);
-    this.regiones.set(regs);
+    this.departamentos.set(deps);
+
+    // Cascada reactiva: al cambiar departamento, cargar sus provincias y resetear
+    // provincia/distrito. Idem para provincia → distritos.
+    this.formulario.get('region')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async dep => {
+        this.provincias.set([]);
+        this.distritos.set([]);
+        this.formulario.patchValue({ provincia: '', distrito: '' }, { emitEvent: false });
+        if (!dep) return;
+        this.cargandoProvincias.set(true);
+        try {
+          this.provincias.set(await this.ubigeoSvc.obtenerProvincias(dep));
+        } finally {
+          this.cargandoProvincias.set(false);
+        }
+      });
+
+    this.formulario.get('provincia')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async prov => {
+        this.distritos.set([]);
+        this.formulario.patchValue({ distrito: '' }, { emitEvent: false });
+        const dep = this.formulario.get('region')?.value;
+        if (!dep || !prov) return;
+        this.cargandoDistritos.set(true);
+        try {
+          this.distritos.set(await this.ubigeoSvc.obtenerDistritos(dep, prov));
+        } finally {
+          this.cargandoDistritos.set(false);
+        }
+      });
 
     const sede = this.sedeEditar();
     if (sede) {
+      // En modo editar, prehidratar las listas padre antes del patchValue para
+      // que los <option> ya existan al asignar el valor. Si el nombre guardado
+      // no matchea exactamente un departamento del ubigeo (ej. "lima" vs "Lima"),
+      // intentamos matchear case-insensitively y guardamos el nombre canónico.
+      const depCanonico = this.matchearCanonico(deps, sede.region);
+      let provsSede: UbigeoItem[] = [];
+      let distsSede: UbigeoItem[] = [];
+      if (depCanonico) {
+        provsSede = await this.ubigeoSvc.obtenerProvincias(depCanonico);
+        this.provincias.set(provsSede);
+        const provCanonico = this.matchearCanonico(provsSede, sede.provincia);
+        if (provCanonico) {
+          distsSede = await this.ubigeoSvc.obtenerDistritos(depCanonico, provCanonico);
+          this.distritos.set(distsSede);
+        }
+      }
       this.formulario.patchValue({
         nombre:          sede.nombre,
         tipoInstalacion: sede.tipoInstalacion ?? '',
-        region:          sede.region          ?? '',
-        provincia:       sede.provincia       ?? '',
-        distrito:        sede.distrito        ?? '',
+        region:          depCanonico ?? sede.region ?? '',
+        provincia:       this.matchearCanonico(provsSede, sede.provincia) ?? sede.provincia ?? '',
+        distrito:        this.matchearCanonico(distsSede, sede.distrito)   ?? sede.distrito   ?? '',
         urbanizacion:    sede.urbanizacion    ?? '',
         direccionExacta: sede.direccionExacta ?? '',
-      });
+      }, { emitEvent: false });
     }
 
     // Habilitar borrador solo cuando hay cliente persistido (idCliente > 0)
@@ -85,6 +143,13 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
       }
       this.activarAutoguardado();
     }
+  }
+
+  /** Devuelve el `nombre` canónico de la lista que matchea (case-insensitive) al valor dado. */
+  private matchearCanonico(items: UbigeoItem[], valor: string | null | undefined): string | null {
+    if (!valor) return null;
+    const v = valor.trim().toLowerCase();
+    return items.find(i => i.nombre.trim().toLowerCase() === v)?.nombre ?? null;
   }
 
   // ─── Borrador local ─────────────────────────────────────────────────

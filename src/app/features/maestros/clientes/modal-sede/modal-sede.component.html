@@ -44,27 +44,39 @@
 
       <div class="grid-3">
         <app-campo
-          label="Región / Departamento *"
-          [error]="formulario.get('region')?.invalid && formulario.get('region')?.touched ? 'Seleccione la región.' : ''"
+          label="Departamento *"
+          [error]="formulario.get('region')?.invalid && formulario.get('region')?.touched ? 'Seleccione el departamento.' : ''"
         >
           <select formControlName="region">
-            <option value="">Seleccionar...</option>
-            @for (r of regiones(); track r.id) {
-              <option [value]="r.nombre">{{ r.nombre }}</option>
+            <option value="">Seleccionar…</option>
+            @for (d of departamentos(); track d.codigo) {
+              <option [value]="d.nombre">{{ d.nombre }}</option>
             }
           </select>
         </app-campo>
         <app-campo
           label="Provincia *"
+          [hint]="!formulario.get('region')?.value ? 'Elige primero un departamento' : ''"
           [error]="formulario.get('provincia')?.invalid && formulario.get('provincia')?.touched ? 'La provincia es obligatoria.' : ''"
         >
-          <input type="text" placeholder="Cotabambas" formControlName="provincia" />
+          <select formControlName="provincia" [disabled]="!formulario.get('region')?.value || cargandoProvincias()">
+            <option value="">{{ cargandoProvincias() ? 'Cargando…' : 'Seleccionar…' }}</option>
+            @for (p of provincias(); track p.codigo) {
+              <option [value]="p.nombre">{{ p.nombre }}</option>
+            }
+          </select>
         </app-campo>
         <app-campo
           label="Distrito *"
+          [hint]="!formulario.get('provincia')?.value ? 'Elige primero una provincia' : ''"
           [error]="formulario.get('distrito')?.invalid && formulario.get('distrito')?.touched ? 'El distrito es obligatorio.' : ''"
         >
-          <input type="text" placeholder="Challhuahuacho" formControlName="distrito" />
+          <select formControlName="distrito" [disabled]="!formulario.get('provincia')?.value || cargandoDistritos()">
+            <option value="">{{ cargandoDistritos() ? 'Cargando…' : 'Seleccionar…' }}</option>
+            @for (d of distritos(); track d.codigo) {
+              <option [value]="d.nombre">{{ d.nombre }}</option>
+            }
+          </select>
         </app-campo>
       </div>
     </div>

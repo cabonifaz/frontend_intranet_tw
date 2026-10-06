@@ -5,6 +5,8 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { SuministrosService, DescripcionCatalogoSuministro } from '../../../../core/services/suministros.service';
+import { SiguienteCodigoService } from '../../../../core/services/siguiente-codigo.service';
+import { FormatosVentanaService } from '../../../../core/services/formatos-ventana.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import {
   GuardarSuministroRequest,
@@ -50,6 +52,8 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 export class FichaSuministroComponent implements OnInit, OnDestroy {
   private readonly fb             = inject(FormBuilder);
   private readonly suministrosSvc = inject(SuministrosService);
+  private readonly siguienteCodSvc = inject(SiguienteCodigoService);
+  private readonly formatoSvc      = inject(FormatosVentanaService);
   private readonly borradorSvc    = inject(BorradorService);
   private readonly toastSvc       = inject(ToastService);
   private readonly route          = inject(ActivatedRoute);
@@ -148,10 +152,15 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
   ));
 
-  readonly codigoBadge = computed(() => {
-    if (this.esNuevo()) return 'AUTO · SUM-NUEVO';
-    return `ID · ${this.idSuministro}`;
-  });
+  // Código visible en el header de la ficha (modo nuevo y editar).
+  // En nuevo: trae el siguiente código real del back; mientras llega muestra
+  // un placeholder. En editar: se setea cuando se carga el detalle.
+  readonly codigoFicha = signal('SUM-…');
+  // Código de formato ISO/calidad configurable por la empresa (ej. "MTW97-10").
+  // Se muestra como badge secundario al lado del código de ficha. Null si TW no
+  // lo configuró para esta ventana.
+  readonly formatoCalidad = signal<string | null>(null);
+  readonly codigoBadge = computed(() => this.codigoFicha());
 
   // ─── Modal genérico "Nuevo item de catálogo" (Tipo/Subtipo/Marca/Modelo) ──
   readonly modalCatalogo = signal<{
@@ -201,9 +210,22 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     this.esNuevo.set(nuevo);
     this.borradorKey = `suministros:${nuevo ? 'nuevo' : idParam}`;
 
+    // Siguiente código: para "nuevo" lo consulta al back (preview); para "editar"
+    // el código real se setea desde el detalle. Fallback si el back falla.
+    if (nuevo) {
+      this.siguienteCodSvc.obtener('suministro')
+        .then(c => this.codigoFicha.set(c))
+        .catch(() => this.codigoFicha.set('SUM-NUEVO'));
+    }
+
+    // Formato de calidad ISO (opcional). Si viene con etiqueta la mostramos.
+    this.formatoSvc.obtener('suministro_ficha')
+      .then(f => this.formatoCalidad.set(f?.etiqueta ?? null));
+
     try {
       if (!nuevo) {
         this.idSuministro = Number(idParam);
+        this.codigoFicha.set(`SUM-ID-${this.idSuministro}`);
         const s = await this.suministrosSvc.obtenerSuministroPorId(this.idSuministro);
         this.formulario.patchValue({
           clase:              s.clase,

@@ -169,60 +169,37 @@
         </div>
       </app-seccion>
 
-      <!-- ── Section 2: Áreas de Operación ────────────────────────────────── -->
+      <!-- ── Section 2: Áreas del Cliente ─────────────────────────────────── -->
       <app-seccion
         icono="apartment"
         titulo="2. Áreas de Operación"
-        subtitulo="Áreas de negocio donde el cliente requiere servicio (ej. pesaje, refrigeración, minería)"
+        subtitulo="Áreas internas del cliente donde se instalan sus equipos (ej. Zona de carnes, Patio norte, Laboratorio)"
       >
         <div class="areas-cliente">
-          @if (areasAsignadas().length === 0) {
+          @if (areasCliente().length === 0) {
             <div class="areas-cliente__vacio">
-              Aún no se asignaron áreas. Elige una del catálogo o crea una nueva.
+              Este cliente aún no tiene áreas registradas. Crea la primera desde el botón de abajo.
             </div>
           } @else {
             <div class="areas-cliente__chips">
-              @for (codigo of areasAsignadas(); track codigo) {
-                <span class="chip-area">
-                  {{ nombreArea(codigo) }}
-                  <button
-                    type="button"
-                    class="chip-area__quitar"
-                    (click)="quitarArea(codigo)"
-                    title="Quitar área"
-                  >
-                    <span class="material-symbols-outlined">close</span>
-                  </button>
+              @for (a of areasCliente(); track a.idArea) {
+                <span class="chip-area" [class.chip-area--inactiva]="a.estado !== 'Activo'">
+                  {{ a.nombre }}
+                  @if (a.equipos > 0) {
+                    <span class="chip-area__badge">{{ a.equipos }}</span>
+                  }
                 </span>
               }
             </div>
           }
 
           <div class="areas-cliente__agregar">
-            <select
-              class="campo__select"
-              [value]="areaSeleccionada()"
-              (change)="areaSeleccionada.set($any($event.target).value)"
-            >
-              <option value="">Agregar área del catálogo…</option>
-              @for (a of areasDisponibles; track a.codigo) {
-                <option [value]="a.codigo">{{ a.nombre }}</option>
-              }
-            </select>
             <app-button
               variante="secundario"
-              icono="add"
-              (click)="agregarArea()"
-              [disabled]="!areaSeleccionada()"
-            >
-              Agregar
-            </app-button>
-            <app-button
-              variante="texto"
               icono="settings"
               (click)="abrirModalAreas()"
             >
-              Gestionar catálogo
+              Gestionar áreas del cliente
             </app-button>
           </div>
         </div>
@@ -663,8 +640,10 @@
 }
 
 @if (modalAreasOpen()) {
-  <app-modal-mantenimiento-areas
-    (actualizado)="onAreasCatalogoActualizado($event)"
+  <app-modal-mantenimiento-areas-cliente
+    [idCliente]="idCliente"
+    [areasIniciales]="areasCliente()"
+    (actualizado)="onAreasActualizadas($event)"
     (cerrar)="modalAreasOpen.set(false)"
   />
 }

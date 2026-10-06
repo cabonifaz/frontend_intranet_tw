@@ -8,6 +8,9 @@
     subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios"
   >
     <span class="badge-codigo">{{ codigoBadge() }}</span>
+    @if (formatoCalidad()) {
+      <span class="badge-formato" title="Código de formato ISO/calidad">{{ formatoCalidad() }}</span>
+    }
   </app-page-header>
 
   @if (cargando()) {

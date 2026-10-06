@@ -990,7 +990,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 6px 6px 12px;
+  padding: 6px 12px;
   background: #EFF6FF;
   border: 1px solid #BFDBFE;
   border-radius: 9999px;
@@ -998,21 +998,24 @@
   color: #1D4ED8;
   font-weight: 500;
 
-  &__quitar {
+  &--inactiva {
+    background: #F1F5F9;
+    border-color: #CBD5E1;
+    color: #64748B;
+    opacity: 0.7;
+  }
+
+  &__badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    color: #1D4ED8;
-    transition: background 0.15s;
-
-    &:hover { background: #DBEAFE; }
-
-    .material-symbols-outlined { font-size: 16px; }
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    background: #1D4ED8;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
   }
 }

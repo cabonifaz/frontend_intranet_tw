@@ -20,6 +20,21 @@
   letter-spacing: 0.4px;
 }
 
+.badge-formato {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 6px 10px;
+  background: #E0E7FF;
+  color: #3730A3;
+  border: 1px solid #C7D2FE;
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
 // ── Grid ficha (main + sidebar) ─────────────────────────────────────
 .ficha-grid {
   display: grid;
@@ -185,6 +200,11 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
   justify-content: space-between;
   gap: 8px;
   padding: 8px 0;
+
+  &--readonly &__paso {
+    cursor: default;
+    &:hover { transform: none; }
+  }
 
   &__paso {
     display: flex;
@@ -478,6 +498,27 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
   .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
   .timeline { flex-direction: column; align-items: stretch; }
   .timeline__linea { display: none; }
+}
+
+// Nota debajo del timeline — explica que el estado es automático.
+.estado-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  color: #1E40AF;
+  font-size: 12px;
+  line-height: 1.4;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+    flex-shrink: 0;
+    color: #2563EB;
+  }
 }
 
 // ── Searchable dropdown de Suministro (E4a) ───────────────────────────────

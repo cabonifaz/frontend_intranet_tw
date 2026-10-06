@@ -8,6 +8,9 @@
     subtitulo="Alta técnica, operativa y trazabilidad de instrumentos de pesaje industrial y metrología"
   >
     <span class="badge-codigo">{{ codigoBadge() }}</span>
+    @if (formatoCalidad()) {
+      <span class="badge-formato" title="Código de formato ISO/calidad">{{ formatoCalidad() }}</span>
+    }
   </app-page-header>
 
   @if (cargando()) {
@@ -57,17 +60,17 @@
 
           <app-campo
             label="Ubicación / Área del Cliente"
-            [hint]="formulario.get('idCliente')?.value ? '' : 'Selecciona primero un cliente'"
+            [hint]="formulario.get('idCliente')?.value ? 'Las áreas se gestionan desde la ficha del cliente' : 'Selecciona primero un cliente'"
           >
             <select formControlName="ubicacionEspecifica" [disabled]="!formulario.get('idCliente')?.value">
               <option value="">— Sin área asignada —</option>
-              @for (a of areasCliente(); track a.codigo) {
-                <option [value]="a.codigo">{{ a.nombre }}</option>
+              @for (a of areasCliente(); track a.idArea) {
+                <option [value]="a.nombre">{{ a.nombre }}</option>
               }
             </select>
             @if (formulario.get('idCliente')?.value && areasCliente().length === 0) {
               <small class="hint-vacio">
-                Este cliente aún no tiene áreas asignadas. Agrégalas desde su ficha de Cliente.
+                Este cliente aún no tiene áreas registradas. Agrégalas desde su ficha de Cliente.
               </small>
             }
           </app-campo>
@@ -230,16 +233,15 @@
 
         </app-seccion>
 
-        <!-- ── SECCIÓN 03 — Estado Operativo Actual (timeline 4 pasos) ─── -->
+        <!-- ── SECCIÓN 03 — Estado Operativo Actual (automático, readonly) ─ -->
         <app-seccion icono="route" titulo="3. Estado Operativo Actual de Despacho"
-                     subtitulo="Ubicación y fase operativa en el ciclo de calibración">
+                     subtitulo="Se actualiza automáticamente según el flujo CIE / Evaluación / Servicio.">
 
-          <div class="timeline">
+          <div class="timeline timeline--readonly" title="El estado lo administra el back según el flujo del equipo.">
             @for (estado of estadosOperativos; track estado.value; let i = $index; let last = $last) {
               <div class="timeline__paso"
                    [class.timeline__paso--activo]="formulario.get('estadoOperativo')?.value === estado.value"
-                   [class.timeline__paso--completado]="getIndiceEstado() > i"
-                   (click)="seleccionarEstado(estado.value)">
+                   [class.timeline__paso--completado]="getIndiceEstado() > i">
                 <div class="timeline__dot">
                   @if (getIndiceEstado() > i) {
                     <span class="material-symbols-outlined">check</span>
@@ -253,6 +255,11 @@
                 <div class="timeline__linea" [class.timeline__linea--completada]="getIndiceEstado() > i"></div>
               }
             }
+          </div>
+
+          <div class="estado-nota">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <span>El estado se mueve automáticamente al registrar movimientos en CIE, Evaluación, Órdenes de Servicio y Guías de Salida.</span>
           </div>
 
           <div class="estado-general">

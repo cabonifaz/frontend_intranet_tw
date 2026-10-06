@@ -62,10 +62,6 @@ export interface ClienteDetalle {
   idCategoria: number | null;
   nombreCategoria: string | null;
   estado: string;
-  // Áreas de operación del cliente (ej. Pesaje, Refrigeración, Minería).
-  // Catálogo AREA_USUARIO (IdMaestro=79). Pendiente back: tabla cliente_area
-  // + SP_ObtenerClientePorId devolviendo este array.
-  areas?: string[];
 }
 
 export interface GuardarClienteRequest {
@@ -91,9 +87,6 @@ export interface GuardarClienteRequest {
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
   idCategoria: number | null;
-  // Códigos de áreas (string2 de tabla_maestra AREA_USUARIO). Pendiente back:
-  // SP_GuardarCliente debe aceptar el array y hacer delete+insert en cliente_area.
-  areas?: string[];
 }
 
 export interface CambiarEstadoClienteRequest {
@@ -134,7 +127,7 @@ export interface CambiarEstadoSedeRequest {
 /**
  * Vinculación contacto ↔ sede. Un contacto puede estar vinculado a N sedes
  * (mínimo 1 obligatoria) y ser principal de cada sede independientemente.
- * Pendiente back: tabla puente `contacto_sede` + split de `es_contacto_principal`.
+ * Back soporta esta estructura desde la migración 35 (tabla `contacto_sede`).
  */
 export interface ContactoSede {
   idSede: number;
@@ -145,7 +138,8 @@ export interface ContactoSede {
 export interface ContactoListaItem {
   idContacto: number;
   idCliente: number;
-  /** @deprecated Se mantiene por compat con back actual. Preferir `sedes[]`. */
+  // idSede legacy: compat con contactos antiguos que no tenían array de sedes.
+  // Para contactos nuevos se usa `sedes[]`.
   idSede: number | null;
   nombres: string;
   documentoIdentidad: string | null;
@@ -154,10 +148,8 @@ export interface ContactoListaItem {
   correo: string | null;
   telefonoMovil: string | null;
   telefonoAnexo: string | null;
-  /** @deprecated Se mantiene por compat con back actual. Preferir `esPrincipalEmpresa`. */
+  // esContactoPrincipal legacy: compat. Para el modelo nuevo usar `esPrincipalEmpresa`.
   esContactoPrincipal: boolean;
-  // Nuevos campos (modelo definitivo). Hasta que Bryan actualice los SPs,
-  // vienen opcionales/vacíos y el front los sintetiza desde los legacy.
   sedes?: ContactoSede[];
   esPrincipalEmpresa?: boolean;
   autorizadoAprobarCotizaciones: boolean;
@@ -169,7 +161,7 @@ export interface ContactoListaItem {
 export interface GuardarContactoRequest {
   idContacto: number;
   idCliente: number;
-  /** @deprecated Compat back actual: enviamos la primera sede del array. */
+  // idSede legacy: fallback que el back usa si no viene `sedes[]` (null = usa sedes).
   idSede: number | null;
   nombres: string;
   documentoIdentidad: string | null;
@@ -178,10 +170,12 @@ export interface GuardarContactoRequest {
   correo: string | null;
   telefonoMovil: string | null;
   telefonoAnexo: string | null;
-  /** @deprecated Compat back actual: mirror de `esPrincipalEmpresa`. */
+  // esContactoPrincipal legacy: el back lo ignora cuando viene `esPrincipalEmpresa`.
   esContactoPrincipal: boolean;
-  // Nuevos campos (modelo definitivo).
+  // Array de sedes vinculadas. Mínimo 1 obligatoria. El back valida contra la
+  // tabla `contacto_sede`.
   sedes?: ContactoSede[];
+  // Flag separado del principal por sede: éste es principal a nivel empresa.
   esPrincipalEmpresa?: boolean;
   autorizadoAprobarCotizaciones: boolean;
   recibeAlertasCalibracion: boolean;
@@ -214,5 +208,26 @@ export interface GuardarCategoriaRequest {
 
 export interface CambiarEstadoCategoriaRequest {
   idCategoria: number;
+  estado: string;
+}
+
+// ─── Áreas del cliente (ubicación específica de sus equipos) ─────────────
+// Son por cliente (no catálogo global). Cada cliente tiene sus propias áreas
+// con nombres libres (ej. "Zona de carnes", "Patio norte"). Se persisten en
+// la tabla `area_cliente` del back.
+export interface AreaCliente {
+  idArea: number;
+  idCliente: number;
+  nombre: string;
+  estado: string;             // 'Activo' | 'Inactivo'
+  equipos: number;            // conteo de equipos del cliente usando esta área
+}
+
+export interface GuardarAreaClienteRequest {
+  idArea: number;             // 0 para crear, >0 para renombrar
+  nombre: string;
+}
+
+export interface CambiarEstadoAreaClienteRequest {
   estado: string;
 }

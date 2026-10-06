@@ -11,10 +11,10 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { AreasService, AreaItem } from '../../../../core/services/areas.service';
+import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import { CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { AreaCliente, CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
@@ -24,7 +24,7 @@ import { ButtonComponent }     from '../../../../shared/ui/button/button.compone
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ModalSedeComponent } from '../modal-sede/modal-sede.component';
 import { ModalContactoComponent } from '../modal-contacto/modal-contacto.component';
-import { ModalMantenimientoAreasComponent } from '../../usuarios/modal-mantenimiento-areas/modal-mantenimiento-areas.component';
+import { ModalMantenimientoAreasClienteComponent } from '../modal-mantenimiento-areas-cliente/modal-mantenimiento-areas-cliente.component';
 import { ESTADO } from '../../../../core/constants/estados';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
@@ -61,7 +61,7 @@ interface BorradorCliente {
   form: Record<string, unknown>;
   sedesTemp: SedeListaItem[];
   contactosTemp: ContactoListaItem[];
-  areasAsignadas: string[];
+  areasCliente: AreaCliente[];
 }
 
 function validarRuc(control: AbstractControl): ValidationErrors | null {
@@ -76,14 +76,14 @@ function validarRuc(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-ficha-cliente',
-  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalBorradorComponent, ModalSedeComponent, ModalContactoComponent, ModalMantenimientoAreasComponent],
+  imports: [ReactiveFormsModule, RouterLink, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, FormFooterComponent, EstadoVacioComponent, ButtonComponent, ModalBorradorComponent, ModalSedeComponent, ModalContactoComponent, ModalMantenimientoAreasClienteComponent],
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
 export class FichaClienteComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
-  private readonly areasSvc    = inject(AreasService);
+  private readonly areasSvc    = inject(AreasClienteService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
@@ -125,11 +125,11 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   readonly condicionesPago  = signal<CatalogoItem[]>([]);
   readonly categoriasCliente = signal<CategoriaCliente[]>([]);
 
-  // Áreas de operación del cliente (ej. Pesaje, Refrigeración, Minería).
-  // Catálogo AREA_USUARIO. Multi-select con chips.
-  readonly areasCatalogo       = signal<AreaItem[]>([]);
-  readonly areasAsignadas      = signal<string[]>([]);          // códigos (string2)
-  readonly areaSeleccionada    = signal<string>('');            // dropdown "Agregar"
+  // Áreas de operación del cliente (ej. "Zona de carnes", "Patio norte").
+  // Son por cliente (NO un catálogo global). En modo nuevo se mantienen en
+  // memoria como items temporales (idArea < 0) y se cascadan al back después
+  // de crear el cliente, igual que sedes y contactos.
+  readonly areasCliente        = signal<AreaCliente[]>([]);
   readonly modalAreasOpen      = signal(false);
 
   idCliente = 0;
@@ -168,29 +168,27 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
       this.maestrosSvc.obtenerCatalogo('TIPO_CLIENTE'),
       this.maestrosSvc.obtenerCatalogo('CONDICION_PAGO'),
       this.maestrosSvc.obtenerCategorias(),
-      this.areasSvc.listar().catch(() => []),
     ]);
 
     try {
       if (esNuevo) {
-        const [tiposDoc, tipos, condiciones, categorias, areas] = await catalogsTask;
+        const [tiposDoc, tipos, condiciones, categorias] = await catalogsTask;
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
         this.categoriasCliente.set(categorias);
-        this.areasCatalogo.set(areas);
       } else {
         this.idCliente = Number(idParam);
-        const [[tiposDoc, tipos, condiciones, categorias, areas], detalle] = await Promise.all([
+        const [[tiposDoc, tipos, condiciones, categorias], detalle, areasBack] = await Promise.all([
           catalogsTask,
           this.maestrosSvc.obtenerClientePorId(this.idCliente),
+          this.areasSvc.listar(this.idCliente, false).catch(() => [] as AreaCliente[]),
         ]);
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
         this.categoriasCliente.set(categorias);
-        this.areasCatalogo.set(areas);
-        this.areasAsignadas.set(detalle.areas ?? []);
+        this.areasCliente.set(areasBack);
 
         this.estadoCliente.set(detalle.estado);
         // Código de la ficha (ej. CLI-2026-0003). Fallback: `CLI-ID-${idCliente}`
@@ -243,10 +241,10 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   // ─── Borrador local ─────────────────────────────────────────────────
   private snapshotBorrador(): BorradorCliente {
     return {
-      form:           this.formulario.getRawValue(),
-      sedesTemp:      this.sedesTemp(),
-      contactosTemp:  this.contactosTemp(),
-      areasAsignadas: this.areasAsignadas(),
+      form:          this.formulario.getRawValue(),
+      sedesTemp:     this.sedesTemp(),
+      contactosTemp: this.contactosTemp(),
+      areasCliente:  this.areasCliente(),
     };
   }
 
@@ -280,7 +278,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     this.formulario.patchValue(draft.data.form, { emitEvent: false });
     this.sedesTemp.set(draft.data.sedesTemp ?? []);
     this.contactosTemp.set(draft.data.contactosTemp ?? []);
-    this.areasAsignadas.set(draft.data.areasAsignadas ?? []);
+    this.areasCliente.set(draft.data.areasCliente ?? []);
     this.autoguardadoActivo = true;
     this.borradorDisponible.set(null);
     this.toastSvc.exito('Borrador restaurado.');
@@ -337,10 +335,25 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         ssomaExamenMedico:      v.ssomaExamenMedico,
         ssomaNotas:             v.ssomaNotas || null,
         idCategoria:            v.idCategoria ? Number(v.idCategoria) : null,
-        areas:                  this.areasAsignadas(),
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);
+
+      // Guardar áreas temporales en cascada (items con idArea < 0 son locales
+      // creados en modo "Nuevo cliente"). Se persisten en orden secuencial para
+      // que el back valide duplicados de forma determinística.
+      if (this.areasCliente().length > 0) {
+        for (const a of this.areasCliente()) {
+          if (a.idArea < 0) {
+            try {
+              await this.areasSvc.guardar(id, { idArea: 0, nombre: a.nombre });
+            } catch {
+              // Si una área falla, seguimos con las demás — se reflejará en el
+              // próximo refresh de la ficha.
+            }
+          }
+        }
+      }
 
       // Guardar sedes temporales en cascada
       if (this.sedesTemp().length > 0) {
@@ -418,40 +431,19 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     this.router.navigate(['/maestros/clientes']);
   }
 
-  // ─── Áreas de operación del cliente (multi-select con chips) ────────────
-  get areasDisponibles(): AreaItem[] {
-    const asignadas = this.areasAsignadas();
-    return this.areasCatalogo().filter(a => !asignadas.includes(a.codigo));
-  }
-
-  nombreArea(codigo: string): string {
-    return this.areasCatalogo().find(a => a.codigo === codigo)?.nombre ?? codigo;
-  }
-
-  agregarArea(): void {
-    const codigo = this.areaSeleccionada().trim();
-    if (!codigo) return;
-    if (this.areasAsignadas().includes(codigo)) {
-      this.areaSeleccionada.set('');
-      return;
-    }
-    this.areasAsignadas.update(list => [...list, codigo]);
-    this.areaSeleccionada.set('');
-    this.marcarAutoguardadoManual();
-  }
-
-  quitarArea(codigo: string): void {
-    this.areasAsignadas.update(list => list.filter(c => c !== codigo));
-    this.marcarAutoguardadoManual();
-  }
-
+  // ─── Áreas de operación del cliente (CRUD por cliente) ──────────────────
   abrirModalAreas(): void {
     this.modalAreasOpen.set(true);
   }
 
-  async onAreasCatalogoActualizado(nuevas: AreaItem[]): Promise<void> {
-    this.areasCatalogo.set(nuevas);
+  onAreasActualizadas(nuevas: AreaCliente[]): void {
+    this.areasCliente.set(nuevas);
     this.modalAreasOpen.set(false);
+    this.marcarAutoguardadoManual();
+  }
+
+  get areasActivas(): AreaCliente[] {
+    return this.areasCliente().filter(a => a.estado === 'Activo');
   }
 
   get sedesDisplay(): SedeListaItem[] {
