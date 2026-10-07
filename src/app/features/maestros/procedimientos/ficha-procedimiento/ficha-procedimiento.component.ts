@@ -75,10 +75,6 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     version:             [1, [Validators.required, Validators.min(1)]],
     autorNorma:          ['', Validators.required],
     normaBase:           [''],
-    // Campos removidos del UI (pedido cliente 2026-10-06):
-    //   - tipoProcedimiento → mandado como '' al back hasta deprecación
-    //   - alcance           → ídem
-    //   - aprobadoPor       → ídem
     esFormatoDigitalIso: [true],
     esActivo:            [true],
 
@@ -211,11 +207,7 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
         version:             Number(v.version) || 1,
         autorNorma:          v.autorNorma?.trim() ?? '',
         normaBase:           v.normaBase?.trim() ?? '',
-        // Removidos del UI (2026-10-06). Enviamos '' para compat de DTO.
-        tipoProcedimiento:   '',
         descripcion:         v.descripcion?.trim() ?? '',
-        alcance:             '',
-        aprobadoPor:         '',
         esFormatoDigitalIso: !!v.esFormatoDigitalIso,
         urlPdfAprobado:      '',
         esActivo:            !!v.esActivo,
