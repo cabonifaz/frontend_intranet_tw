@@ -532,39 +532,33 @@
           <span headerActions class="link-regla-vip">Convenio VIP</span>
         }
 
-        <div class="ssoma-grid">
-          @for (item of ssomaItems; track item.clave) {
-            <div class="ssoma-item">
-              <div class="ssoma-item__texto">
-                <span class="ssoma-item__nombre">{{ item.nombre }}</span>
-                <span class="ssoma-item__desc">{{ item.descripcion }}</span>
-              </div>
-              <input
-                class="ssoma-item__cb"
-                type="checkbox"
-                [formControlName]="item.clave"
-              />
-            </div>
-          }
-        </div>
+        @if (ssomaDisponibles().length === 0) {
+          <div class="ssoma-vacio">
+            <span class="material-symbols-outlined">info</span>
+            <span>
+              No hay requisitos registrados en el catálogo. Agrégalos desde
+              <a routerLink="/maestros/requisitos-ssoma">Maestros → Requisitos SSOMA</a>.
+            </span>
+          </div>
+        } @else {
+          <div class="ssoma-grid">
+            @for (req of ssomaDisponibles(); track req.codigo) {
+              <label class="ssoma-item">
+                <div class="ssoma-item__texto">
+                  <span class="ssoma-item__nombre">{{ req.nombre }}</span>
+                </div>
+                <input
+                  class="ssoma-item__cb"
+                  type="checkbox"
+                  [checked]="esRequisitoAplicable(req.codigo)"
+                  (change)="toggleRequisitoSsoma(req.codigo, $any($event.target).checked)"
+                />
+              </label>
+            }
+          </div>
+        }
 
         <div class="ssoma-extras">
-          <div class="campo">
-            <label class="campo__label">Descuento Convenio VIP (%)</label>
-            <div class="campo__input-suffix">
-              <input
-                class="campo__input campo__input--con-suffix"
-                type="number"
-                placeholder="0"
-                formControlName="descuentoVipPct"
-                min="0"
-                max="100"
-                step="0.01"
-              />
-              <span class="campo__suffix">%</span>
-            </div>
-          </div>
-
           <div class="campo">
             <label class="campo__label">Notas adicionales de seguridad</label>
             <textarea

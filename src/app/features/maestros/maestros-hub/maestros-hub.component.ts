@@ -64,5 +64,11 @@ export class MaestrosHubComponent {
       descripcion: 'Parque de instrumentos y balanzas en campo por cliente y sede operativa, con hoja de vida y trazabilidad ISO 17025.',
       ruta:        '/maestros/equipos',
     },
+    {
+      icono:       'health_and_safety',
+      titulo:      'Requisitos SSOMA',
+      descripcion: 'Catálogo maestro de requisitos de seguridad asignables a los clientes (SCTR, EPP, inducciones, exámenes médicos).',
+      ruta:        '/maestros/requisitos-ssoma',
+    },
   ];
 }

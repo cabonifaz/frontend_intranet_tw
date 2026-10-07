@@ -12,6 +12,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
+import { RequisitosSsomaService, RequisitoSsoma } from '../../../../core/services/requisitos-ssoma.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { AreaCliente, CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
@@ -28,34 +29,10 @@ import { ModalMantenimientoAreasClienteComponent } from '../modal-mantenimiento-
 import { ESTADO } from '../../../../core/constants/estados';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 
-interface SsomaItem {
-  clave: 'ssomaPolizaSctr' | 'ssomaCamioneta4x4' | 'ssomaInduccionSsoma' | 'ssomaExamenMedico';
-  nombre: string;
-  descripcion: string;
-}
-
-const SSOMA_ITEMS: SsomaItem[] = [
-  {
-    clave: 'ssomaPolizaSctr',
-    nombre: 'Póliza SCTR Salud y Pensión Obligatoria',
-    descripcion: 'Requiere constancia vigente con tasa minera de alto riesgo',
-  },
-  {
-    clave: 'ssomaCamioneta4x4',
-    nombre: 'Camioneta 4×4 con Equipamiento Minero',
-    descripcion: 'Pértiga, circulina estroboscópica, jaula interna y radio VHF',
-  },
-  {
-    clave: 'ssomaInduccionSsoma',
-    nombre: 'Inducción SSOMA / Anexo 4 y 5 Vigente',
-    descripcion: 'Capacitación mínima obligatoria presencial en base minera',
-  },
-  {
-    clave: 'ssomaExamenMedico',
-    nombre: 'Examen Médico Ocupacional (Anexo 16)',
-    descripcion: 'Aptitud médica para gran altitud geográfica (> 4,000 msnm)',
-  },
-];
+// SSOMA_ITEMS hardcoded eliminado (obs #4281 reunión 06-oct). Los requisitos
+// SSOMA se consumen desde el catálogo global REQUISITO_SSOMA via
+// RequisitosSsomaService.listar() y las asignaciones por cliente se
+// sincronizan con sincronizarDelCliente() tras guardar el cliente.
 
 interface BorradorCliente {
   form: Record<string, unknown>;
@@ -84,6 +61,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly areasSvc    = inject(AreasClienteService);
+  private readonly ssomaSvc    = inject(RequisitosSsomaService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
@@ -119,7 +97,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
 
   private _tempId = 0;
 
-  readonly ssomaItems       = SSOMA_ITEMS;
+  // ssomaItems eliminado — ahora los requisitos vienen del catálogo (ver ssomaDisponibles).
   readonly tiposDocumento   = signal<CatalogoItem[]>([]);
   readonly tiposCliente     = signal<CatalogoItem[]>([]);
   readonly condicionesPago  = signal<CatalogoItem[]>([]);
@@ -147,14 +125,33 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     domicilioFiscal:        [''],
     esVip:                  [false],
     reglaVip:               [''],
-    descuentoVipPct:        [null],
-    ssomaPolizaSctr:        [false],
-    ssomaCamioneta4x4:      [false],
-    ssomaInduccionSsoma:    [false],
-    ssomaExamenMedico:      [false],
+    // Descuento Convenio VIP removido del UI (obs #4281 reunión 06-oct).
+    // Al guardar enviamos null hasta que Bryan deprecie la columna del DTO.
     ssomaNotas:             [''],
     idCategoria:            [''],
   });
+
+  // Catálogo global de requisitos SSOMA (consumido de REQUISITO_SSOMA).
+  readonly ssomaDisponibles = signal<RequisitoSsoma[]>([]);
+  // Códigos de requisitos marcados como aplicables al cliente actual.
+  // Se hidratan desde SP_ObtenerRequisitosDelCliente al cargar la ficha y se
+  // sincronizan via PUT /clientes/{id}/requisitos-ssoma tras guardar.
+  readonly ssomaAplicables = signal<string[]>([]);
+
+  toggleRequisitoSsoma(codigo: string, aplica: boolean): void {
+    if (aplica) {
+      if (!this.ssomaAplicables().includes(codigo)) {
+        this.ssomaAplicables.update(l => [...l, codigo]);
+      }
+    } else {
+      this.ssomaAplicables.update(l => l.filter(c => c !== codigo));
+    }
+    this.marcarAutoguardadoManual();
+  }
+
+  esRequisitoAplicable(codigo: string): boolean {
+    return this.ssomaAplicables().includes(codigo);
+  }
 
   async ngOnInit(): Promise<void> {
     const idParam  = this.route.snapshot.paramMap.get('id');
@@ -170,6 +167,11 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
       this.maestrosSvc.obtenerCategorias(),
     ]);
 
+    // Catálogo global de requisitos SSOMA (siempre se carga, independiente del modo).
+    this.ssomaSvc.listar()
+      .then(l => this.ssomaDisponibles.set(l))
+      .catch(() => this.ssomaDisponibles.set([]));
+
     try {
       if (esNuevo) {
         const [tiposDoc, tipos, condiciones, categorias] = await catalogsTask;
@@ -179,16 +181,18 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         this.categoriasCliente.set(categorias);
       } else {
         this.idCliente = Number(idParam);
-        const [[tiposDoc, tipos, condiciones, categorias], detalle, areasBack] = await Promise.all([
+        const [[tiposDoc, tipos, condiciones, categorias], detalle, areasBack, requisitosDelCliente] = await Promise.all([
           catalogsTask,
           this.maestrosSvc.obtenerClientePorId(this.idCliente),
           this.areasSvc.listar(this.idCliente, false).catch(() => [] as AreaCliente[]),
+          this.ssomaSvc.obtenerDelCliente(this.idCliente).catch(() => []),
         ]);
         this.tiposDocumento.set(tiposDoc);
         this.tiposCliente.set(tipos);
         this.condicionesPago.set(condiciones);
         this.categoriasCliente.set(categorias);
         this.areasCliente.set(areasBack);
+        this.ssomaAplicables.set(requisitosDelCliente.map(r => r.codigo));
 
         this.estadoCliente.set(detalle.estado);
         // Código de la ficha (ej. CLI-2026-0003). Fallback: `CLI-ID-${idCliente}`
@@ -215,11 +219,8 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
           domicilioFiscal:        detalle.domicilioFiscal ?? '',
           esVip:                  detalle.esVip,
           reglaVip:               detalle.reglaVip ?? '',
-          descuentoVipPct:        detalle.descuentoVipPct,
-          ssomaPolizaSctr:        detalle.ssomaPolizaSctr,
-          ssomaCamioneta4x4:      detalle.ssomaCamioneta4x4,
-          ssomaInduccionSsoma:    detalle.ssomaInduccionSsoma,
-          ssomaExamenMedico:      detalle.ssomaExamenMedico,
+          // descuentoVipPct, ssomaPolizaSctr/Camioneta/Induccion/Examen removidos
+          // del form (obs #4281) — ya no se patchean. SSOMA se maneja por catálogo.
           ssomaNotas:             detalle.ssomaNotas ?? '',
           idCategoria:            detalle.idCategoria ?? '',
         });
@@ -324,20 +325,30 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         domicilioFiscal:        v.domicilioFiscal || null,
         esVip:                  v.esVip,
         reglaVip:               v.reglaVip || null,
-        descuentoVipPct:        v.descuentoVipPct,
-        // Patrón de Masas se removió del UI (pedido cliente 2026-10-05). El
-        // back todavía requiere el campo: mandamos null hasta que Bryan lo
-        // deprecie en el DTO.
+        // Descuento VIP removido del UI (obs #4281) — null hasta deprecación back.
+        descuentoVipPct:        null,
+        // Patrón de Masas removido antes — null hasta deprecación.
         patronMasasAsignado:    null,
-        ssomaPolizaSctr:        v.ssomaPolizaSctr,
-        ssomaCamioneta4x4:      v.ssomaCamioneta4x4,
-        ssomaInduccionSsoma:    v.ssomaInduccionSsoma,
-        ssomaExamenMedico:      v.ssomaExamenMedico,
+        // Flags SSOMA viejos: la lista real vive ahora en el catálogo
+        // REQUISITO_SSOMA + requisito_ssoma_cliente. Enviamos false por compat.
+        ssomaPolizaSctr:        false,
+        ssomaCamioneta4x4:      false,
+        ssomaInduccionSsoma:    false,
+        ssomaExamenMedico:      false,
         ssomaNotas:             v.ssomaNotas || null,
         idCategoria:            v.idCategoria ? Number(v.idCategoria) : null,
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);
+
+      // Sincronizar los requisitos SSOMA aplicables al cliente (tabla
+      // requisito_ssoma_cliente). Siempre se manda la lista completa — vacío
+      // significa "quitar todos".
+      try {
+        await this.ssomaSvc.sincronizarDelCliente(id, this.ssomaAplicables());
+      } catch {
+        // No bloquea el guardado del cliente — se puede reintentar luego.
+      }
 
       // Guardar áreas temporales en cascada (items con idArea < 0 son locales
       // creados en modo "Nuevo cliente"). Se persisten en orden secuencial para

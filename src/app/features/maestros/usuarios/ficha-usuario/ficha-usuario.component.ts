@@ -167,7 +167,10 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     numeroRegistroInacal:         [null],
     fechaExpiracionCertificacion: [null],
     requiereInduccionSctr:        [false],
-    contrasenaTemporal:        [''],
+    // Política de contraseña (obs #4269 reunión 06-oct): si viene valor,
+    // debe tener 8+ chars con mayúscula, minúscula, número y símbolo.
+    // En modo editar el campo vacío es válido (= no cambiar la contraseña).
+    contrasenaTemporal:        ['', [Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/)]],
     forzarCambioContrasena:    [true],
     enviarCredencialesCorreo:  [true],
     // 2FA deprecado por pedido del cliente (2026-10-05). Lo mantengo con false

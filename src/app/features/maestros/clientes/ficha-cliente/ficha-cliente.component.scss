@@ -574,6 +574,22 @@
   border-top: 1px solid #F1F5F9;
 }
 
+// Estado vacío cuando el catálogo REQUISITO_SSOMA aún no tiene seeds.
+.ssoma-vacio {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #FEF9C3;
+  border: 1px solid #FBBF24;
+  border-radius: 8px;
+  color: #78350F;
+  font-size: 13px;
+
+  .material-symbols-outlined { font-size: 18px; flex-shrink: 0; color: #B45309; }
+  a { color: #B45309; font-weight: 600; text-decoration: underline; }
+}
+
 .ssoma-nota {
   display: flex;
   align-items: center;

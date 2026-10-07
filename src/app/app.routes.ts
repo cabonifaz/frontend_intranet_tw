@@ -80,6 +80,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'maestros/requisitos-ssoma',
+        loadComponent: () =>
+          import('./features/maestros/requisitos-ssoma/lista-requisitos-ssoma/lista-requisitos-ssoma.component').then(
+            m => m.ListaRequisitosSsomaComponent
+          ),
+      },
+      {
         path: 'maestros/usuarios',
         loadComponent: () =>
           import('./features/maestros/usuarios/lista-usuarios/lista-usuarios.component').then(

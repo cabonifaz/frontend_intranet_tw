@@ -297,6 +297,9 @@
                 <span class="material-symbols-outlined">refresh</span>
               </button>
             </div>
+            @if (formulario.get('contrasenaTemporal')?.touched && formulario.get('contrasenaTemporal')?.hasError('pattern')) {
+              <span class="campo__error">La contraseña debe tener mínimo 8 caracteres con mayúscula, minúscula, número y un símbolo (ej. !&#64;#$%).</span>
+            }
           </div>
 
           <label class="check-row">

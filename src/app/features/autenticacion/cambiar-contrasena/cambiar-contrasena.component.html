@@ -51,7 +51,7 @@
               class="cc-input"
               [type]="mostrarNueva() ? 'text' : 'password'"
               formControlName="contrasenaNueva"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mínimo 8 caracteres con mayúscula, minúscula, número y símbolo"
               autocomplete="new-password"
             />
             <button type="button" class="cc-ojo" (click)="toggleNueva()"
@@ -65,10 +65,10 @@
             <span class="cc-error">
               @if (nueva.errors?.['required']) { La nueva contraseña es requerida. }
               @else if (nueva.errors?.['minlength']) { Mínimo 8 caracteres. }
-              @else if (nueva.errors?.['pattern']) { Debe incluir mayúscula, minúscula y número. }
+              @else if (nueva.errors?.['pattern']) { Debe incluir mayúscula, minúscula, número y un símbolo (ej. !&#64;#$%). }
             </span>
           }
-          <p class="cc-hint">Al menos 8 caracteres, con una mayúscula, una minúscula y un número.</p>
+          <p class="cc-hint">Mínimo 8 caracteres, con mayúscula, minúscula, número y un símbolo (ej. !&#64;#$%).</p>
         </div>
 
         <!-- Confirmar nueva -->

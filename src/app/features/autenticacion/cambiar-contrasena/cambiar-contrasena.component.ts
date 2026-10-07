@@ -48,11 +48,12 @@ export class CambiarContrasenaComponent {
 
   readonly formulario = this.fb.group({
     contrasenaActual:     ['', [Validators.required]],
-    // Robustez: mínimo 8 chars, al menos 1 mayúscula, 1 minúscula y 1 número
+    // Política de contraseña (obs #4269 reunión 06-oct):
+    // mínimo 8 chars, al menos 1 mayúscula, 1 minúscula, 1 número y 1 símbolo.
     contrasenaNueva:      ['', [
       Validators.required,
       Validators.minLength(8),
-      Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}$/),
+      Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/),
     ]],
     confirmarContrasena:  ['', [Validators.required]],
   }, { validators: [coincidenValidator, distintaDeActualValidator] });

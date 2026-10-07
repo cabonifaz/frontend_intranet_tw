@@ -1,0 +1,131 @@
+<div class="requisitos-page">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-page-header
+    icono="health_and_safety"
+    titulo="Requisitos SSOMA"
+    subtitulo="Catálogo maestro de requisitos de seguridad para asignar a los clientes."
+  >
+    <button class="btn-nuevo" type="button" (click)="abrirModal()">
+      <span class="material-symbols-outlined">add</span>
+      Nuevo Requisito
+    </button>
+  </app-page-header>
+
+  @if (error()) {
+    <app-estado-vacio variante="error" [mensaje]="error()" />
+  }
+
+  @if (cargando()) {
+    <app-estado-vacio variante="cargando" mensaje="Cargando requisitos..." />
+  } @else {
+    @if (requisitos().length === 0) {
+      <app-estado-vacio icono="health_and_safety" mensaje="No hay requisitos registrados.">
+        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="abrirModal()">
+          <span class="material-symbols-outlined">add</span>
+          Crear primer requisito
+        </button>
+      </app-estado-vacio>
+    } @else {
+      <app-tabla-maestro>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th class="tabla__th--acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (req of requisitos(); track req.codigo) {
+            <tr>
+              <td>
+                <span class="req-nombre">{{ req.nombre }}</span>
+              </td>
+              <td>
+                <span class="req-codigo">{{ req.codigo }}</span>
+              </td>
+              <td class="tabla__td--acciones">
+                <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(req)">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-maestro>
+    }
+  }
+
+</div>
+
+<!-- ── Modal crear / editar ───────────────────────────────────────────────── -->
+@if (modalOpen()) {
+  <div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()" [formGroup]="formulario">
+
+      <div class="modal__header">
+        <h2 class="modal__titulo">
+          {{ editandoCodigo() ? 'Editar Requisito' : 'Nuevo Requisito' }}
+        </h2>
+        <button class="modal__cerrar" type="button" (click)="cerrarModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      @if (error()) {
+        <div class="modal__error">
+          <span class="material-symbols-outlined">error</span>
+          {{ error() }}
+        </div>
+      }
+
+      <div class="modal__cuerpo">
+
+        <div class="campo">
+          <label class="campo__label">Nombre *</label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Ej. Seguro Complementario de Trabajo de Riesgo (SCTR)"
+            formControlName="nombre"
+            maxlength="200"
+          />
+        </div>
+
+        <div class="campo">
+          <label class="campo__label">
+            Código
+            @if (editandoCodigo()) {
+              <span class="campo__hint-inline">(no editable — se usa en los registros)</span>
+            } @else {
+              <span class="campo__hint-inline">(opcional — se genera automático desde el nombre)</span>
+            }
+          </label>
+          <input
+            class="campo__input"
+            type="text"
+            placeholder="Ej. sctr"
+            formControlName="codigo"
+            maxlength="60"
+          />
+        </div>
+
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn-ghost" type="button" (click)="cerrarModal()">Cancelar</button>
+        <button
+          class="btn-primary"
+          type="button"
+          [disabled]="formulario.invalid || guardando()"
+          (click)="guardar()"
+        >
+          <span class="material-symbols-outlined">check</span>
+          {{ guardando() ? 'Guardando...' : (editandoCodigo() ? 'Actualizar' : 'Registrar') }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

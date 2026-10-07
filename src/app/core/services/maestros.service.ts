@@ -85,6 +85,21 @@ export class MaestrosService {
     return r.datos;
   }
 
+  /**
+   * Renombra la etiqueta visible (String1) de un ítem del catálogo. El código
+   * (String2) no cambia porque otras tablas lo referencian. Vía SP_EditarItemCatalogo.
+   */
+  async editarItemCatalogo(descripcion: string, codigo: string, string1: string): Promise<{ id: number; nombre: string; codigo: string }> {
+    const r = await firstValueFrom(
+      this.http.put<RespuestaApi<{ id: number; nombre: string; codigo: string }>>(
+        `${this.base}/catalogos/${descripcion}/${codigo}`,
+        { string1 },
+      )
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
   /** Genera un código estable para `string2` a partir del nombre (igual al patrón que usa el back). */
   private slugificar(nombre: string): string {
     return nombre.toLowerCase()
