@@ -7,8 +7,9 @@
     } @else {
 
     <app-hero-header
-      [titulo]="(esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente') + (codigoFicha() ? ' · ' + codigoFicha() : '')"
+      [titulo]="esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente'"
       [descripcion]="esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.'"
+      [codigoFicha]="codigoFicha()"
       [badgeTexto]="'Estado: ' + estadoCliente()"
       badgeVariant="azul"
       (volver)="cancelar()"

@@ -7,7 +7,8 @@
   } @else {
 
     <app-hero-header
-      [titulo]="(esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema') + (codigoFicha() ? ' · ' + codigoFicha() : '')"
+      [titulo]="esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema'"
+      [codigoFicha]="codigoFicha()"
       descripcion="Complete la información para dar de alta una cuenta institucional y configurar permisos de acceso corporativos."
       [badgeTexto]="esNuevo() ? 'Modo Creación' : ''"
       badgeVariant="verde-dot"

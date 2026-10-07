@@ -56,6 +56,21 @@
     margin: 0;
   }
 
+  // Chip de código de auditoría (ej. "CLI-2026-NUEVO" o "FCH-0002").
+  // Diseño sobrio para no competir con el título ni con el badge de estado.
+  &__codigo {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: #1E293B;
+    color: #E2E8F0;
+    border-radius: 6px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+
   &__badge {
     display: inline-flex;
     align-items: center;
