@@ -8,9 +8,6 @@
     <div class="hero__contenido">
       <div class="hero__titulo-row">
         <h1 class="hero__titulo">{{ titulo() }}</h1>
-        @if (codigoFicha()) {
-          <span class="hero__codigo" title="Código de auditoría de la ficha">{{ codigoFicha() }}</span>
-        }
         @if (badgeTexto()) {
           <span class="hero__badge hero__badge--{{ badgeVariant() }}">
             @if (badgeVariant() === 'verde-dot' || badgeVariant() === 'ambar-dot') {
@@ -26,6 +23,9 @@
     </div>
   </div>
   <div class="hero__der">
+    @if (codigoFicha()) {
+      <span class="hero__codigo" title="Código de auditoría de la ficha">{{ codigoFicha() }}</span>
+    }
     <ng-content></ng-content>
   </div>
 </div>
