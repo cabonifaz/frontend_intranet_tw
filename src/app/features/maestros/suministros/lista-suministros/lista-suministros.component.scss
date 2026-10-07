@@ -34,96 +34,37 @@
   .material-symbols-outlined { font-size: 16px; }
 }
 
-// ── Nota banner (Solo habilitados para propuestas) ────────────────────────
-.pre-nota {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  border-radius: 8px;
-
-  &__contador { font-size: 11px; color: #64748B; }
-}
-
-.check-pre {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-
-  input { opacity: 0; width: 0; height: 0; position: absolute; }
-
-  &__box {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    border: 1.5px solid #93C5FD;
-    background: #FFFFFF;
-    flex-shrink: 0;
-    position: relative;
-    transition: background 0.15s;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 1px;
-      left: 4px;
-      width: 4px;
-      height: 8px;
-      border: solid #FFFFFF;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg);
-      opacity: 0;
-    }
-  }
-
-  input:checked + &__box {
-    background: #2563EB;
-    border-color: #2563EB;
-    &::after { opacity: 1; }
-  }
-
-  &__texto {
-    font-size: 12px;
-    font-weight: 600;
-    color: #1D4ED8;
-  }
-}
-
 // ── Columnas tabla ────────────────────────────────────────────────────────
-.th-clase    { width: 110px; }
-.th-tipo     { width: 160px; }
-.th-desc     { min-width: 260px; }
-.th-marca    { width: 180px; }
-.th-proc     { width: 120px; }
-.th-centro   { text-align: center; width: 100px; }
-.th-acciones { width: 90px; white-space: nowrap; }
+.th-clase     { width: 90px; }
+.th-tipo      { width: 140px; }
+.th-desc      { min-width: 220px; }
+.th-marca     { width: 140px; text-align: center; }
+.th-proc      { width: 100px; }
+.th-propuestas{ text-align: center; width: 115px; }
+.th-estado    { text-align: center; width: 90px; }
+.th-acciones  { width: 100px; white-space: nowrap; text-align: center; }
 
 .td-tipo {
-  display: flex;
-  flex-direction: column;
+  vertical-align: middle;
   line-height: 1.35;
 
-  .tipo-principal { font-size: 12px; font-weight: 600; color: #0F172A; }
-  .tipo-sub       { font-size: 11px; color: #64748B; }
+  .tipo-principal { display: block; font-size: 12px; font-weight: 600; color: #0F172A; }
+  .tipo-sub       { display: block; font-size: 11px; color: #64748B; }
 }
 
 .td-desc { color: #475569; font-size: 12px; line-height: 1.5; }
 
 .td-marca {
-  display: flex;
-  flex-direction: column;
+  text-align: center;
+  vertical-align: middle;
   line-height: 1.35;
 
-  .marca-linea  { font-size: 12px; font-weight: 700; color: #0F172A; letter-spacing: 0.3px; }
-  .modelo-linea { font-size: 11px; color: #64748B; }
+  .marca-linea  { display: block; font-size: 12px; font-weight: 700; color: #0F172A; letter-spacing: 0.3px; }
+  .modelo-linea { display: block; font-size: 11px; color: #64748B; }
   .marca-vacia  { font-size: 12px; color: #CBD5E1; font-weight: 500; }
 }
 
-.td-proc, .td-centro { text-align: center; }
+.td-proc, .td-propuestas, .td-estado { text-align: center; }
 
 // ── Clase principal (texto plano, sin badge) ──────────────────────────────
 .badge-clase {

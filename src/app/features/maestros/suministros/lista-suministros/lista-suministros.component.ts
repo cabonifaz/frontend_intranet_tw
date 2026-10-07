@@ -57,7 +57,6 @@ export class ListaSuministrosComponent implements OnInit {
   claseFiltro     = '';
   tipoFiltro      = '';
   estadoFiltro    = ESTADO.ACTIVO;
-  soloEnPropuestas = true;
 
   async ngOnInit(): Promise<void> {
     const [clases, tipos, marcas, modelos] = await Promise.all([
@@ -83,7 +82,7 @@ export class ListaSuministrosComponent implements OnInit {
         this.claseFiltro || undefined,
         this.tipoFiltro || undefined,
         this.estadoFiltro || undefined,
-        this.soloEnPropuestas,
+        false,
         this.pagina(),
         this.porPagina,
       );

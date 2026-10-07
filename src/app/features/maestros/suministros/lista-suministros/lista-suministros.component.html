@@ -37,15 +37,6 @@
     </select>
   </app-filtros-bar>
 
-  <div class="pre-nota">
-    <label class="check-pre">
-      <input type="checkbox" [(ngModel)]="soloEnPropuestas" (change)="cargar(true)" />
-      <span class="check-pre__box"></span>
-      <span class="check-pre__texto">Solo habilitados para propuestas comerciales (UNSPSC activo)</span>
-    </label>
-    <span class="pre-nota__contador">{{ total() }} suministros registrados</span>
-  </div>
-
   @if (error()) {
     <app-estado-vacio variante="error" [mensaje]="error()" />
   }
@@ -69,8 +60,8 @@
             <th class="th-desc">DESCRIPCIÓN</th>
             <th class="th-marca">MARCA Y MODELO</th>
             <th class="th-proc">PROCEDENCIA</th>
-            <th class="th-centro">EN PROPUESTAS</th>
-            <th class="th-centro">ESTADO</th>
+            <th class="th-propuestas">EN PROPUESTAS</th>
+            <th class="th-estado">ESTADO</th>
             <th class="tabla__th--acciones th-acciones">ACCIONES</th>
           </tr>
         </thead>
@@ -96,12 +87,12 @@
               <td class="td-proc">
                 <span class="badge-proc">{{ s.procedenciaLabel }}</span>
               </td>
-              <td class="td-centro">
+              <td class="td-propuestas">
                 <span class="badge-mini" [class.badge-mini--si]="s.usarEnPropuestas">
                   {{ s.usarEnPropuestas ? 'S' : 'N' }}
                 </span>
               </td>
-              <td class="td-centro">
+              <td class="td-estado">
                 <app-badge-estado [estado]="s.estado" />
               </td>
               <td class="tabla__td--acciones">
