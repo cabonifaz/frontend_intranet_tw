@@ -113,6 +113,19 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     return todos.filter(t => t.parentCode === clase);
   });
 
+  // ─── Searchable dropdown de Tipo (filtra tiposFiltrados por lo que escribe) ──
+  readonly tipoQuery           = signal('');
+  readonly tipoDropdownAbierto = signal(false);
+
+  readonly tiposFiltradosPorQuery = computed(() => {
+    const q = this.tipoQuery().trim().toLowerCase();
+    const base = this.tiposFiltrados();
+    if (!q) return base;
+    return base.filter(t => t.label.toLowerCase().includes(q));
+  });
+
+  readonly tipoLabelsExistentes = computed(() => this.tiposFiltrados().map(t => t.label));
+
   idSuministro = 0;
 
   formulario: FormGroup = this.fb.group({
@@ -329,6 +342,43 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
   }
 
   cerrarModalCatalogo(): void { this.modalCatalogo.set(null); }
+
+  campoVerificable(campo: 'tipo' | 'marca' | 'modelo'): 'tipo_suministro' | 'marca' | 'modelo' {
+    return campo === 'tipo' ? 'tipo_suministro' : campo;
+  }
+
+  // ─── Searchable dropdown de Tipo ──────────────────────────────────────────
+  tipoSeleccionadoLabel(): string {
+    const code = this.formulario.get('tipo')?.value;
+    if (!code) return '';
+    return this.tiposFiltrados().find(t => t.value === code)?.label ?? '';
+  }
+
+  onTipoQueryInput(ev: Event): void {
+    const value = (ev.target as HTMLInputElement).value;
+    this.tipoQuery.set(value);
+    this.tipoDropdownAbierto.set(true);
+    // Mientras tipea, invalidar la selección actual hasta que elija.
+    if (this.formulario.get('tipo')?.value) {
+      this.formulario.patchValue({ tipo: '' });
+    }
+  }
+
+  seleccionarTipo(opt: OpcionCatalogo): void {
+    this.formulario.patchValue({ tipo: opt.value });
+    this.tipoQuery.set('');
+    this.tipoDropdownAbierto.set(false);
+  }
+
+  limpiarTipo(): void {
+    this.formulario.patchValue({ tipo: '' });
+    this.tipoQuery.set('');
+  }
+
+  cerrarTipoDropdown(): void {
+    // Delay para permitir el click en la opción antes del blur
+    setTimeout(() => this.tipoDropdownAbierto.set(false), 150);
+  }
 
   async crearItemCatalogo(label: string): Promise<void> {
     const m = this.modalCatalogo();

@@ -19,14 +19,17 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid">
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-form">
+
+      <div class="ficha-grid">
 
       <!-- ═════════════════════════════ COLUMNA MAIN ═════════════════════════════ -->
       <div class="ficha-main">
 
         <!-- ── SECCIÓN 01 — Identificación ─────────────────────────────────── -->
         <app-seccion icono="fingerprint" titulo="1. Identificación y Clasificación Primaria"
-                     subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios">
+                     subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios"
+                     [overflowVisible]="true">
 
           <!-- Fila 1: ID · Clase · Estado -->
           <div class="grid-cols-3">
@@ -62,12 +65,42 @@
               [error]="formulario.get('tipo')?.touched && formulario.get('tipo')?.invalid ? 'Selecciona un tipo' : ''"
             >
               <div class="input-con-boton">
-                <select formControlName="tipo" [disabled]="!claseActual()">
-                  <option value="">Selecciona…</option>
-                  @for (opt of tiposFiltrados(); track opt.value) {
-                    <option [value]="opt.value">{{ opt.label }}</option>
+                <div class="busqueda-tipo">
+                  @if (tipoSeleccionadoLabel()) {
+                    <div class="busqueda-tipo__chip">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>{{ tipoSeleccionadoLabel() }}</span>
+                      <button type="button" class="busqueda-tipo__quitar" (click)="limpiarTipo()" title="Quitar selección">
+                        <span class="material-symbols-outlined">close</span>
+                      </button>
+                    </div>
+                  } @else {
+                    <input
+                      type="text"
+                      [value]="tipoQuery()"
+                      (input)="onTipoQueryInput($event)"
+                      (focus)="tipoDropdownAbierto.set(true)"
+                      (blur)="cerrarTipoDropdown()"
+                      [placeholder]="claseActual() ? 'Buscar tipo…' : 'Elige una Clase Principal primero'"
+                      [disabled]="!claseActual()"
+                    />
+                    @if (tipoDropdownAbierto() && claseActual()) {
+                      <div class="busqueda-tipo__dropdown">
+                        @if (tiposFiltradosPorQuery().length === 0) {
+                          <div class="busqueda-tipo__vacio">
+                            Sin coincidencias para "{{ tipoQuery() }}".
+                          </div>
+                        } @else {
+                          @for (opt of tiposFiltradosPorQuery(); track opt.value) {
+                            <button type="button" class="busqueda-tipo__opcion" (click)="seleccionarTipo(opt)">
+                              {{ opt.label }}
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
                   }
-                </select>
+                </div>
                 <button class="btn-inline" type="button" (click)="abrirModalTipo()" [disabled]="!claseActual()">
                   <span class="material-symbols-outlined">add</span>
                   Nuevo Tipo
@@ -319,6 +352,8 @@
 
       </aside>
 
+      </div>
+
       <!-- ═════════════════════════════ FOOTER ═════════════════════════════ -->
       <div class="ficha-footer">
         <app-form-footer cancelarTexto="Volver al Listado" (cancelar)="cancelar()">
@@ -346,6 +381,7 @@
     [etiquetaCampo]="m.etiqueta"
     [placeholder]="m.placeholder"
     [guardando]="guardandoCatalogo()"
+    [campoVerificable]="campoVerificable(m.campoFormulario)"
     (guardar)="crearItemCatalogo($event)"
     (cancelar)="cerrarModalCatalogo()"
   />
