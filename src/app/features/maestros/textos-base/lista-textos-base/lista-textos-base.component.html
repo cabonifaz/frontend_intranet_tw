@@ -7,7 +7,7 @@
     titulo="Mantenimiento de Textos Base"
     subtitulo="Gestión y estandarización de cláusulas, condiciones comerciales, saludos y recomendaciones del dossier técnico"
   >
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+    <button *appPermiso="'texto_base_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
       <span class="material-symbols-outlined">add</span>
       Nuevo Texto Base
     </button>
@@ -95,7 +95,7 @@
               </td>
               <td class="tabla__td--acciones">
                 <button
-                  class="btn-accion btn-accion--editar"
+                  *appPermiso="'texto_base_guardar'" class="btn-accion btn-accion--editar"
                   type="button"
                   title="Editar texto base"
                   (click)="irAEditar(t.idTextoBase); $event.stopPropagation()"
@@ -103,7 +103,7 @@
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button
-                  class="btn-accion"
+                  *appPermiso="'texto_base_cambiar_estado'" class="btn-accion"
                   [class.btn-accion--activar]="t.estado === 'Inactivo'"
                   [class.btn-accion--desactivar]="t.estado === 'Activo'"
                   type="button"

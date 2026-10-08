@@ -7,7 +7,7 @@
     titulo="Mantenimiento de Suministros"
     subtitulo="Gestión centralizada del catálogo de suministros, insumos, repuestos y bienes"
   >
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+    <button *appPermiso="'suministro_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
       <span class="material-symbols-outlined">add</span>
       Nuevo Suministro
     </button>
@@ -97,7 +97,7 @@
               </td>
               <td class="tabla__td--acciones">
                 <button
-                  class="btn-accion btn-accion--editar"
+                  *appPermiso="'suministro_guardar'" class="btn-accion btn-accion--editar"
                   type="button"
                   title="Editar suministro"
                   (click)="irAEditar(s.idSuministro); $event.stopPropagation()"
@@ -105,7 +105,7 @@
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button
-                  class="btn-accion"
+                  *appPermiso="'suministro_cambiar_estado'" class="btn-accion"
                   [class.btn-accion--activar]="s.estado === 'Inactivo'"
                   [class.btn-accion--desactivar]="s.estado === 'Activo'"
                   type="button"

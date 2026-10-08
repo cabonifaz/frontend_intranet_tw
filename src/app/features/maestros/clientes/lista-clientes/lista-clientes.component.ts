@@ -11,6 +11,7 @@ import { EstadoVacioComponent }  from '../../../../shared/ui/estado-vacio/estado
 import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
 import { PaginacionComponent }   from '../../../../shared/ui/paginacion/paginacion.component';
 import { BadgeEstadoComponent }  from '../../../../shared/ui/badge-estado/badge-estado.component';
+import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO, ESTADO_OPCIONES } from '../../../../core/constants/estados';
 
 const POR_PAGINA = 20;
@@ -26,6 +27,7 @@ const POR_PAGINA = 20;
     TablaMaestroComponent,
     PaginacionComponent,
     BadgeEstadoComponent,
+    PermisoDirective
   ],
   templateUrl: './lista-clientes.component.html',
   styleUrl: './lista-clientes.component.scss',

@@ -7,7 +7,7 @@
     titulo="Mantenimiento de Procedimientos Metrológicos"
     subtitulo="Catálogo y gestión de documentos técnicos, normas aprobadas y versiones vigentes para calibración y verificación de equipos"
   >
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+    <button *appPermiso="'procedimiento_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
       <span class="material-symbols-outlined">add</span>
       Nuevo Procedimiento
     </button>
@@ -90,7 +90,7 @@
               <td class="td-fecha">{{ p.fechaRegistro ? (p.fechaRegistro | date:'dd/MM/yyyy') : '—' }}</td>
               <td class="tabla__td--acciones">
                 <button
-                  class="btn-accion btn-accion--editar"
+                  *appPermiso="'procedimiento_guardar'" class="btn-accion btn-accion--editar"
                   type="button"
                   title="Editar procedimiento"
                   (click)="irAEditar(p.idProcedimiento); $event.stopPropagation()"
@@ -98,7 +98,7 @@
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button
-                  class="btn-accion"
+                  *appPermiso="'procedimiento_cambiar_estado'" class="btn-accion"
                   [class.btn-accion--activar]="p.estado === 'Inactivo'"
                   [class.btn-accion--desactivar]="p.estado === 'Activo'"
                   type="button"

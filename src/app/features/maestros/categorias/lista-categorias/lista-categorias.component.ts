@@ -11,6 +11,7 @@ import { PageHeaderComponent }   from '../../../../shared/ui/page-header/page-he
 import { EstadoVacioComponent }  from '../../../../shared/ui/estado-vacio/estado-vacio.component';
 import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
 import { BadgeEstadoComponent }  from '../../../../shared/ui/badge-estado/badge-estado.component';
+import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO } from '../../../../core/constants/estados';
 
 @Component({
@@ -22,6 +23,7 @@ import { ESTADO } from '../../../../core/constants/estados';
     EstadoVacioComponent,
     TablaMaestroComponent,
     BadgeEstadoComponent,
+    PermisoDirective
   ],
   templateUrl: './lista-categorias.component.html',
   styleUrl: './lista-categorias.component.scss',

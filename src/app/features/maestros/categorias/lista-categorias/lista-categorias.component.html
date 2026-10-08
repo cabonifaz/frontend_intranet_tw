@@ -7,7 +7,7 @@
     titulo="Categorías de Cliente"
     subtitulo="Clasificación comercial de clientes: nivel de prioridad, reglas de rentabilidad y convenios VIP."
   >
-    <button class="btn-nuevo" type="button" (click)="abrirModal()">
+    <button *appPermiso="'categoria_guardar'" class="btn-nuevo" type="button" (click)="abrirModal()">
       <span class="material-symbols-outlined">add</span>
       Nueva Categoría
     </button>

@@ -7,7 +7,7 @@
     titulo="Mantenimiento de Clientes"
     subtitulo="Gestión del directorio de clientes corporativos"
   >
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+    <button *appPermiso="'cliente_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
       <span class="material-symbols-outlined">add</span>
       Nuevo Cliente
     </button>
@@ -84,7 +84,7 @@
               </td>
               <td class="tabla__td--acciones">
                 <button
-                  class="btn-accion btn-accion--editar"
+                  *appPermiso="'cliente_guardar'" class="btn-accion btn-accion--editar"
                   type="button"
                   title="Editar ficha"
                   (click)="irAFicha(c.idCliente); $event.stopPropagation()"
@@ -92,7 +92,7 @@
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button
-                  class="btn-accion"
+                  *appPermiso="'cliente_cambiar_estado'" class="btn-accion"
                   [class.btn-accion--activar]="c.estado === 'Inactivo'"
                   [class.btn-accion--desactivar]="c.estado === 'Activo'"
                   type="button"

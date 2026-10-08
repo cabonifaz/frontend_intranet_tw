@@ -10,6 +10,7 @@ import {
   RespuestaApi,
   UsuarioSesion,
 } from '../models/autenticacion.model';
+import { PermisosService } from './permisos.service';
 
 const TOKEN_KEY   = 'tw_token';
 const USUARIO_KEY = 'tw_usuario';
@@ -25,8 +26,9 @@ const MOCK_CREDENCIALES = [
 
 @Injectable({ providedIn: 'root' })
 export class AutenticacionService {
-  private readonly http   = inject(HttpClient);
-  private readonly router = inject(Router);
+  private readonly http       = inject(HttpClient);
+  private readonly router     = inject(Router);
+  private readonly permisosSvc = inject(PermisosService);
 
   private readonly _usuarioActual = signal<UsuarioSesion | null>(
     this.cargarUsuarioGuardado()
@@ -72,6 +74,7 @@ export class AutenticacionService {
     storage.setItem(USUARIO_KEY,  JSON.stringify(sesion));
 
     this._usuarioActual.set(sesion);
+    await this.permisosSvc.cargar();
   }
 
   /**
@@ -107,6 +110,7 @@ export class AutenticacionService {
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USUARIO_KEY);
     this._usuarioActual.set(null);
+    this.permisosSvc.limpiar();
     this.router.navigate(['/login']);
   }
 
