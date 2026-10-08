@@ -16,7 +16,9 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-form">
+
+      <div class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
 
       <div class="ficha-main">
 
@@ -80,15 +82,57 @@
                       placeholder="Detalle completo del procedimiento, aplicaciones y contexto técnico…"></textarea>
           </app-campo>
 
-          <app-campo label="Adjuntar Documento PDF Aprobado"
-                     hint="Placeholder — upload real habilitado cuando el back tenga endpoint de storage">
-            <div class="dropzone" (click)="onAdjuntarPdf()">
-              <span class="material-symbols-outlined dropzone__icono">upload_file</span>
-              <div>
-                <div class="dropzone__titulo">Haz clic para seleccionar o arrastra tu archivo PDF</div>
-                <div class="dropzone__hint">Formatos: .pdf · Máx. 10 MB</div>
+          <app-campo label="Documento PDF Aprobado">
+            @if (esNuevo()) {
+              <div class="dropzone dropzone--disabled">
+                <span class="material-symbols-outlined dropzone__icono">upload_file</span>
+                <div>
+                  <div class="dropzone__titulo">Guarda el procedimiento primero</div>
+                  <div class="dropzone__hint">Podrás cargar el PDF una vez creado el registro.</div>
+                </div>
               </div>
-            </div>
+            } @else if (tienePdf()) {
+              <div class="pdf-cargado">
+                <div class="pdf-cargado__info">
+                  <span class="material-symbols-outlined pdf-cargado__icono">picture_as_pdf</span>
+                  <div class="pdf-cargado__texto">
+                    <div class="pdf-cargado__nombre">{{ pdfNombreArchivo() }}</div>
+                    <div class="pdf-cargado__meta">
+                      {{ formatearTamanoPdf(pdfTamanoBytes()) }}
+                      @if (pdfSubidoPor()) { · Subido por {{ pdfSubidoPor() }} }
+                      @if (pdfSubidoEn()) { · {{ pdfSubidoEn() | date:'dd/MM/yyyy HH:mm' }} }
+                    </div>
+                  </div>
+                </div>
+                <div class="pdf-cargado__acciones">
+                  <app-button variant="ghost" icono="visibility" tamano="sm" [cargando]="cargandoPreview()" (clic)="verPdf()">Ver</app-button>
+                  @if (puedeSubirPdf()) {
+                    <app-button variant="secondary" icono="sync" tamano="sm" [cargando]="subiendoPdf()" (clic)="seleccionarPdf()">
+                      Reemplazar
+                    </app-button>
+                  }
+                </div>
+              </div>
+            } @else if (puedeSubirPdf()) {
+              <div class="dropzone" (click)="seleccionarPdf()">
+                <span class="material-symbols-outlined dropzone__icono">upload_file</span>
+                <div>
+                  <div class="dropzone__titulo">
+                    {{ subiendoPdf() ? 'Subiendo...' : 'Haz clic para seleccionar tu archivo PDF' }}
+                  </div>
+                  <div class="dropzone__hint">Formatos: .pdf · Máx. 10 MB</div>
+                </div>
+              </div>
+            } @else {
+              <div class="dropzone dropzone--disabled">
+                <span class="material-symbols-outlined dropzone__icono">lock</span>
+                <div>
+                  <div class="dropzone__titulo">Sin permiso para cargar el PDF</div>
+                  <div class="dropzone__hint">{{ motivoSinPermiso() || 'Solo el área Calidad o administradores pueden cargar el PDF aprobado.' }}</div>
+                </div>
+              </div>
+            }
+            <input #inputPdf type="file" accept="application/pdf" hidden (change)="onArchivoSeleccionado($event)" />
           </app-campo>
 
         </app-seccion>
@@ -124,6 +168,8 @@
         </aside>
       }
 
+      </div>
+
       <!-- ═════════════════════════════ FOOTER ═════════════════════════════ -->
       <div class="ficha-footer">
         <app-form-footer cancelarTexto="Volver a Procedimientos" (cancelar)="cancelar()">
@@ -150,4 +196,12 @@
     (restaurar)="restaurarBorrador()"
     (descartar)="descartarBorrador()"
   />
+}
+
+@if (pdfPreviewUrl(); as url) {
+  <app-modal [titulo]="pdfNombreArchivo() || 'Vista previa PDF'" ancho="xl" (cerrar)="cerrarPreviewPdf()">
+    <div class="pdf-preview">
+      <iframe [src]="url" class="pdf-preview__iframe" title="Vista previa del PDF"></iframe>
+    </div>
+  </app-modal>
 }

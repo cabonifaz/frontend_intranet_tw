@@ -1,6 +1,7 @@
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
@@ -17,6 +18,7 @@ import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../shared/ui/toggle/toggle.component';
+import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
@@ -34,6 +36,7 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     ButtonComponent,
     CampoComponent,
     ToggleComponent,
+    ModalComponent,
     ModalBorradorComponent,
   ],
   templateUrl: './ficha-procedimiento.component.html',
@@ -47,6 +50,9 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
   private readonly destroyRef  = inject(DestroyRef);
+  private readonly sanitizer   = inject(DomSanitizer);
+
+  private pdfBlobUrl: string | null = null;
 
   // Borrador local
   readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
@@ -65,6 +71,19 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
   readonly pcRegistro        = signal('');
   readonly fechaRegistro     = signal('');
   readonly fechaModificacion = signal('');
+
+  // PDF aprobado (migración 42)
+  @ViewChild('inputPdf') inputPdfRef?: ElementRef<HTMLInputElement>;
+  readonly tienePdf          = signal(false);
+  readonly pdfNombreArchivo  = signal('');
+  readonly pdfTamanoBytes    = signal<number>(0);
+  readonly pdfSubidoEn       = signal<string | null>(null);
+  readonly pdfSubidoPor      = signal<string | null>(null);
+  readonly puedeSubirPdf     = signal(false);
+  readonly motivoSinPermiso  = signal<string | null>(null);
+  readonly subiendoPdf       = signal(false);
+  readonly pdfPreviewUrl     = signal<SafeResourceUrl | null>(null);
+  readonly cargandoPreview   = signal(false);
 
   idProcedimiento = 0;
 
@@ -117,6 +136,20 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
         this.pcRegistro.set(p.pcRegistro);
         this.fechaRegistro.set(p.fechaRegistro);
         this.fechaModificacion.set(p.fechaModificacion);
+        this.tienePdf.set(p.tienePdf ?? false);
+        this.pdfNombreArchivo.set(p.pdfNombreArchivo ?? '');
+        this.pdfTamanoBytes.set(p.pdfTamanoBytes ?? 0);
+        this.pdfSubidoEn.set(p.pdfSubidoEn ?? null);
+        this.pdfSubidoPor.set(p.pdfSubidoPor ?? null);
+      }
+
+      // Permiso para subir PDF (incluso editando)
+      if (!nuevo) {
+        try {
+          const perm = await this.procSvc.obtenerPermisoPdf(this.idProcedimiento);
+          this.puedeSubirPdf.set(perm.puedeSubirPdf);
+          this.motivoSinPermiso.set(perm.motivo ?? null);
+        } catch { this.puedeSubirPdf.set(false); }
       }
 
       // Detectar borrador local y activar autoguardado
@@ -133,7 +166,79 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
   }
 
   // PDF placeholder — upload real pendiente (ver memoria: project_hu86_upload_pendiente)
-  onAdjuntarPdf(): void { this.toastSvc.exito('Adjuntar PDF disponible cuando el back tenga endpoint de storage.'); }
+  seleccionarPdf(): void {
+    if (!this.puedeSubirPdf() || this.subiendoPdf() || this.esNuevo()) return;
+    this.inputPdfRef?.nativeElement.click();
+  }
+
+  async onArchivoSeleccionado(evento: Event): Promise<void> {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';   // permite re-seleccionar el mismo archivo
+    if (!archivo) return;
+
+    if (archivo.type !== 'application/pdf') {
+      this.toastSvc.error('Solo se permiten archivos PDF.');
+      return;
+    }
+    if (archivo.size > 10 * 1024 * 1024) {
+      this.toastSvc.error('El archivo supera los 10 MB.');
+      return;
+    }
+
+    this.subiendoPdf.set(true);
+    try {
+      const info = await this.procSvc.subirPdf(this.idProcedimiento, archivo);
+      this.tienePdf.set(true);
+      this.pdfNombreArchivo.set(info.nombreArchivo);
+      this.pdfTamanoBytes.set(info.tamanoBytes);
+      this.pdfSubidoEn.set(info.subidoEn ?? null);
+      this.pdfSubidoPor.set(info.subidoPor ?? null);
+      this.toastSvc.exito('PDF cargado correctamente.');
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'Error al subir el PDF.');
+    } finally {
+      this.subiendoPdf.set(false);
+    }
+  }
+
+  async verPdf(): Promise<void> {
+    if (this.cargandoPreview()) return;
+    this.cargandoPreview.set(true);
+    try {
+      const blob = await this.procSvc.descargarPdf(this.idProcedimiento);
+      this.liberarPdfBlob();
+      this.pdfBlobUrl = URL.createObjectURL(blob);
+      // #view=FitH ajusta la página al ancho del iframe para evitar los bordes
+      // negros laterales del visor nativo del navegador.
+      this.pdfPreviewUrl.set(
+        this.sanitizer.bypassSecurityTrustResourceUrl(`${this.pdfBlobUrl}#view=FitH`)
+      );
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo abrir el PDF.');
+    } finally {
+      this.cargandoPreview.set(false);
+    }
+  }
+
+  cerrarPreviewPdf(): void {
+    this.pdfPreviewUrl.set(null);
+    this.liberarPdfBlob();
+  }
+
+  private liberarPdfBlob(): void {
+    if (this.pdfBlobUrl) {
+      URL.revokeObjectURL(this.pdfBlobUrl);
+      this.pdfBlobUrl = null;
+    }
+  }
+
+  formatearTamanoPdf(bytes: number): string {
+    if (!bytes) return '—';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   limpiarFormulario(): void {
     this.formulario.reset({
@@ -161,6 +266,7 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
       this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
     }
+    this.liberarPdfBlob();
   }
 
   restaurarBorrador(): void {

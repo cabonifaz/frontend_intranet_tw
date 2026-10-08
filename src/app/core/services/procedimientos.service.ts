@@ -6,6 +6,8 @@ import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoProcedimientoRequest,
   GuardarProcedimientoRequest,
+  PdfProcedimientoInfo,
+  PermisoPdfProcedimiento,
   ProcedimientoDetalle,
   ProcedimientosPaginado,
   OpcionCatalogo,
@@ -72,6 +74,39 @@ export class ProcedimientosService {
       )
     );
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+  }
+
+  // ─── PDF aprobado (migración 42) ──────────────────────────────────────────
+  async obtenerPermisoPdf(idProcedimiento?: number): Promise<PermisoPdfProcedimiento> {
+    const params: Record<string, string> = {};
+    if (idProcedimiento) params['idProcedimiento'] = idProcedimiento.toString();
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PermisoPdfProcedimiento>>(`${this.base}/procedimientos/pdf/permiso`, { params })
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  async subirPdf(idProcedimiento: number, archivo: File): Promise<PdfProcedimientoInfo> {
+    const formData = new FormData();
+    formData.append('archivo', archivo, archivo.name);
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<PdfProcedimientoInfo>>(
+        `${this.base}/procedimientos/${idProcedimiento}/pdf`, formData
+      )
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
+  urlPdfVisualizacion(idProcedimiento: number): string {
+    return `${this.base}/procedimientos/${idProcedimiento}/pdf`;
+  }
+
+  async descargarPdf(idProcedimiento: number): Promise<Blob> {
+    return await firstValueFrom(
+      this.http.get(this.urlPdfVisualizacion(idProcedimiento), { responseType: 'blob' })
+    );
   }
 
   // Usado por HU-86 (dropdown en ficha Suministro clase Servicio).
