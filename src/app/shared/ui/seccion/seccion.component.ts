@@ -9,10 +9,12 @@ type BadgeVariant = 'rojo' | 'azul' | 'dark' | 'verde' | 'ambar';
   styleUrl: './seccion.component.scss',
 })
 export class SeccionComponent {
-  readonly numero       = input<string>('');
-  readonly icono        = input<string>('');
-  readonly titulo       = input.required<string>();
-  readonly subtitulo    = input<string>('');
-  readonly badgeTexto   = input<string>('');
-  readonly badgeVariant = input<BadgeVariant>('azul');
+  readonly numero          = input<string>('');
+  readonly icono           = input<string>('');
+  readonly titulo          = input.required<string>();
+  readonly subtitulo       = input<string>('');
+  readonly badgeTexto      = input<string>('');
+  readonly badgeVariant    = input<BadgeVariant>('azul');
+  /** Permite que el contenido salga del card (ej. dropdowns absolutos). */
+  readonly overflowVisible = input<boolean>(false);
 }

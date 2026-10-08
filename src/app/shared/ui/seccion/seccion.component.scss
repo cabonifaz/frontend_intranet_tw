@@ -4,6 +4,10 @@
   border-radius: 14px;
   overflow: hidden;
 
+  // Opt-in: cuando el contenido necesita salirse del card (ej. dropdowns),
+  // el padre agrega la clase .seccion--overflow-visible al elemento host.
+  &--overflow-visible { overflow: visible; }
+
   &__header {
     display: flex;
     align-items: center;
