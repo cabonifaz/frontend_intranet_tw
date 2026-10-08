@@ -5,12 +5,43 @@
         type="text"
         [placeholder]="placeholder()"
         [ngModel]="nombre()"
-        (ngModelChange)="nombre.set($event)"
+        (ngModelChange)="onCambioNombre($event)"
         (keydown.enter)="onGuardar()"
         autofocus
       />
     </app-campo>
-    <p class="mnic-hint">Se agregará al catálogo y quedará disponible en toda la plataforma.</p>
+
+    @if (verificando()) {
+      <div class="mnic-alerta mnic-alerta--info">
+        <span class="material-symbols-outlined">hourglass_top</span>
+        <span>Verificando duplicados...</span>
+      </div>
+    } @else if (existeExacto()) {
+      <div class="mnic-alerta mnic-alerta--error">
+        <span class="material-symbols-outlined">block</span>
+        <span>Ya existe un item con ese nombre: <strong>{{ valorExactoLabel() }}</strong></span>
+      </div>
+    } @else if (similares().length) {
+      <div class="mnic-alerta mnic-alerta--warn">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <div>Posible duplicado. Ya existen items similares:</div>
+          <ul>
+            @for (s of similares(); track s.valor) {
+              <li>
+                <strong>{{ s.valor }}</strong>
+                @if (s.usos > 0) {
+                  <span class="mnic-alerta__usos">· {{ s.usos }} {{ s.usos === 1 ? 'uso' : 'usos' }}</span>
+                }
+              </li>
+            }
+          </ul>
+          <div class="mnic-alerta__hint">Si es el mismo, cancela y selecciónalo de la lista.</div>
+        </div>
+      </div>
+    } @else {
+      <p class="mnic-hint">Se agregará al catálogo y quedará disponible en toda la plataforma.</p>
+    }
   </div>
   <div modalFooter class="mnic-footer">
     <app-button variant="ghost" (clic)="onCancelar()">Cancelar</app-button>
