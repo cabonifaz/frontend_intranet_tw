@@ -172,6 +172,7 @@ export class UsuariosService {
         rolSistema:                   dto.rolSistema,
         rolSistemaLabel:              label,
         telefono:                     dto.telefono,
+        anexo:                        null,
         estado:                       dto.guardarComoBorrador ? 'Borrador' : 'Activo',
         ultimoAcceso:                 null,
         fechaCreacion:                new Date().toISOString(),

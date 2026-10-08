@@ -13,6 +13,7 @@ import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-
 import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
 import { PaginacionComponent }  from '../../../../shared/ui/paginacion/paginacion.component';
 import { BadgeEstadoComponent } from '../../../../shared/ui/badge-estado/badge-estado.component';
+import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO, ESTADO_OPCIONES } from '../../../../core/constants/estados';
 
 const POR_PAGINA = 20;
@@ -35,6 +36,7 @@ type TabActivo = 'usuarios' | 'suplentes';
     TablaMaestroComponent,
     PaginacionComponent,
     BadgeEstadoComponent,
+    PermisoDirective,
   ],
   templateUrl: './lista-usuarios.component.html',
   styleUrl: './lista-usuarios.component.scss',
@@ -168,6 +170,15 @@ export class ListaUsuariosComponent implements OnInit {
 
   iniciales(nombre: string, apellido: string): string {
     return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
+  }
+
+  formatearAnexo(anexo?: string | null, troncal?: string | null): string {
+    if (!anexo) return '—';
+    if (troncal && anexo.startsWith(troncal)) {
+      const interno = anexo.substring(troncal.length);
+      return interno ? `${troncal} - ${interno}` : troncal;
+    }
+    return anexo;
   }
 
   formatearFecha(fecha: string | null): string {

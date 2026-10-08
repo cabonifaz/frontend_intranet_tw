@@ -6,6 +6,8 @@ export interface UsuarioListaItem {
   rolSistema: string;
   rolSistemaLabel: string;
   telefono: string | null;
+  anexo?: string | null;
+  troncal?: string | null;
   estado: string;
   ultimoAcceso: string | null;
   fechaCreacion: string;
@@ -16,7 +18,6 @@ export interface UsuarioDetalle extends UsuarioListaItem {
   tipoDocumento:   string;
   numeroDocumento: string;
   fechaNacimiento?: string | null;   // ISO yyyy-mm-dd (opcional)
-  anexo?:          string | null;    // Anexo completo (troncal + interno 3 dígitos)
   cargo:           string | null;
   area:            string | null;
 
