@@ -36,6 +36,14 @@
 }
 
 // ── Grid ficha (main + sidebar) ─────────────────────────────────────
+// Wrapper del form: apila el grid (main+sidebar) y el footer verticalmente.
+// Dejar el footer FUERA del grid permite que el sidebar sticky no lo tape.
+.ficha-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .ficha-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -60,11 +68,11 @@
   gap: 12px;
   position: sticky;
   top: 24px;
+  align-self: start;
 }
 
 .ficha-footer {
-  grid-column: 1 / -1;
-  margin-top: 4px;
+  // Ya no es hijo del grid: queda al nivel del form, debajo del grid.
 }
 
 // ── Grid columnas dentro de secciones ───────────────────────────────

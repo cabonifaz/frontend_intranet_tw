@@ -7,7 +7,7 @@
     titulo="Mantenimiento de Equipos de Cliente"
     subtitulo="Gestión centralizada del parque de instrumentos y balanzas por cliente y sede operativa"
   >
-    <button class="btn-nuevo" type="button" (click)="irANuevo()">
+    <button *appPermiso="'equipo_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
       <span class="material-symbols-outlined">add</span>
       Nuevo Equipo
     </button>
@@ -95,7 +95,7 @@
               </td>
               <td class="tabla__td--acciones">
                 <button
-                  class="btn-accion btn-accion--editar"
+                  *appPermiso="'equipo_guardar'" class="btn-accion btn-accion--editar"
                   type="button"
                   title="Editar equipo"
                   (click)="irAEditar(eq.idEquipo); $event.stopPropagation()"
@@ -103,7 +103,7 @@
                   <span class="material-symbols-outlined">edit</span>
                 </button>
                 <button
-                  class="btn-accion"
+                  *appPermiso="'equipo_cambiar_estado'" class="btn-accion"
                   [class.btn-accion--activar]="eq.estado === 'Inactivo'"
                   [class.btn-accion--desactivar]="eq.estado !== 'Inactivo'"
                   type="button"

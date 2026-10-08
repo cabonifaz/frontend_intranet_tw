@@ -19,7 +19,9 @@
     <app-estado-vacio variante="error" [mensaje]="error()" />
   } @else {
 
-    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
+    <form [formGroup]="formulario" (ngSubmit)="guardar()" class="ficha-form">
+
+      <div class="ficha-grid" [class.ficha-grid--full]="esNuevo()">
 
       <div class="ficha-main">
 
@@ -89,7 +91,11 @@
               <input type="checkbox" formControlName="bloqueadoParaServicios" />
               <span class="check-op__box"></span>
               <span class="check-op__texto">Bloqueado para Servicios</span>
-              <span class="check-op__meta">(Equipo fuera de uso o en baja mantenimiento)</span>
+              @if (usuarioBloqueo()) {
+                <span class="check-op__meta">(Bloqueado por {{ usuarioBloqueo() }} el {{ fechaBloqueo() | date:'dd/MM/yyyy' }})</span>
+              } @else {
+                <span class="check-op__meta">(Datos validados por Metrología para el certificado)</span>
+              }
             </label>
           </div>
         </app-seccion>
@@ -355,6 +361,8 @@
 
         </aside>
       }
+
+      </div>
 
       <!-- ═══════════════════════════════ FOOTER ═══════════════════════════════ -->
       <div class="ficha-footer">

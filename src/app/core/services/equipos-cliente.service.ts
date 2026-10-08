@@ -133,7 +133,7 @@ export class EquiposClienteService {
       puntosCalibracion: '15%, 25%, 50%, 75%, 100%',
       rangoOperativoReal: '50 kg hasta 1200 kg (Balanzas de carne)',
       observaciones: 'Equipo instalado en zona de alta humedad. Presenta exposición constante a lavados con solución desinfectante neutra.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -164,7 +164,7 @@ export class EquiposClienteService {
       puntosCalibracion: '20%, 50%, 80%, 100%',
       rangoOperativoReal: '500 kg hasta 60000 kg',
       observaciones: 'Expuesta a intemperie. Última lectura de celdas con desviación 0.03%.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -194,7 +194,7 @@ export class EquiposClienteService {
       puntosCalibracion: '10%, 30%, 60%, 90%, 100%',
       rangoOperativoReal: '0.1 g hasta 3000 g',
       observaciones: 'Equipo sensible. Calibración interna automática activada diariamente a las 7:00 AM.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -224,7 +224,7 @@ export class EquiposClienteService {
       puntosCalibracion: '10%, 25%, 50%, 75%, 100%',
       rangoOperativoReal: '0.5 kg hasta 20 kg',
       observaciones: 'Uso intensivo en pesaje de insumos panadería.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -252,7 +252,7 @@ export class EquiposClienteService {
       puntosCalibracion: '25%, 50%, 75%, 100%',
       rangoOperativoReal: '1000 kg hasta 70000 kg',
       observaciones: '',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -282,7 +282,7 @@ export class EquiposClienteService {
       puntosCalibracion: '20%, 40%, 60%, 80%, 100%',
       rangoOperativoReal: '500 kg hasta 25000 kg',
       observaciones: '',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -310,7 +310,7 @@ export class EquiposClienteService {
       puntosCalibracion: '20%, 50%, 100%',
       rangoOperativoReal: '20 kg hasta 2800 kg',
       observaciones: 'Calibración vence 2026-11-05. Programar servicio preventivo.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -340,7 +340,7 @@ export class EquiposClienteService {
       puntosCalibracion: '10%, 50%, 100%',
       rangoOperativoReal: '0.1 kg hasta 10 kg',
       observaciones: 'Impresora de etiquetas integrada funcional.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -368,7 +368,7 @@ export class EquiposClienteService {
       puntosCalibracion: '5%, 25%, 50%, 75%, 100%',
       rangoOperativoReal: '0.001 g hasta 200 g',
       observaciones: 'Balanza analítica clase I. Ubicada en mesada antivibratoria.',
-      estadoOperativo: 'operativo_planta',
+      estadoOperativo: 'ejecucion',
       fotos: [
         { tipo: 'vista_general', label: 'Vista General', url: '' },
         { tipo: 'vista_lateral', label: 'Vista Lateral', url: '' },
@@ -443,7 +443,7 @@ export class EquiposClienteService {
     if (estado)        filtered = filtered.filter(e => e.estado === estado);
     if (soloVigentesEnServicio) {
       filtered = filtered.filter(e =>
-        (e.estado === 'Vigente' || e.estado === 'Activo') && e.estadoOperativo === 'operativo_planta'
+        (e.estado === 'Vigente' || e.estado === 'Activo') && e.estadoOperativo !== null
       );
     }
 

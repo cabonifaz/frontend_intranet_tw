@@ -35,6 +35,8 @@ export interface EquipoClienteDetalle extends EquipoClienteListaItem {
   usuarioPreRevisor:        string;
   fechaPreRevision:         string;
   bloqueadoParaServicios:   boolean;
+  usuarioBloqueo?:          string;
+  fechaBloqueo?:            string;
 
   // 02 - Especificaciones Metrológicas y Técnicas
   idSuministro:             number | null;  // vinculación a HU-86
@@ -55,7 +57,7 @@ export interface EquipoClienteDetalle extends EquipoClienteListaItem {
   valorNominal?:            string;
 
   // 03 - Estado Operativo Actual
-  estadoOperativo:          string;         // 'oficina_tw' | 'evaluacion' | 'ejecucion' | 'operativo_planta'
+  estadoOperativo:          string | null;   // 'oficina_tw' | 'evaluacion' | 'ejecucion' | null (sin movimiento)
 
   // Sidebar - Registro Fotográfico (3 slots)
   fotos:                    FotoEquipo[];
@@ -141,11 +143,11 @@ export const CLASES_EXACTITUD: OpcionCatalogo[] = [
   { value: 'IIII', label: 'Clase IIII (Ordinaria)' },
 ];
 
+// Migración 41: operativo_planta eliminado. Ahora solo 3 estados + NULL (sin movimiento).
 export const ESTADOS_OPERATIVOS: OpcionCatalogo[] = [
-  { value: 'oficina_tw',       label: 'En Oficina TW' },
-  { value: 'evaluacion',       label: 'En Evaluación' },
-  { value: 'ejecucion',        label: 'En Ejecución' },
-  { value: 'operativo_planta', label: 'Operativo en Planta' },
+  { value: 'oficina_tw', label: 'En oficina' },
+  { value: 'evaluacion', label: 'En evaluación' },
+  { value: 'ejecucion',  label: 'En ejecución' },
 ];
 
 export const ESTADOS_EQUIPO: OpcionCatalogo[] = [

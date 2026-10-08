@@ -84,6 +84,8 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   readonly fechaModificacion = signal('');
   readonly usuarioPreRevisor = signal('');
   readonly fechaPreRevision  = signal('');
+  readonly usuarioBloqueo    = signal('');
+  readonly fechaBloqueo      = signal('');
   readonly fotos             = signal<FotoEquipo[]>([]);
   readonly hojaVida          = signal<OrdenTrabajoResumen[]>([]);
   readonly proximaCalibracion = signal('');
@@ -292,6 +294,8 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         this.fechaModificacion.set(e.fechaModificacion);
         this.usuarioPreRevisor.set(e.usuarioPreRevisor);
         this.fechaPreRevision.set(e.fechaPreRevision);
+        this.usuarioBloqueo.set(e.usuarioBloqueo ?? '');
+        this.fechaBloqueo.set(e.fechaBloqueo ?? '');
         this.fotos.set(e.fotos);
         this.hojaVida.set(e.hojaVida);
         this.proximaCalibracion.set(e.proximaCalibracion);
