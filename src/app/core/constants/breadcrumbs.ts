@@ -22,3 +22,11 @@ export function breadcrumbDirectorio(...cola: Array<string | BreadcrumbItem>): B
     ...cola.map(x => typeof x === 'string' ? { label: x } : x),
   ];
 }
+
+export function breadcrumbCrm(...cola: Array<string | BreadcrumbItem>): BreadcrumbItem[] {
+  return [
+    INICIO,
+    { label: 'CRM' },
+    ...cola.map(x => typeof x === 'string' ? { label: x } : x),
+  ];
+}

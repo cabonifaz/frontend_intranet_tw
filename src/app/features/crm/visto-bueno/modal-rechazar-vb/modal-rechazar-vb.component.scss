@@ -1,0 +1,127 @@
+.mrv {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #FECACA;
+
+    h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #991B1B;
+    }
+  }
+
+  &__header-icon {
+    font-size: 32px !important;
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #FEE2E2;
+    color: #DC2626;
+    border-radius: 50%;
+  }
+
+  &__chip {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #FEE2E2;
+    color: #B91C1C;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
+
+  &__resumen {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 12px;
+    background: #F8FAFC;
+    border-radius: 8px;
+
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+
+  &__dato {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__dato-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.5px;
+  }
+
+  &__dato-valor {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+  }
+
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      letter-spacing: 0.3px;
+    }
+
+    select, textarea {
+      padding: 10px 12px;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+
+      &:focus { outline: 2px solid #BFDBFE; outline-offset: -1px; border-color: #2563EB; }
+    }
+
+    textarea { resize: vertical; }
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: #94A3B8;
+  }
+
+  &__warning {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    color: #B91C1C;
+    font-size: 12px;
+    line-height: 1.5;
+
+    .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+  }
+
+  &__footer {
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px !important;
+    border-top: 1px solid #E2E8F0;
+    background: #FAFBFC;
+  }
+}

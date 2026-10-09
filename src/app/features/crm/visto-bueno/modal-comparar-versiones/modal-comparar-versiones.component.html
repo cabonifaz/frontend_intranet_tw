@@ -1,0 +1,167 @@
+<app-modal titulo="Comparar Versiones" ancho="xl" (cerrar)="onCerrar()">
+  <div class="mcv">
+
+    @if (cargando()) {
+      <div class="mcv__estado">
+        <span class="material-symbols-outlined mcv__spinner">progress_activity</span>
+        <p>Cargando versiones…</p>
+      </div>
+    } @else if (error()) {
+      <div class="mcv__estado mcv__estado--error">
+        <span class="material-symbols-outlined">error</span>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (data(); as d) {
+
+      <!-- Header: código + referencia -->
+      <div class="mcv__header">
+        <span class="mcv__chip">{{ d.codigoPropuesta }}</span>
+        <span class="mcv__referencia">{{ d.referencia }}</span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="mcv__tabs">
+        <button class="mcv__tab" [class.mcv__tab--activo]="tab() === 'resumen'"     (click)="cambiarTab('resumen')">
+          <span class="material-symbols-outlined">dashboard</span> Resumen
+        </button>
+        <button class="mcv__tab" [class.mcv__tab--activo]="tab() === 'items'"       (click)="cambiarTab('items')">
+          <span class="material-symbols-outlined">inventory_2</span> Ítems
+        </button>
+        <button class="mcv__tab" [class.mcv__tab--activo]="tab() === 'condiciones'" (click)="cambiarTab('condiciones')">
+          <span class="material-symbols-outlined">rule</span> Condiciones
+        </button>
+        <button class="mcv__tab" [class.mcv__tab--activo]="tab() === 'equipos'"     (click)="cambiarTab('equipos')">
+          <span class="material-symbols-outlined">precision_manufacturing</span> Equipos
+        </button>
+        <button class="mcv__tab" [class.mcv__tab--activo]="tab() === 'textos'"      (click)="cambiarTab('textos')">
+          <span class="material-symbols-outlined">description</span> Textos
+        </button>
+      </div>
+
+      <!-- Dropdowns de versión -->
+      <div class="mcv__selectores">
+        <div class="mcv__selector">
+          <label>VERSIÓN BASE</label>
+          <select [(ngModel)]="d.base.idPropuesta" (change)="cambiarVersion()">
+            @for (v of d.versiones; track v.idPropuesta) {
+              <option [ngValue]="v.idPropuesta">v{{ v.version }} ({{ v.estado }})</option>
+            }
+          </select>
+          <span class="mcv__selector-fecha">Fecha Emisión: {{ formatearFecha(d.base.fechaEmision) }}</span>
+        </div>
+        <span class="material-symbols-outlined mcv__flecha">compare_arrows</span>
+        <div class="mcv__selector">
+          <label>VERSIÓN DESTINO</label>
+          <select [(ngModel)]="d.destino.idPropuesta" (change)="cambiarVersion()">
+            @for (v of d.versiones; track v.idPropuesta) {
+              <option [ngValue]="v.idPropuesta">v{{ v.version }} ({{ v.estado }}{{ v.esActual ? ' - actual' : '' }})</option>
+            }
+          </select>
+          <span class="mcv__selector-fecha">Fecha Emisión: {{ formatearFecha(d.destino.fechaEmision) }}</span>
+        </div>
+      </div>
+
+      <!-- KPIs de diferencia -->
+      <div class="mcv__kpis">
+        <div class="mcv__kpi">
+          <span class="mcv__kpi-label">DIFERENCIA TOTAL</span>
+          <span class="mcv__kpi-valor {{ diferenciaClase() }}">
+            {{ diferenciaSigno() }}{{ formatearMonto(d.diferencia.diferenciaTotal, d.destino.monedaSimbolo) }}
+            <small>{{ diferenciaSigno() }}{{ d.diferencia.diferenciaPct }}%</small>
+          </span>
+        </div>
+        <div class="mcv__kpi">
+          <span class="mcv__kpi-label">CAMBIOS EN ÍTEMS</span>
+          <span class="mcv__kpi-valor">
+            {{ d.diferencia.cambiosItems }}
+            <small>🟢 {{ d.diferencia.itemsAgregados }} · 🟡 {{ d.diferencia.itemsModificados }} · 🔴 {{ d.diferencia.itemsEliminados }}</small>
+          </span>
+        </div>
+        <div class="mcv__kpi">
+          <span class="mcv__kpi-label">RIESGO FINANCIERO</span>
+          <span class="mcv__kpi-valor mcv__kpi-riesgo {{ riesgoClase() }}">
+            <span class="material-symbols-outlined">warning</span>
+            {{ d.diferencia.riesgoFinanciero }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Contenido por tab -->
+      <div class="mcv__contenido">
+
+        @if (tab() === 'resumen') {
+          <div class="mcv__cols">
+            <div class="mcv__col">
+              <h4 class="mcv__col-titulo">Información Financiera</h4>
+              <div class="mcv__fila"><span>Sub-total</span><strong>{{ formatearMonto(d.base.subtotal, d.base.monedaSimbolo) }}</strong></div>
+              <div class="mcv__fila"><span>IGV ({{ d.base.igvPct }}%)</span><strong>{{ formatearMonto(d.base.igvMonto, d.base.monedaSimbolo) }}</strong></div>
+              <div class="mcv__fila mcv__fila--total"><span>Monto Total</span><strong>{{ formatearMonto(d.base.total, d.base.monedaSimbolo) }}</strong></div>
+              <h4 class="mcv__col-titulo mcv__col-titulo--sub">Condiciones de Venta</h4>
+              @for (c of d.base.condiciones; track c.tipo) {
+                <div class="mcv__fila"><span>{{ c.tipo }}</span><strong>{{ c.valor }}</strong></div>
+              }
+            </div>
+            <div class="mcv__col">
+              <h4 class="mcv__col-titulo">Información Financiera</h4>
+              <div class="mcv__fila"><span>Sub-total</span><strong>{{ formatearMonto(d.destino.subtotal, d.destino.monedaSimbolo) }}</strong></div>
+              <div class="mcv__fila"><span>IGV ({{ d.destino.igvPct }}%)</span><strong>{{ formatearMonto(d.destino.igvMonto, d.destino.monedaSimbolo) }}</strong></div>
+              <div class="mcv__fila mcv__fila--total mcv__fila--destacado"><span>Monto Total</span>
+                <strong>{{ formatearMonto(d.destino.total, d.destino.monedaSimbolo) }}
+                  <small class="mcv__fila-diff">{{ diferenciaSigno() }}{{ formatearMonto(d.diferencia.diferenciaTotal, d.destino.monedaSimbolo) }}</small>
+                </strong>
+              </div>
+              <h4 class="mcv__col-titulo mcv__col-titulo--sub">Condiciones de Venta</h4>
+              @for (c of d.destino.condiciones; track c.tipo) {
+                <div class="mcv__fila mcv__fila--modificado"><span>{{ c.tipo }}</span><strong>{{ c.valor }}</strong></div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (tab() === 'items') {
+          <div class="mcv__cols">
+            <div class="mcv__col">
+              <h4 class="mcv__col-titulo">Ítems v{{ d.base.version }}</h4>
+              @for (i of d.base.items; track i.descripcion) {
+                <div class="mcv__item">
+                  <span class="mcv__item-desc">{{ i.descripcion }}</span>
+                  <span class="mcv__item-detalle">{{ i.cantidad }} × {{ formatearMonto(i.precioUnitario, d.base.monedaSimbolo) }} = <strong>{{ formatearMonto(i.subtotal, d.base.monedaSimbolo) }}</strong></span>
+                </div>
+              }
+            </div>
+            <div class="mcv__col">
+              <h4 class="mcv__col-titulo">Ítems v{{ d.destino.version }}</h4>
+              @for (i of d.destino.items; track i.descripcion) {
+                <div class="mcv__item mcv__item--modificado">
+                  <span class="mcv__item-desc">{{ i.descripcion }}</span>
+                  <span class="mcv__item-detalle">{{ i.cantidad }} × {{ formatearMonto(i.precioUnitario, d.destino.monedaSimbolo) }} = <strong>{{ formatearMonto(i.subtotal, d.destino.monedaSimbolo) }}</strong></span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (tab() === 'condiciones' || tab() === 'equipos' || tab() === 'textos') {
+          <div class="mcv__estado">
+            <span class="material-symbols-outlined">construction</span>
+            <p>Vista de {{ tab() }} en construcción — se habilitará cuando el back exponga las diferencias calculadas.</p>
+          </div>
+        }
+
+      </div>
+
+    }
+
+  </div>
+
+  <div modalFooter class="mcv__footer">
+    <div class="mcv__leyenda">
+      <span class="mcv__leyenda-item"><span class="mcv__dot mcv__dot--verde"></span> Agregado</span>
+      <span class="mcv__leyenda-item"><span class="mcv__dot mcv__dot--amarillo"></span> Modificado</span>
+      <span class="mcv__leyenda-item"><span class="mcv__dot mcv__dot--rojo"></span> Eliminado</span>
+    </div>
+    <div class="mcv__footer-acciones">
+      <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+    </div>
+  </div>
+</app-modal>

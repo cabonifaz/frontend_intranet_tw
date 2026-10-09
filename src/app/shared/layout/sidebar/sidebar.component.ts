@@ -36,6 +36,7 @@ export class SidebarComponent {
       hijos: [
         { etiqueta: 'Requerimientos', ruta: '/crm/requerimientos' },
         { etiqueta: 'Propuestas',     ruta: '/crm/propuestas' },
+        { etiqueta: 'Visto Bueno',    ruta: '/crm/visto-bueno' },
       ],
     },
     {

@@ -1,0 +1,266 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="pagina__header">
+    <div class="pagina__header-izq">
+      <app-breadcrumb [items]="breadcrumb" />
+      <h1 class="pagina__titulo">CRM / Visto Bueno</h1>
+      <p class="pagina__subtitulo">Revisión, aprobación y control de propuestas comerciales</p>
+    </div>
+    <app-button variant="secondary" icono="download">Exportar</app-button>
+  </div>
+
+  <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <app-kpi-card icono="schedule"       etiqueta="PENDIENTES"       [valor]="kpis().pendientes"     variante="azul"  />
+    <app-kpi-card icono="hourglass_top"  etiqueta="PRÓXIMO A VENCER" [valor]="kpis().proximosVencer" variante="ambar" />
+    <app-kpi-card icono="warning"        etiqueta="VENCIDOS"         [valor]="kpis().vencidos"       variante="rojo"  />
+    <app-kpi-card icono="check_circle"   etiqueta="APROBADAS HOY"    [valor]="kpis().aprobadasHoy"   variante="verde" />
+    <app-kpi-card icono="assignment_return" etiqueta="DEVUELTAS"     [valor]="kpis().devueltas"      variante="azul"  />
+  </div>
+
+  <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
+  <div class="filtros-bar">
+    <div class="filtros-bar__izq">
+      <app-filtros-popover [cantidadActivos]="filtrosActivos()" (limpiar)="limpiarFiltros()" (aplicar)="aplicarFiltros()">
+        <div class="filtros-seccion">Clasificación</div>
+
+        <div class="col-full">
+          <label>COMERCIAL</label>
+          <select [(ngModel)]="idComercialFiltro">
+            <option [ngValue]="'todos'">Todos los comerciales</option>
+            @for (c of comerciales(); track c.idUsuario) {
+              <option [ngValue]="c.idUsuario">{{ c.nombreCompleto }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label>ESTADO</label>
+          <select [(ngModel)]="estadoFiltro">
+            @for (tab of estadosTabs; track tab.codigo) {
+              <option [value]="tab.codigo">{{ tab.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label>MONEDA</label>
+          <select [(ngModel)]="monedaFiltro">
+            <option value="todas">Todas</option>
+            <option value="PEN">Soles (S/)</option>
+            <option value="USD">Dólares (US$)</option>
+          </select>
+        </div>
+
+        <div class="col-full">
+          <label>ÚLTIMOS DÍAS</label>
+          <select [(ngModel)]="diasFiltro">
+            @for (d of diasOpciones; track d) {
+              <option [ngValue]="d">Últimos {{ d }} días</option>
+            }
+          </select>
+        </div>
+      </app-filtros-popover>
+    </div>
+    <div class="filtros-bar__der">
+      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true" ariaLabel="Actualizar" title="Actualizar" (clic)="aplicarFiltros()" />
+    </div>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="tabla-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────────────────── -->
+  <div class="tabla-card">
+    <div class="tabla-card__scroll">
+      <table class="tabla">
+        <thead class="tabla__head">
+          <tr>
+            <th class="tabla__th">PROPUESTA</th>
+            <th class="tabla__th">CLIENTE / RUC</th>
+            <th class="tabla__th tabla__th--derecha">MONTO</th>
+            <th class="tabla__th tabla__th--centro">DCTO.</th>
+            <th class="tabla__th tabla__th--centro">MARGEN</th>
+            <th class="tabla__th">COMERCIAL</th>
+            <th class="tabla__th tabla__th--sla">SLA</th>
+            <th class="tabla__th">ESTADO</th>
+            <th class="tabla__th tabla__th--centro">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr>
+              <td colspan="9" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
+                Cargando visto bueno...
+              </td>
+            </tr>
+          } @else if (items().length === 0) {
+            <tr>
+              <td colspan="9" class="tabla__td tabla__td--vacio">
+                <span class="material-symbols-outlined">inbox</span>
+                No hay propuestas con los filtros aplicados.
+              </td>
+            </tr>
+          } @else {
+            @for (item of items(); track item.idVb) {
+              <tr class="tabla__fila" (click)="verDetalle(item)">
+                <td class="tabla__td">
+                  <div class="tabla__propuesta-cell">
+                    <div class="tabla__propuesta">
+                      <span class="tabla__codigo" [title]="item.referencia">{{ item.codigoPropuesta }}</span>
+                      <span class="tabla__version">v{{ item.version }}</span>
+                    </div>
+                    <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.codigoRq }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__cliente">
+                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td tabla__td--derecha">
+                  <span class="tabla__monto">{{ formatearMonto(item.monto, item.monedaSimbolo) }}</span>
+                </td>
+                <td class="tabla__td tabla__td--centro">
+                  <span class="badge-pct {{ descuentoClase(item.descuentoPct) }}">
+                    {{ item.descuentoPct > 0 ? item.descuentoPct + '%' : '—' }}
+                  </span>
+                </td>
+                <td class="tabla__td tabla__td--centro">
+                  <span class="badge-pct {{ margenClase(item.margenPct) }}">
+                    {{ item.margenPct !== null ? item.margenPct + '%' : '—' }}
+                  </span>
+                </td>
+                <td class="tabla__td">
+                  <div class="tabla__persona">
+                    <span class="tabla__avatar tabla__avatar--comercial">{{ iniciales(item.nombreComercial) }}</span>
+                    <span class="tabla__persona-nombre">{{ item.nombreComercial }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <div class="sla {{ slaClase(item) }}">
+                    <span class="sla__dot"></span>
+                    <span class="sla__label">{{ slaTexto(item) }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge {{ estadoClase(item.estado) }}">{{ estadoLabel(item.estado) }}</span>
+                </td>
+                <td class="tabla__td tabla__td--centro">
+                  <div class="tabla__acciones" (click)="$event.stopPropagation()">
+                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                                ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+                    @if (item.estado === 'pendiente') {
+                      <app-button variant="ghost" tamano="sm" icono="check_circle" [soloIcon]="true"
+                                  ariaLabel="Aprobar" title="Aprobar" (clic)="onAccionDetalle('aprobar', item)" />
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (!cargando() && total() > 0) {
+      <div class="paginacion">
+        <span class="paginacion__info">Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} propuestas</span>
+        <div class="paginacion__btns">
+          <app-button variant="secondary" tamano="sm" icono="chevron_left"  [soloIcon]="true" ariaLabel="Anterior"
+                      [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)" />
+          @for (p of paginas; track p) {
+            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm" (clic)="irPagina(p)">{{ p }}</app-button>
+          }
+          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true" ariaLabel="Siguiente"
+                      [disabled]="pagina() === totalPaginas()" (clic)="irPagina(pagina() + 1)" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ── Tarjetas informativas inferiores ────────────────────────────────── -->
+  <div class="info-cards">
+    <div class="info-card info-card--info">
+      <div class="info-card__header">
+        <span class="material-symbols-outlined">gavel</span>
+        <h3>Política de Aprobación</h3>
+      </div>
+      <p>Propuestas con descuento > 15% requieren visto bueno de Gerencia Comercial.</p>
+    </div>
+    <div class="info-card info-card--sla">
+      <div class="info-card__header">
+        <span class="material-symbols-outlined">schedule</span>
+        <h3>Objetivo SLA</h3>
+      </div>
+      <p>Tiempo máximo de respuesta: 4 horas hábiles para propuestas estándar.</p>
+    </div>
+    <div class="info-card info-card--audit">
+      <div class="info-card__header">
+        <span class="material-symbols-outlined">history</span>
+        <h3>Registro de Cambios</h3>
+      </div>
+      <p>Todas las acciones son auditadas para cumplimiento de la norma ISO 9001.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Modal Detalle de Propuesta en modoAprobador ───────────────────────── -->
+@if (idDetalleAbierto(); as id) {
+  <app-modal-detalle-propuesta
+    [idPropuesta]="id"
+    [modoAprobador]="true"
+    (cerrar)="cerrarDetalle()"
+    (accionAprobador)="onAccionDetalle($event)"
+  />
+}
+
+<!-- ── Modales de VB ─────────────────────────────────────────────────────── -->
+@if (compararCtx(); as ctx) {
+  <app-modal-comparar-versiones
+    [idPropuesta]="ctx.idPropuesta"
+    (cerrar)="compararCtx.set(null)"
+  />
+}
+
+@if (aprobarCtx(); as ctx) {
+  <app-modal-aprobar-vb
+    [contexto]="ctx"
+    (cerrar)="aprobarCtx.set(null)"
+    (confirmado)="onAprobarConfirmado($event)"
+  />
+}
+
+@if (rechazarCtx(); as ctx) {
+  <app-modal-rechazar-vb
+    [contexto]="ctx"
+    (cerrar)="rechazarCtx.set(null)"
+    (confirmado)="onRechazarConfirmado($event)"
+  />
+}
+
+@if (solicitarCorreccionCtx(); as ctx) {
+  <app-modal-solicitar-correccion
+    [contexto]="ctx"
+    (cerrar)="solicitarCorreccionCtx.set(null)"
+    (confirmado)="onCorreccionConfirmada($event)"
+  />
+}
+
+@if (reasignarCtx(); as ctx) {
+  <app-modal-reasignar-aprobador
+    [contexto]="ctx"
+    (cerrar)="reasignarCtx.set(null)"
+    (confirmado)="onReasignarConfirmada($event)"
+  />
+}

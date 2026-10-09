@@ -1,0 +1,101 @@
+<app-modal titulo="Reasignar Aprobador" ancho="md" (cerrar)="onCerrar()">
+  <div class="mra">
+
+    <span class="mra__chip">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+
+    <!-- Asignación actual -->
+    <div class="mra__actual">
+      <span class="mra__actual-label">ASIGNACIÓN ACTUAL</span>
+      <div class="mra__actual-persona">
+        <span class="mra__avatar">{{ iniciales(contexto().nombreAprobador) }}</span>
+        <div class="mra__actual-info">
+          <strong>{{ contexto().nombreAprobador }}</strong>
+          <small>Asignado el {{ formatearFecha(contexto().fechaSolicitud) }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nuevo aprobador (autocomplete) -->
+    <div class="mra__campo">
+      <label>NUEVO APROBADOR *</label>
+      <div class="mra__autocomplete">
+        <input type="text"
+               placeholder="Escriba nombre del aprobador..."
+               [ngModel]="busqueda()"
+               (ngModelChange)="buscarAprobadores($event)"
+               (focus)="buscarAprobadores(busqueda())" />
+        @if (aprobadorSel()) {
+          <button type="button" class="mra__clear" (click)="limpiarSeleccion()" aria-label="Limpiar">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+        @if (resultadosAbiertos() && resultados().length > 0) {
+          <div class="mra__resultados">
+            @for (a of resultados(); track a.idUsuario) {
+              <button type="button" class="mra__resultado" (click)="seleccionar(a)">
+                <span class="mra__avatar mra__avatar--sm">{{ iniciales(a.nombreCompleto) }}</span>
+                <div class="mra__resultado-info">
+                  <strong>{{ a.nombreCompleto }}</strong>
+                  <small>{{ a.cargo }} · {{ a.areaLabel }}</small>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="mra__campo">
+      <label>MOTIVO *</label>
+      <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+        <option [ngValue]="null">Seleccione un motivo...</option>
+        @for (m of motivos(); track m.id) {
+          <option [ngValue]="m.id">{{ m.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Comentario -->
+    <div class="mra__campo">
+      <label>COMENTARIO <small>(opcional)</small></label>
+      <textarea
+        rows="3"
+        placeholder="Añada detalles adicionales sobre la reasignación..."
+        [ngModel]="comentario()"
+        (ngModelChange)="comentario.set($event)"
+      ></textarea>
+    </div>
+
+    <!-- SLA + Reiniciar -->
+    <div class="mra__sla">
+      <div class="mra__sla-info">
+        <span class="material-symbols-outlined">schedule</span>
+        <div>
+          <strong>SLA actual: {{ slaRestanteTexto() }}</strong>
+          <small>Tiempo total transcurrido desde la solicitud original</small>
+        </div>
+      </div>
+      <label class="mra__sla-check">
+        <input type="checkbox"
+               [checked]="reiniciarSla()"
+               (change)="reiniciarSla.set(!reiniciarSla())" />
+        Reiniciar SLA de aprobación
+      </label>
+    </div>
+
+  </div>
+
+  <div modalFooter class="mra__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="swap_horiz"
+      [disabled]="!puedeReasignar()"
+      [cargando]="enviando()"
+      (clic)="reasignar()"
+    >
+      Reasignar
+    </app-button>
+  </div>
+</app-modal>

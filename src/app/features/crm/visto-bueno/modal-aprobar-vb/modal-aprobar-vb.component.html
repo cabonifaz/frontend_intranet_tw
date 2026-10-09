@@ -1,0 +1,60 @@
+<app-modal titulo="Aprobar Visto Bueno" ancho="md" (cerrar)="onCerrar()">
+  <div class="mav">
+
+    <!-- Resumen de la propuesta -->
+    <div class="mav__resumen">
+      <div class="mav__dato">
+        <span class="mav__dato-label">PROPUESTA</span>
+        <span class="mav__dato-valor">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+      </div>
+      <div class="mav__dato">
+        <span class="mav__dato-label">COMERCIAL</span>
+        <span class="mav__dato-valor">{{ contexto().nombreComercial }}</span>
+      </div>
+      <div class="mav__dato mav__dato--full">
+        <span class="mav__dato-label">CLIENTE</span>
+        <span class="mav__dato-valor">{{ contexto().razonSocial }}</span>
+      </div>
+      <div class="mav__dato mav__dato--monto">
+        <span class="mav__dato-label">MONTO</span>
+        <span class="mav__dato-valor mav__dato-valor--verde">{{ formatearMonto(contexto().monto, contexto().monedaSimbolo) }}</span>
+      </div>
+    </div>
+
+    <!-- Comentario opcional -->
+    <div class="mav__campo">
+      <label>Comentario opcional</label>
+      <textarea
+        rows="3"
+        placeholder="Añada observaciones adicionales sobre la aprobación..."
+        [ngModel]="comentario()"
+        (ngModelChange)="comentario.set($event)"
+      ></textarea>
+    </div>
+
+    <!-- Checkbox obligatorio -->
+    <label class="mav__check">
+      <input type="checkbox"
+             [checked]="confirmo()"
+             (change)="confirmo.set(!confirmo())" />
+      <div class="mav__check-texto">
+        <strong>Confirmo que he revisado la propuesta y otorgo visto bueno.</strong>
+        <small>Esta acción registrará su firma digital y actualizará el estado de la propuesta.</small>
+      </div>
+    </label>
+
+  </div>
+
+  <div modalFooter class="mav__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="check_circle"
+      [disabled]="!puedeAprobar()"
+      [cargando]="enviando()"
+      (clic)="aprobar()"
+    >
+      Aprobar
+    </app-button>
+  </div>
+</app-modal>

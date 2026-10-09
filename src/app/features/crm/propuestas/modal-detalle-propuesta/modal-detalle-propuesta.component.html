@@ -627,25 +627,46 @@
               Abrir RQ
             </app-button>
           }
+          @if (modoAprobador() && (datos()?.versiones?.length ?? 0) > 1) {
+            <app-button variant="ghost" tamano="md" icono="compare_arrows" (clic)="accionAprobador.emit('comparar_versiones')">
+              Comparar Versiones
+            </app-button>
+          }
         </div>
         <div class="modal__footer-der">
-          @if (datos()?.acciones?.puedeEditar || datos()?.acciones?.puedeGenerarNuevaVersion) {
-            <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="pedirAnular()">
-              Anular
+          @if (!modoAprobador()) {
+            @if (datos()?.acciones?.puedeEditar || datos()?.acciones?.puedeGenerarNuevaVersion) {
+              <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="pedirAnular()">
+                Anular
+              </app-button>
+            }
+            @if (datos()?.acciones?.puedeEditar) {
+              <app-button variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
+                Enviar a VB
+              </app-button>
+            }
+            @if (datos()?.acciones?.accionPrincipal === 'editar') {
+              <app-button variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
+                Editar Propuesta
+              </app-button>
+            } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
+              <app-button variant="primary" tamano="md" icono="sync" (clic)="accionPrincipal()">
+                Generar Nueva Versión
+              </app-button>
+            }
+          } @else {
+            <!-- Modo Aprobador (HU-15 / HU-16): acciones de VB -->
+            <app-button variant="ghost" tamano="md" icono="swap_horiz" (clic)="accionAprobador.emit('reasignar')">
+              Reasignar
             </app-button>
-          }
-          @if (datos()?.acciones?.puedeEditar) {
-            <app-button variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
-              Enviar a VB
+            <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
+              Rechazar
             </app-button>
-          }
-          @if (datos()?.acciones?.accionPrincipal === 'editar') {
-            <app-button variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
-              Editar Propuesta
+            <app-button variant="secondary" tamano="md" icono="edit" (clic)="accionAprobador.emit('solicitar_correccion')">
+              Solicitar Corrección
             </app-button>
-          } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
-            <app-button variant="primary" tamano="md" icono="sync" (clic)="accionPrincipal()">
-              Generar Nueva Versión
+            <app-button variant="primary" tamano="md" icono="check_circle" (clic)="accionAprobador.emit('aprobar')">
+              Aprobar Propuesta
             </app-button>
           }
         </div>

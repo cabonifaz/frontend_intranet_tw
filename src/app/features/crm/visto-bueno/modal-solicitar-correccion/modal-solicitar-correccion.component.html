@@ -1,0 +1,81 @@
+<app-modal titulo="Solicitar Corrección" ancho="md" (cerrar)="onCerrar()">
+  <div class="msc">
+
+    <span class="msc__chip">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+
+    <!-- Áreas a corregir -->
+    <div class="msc__campo">
+      <label>ÁREAS A CORREGIR *</label>
+      <div class="msc__areas">
+        @for (a of areas; track a.codigo) {
+          <label class="msc__area">
+            <input type="checkbox"
+                   [checked]="seleccionada(a.codigo)"
+                   (change)="toggleArea(a.codigo)" />
+            <span>{{ a.label }}</span>
+          </label>
+        }
+      </div>
+    </div>
+
+    <!-- Observaciones -->
+    <div class="msc__campo">
+      <label>OBSERVACIONES DETALLADAS *</label>
+      <textarea
+        rows="4"
+        placeholder="Revisar el margen aplicado al servicio principal y actualizar la condición de pago a 30 días."
+        [ngModel]="observaciones()"
+        (ngModelChange)="observaciones.set($event)"
+      ></textarea>
+      <small class="msc__hint">Mínimo 20 caracteres ({{ observaciones().length }}/20)</small>
+    </div>
+
+    <!-- Responsable + Fecha límite -->
+    <div class="msc__row">
+      <div class="msc__campo">
+        <label>RESPONSABLE</label>
+        <div class="msc__responsable">
+          <span class="msc__responsable-avatar">
+            {{ (contexto().nombreComercial.charAt(0) + (contexto().nombreComercial.split(' ')[1]?.charAt(0) ?? '')).toUpperCase() }}
+          </span>
+          <div class="msc__responsable-info">
+            <small>Asignar a:</small>
+            <strong>{{ contexto().nombreComercial }}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="msc__campo">
+        <label>FECHA LÍMITE DE CORRECCIÓN *</label>
+        <input type="datetime-local" [ngModel]="fechaLimite()" (ngModelChange)="fechaLimite.set($event)" />
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="msc__info">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        <strong>Impacto de la acción</strong>
+        <ul>
+          <li>La propuesta regresará al estado "En Corrección".</li>
+          <li>Se notificará automáticamente al ejecutivo comercial.</li>
+          <li>Se conservará el historial de cambios y observaciones.</li>
+          <li>No podrá enviarse al cliente hasta tener una nueva revisión.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div modalFooter class="msc__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="edit"
+      [disabled]="!puedeEnviar()"
+      [cargando]="enviando()"
+      (clic)="solicitar()"
+    >
+      Solicitar Corrección
+    </app-button>
+  </div>
+</app-modal>

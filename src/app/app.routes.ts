@@ -206,6 +206,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/visto-bueno',
+        loadComponent: () =>
+          import('./features/crm/visto-bueno/lista-visto-bueno/lista-visto-bueno.component').then(
+            m => m.ListaVistoBuenoComponent
+          ),
+      },
+      {
         path: 'crm/propuestas/nueva',
         loadComponent: () =>
           import('./features/crm/propuestas/wizard/propuesta-wizard.component').then(

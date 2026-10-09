@@ -38,11 +38,18 @@ export class ModalDetallePropuestaComponent {
   private readonly propuestasSvc = inject(PropuestasService);
 
   readonly idPropuesta = input.required<number>();
+  /** Si true, el modal se abre desde la Bandeja de Visto Bueno: oculta las acciones del
+   *  comercial (Editar / Enviar VB / Anular / Nueva Versión) y muestra las del aprobador
+   *  (Aprobar / Rechazar / Solicitar Corrección / Reasignar / Comparar Versiones). */
+  readonly modoAprobador = input<boolean>(false);
+
   readonly cerrar      = output<void>();
   /** Se emite cuando el usuario pide abrir el modal "Enviar a VB" / "Anular" / "Nueva Versión" / "Preview PDF". */
   readonly accion      = output<'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf'>();
   /** Se emite con el idRequerimiento cuando el usuario pide "Abrir RQ". El padre swap-ea los modales. */
   readonly verRequerimiento = output<number>();
+  /** Acciones del modo aprobador (HU-15 / HU-16). El padre maneja los modales de VB. */
+  readonly accionAprobador = output<'aprobar' | 'rechazar' | 'solicitar_correccion' | 'reasignar' | 'comparar_versiones'>();
 
   readonly cargando = signal(true);
   readonly error    = signal('');

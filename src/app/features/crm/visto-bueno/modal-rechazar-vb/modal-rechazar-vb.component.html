@@ -1,0 +1,72 @@
+<app-modal ancho="md" titulo="" [cerrable]="true" (cerrar)="onCerrar()">
+  <div class="mrv">
+
+    <!-- Header con icono -->
+    <div class="mrv__header">
+      <span class="material-symbols-outlined mrv__header-icon">cancel</span>
+      <div>
+        <h3>Rechazar Propuesta</h3>
+        <span class="mrv__chip">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="mrv__resumen">
+      <div class="mrv__dato">
+        <span class="mrv__dato-label">CLIENTE</span>
+        <span class="mrv__dato-valor">{{ contexto().razonSocial }}</span>
+      </div>
+      <div class="mrv__dato">
+        <span class="mrv__dato-label">MONTO</span>
+        <span class="mrv__dato-valor">{{ formatearMonto(contexto().monto, contexto().monedaSimbolo) }}</span>
+      </div>
+      <div class="mrv__dato">
+        <span class="mrv__dato-label">COMERCIAL</span>
+        <span class="mrv__dato-valor">{{ contexto().nombreComercial }}</span>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="mrv__campo">
+      <label>MOTIVO DEL RECHAZO *</label>
+      <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+        <option [ngValue]="null">Seleccione un motivo...</option>
+        @for (m of motivos(); track m.id) {
+          <option [ngValue]="m.id">{{ m.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Justificación -->
+    <div class="mrv__campo">
+      <label>JUSTIFICACIÓN *</label>
+      <textarea
+        rows="4"
+        placeholder="Describa la razón del rechazo..."
+        [ngModel]="justificacion()"
+        (ngModelChange)="justificacion.set($event)"
+      ></textarea>
+      <small class="mrv__hint">Mínimo 20 caracteres ({{ justificacion().length }}/20)</small>
+    </div>
+
+    <!-- Warning -->
+    <div class="mrv__warning">
+      <span class="material-symbols-outlined">error</span>
+      <span>La propuesta no avanzará a envío; quedará registrada como rechazada en VB; conservará toda su trazabilidad; notificará al responsable comercial.</span>
+    </div>
+
+  </div>
+
+  <div modalFooter class="mrv__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="danger"
+      icono="cancel"
+      [disabled]="!puedeRechazar()"
+      [cargando]="enviando()"
+      (clic)="rechazar()"
+    >
+      Rechazar Propuesta
+    </app-button>
+  </div>
+</app-modal>
