@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
 import { SuplentesService } from '../../../../core/services/suplentes.service';
+import { MaestrosService } from '../../../../core/services/maestros.service';
 import { UsuarioListaItem } from '../../../../core/models/usuarios.model';
 import { SuplenteListaItem } from '../../../../core/models/suplentes.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
@@ -44,6 +45,7 @@ type TabActivo = 'usuarios' | 'suplentes';
 export class ListaUsuariosComponent implements OnInit {
   private readonly usuariosSvc  = inject(UsuariosService);
   private readonly suplentesSvc = inject(SuplentesService);
+  private readonly maestrosSvc  = inject(MaestrosService);
   private readonly router       = inject(Router);
 
   readonly tabActivo = signal<TabActivo>('usuarios');
@@ -60,24 +62,21 @@ export class ListaUsuariosComponent implements OnInit {
 
   readonly estadoOpciones = ESTADO_OPCIONES;
 
-  readonly rolOpciones: RolOpcion[] = [
-    { value: '',                  label: 'Todos los roles' },
-    { value: 'admin',             label: 'Administrador' },
-    { value: 'gerencia',          label: 'Gerencia' },
-    { value: 'jefe_comercial',    label: 'Jefe Comercial' },
-    { value: 'comercial',         label: 'Comercial' },
-    { value: 'jefe_metrologia',   label: 'Jefe de Metrología' },
-    { value: 'metrologo',         label: 'Metrólogo' },
-    { value: 'jefe_operaciones',  label: 'Jefe de Operaciones' },
-    { value: 'operaciones',       label: 'Operaciones' },
-    { value: 'desarrollador',     label: 'Desarrollador' },
-  ];
+  // Cargados desde ROL_SISTEMA (tabla_maestra IdMaestro=68, migración 34 del back).
+  // Nivel aprobado por el cliente: administrador / supervisor / usuario / visor.
+  readonly rolOpciones = signal<RolOpcion[]>([{ value: '', label: 'Todos los roles' }]);
 
   busqueda = '';
   rolFiltro = '';
   estadoFiltro = '';
 
   async ngOnInit(): Promise<void> {
+    this.maestrosSvc.obtenerCatalogo('ROL_SISTEMA')
+      .then(roles => this.rolOpciones.set([
+        { value: '', label: 'Todos los roles' },
+        ...roles.map(r => ({ value: r.codigo ?? r.nombre, label: r.nombre })),
+      ]))
+      .catch(() => { /* el filtro se queda con "Todos los roles" si falla */ });
     await this.cargar();
   }
 

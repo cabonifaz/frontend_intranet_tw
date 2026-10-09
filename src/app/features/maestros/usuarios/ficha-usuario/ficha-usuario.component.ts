@@ -199,11 +199,11 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     return !!rol;
   });
 
-  // Credenciales INACAL (firma de certificados de calibración) solo aplican a Metrología.
-  readonly rolRequiereInacal = computed(() => {
-    const rol = this.rolSistemaActual();
-    return rol === 'jefe_metrologia' || rol === 'metrologo';
-  });
+  // Credenciales INACAL (firma de certificados de calibración) solo aplican al área de Metrología.
+  // Antes se validaba por rol (jefe_metrologia / metrologo), pero esos roles fueron removidos en
+  // la migración 34 del back (ahora solo administrador / supervisor / usuario / visor).
+  // La métrica correcta es el área, no el rol.
+  readonly rolRequiereInacal = computed(() => this.areaActual() === 'metrologia');
 
   // Numeración dinámica de secciones (depende de qué secciones estén visibles por rol).
   // Secciones 1 y 2 siempre están. 3 (INACAL) solo metrológico. 4 (Seguridad) siempre.

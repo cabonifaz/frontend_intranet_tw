@@ -43,7 +43,7 @@
       (buscar)="cargar(true)"
     >
       <select [(ngModel)]="rolFiltro" (change)="cargar(true)">
-        @for (opt of rolOpciones; track opt.value) {
+        @for (opt of rolOpciones(); track opt.value) {
           <option [value]="opt.value">{{ opt.label }}</option>
         }
       </select>
