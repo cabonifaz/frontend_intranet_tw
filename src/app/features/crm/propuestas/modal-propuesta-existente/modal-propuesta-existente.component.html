@@ -6,7 +6,12 @@
 
     <p class="mpe-body__texto">
       El requerimiento <strong>{{ codigoRq() }}</strong> ya tiene una propuesta vinculada:
-      <strong>{{ codigoPropuesta() }}</strong>.
+      <strong>{{ codigoPropuesta() }}</strong>
+      @if (estadoPropuesta() === 'anulado') {
+        <span class="mpe-body__estado mpe-body__estado--rojo">(anulada)</span>
+      } @else if (estadoPropuesta() === 'borrador') {
+        <span class="mpe-body__estado mpe-body__estado--gris">(en borrador)</span>
+      }.
     </p>
 
     <p class="mpe-body__pregunta">
@@ -14,20 +19,38 @@
     </p>
 
     <div class="mpe-opciones">
-      <button
-        type="button"
-        class="mpe-opcion"
-        [class.mpe-opcion--activa]="opcion() === 'nueva-version'"
-        (click)="seleccionar('nueva-version')"
-      >
-        <span class="material-symbols-outlined mpe-opcion__icono">difference</span>
-        <strong class="mpe-opcion__titulo">Nueva versión ({{ versionSiguiente }})</strong>
-        <span class="mpe-opcion__detalle">
-          Hereda el contenido de <em>{{ codigoPropuesta() }}</em> para que solo ajustes lo
-          necesario. Queda vinculada como su siguiente versión.
-        </span>
-      </button>
+      <!-- Card 1: cambia según estado -->
+      @if (modo() === 'editar') {
+        <button
+          type="button"
+          class="mpe-opcion"
+          [class.mpe-opcion--activa]="opcion() === 'editar-existente'"
+          (click)="seleccionar('editar-existente')"
+        >
+          <span class="material-symbols-outlined mpe-opcion__icono">edit</span>
+          <strong class="mpe-opcion__titulo">Editar propuesta existente</strong>
+          <span class="mpe-opcion__detalle">
+            Como <em>{{ codigoPropuesta() }}</em> está en borrador, puedes seguir editándola
+            directamente sin crear una nueva versión.
+          </span>
+        </button>
+      } @else if (modo() === 'nueva-version') {
+        <button
+          type="button"
+          class="mpe-opcion"
+          [class.mpe-opcion--activa]="opcion() === 'nueva-version'"
+          (click)="seleccionar('nueva-version')"
+        >
+          <span class="material-symbols-outlined mpe-opcion__icono">difference</span>
+          <strong class="mpe-opcion__titulo">Nueva versión ({{ versionSiguiente }})</strong>
+          <span class="mpe-opcion__detalle">
+            Hereda el contenido de <em>{{ codigoPropuesta() }}</em> para que solo ajustes lo
+            necesario. Queda vinculada como su siguiente versión.
+          </span>
+        </button>
+      }
 
+      <!-- Card 2: siempre disponible (incluso para anuladas) -->
       <button
         type="button"
         class="mpe-opcion"
@@ -48,9 +71,9 @@
     <app-button variant="secondary" tamano="md" (clic)="cerrar.emit()">
       Cancelar
     </app-button>
-    <app-button variant="primary" tamano="md" icono="add" [disabled]="!opcion()"
+    <app-button variant="primary" tamano="md" [icono]="iconoConfirmar()" [disabled]="!opcion()"
                 (clic)="confirmar()">
-      Crear propuesta
+      {{ textoConfirmar() }}
     </app-button>
   </div>
 </app-modal>

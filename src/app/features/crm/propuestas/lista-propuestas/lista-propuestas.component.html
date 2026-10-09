@@ -172,9 +172,14 @@
                     <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                                 ariaLabel="Ver detalle" title="Ver detalle"
                                 (clic)="verDetalle(item.idPropuesta)" />
-                    <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
-                                ariaLabel="Editar" title="Editar"
-                                (clic)="editarPropuesta(item)" />
+                    <!-- Editar: solo si NO está anulada. Borrador → edición directa. Enviada/aprobada/rechazada/vencida → nueva versión. -->
+                    @if (!esAnulada(item)) {
+                      <app-button variant="ghost" tamano="sm"
+                                  [icono]="item.estado === 'borrador' ? 'edit' : 'sync'" [soloIcon]="true"
+                                  [ariaLabel]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                                  [title]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                                  (clic)="editarPropuesta(item)" />
+                    }
                     @if (item.estado === 'borrador') {
                       <app-button variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
                                   ariaLabel="Enviar a Visto Bueno" title="Enviar a Visto Bueno"
@@ -228,6 +233,8 @@
     [codigoRq]="ctx.codigoRq"
     [codigoPropuesta]="ctx.codigoPropuesta"
     [versionActual]="ctx.versionActual"
+    [estadoPropuesta]="ctx.estadoPropuesta"
+    (editarExistente)="onElegirEditarExistente()"
     (nuevaVersion)="onElegirNuevaVersion()"
     (independiente)="onElegirIndependiente()"
     (cerrar)="propuestaExistenteCtx.set(null)"

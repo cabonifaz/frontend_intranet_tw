@@ -68,10 +68,12 @@ export class ListaPropuestasComponent implements OnInit {
 
   // Modal "propuesta existente" — se abre al elegir un RQ que ya tiene una propuesta.
   readonly propuestaExistenteCtx = signal<{
-    idRequerimiento: number;
-    codigoRq:        string;
-    codigoPropuesta: string;
-    versionActual:   number;
+    idRequerimiento:    number;
+    codigoRq:           string;
+    idPropuestaExistente: number;
+    codigoPropuesta:    string;
+    versionActual:      number;
+    estadoPropuesta:    string;   // Define qué opciones mostrar en el modal (borrador → editar, enviada → nueva versión, anulada → solo independiente)
   } | null>(null);
 
   // Modal "crear nueva versión" — se abre al editar una propuesta ya enviada a VB.
@@ -181,9 +183,11 @@ export class ListaPropuestasComponent implements OnInit {
       if (datos.propuestaExistente) {
         this.propuestaExistenteCtx.set({
           idRequerimiento,
-          codigoRq:        datos.numeroRequerimiento ?? `RQ ${idRequerimiento}`,
-          codigoPropuesta: datos.propuestaExistente.numero,
-          versionActual:   datos.propuestaExistente.version,
+          codigoRq:             datos.numeroRequerimiento ?? `RQ ${idRequerimiento}`,
+          idPropuestaExistente: datos.propuestaExistente.idPropuesta,
+          codigoPropuesta:      datos.propuestaExistente.numero,
+          versionActual:        datos.propuestaExistente.version,
+          estadoPropuesta:      datos.propuestaExistente.estado,
         });
         return;
       }
@@ -214,6 +218,14 @@ export class ListaPropuestasComponent implements OnInit {
     this.router.navigate(['/crm/propuestas/nueva'], {
       queryParams: { idRequerimiento: ctx.idRequerimiento, independiente: 1 },
     });
+  }
+
+  /** Modal "propuesta existente" (borrador) → ir a editar la propuesta existente directamente. */
+  onElegirEditarExistente(): void {
+    const ctx = this.propuestaExistenteCtx();
+    if (!ctx) return;
+    this.propuestaExistenteCtx.set(null);
+    this.router.navigate(['/crm/propuestas', ctx.idPropuestaExistente, 'editar']);
   }
 
   irAEditar(id: number): void {
@@ -262,7 +274,19 @@ export class ListaPropuestasComponent implements OnInit {
     }
   }
 
+  /** Guard reutilizable (template + handler) para propuestas en estado terminal 'anulado'. */
+  esAnulada(item: PropuestaListaItem): boolean {
+    return (item.estado as string) === 'anulado';
+  }
+
   editarPropuesta(item: PropuestaListaItem): void {
+    // Nota: EstadoPropuesta no está sincronizado con los estados reales del back ('anulado',
+    // 'pendiente_vb', etc.) — por eso comparamos como string.
+    if ((item.estado as string) === 'anulado') {
+      // Terminal: no se puede editar ni versionar.
+      this.toastSvc.info('La propuesta está anulada y no se puede editar.');
+      return;
+    }
     if (item.estado === 'borrador') {
       // Borrador → se puede editar la misma versión directamente.
       this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
