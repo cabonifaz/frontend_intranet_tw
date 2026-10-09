@@ -6,6 +6,8 @@ import { LineaItemPropuesta } from '../../../../../core/models/propuesta-detalle
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { ModalDescuentoGlobalComponent } from '../../modal-descuento-global/modal-descuento-global.component';
+import { DescuentoResultado } from '../../../../../core/models/propuesta-modales.model';
 
 interface SumCatalogo {
   id:          number;
@@ -18,7 +20,7 @@ interface SumCatalogo {
 
 @Component({
   selector: 'app-seccion-propuesta',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent, ModalDescuentoGlobalComponent],
   templateUrl: './propuesta.component.html',
   styleUrl: './propuesta.component.scss',
 })
@@ -31,6 +33,23 @@ export class PropuestaComponent implements OnInit {
   readonly cargandoCatalogo = signal(false);
   readonly seleccionado      = signal<number | null>(null);
   readonly seleccionadoLinea = signal<number | null>(null);
+  readonly modalDescuentoAbierto = signal(false);
+
+  abrirModalDescuento(): void {
+    if (!this.draftSvc.draft().idPropuesta) return;
+    this.modalDescuentoAbierto.set(true);
+  }
+  cerrarModalDescuento(): void { this.modalDescuentoAbierto.set(false); }
+
+  onDescuentoAplicado(r: DescuentoResultado): void {
+    // Sincroniza el draft con lo que vuelve del back (persistido).
+    this.draftSvc.actualizar({
+      descuentoPct:      r.porcentaje ?? null,
+      descuentoMonto:    r.tipo === 'monto' ? r.descuentoNuevo : null,
+      idMotivoDescuento: r.idMotivoDescuento ?? null,
+    });
+    this.cerrarModalDescuento();
+  }
 
   async ngOnInit(): Promise<void> {
     this.cargandoCatalogo.set(true);

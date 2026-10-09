@@ -91,25 +91,24 @@
 
     <!-- ── Footer: totales + acciones ─────────────────────────────── -->
     <div dpanel-footer>
-      <!-- Descuento global sobre la propuesta -->
+      <!-- Descuento global sobre la propuesta — HU-11 (modal) -->
       <div class="descuento-global">
-        <span class="descuento-global__label">DESCUENTO GLOBAL (propuesta):</span>
-        <div class="descuento-global__inputs">
-          <label>
-            % Pct
-            <input type="number" min="0" max="100" step="0.01"
-                   [value]="draftSvc.draft().descuentoPct ?? 0"
-                   (change)="actualizarDescuentoGlobal('pct', +$any($event.target).value)" />
-          </label>
-          <span class="descuento-global__o">o</span>
-          <label>
-            Monto fijo
-            <input type="number" min="0" step="0.01"
-                   [value]="draftSvc.draft().descuentoMonto ?? 0"
-                   [disabled]="(draftSvc.draft().descuentoPct ?? 0) > 0"
-                   (change)="actualizarDescuentoGlobal('monto', +$any($event.target).value)" />
-          </label>
-        </div>
+        @if (draftSvc.descuentoGlobal() > 0) {
+          <div class="descuento-global__aplicado">
+            <span class="material-symbols-outlined">local_offer</span>
+            <span class="descuento-global__texto">
+              Descuento global aplicado:
+              <strong>-$ {{ formato(draftSvc.descuentoGlobal()) }}</strong>
+              @if ((draftSvc.draft().descuentoPct ?? 0) > 0) {
+                ({{ draftSvc.draft().descuentoPct }}%)
+              }
+            </span>
+          </div>
+        }
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+          <span class="material-symbols-outlined">percent</span>
+          {{ draftSvc.descuentoGlobal() > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
+        </button>
       </div>
 
       <div class="totales-row">
@@ -131,3 +130,12 @@
     </div>
   </app-doble-panel>
 </app-seccion>
+
+@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+  <app-modal-descuento-global
+    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    (cerrar)="cerrarModalDescuento()"
+    (aplicado)="onDescuentoAplicado($event)"
+  />
+}

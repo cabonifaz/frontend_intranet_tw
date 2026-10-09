@@ -11,6 +11,15 @@ import {
   PropuestasPaginado,
   TipoPropuesta,
 } from '../models/propuestas.model';
+import {
+  AnulacionPropuesta,
+  AnularPropuestaRequest,
+  AplicarDescuentoRequest,
+  DescuentoResultado,
+  EnviarVistoBuenoRequest,
+  PropuestaDetalleModal,
+  VistoBuenoPropuesta,
+} from '../models/propuesta-modales.model';
 
 // ─── DTOs del back (shape literal del server) ────────────────────────────────
 interface PropuestaResumenDtoApi {
@@ -289,6 +298,96 @@ export class PropuestasService {
       this.http.post<RespuestaApi<GuardarPropuestaResultadoApi>>(this.base, dto)
     );
     if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'Error al guardar.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-09 — Detalle de Propuesta (modal)
+  // ═══════════════════════════════════════════════════════════════════════════
+  async obtenerDetalleModal(idPropuesta: number): Promise<PropuestaDetalleModal> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PropuestaDetalleModal>>(`${this.base}/${idPropuesta}/detalle`)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar el detalle.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-10 — Nueva versión de propuesta
+  // ═══════════════════════════════════════════════════════════════════════════
+  async crearNuevaVersion(idPropuesta: number, motivo: string, descripcion?: string, bloques?: string[]): Promise<number> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<{ idPropuesta: number }>>(
+        `${this.base}/${idPropuesta}/nueva-version`,
+        { motivo, descripcion: descripcion ?? '', bloquesACopiar: bloques ?? [] }
+      )
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo crear la nueva versión.');
+    return r.datos.idPropuesta;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-11 — Descuento Comercial
+  // ═══════════════════════════════════════════════════════════════════════════
+  async previsualizarDescuento(idPropuesta: number, dto: AplicarDescuentoRequest): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento/previsualizar`, dto)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo previsualizar el descuento.');
+    return r.datos;
+  }
+
+  async aplicarDescuento(idPropuesta: number, dto: AplicarDescuentoRequest): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.put<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo aplicar el descuento.');
+    return r.datos;
+  }
+
+  async quitarDescuento(idPropuesta: number): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.delete<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento`)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo quitar el descuento.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-12 — Envío a Visto Bueno
+  // ═══════════════════════════════════════════════════════════════════════════
+  async prepararEnvioVistoBueno(idPropuesta: number): Promise<VistoBuenoPropuesta> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<VistoBuenoPropuesta>>(`${this.base}/${idPropuesta}/visto-bueno/preparar`)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo preparar el envío a VB.');
+    return r.datos;
+  }
+
+  async enviarVistoBueno(idPropuesta: number, dto: EnviarVistoBuenoRequest): Promise<VistoBuenoPropuesta> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<VistoBuenoPropuesta>>(`${this.base}/${idPropuesta}/visto-bueno`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo enviar a VB.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-12 — Anulación de Propuesta
+  // ═══════════════════════════════════════════════════════════════════════════
+  async prepararAnulacion(idPropuesta: number): Promise<AnulacionPropuesta> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<AnulacionPropuesta>>(`${this.base}/${idPropuesta}/anulacion/preparar`)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo preparar la anulación.');
+    return r.datos;
+  }
+
+  async anularPropuesta(idPropuesta: number, dto: AnularPropuestaRequest): Promise<AnulacionPropuesta> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<AnulacionPropuesta>>(`${this.base}/${idPropuesta}/anular`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo anular la propuesta.');
     return r.datos;
   }
 

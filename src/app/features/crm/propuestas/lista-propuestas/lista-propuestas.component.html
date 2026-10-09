@@ -4,7 +4,7 @@
   <div class="pagina__header">
     <div class="pagina__header-izq">
       <app-breadcrumb [items]="breadcrumb" />
-      <h1 class="pagina__titulo">Propuestas Comerciales</h1>
+      <h1 class="pagina__titulo">CRM / Propuestas</h1>
       <p class="pagina__subtitulo">Gestión de propuestas, versiones y avance del ciclo comercial</p>
     </div>
     <app-button variant="primary" icono="add" (clic)="irANuevo()">
@@ -12,109 +12,83 @@
     </app-button>
   </div>
 
-  <!-- ── KPI Cards ───────────────────────────────────────────────────────────── -->
+  <!-- ── KPI Cards (sin subtítulos, homologado con Requerimientos) ─────────── -->
   <div class="kpi-grid">
-    <app-kpi-card
-      icono="schedule"
-      etiqueta="PENDIENTES"
-      [valor]="kpis().pendientes"
-      variante="azul"
-      [subtitulo]="'↑ ' + kpis().variacionPendientes + '% vs mes anterior'"
-    />
-    <app-kpi-card
-      icono="check_circle"
-      etiqueta="POR VISTO BUENO"
-      [valor]="kpis().porVistoBueno"
-      variante="ambar"
-      subtitulo="Requiere acción inmediata"
-    />
-    <app-kpi-card
-      icono="send"
-      etiqueta="POR ENVIAR"
-      [valor]="kpis().porEnviar"
-      variante="morado"
-      subtitulo="Bandeja de salida"
-    />
-    <app-kpi-card
-      icono="timelapse"
-      etiqueta="EN SEGUIMIENTO"
-      [valor]="kpis().enSeguimiento"
-      variante="rosa"
-      subtitulo="En proceso de cierre"
-    />
-    <app-kpi-card
-      icono="warning"
-      etiqueta="SLA VENCIDOS"
-      [valor]="kpis().slaVencidos"
-      variante="rojo"
-      subtitulo="Crítico: Atención prioritaria"
-    />
+    <app-kpi-card icono="schedule"      etiqueta="PENDIENTES"      [valor]="kpis().pendientes"    variante="azul" />
+    <app-kpi-card icono="check_circle"  etiqueta="POR VISTO BUENO" [valor]="kpis().porVistoBueno" variante="ambar" />
+    <app-kpi-card icono="send"          etiqueta="POR ENVIAR"      [valor]="kpis().porEnviar"     variante="azul" />
+    <app-kpi-card icono="timelapse"     etiqueta="EN SEGUIMIENTO"  [valor]="kpis().enSeguimiento" variante="azul" />
+    <app-kpi-card icono="warning"       etiqueta="SLA VENCIDOS"    [valor]="kpis().slaVencidos"   variante="rojo" />
   </div>
 
-  <!-- ── Tabs de estado ──────────────────────────────────────────────────────── -->
-  <div class="tabs">
-    @for (tab of estadosTabs; track tab.codigo) {
-      <button
-        class="tabs__item"
-        [class.tabs__item--activo]="estadoActivo() === tab.codigo"
-        type="button"
-        (click)="cambiarTab(tab.codigo)"
+  <!-- ── Filters Bar (modal unificado: Estado + filtros avanzados) ───────── -->
+  <div class="filtros-bar">
+    <div class="filtros-bar__izq">
+      <app-filtros-popover
+        [cantidadActivos]="filtrosActivos()"
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()"
       >
-        {{ tab.label }}
-      </button>
-    }
-  </div>
+        <!-- ── Clasificación ──────────────────────────────────────── -->
+        <div class="filtros-seccion">Clasificación</div>
 
-  <!-- ── Filtros ────────────────────────────────────────────────────────────── -->
-  <div class="filtros-card">
-    <div class="filtros-card__buscador-row">
-      <div class="filtros-card__buscador-label">BUSCADOR GENERAL</div>
-      <div class="filtros-card__filtros-labels">
-        <span>AÑO</span>
-        <span>COMERCIAL</span>
-        <span>TIPO</span>
-      </div>
+        <div class="col-full">
+          <label>ESTADO DEL WORKFLOW</label>
+          <select [(ngModel)]="estadoActivoFiltro">
+            @for (tab of estadosTabs; track tab.codigo) {
+              <option [value]="tab.codigo">{{ tab.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label>TIPO DE PROPUESTA</label>
+          <select [(ngModel)]="tipoFiltro">
+            @for (t of tipos; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label>AÑO</label>
+          <select [(ngModel)]="anioFiltro">
+            @for (a of anios; track a) {
+              <option [value]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- ── Asignación ─────────────────────────────────────────── -->
+        <div class="filtros-seccion">Asignación</div>
+
+        <div class="col-full">
+          <label>COMERCIAL RESPONSABLE</label>
+          <select [(ngModel)]="comercialFiltro">
+            <option value="todos">Todos los comerciales</option>
+            @for (c of comerciales(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
+      </app-filtros-popover>
     </div>
-    <div class="filtros-card__row">
-      <div class="campo__con-icono filtros-card__buscador">
+    <div class="filtros-bar__der">
+      <div class="campo__con-icono filtros-bar__busqueda">
         <span class="material-symbols-outlined campo__icono-input">search</span>
         <input
-          class="campo__input campo__input--icono"
+          class="campo__input campo__input--icono filtros-bar__input"
           type="text"
           placeholder="Buscar propuesta, RQ, cliente o referencia..."
           [(ngModel)]="busqueda"
           (keyup.enter)="aplicarFiltros()"
         />
       </div>
-      <select class="filtros-card__select" [(ngModel)]="anioFiltro">
-        @for (a of anios; track a) {
-          <option [value]="a">{{ a }}</option>
-        }
-      </select>
-      <select class="filtros-card__select" [(ngModel)]="comercialFiltro">
-        <option value="todos">Todos</option>
-        @for (c of comerciales(); track c) {
-          <option [value]="c">{{ c }}</option>
-        }
-      </select>
-      <select class="filtros-card__select" [(ngModel)]="tipoFiltro">
-        @for (t of tipos; track t.value) {
-          <option [value]="t.value">{{ t.label }}</option>
-        }
-      </select>
-    </div>
-    <div class="filtros-card__acciones">
-      <app-button variant="dark" tamano="md" icono="filter_list" (clic)="aplicarFiltros()">
-        Filtrar
-      </app-button>
-      <app-button variant="link" tamano="md" (clic)="limpiarFiltros()">
-        Limpiar
-      </app-button>
-      <app-button variant="secondary" tamano="md" icono="download" [soloIcon]="true"
-                  ariaLabel="Exportar" title="Exportar" />
       <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
                   ariaLabel="Actualizar" title="Actualizar"
                   (clic)="aplicarFiltros()" />
+      <app-button variant="secondary" tamano="md" icono="download" [soloIcon]="true"
+                  ariaLabel="Exportar" title="Exportar" />
     </div>
   </div>
 
@@ -133,40 +107,38 @@
         <thead class="tabla__head">
           <tr>
             <th class="tabla__th">PROPUESTA</th>
-            <th class="tabla__th">VERSIÓN</th>
             <th class="tabla__th">RQ</th>
             <th class="tabla__th">CLIENTE / RUC</th>
-            <th class="tabla__th">REFERENCIA</th>
-            <th class="tabla__th">TIPO</th>
             <th class="tabla__th tabla__th--derecha">MONTO</th>
-            <th class="tabla__th">MONEDA</th>
-            <th class="tabla__th">COMERCIAL</th>
+            <th class="tabla__th tabla__th--comercial">COMERCIAL</th>
+            <th class="tabla__th tabla__th--sla">SLA</th>
+            <th class="tabla__th">ESTADO</th>
             <th class="tabla__th tabla__th--centro">ACCIONES</th>
           </tr>
         </thead>
         <tbody>
           @if (cargando()) {
             <tr>
-              <td colspan="10" class="tabla__td tabla__td--vacio">
+              <td colspan="8" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
                 Cargando propuestas...
               </td>
             </tr>
           } @else if (items().length === 0) {
             <tr>
-              <td colspan="10" class="tabla__td tabla__td--vacio">
+              <td colspan="8" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined">inbox</span>
                 No se encontraron propuestas con los filtros aplicados.
               </td>
             </tr>
           } @else {
             @for (item of items(); track item.idPropuesta) {
-              <tr class="tabla__fila">
+              <tr class="tabla__fila" (click)="verDetalle(item.idPropuesta)">
                 <td class="tabla__td">
-                  <span class="tabla__codigo">{{ item.codigo }}</span>
-                </td>
-                <td class="tabla__td">
-                  <span class="tabla__version">{{ item.version }}</span>
+                  <div class="tabla__propuesta">
+                    <span class="tabla__codigo" [title]="'Creada el ' + formatearFecha(item.fechaCreacion)">{{ item.codigo }}</span>
+                    <span class="tabla__version">{{ item.version }}</span>
+                  </div>
                 </td>
                 <td class="tabla__td">
                   <span class="tabla__rq">{{ item.codigoRequerimiento ?? '—' }}</span>
@@ -177,19 +149,8 @@
                     <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
                   </div>
                 </td>
-                <td class="tabla__td">
-                  <span class="tabla__referencia">{{ item.referencia }}</span>
-                </td>
-                <td class="tabla__td">
-                  <span class="badge-tipo {{ tipoClase(item.tipo) }}">
-                    {{ item.tipoLabel }}
-                  </span>
-                </td>
                 <td class="tabla__td tabla__td--derecha">
                   <span class="tabla__monto">{{ formatearMonto(item.monto, item.moneda) }}</span>
-                </td>
-                <td class="tabla__td">
-                  <span class="tabla__moneda">{{ item.moneda }}</span>
                 </td>
                 <td class="tabla__td">
                   <div class="tabla__comercial">
@@ -197,8 +158,17 @@
                     <span class="tabla__comercial-nombre">{{ item.comercial }}</span>
                   </div>
                 </td>
+                <td class="tabla__td">
+                  <div class="sla {{ slaClase(item) }}">
+                    <span class="sla__dot"></span>
+                    <span class="sla__label">{{ calcularSlaTexto(item) }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge {{ estadoClase(item.estado) }}">{{ item.estadoLabel ?? item.estado }}</span>
+                </td>
                 <td class="tabla__td tabla__td--centro">
-                  <div class="tabla__acciones">
+                  <div class="tabla__acciones" (click)="$event.stopPropagation()">
                     <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                                 ariaLabel="Ver detalle" title="Ver detalle"
                                 (clic)="verDetalle(item.idPropuesta)" />
@@ -269,7 +239,54 @@
   <app-modal-crear-nueva-version
     [codigoPropuesta]="ctx.codigoPropuesta"
     [versionActual]="ctx.versionActual"
-    (continuar)="onConfirmarNuevaVersion()"
+    [enviando]="creandoVersion()"
+    (continuar)="onConfirmarNuevaVersion($event)"
     (cerrar)="nuevaVersionCtx.set(null)"
+  />
+}
+
+<!-- ── HU-09 Modal Detalle de Propuesta ──────────────────────────────────── -->
+@if (idDetalleAbierto(); as id) {
+  <app-modal-detalle-propuesta
+    [idPropuesta]="id"
+    (cerrar)="cerrarDetalle()"
+    (accion)="onAccionDetalle($event)"
+    (verRequerimiento)="onVerRequerimiento($event)"
+  />
+}
+
+<!-- ── Modal Detalle de Requerimiento (abierto desde "Abrir RQ" del detalle de propuesta) ── -->
+@if (idRqAbierto(); as idRq) {
+  <app-detalle-requerimiento
+    [id]="idRq"
+    [modoVolver]="true"
+    (cerrar)="cerrarRq()"
+  />
+}
+
+<!-- ── HU-12 Modal Enviar a Visto Bueno ──────────────────────────────────── -->
+@if (idEnviarVbAbierto(); as id) {
+  <app-modal-enviar-vb
+    [idPropuesta]="id"
+    (cerrar)="cerrarEnviarVb()"
+    (enviado)="onVbEnviado()"
+  />
+}
+
+<!-- ── HU-12 Modal Anular Propuesta ──────────────────────────────────────── -->
+@if (idAnularAbierto(); as id) {
+  <app-modal-anular-propuesta
+    [idPropuesta]="id"
+    (cerrar)="cerrarAnular()"
+    (anulada)="onAnulada()"
+  />
+}
+
+<!-- ── Vista Previa PDF (mock) ──────────────────────────────────────────── -->
+@if (idPdfAbierto(); as id) {
+  <app-modal-preview-pdf
+    [idPropuesta]="id"
+    [codigo]="codigoPdfAbierto()"
+    (cerrar)="idPdfAbierto.set(null)"
   />
 }

@@ -1,33 +1,69 @@
-<app-modal titulo="Propuesta enviada a Visto Bueno" ancho="sm" (cerrar)="cerrar.emit()">
+<app-modal titulo="Crear nueva versión de propuesta" ancho="md" (cerrar)="cerrar.emit()">
   <div class="mcnv-body">
-    <div class="mcnv-body__icono">
-      <span class="material-symbols-outlined">warning</span>
+    <div class="mcnv-info">
+      <span class="material-symbols-outlined mcnv-info__icono">info</span>
+      <p>
+        La propuesta <strong>{{ codigoPropuesta() }}</strong> ya fue enviada a Visto Bueno.
+        Si continúas se creará la versión <strong>{{ versionSiguiente }}</strong> y la actual quedará anulada.
+      </p>
     </div>
 
-    <p class="mcnv-body__texto">
-      La propuesta <strong>{{ codigoPropuesta() }}</strong> ya fue enviada a Visto Bueno.
-      Si continúas, se creará una <strong>nueva versión ({{ versionSiguiente }})</strong>
-      que heredará su contenido actual.
-    </p>
+    <!-- Motivo (requerido) -->
+    <div class="mcnv-campo">
+      <label>MOTIVO <span class="mcnv-obl">* Obligatorio</span></label>
+      <input
+        type="text"
+        placeholder="Ej: Ajuste de precios por cambio de alcance..."
+        [ngModel]="motivo()"
+        (ngModelChange)="motivo.set($event)"
+      />
+    </div>
 
-    <div class="mcnv-body__alerta">
-      <span class="material-symbols-outlined">priority_high</span>
-      <div>
-        <strong>La versión actual quedará anulada.</strong>
-        Tendrás que repetir el flujo: completar la propuesta y enviarla nuevamente a
-        Visto Bueno para que sea aprobada.
+    <!-- Descripción opcional -->
+    <div class="mcnv-campo">
+      <label>DESCRIPCIÓN DE CAMBIOS <span class="mcnv-opc">(opcional)</span></label>
+      <textarea
+        rows="3"
+        placeholder="Detalla los cambios que harás en esta nueva versión..."
+        [ngModel]="descripcion()"
+        (ngModelChange)="descripcion.set($event)"
+      ></textarea>
+    </div>
+
+    <!-- Bloques a copiar -->
+    <div class="mcnv-campo">
+      <label>CONTENIDO A COPIAR DE LA VERSIÓN ANTERIOR</label>
+      <div class="mcnv-checks">
+        <label class="mcnv-check">
+          <input type="checkbox" [checked]="copiarItems()" (change)="copiarItems.set(!copiarItems())" />
+          Ítems de propuesta
+        </label>
+        <label class="mcnv-check">
+          <input type="checkbox" [checked]="copiarCondiciones()" (change)="copiarCondiciones.set(!copiarCondiciones())" />
+          Condiciones del servicio
+        </label>
+        <label class="mcnv-check">
+          <input type="checkbox" [checked]="copiarEquipos()" (change)="copiarEquipos.set(!copiarEquipos())" />
+          Equipos vinculados
+        </label>
+        <label class="mcnv-check">
+          <input type="checkbox" [checked]="copiarRecomend()" (change)="copiarRecomend.set(!copiarRecomend())" />
+          Recomendaciones
+        </label>
       </div>
     </div>
-
-    <p class="mcnv-body__pregunta">¿Deseas continuar?</p>
   </div>
 
   <div modalFooter class="mcnv-footer">
-    <app-button variant="secondary" tamano="md" (clic)="cerrar.emit()">
-      Cancelar
-    </app-button>
-    <app-button variant="primary" tamano="md" icono="edit" (clic)="continuar.emit()">
-      Crear nueva versión ({{ versionSiguiente }})
+    <app-button variant="ghost" (clic)="cerrar.emit()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="sync"
+      [disabled]="!puedeContinuar()"
+      [cargando]="enviando()"
+      (clic)="onContinuar()"
+    >
+      {{ enviando() ? 'Creando...' : 'Crear nueva versión (' + versionSiguiente + ')' }}
     </app-button>
   </div>
 </app-modal>

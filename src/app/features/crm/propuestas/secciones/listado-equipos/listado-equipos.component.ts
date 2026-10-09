@@ -6,6 +6,8 @@ import { EquipoVinculado } from '../../../../../core/models/propuesta-detalle.mo
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { ModalImportXlsIaComponent } from '../../modal-import-xls-ia/modal-import-xls-ia.component';
+import { ToastService } from '../../../../../core/services/toast.service';
 
 interface EquipoCatalogo {
   id:       number;
@@ -20,7 +22,7 @@ interface EquipoCatalogo {
 
 @Component({
   selector: 'app-seccion-listado-equipos',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent, ModalImportXlsIaComponent],
   templateUrl: './listado-equipos.component.html',
   styleUrl: './listado-equipos.component.scss',
 })
@@ -102,8 +104,30 @@ export class ListadoEquiposComponent implements OnInit {
     console.log('[listado-equipos] abrir modal edit (pendiente)');
   }
 
-  importarXls(): void {
-    console.log('[listado-equipos] abrir modal HU-89 (pendiente)');
+  readonly modalImportAbierto = signal(false);
+  private readonly toast = inject(ToastService);
+
+  importarXls(): void { this.modalImportAbierto.set(true); }
+  cerrarModalImport(): void { this.modalImportAbierto.set(false); }
+
+  onEquiposImportados(filas: any[]): void {
+    // Mock: añade los equipos importados al listado del draft como vinculados.
+    const draft = this.draftSvc.draft();
+    const nuevos: EquipoVinculado[] = filas.map((f, i) => ({
+      idEquipo: Date.now() + i,
+      numSerie: f.nsXls,
+      codigoTw: f.codigoTwAsignado,
+      local:    f.ubicacion,
+      tipo:     f.equipo,
+      subtipo:  '',
+      marca:    '',
+      modelo:   '',
+    }));
+    this.draftSvc.actualizar({
+      equiposVinculados: [...draft.equiposVinculados, ...nuevos],
+    });
+    this.cerrarModalImport();
+    this.toast.exito(`Se importaron ${filas.length} equipos a la propuesta.`);
   }
 
   exportarLista(): void {

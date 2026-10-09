@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
 import { AutenticacionService } from '../../../../../core/services/autenticacion.service';
@@ -7,6 +7,7 @@ import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.compo
 import { CampoComponent } from '../../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../../shared/ui/toggle/toggle.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { DetalleRequerimientoComponent } from '../../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 
 type SeccionKey =
   | 'configuracion' | 'propuesta' | 'opcionales' | 'detalle' | 'recomendaciones'
@@ -24,7 +25,7 @@ const OBLIGATORIAS: SeccionKey[] = ['configuracion', 'propuesta', 'formaPago', '
 
 @Component({
   selector: 'app-seccion-configuracion',
-  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent, ButtonComponent],
+  imports: [ReactiveFormsModule, FormsModule, SeccionComponent, CampoComponent, ToggleComponent, ButtonComponent, DetalleRequerimientoComponent],
   templateUrl: './configuracion.component.html',
   styleUrl: './configuracion.component.scss',
 })
@@ -32,6 +33,9 @@ export class ConfiguracionComponent implements OnInit {
   readonly draftSvc = inject(PropuestaDraftService);
   private readonly fb       = inject(FormBuilder);
   private readonly authSvc  = inject(AutenticacionService);
+
+  /** id del RQ cuando el usuario pide ver su origen (abre DetalleRequerimientoComponent como modal). */
+  readonly idRqAbierto = signal<number | null>(null);
 
   readonly SECCIONES: SeccionConfig[] = [
     { key: 'configuracion',       numero: 1, label: 'Configuración',         obligatoria: true  },
@@ -135,14 +139,13 @@ export class ConfiguracionComponent implements OnInit {
     });
   }
 
-  // ─── Mock del "Ver origen" del RQ ─────────────────────────────────────────
+  // ─── Ver origen del RQ (abre modal DetalleRequerimiento) ─────────────────
   verOrigenRq(): void {
-    const rq = this.draftSvc.draft().codigoRequerimiento;
-    if (rq) {
-      console.log('[configuracion] abrir origen RQ', rq);
-      // En producción: this.router.navigate(['/crm/requerimientos', idRq]);
-    }
+    const id = this.draftSvc.draft().idRequerimiento;
+    if (id) this.idRqAbierto.set(id);
   }
+
+  cerrarRq(): void { this.idRqAbierto.set(null); }
 
   cambiarResponsable(): void {
     console.log('[configuracion] abrir modal cambiar responsable');

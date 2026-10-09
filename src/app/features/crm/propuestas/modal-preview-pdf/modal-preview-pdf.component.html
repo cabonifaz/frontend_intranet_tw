@@ -1,0 +1,28 @@
+<app-modal [titulo]="codigo() || 'Vista previa PDF'" ancho="xl" (cerrar)="cerrar.emit()">
+  <div class="pdf-preview">
+    @if (cargando()) {
+      <div class="pdf-preview__estado">
+        <span class="material-symbols-outlined pdf-preview__spinner">progress_activity</span>
+        <p>Generando vista previa del PDF…</p>
+      </div>
+    } @else if (error()) {
+      <div class="pdf-preview__estado pdf-preview__estado--error">
+        <span class="material-symbols-outlined">error</span>
+        <h3>No se pudo generar el PDF</h3>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (pdfUrl(); as url) {
+      <iframe [src]="url" class="pdf-preview__iframe" title="Vista previa del PDF"></iframe>
+    }
+  </div>
+
+  <div modalFooter class="pdf-preview__footer">
+    <app-button variant="ghost" (clic)="cerrar.emit()">Cerrar</app-button>
+    <app-button variant="secondary" icono="print" [disabled]="cargando() || !!error()" (clic)="imprimir()">
+      Imprimir
+    </app-button>
+    <app-button variant="primary" icono="download" [disabled]="cargando() || !!error()" (clic)="descargar()">
+      Descargar PDF
+    </app-button>
+  </div>
+</app-modal>

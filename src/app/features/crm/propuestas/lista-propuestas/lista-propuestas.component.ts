@@ -17,12 +17,20 @@ import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ModalElegirRqComponent } from '../modal-elegir-rq/modal-elegir-rq.component';
 import { ModalPropuestaExistenteComponent } from '../modal-propuesta-existente/modal-propuesta-existente.component';
 import { ModalCrearNuevaVersionComponent } from '../modal-crear-nueva-version/modal-crear-nueva-version.component';
+import { ModalDetallePropuestaComponent } from '../modal-detalle-propuesta/modal-detalle-propuesta.component';
+import { ModalEnviarVbComponent } from '../modal-enviar-vb/modal-enviar-vb.component';
+import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-anular-propuesta.component';
+import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
+import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 
 @Component({
   selector: 'app-lista-propuestas',
   imports: [
     FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
+    ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent,
+    FiltrosPopoverComponent, DetalleRequerimientoComponent,
   ],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
@@ -73,11 +81,34 @@ export class ListaPropuestasComponent implements OnInit {
     versionActual:   number;
   } | null>(null);
 
+  // IDs activos para cada modal (null = cerrado).
+  readonly idDetalleAbierto  = signal<number | null>(null);
+  readonly idEnviarVbAbierto = signal<number | null>(null);
+  readonly idAnularAbierto   = signal<number | null>(null);
+  readonly idPdfAbierto      = signal<number | null>(null);
+  readonly codigoPdfAbierto  = signal<string>('');
+  /** Al abrir el RQ desde el detalle de propuesta, se oculta el detalle y se abre el del RQ.
+   *  Al cerrar el RQ se re-abre el detalle de propuesta con el id guardado. */
+  readonly idRqAbierto       = signal<number | null>(null);
+  private   idPropuestaPrevia: number | null = null;
+
   // Filtros bindeados a los inputs (no gatillan carga hasta que el usuario busca)
   busqueda      = '';
   anioFiltro: number | '' = new Date().getFullYear();
   comercialFiltro = 'todos';
   tipoFiltro: TipoPropuesta | 'cualquiera' = 'cualquiera';
+  /** Estado activo bindeado al select del modal (sincroniza con el signal). */
+  estadoActivoFiltro: EstadoPropuesta | 'todas' = 'todas';
+
+  /** Nº de filtros aplicados (distintos de su valor por defecto) — badge del modal. */
+  filtrosActivos(): number {
+    let n = 0;
+    if (this.estadoActivoFiltro !== 'todas') n++;
+    if (this.anioFiltro && this.anioFiltro !== new Date().getFullYear()) n++;
+    if (this.comercialFiltro !== 'todos') n++;
+    if (this.tipoFiltro !== 'cualquiera')  n++;
+    return n;
+  }
 
   readonly breadcrumb: BreadcrumbItem[] = [
     { label: 'Inicio', ruta: '/dashboard' },
@@ -95,10 +126,12 @@ export class ListaPropuestasComponent implements OnInit {
   async cargar(): Promise<void> {
     this.cargando.set(true);
     this.error.set('');
+    // Sincroniza signal estadoActivo con la selección del modal
+    this.estadoActivo.set(this.estadoActivoFiltro);
     try {
       const res = await this.propuestasSvc.obtenerPropuestas({
         busqueda:  this.busqueda || undefined,
-        estado:    this.estadoActivo(),
+        estado:    this.estadoActivoFiltro,
         anio:      this.anioFiltro === '' ? undefined : this.anioFiltro,
         comercial: this.comercialFiltro,
         tipo:      this.tipoFiltro,
@@ -121,17 +154,12 @@ export class ListaPropuestasComponent implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.busqueda        = '';
-    this.anioFiltro      = 2024;
-    this.comercialFiltro = 'todos';
-    this.tipoFiltro      = 'cualquiera';
+    this.busqueda           = '';
+    this.anioFiltro         = new Date().getFullYear();
+    this.comercialFiltro    = 'todos';
+    this.tipoFiltro         = 'cualquiera';
+    this.estadoActivoFiltro = 'todas';
     this.aplicarFiltros();
-  }
-
-  async cambiarTab(estado: EstadoPropuesta | 'todas'): Promise<void> {
-    this.estadoActivo.set(estado);
-    this.pagina.set(1);
-    await this.cargar();
   }
 
   async irPagina(n: number): Promise<void> {
@@ -193,9 +221,45 @@ export class ListaPropuestasComponent implements OnInit {
   }
 
   // ─── Acciones por fila ────────────────────────────────────────────────────
-  verDetalle(_id: number): void {
-    // Pendiente: HU futura "Ver detalle de propuesta" (vista read-only con todas las secciones).
-    this.toastSvc.info('Ver detalle — pendiente, otra HU.');
+  verDetalle(id: number): void { this.idDetalleAbierto.set(id); }
+  cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
+
+  /** Swap de modales: oculta detalle de propuesta y abre el detalle del RQ. */
+  onVerRequerimiento(idRequerimiento: number): void {
+    this.idPropuestaPrevia = this.idDetalleAbierto();
+    this.idDetalleAbierto.set(null);
+    this.idRqAbierto.set(idRequerimiento);
+  }
+
+  /** Al cerrar el detalle del RQ, vuelve a mostrarse el detalle de propuesta previo. */
+  cerrarRq(): void {
+    this.idRqAbierto.set(null);
+    if (this.idPropuestaPrevia !== null) {
+      this.idDetalleAbierto.set(this.idPropuestaPrevia);
+      this.idPropuestaPrevia = null;
+    }
+  }
+
+  onAccionDetalle(evt: 'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf'): void {
+    const id = this.idDetalleAbierto();
+    if (!id) return;
+    this.cerrarDetalle();
+    if (evt === 'enviar_vb')    this.idEnviarVbAbierto.set(id);
+    else if (evt === 'anular')  this.idAnularAbierto.set(id);
+    else if (evt === 'preview_pdf') {
+      const item = this.items().find(i => i.idPropuesta === id);
+      this.codigoPdfAbierto.set(item ? `${item.codigo} · ${item.version}` : '');
+      this.idPdfAbierto.set(id);
+    }
+    else if (evt === 'nueva_version') {
+      const item = this.items().find(i => i.idPropuesta === id);
+      if (!item) return;
+      this.nuevaVersionCtx.set({
+        idPropuesta:     id,
+        codigoPropuesta: item.codigo,
+        versionActual:   this.parsearVersion(item.version),
+      });
+    }
   }
 
   editarPropuesta(item: PropuestaListaItem): void {
@@ -212,14 +276,23 @@ export class ListaPropuestasComponent implements OnInit {
     }
   }
 
-  /** Modal "crear nueva versión" → confirma y navega al wizard como versión nueva. */
-  onConfirmarNuevaVersion(): void {
+  /** Modal "crear nueva versión" → llama al back y navega al wizard. */
+  readonly creandoVersion = signal(false);
+  async onConfirmarNuevaVersion(datos: { motivo: string; descripcion: string; bloquesACopiar: string[] }): Promise<void> {
     const ctx = this.nuevaVersionCtx();
-    if (!ctx) return;
-    this.nuevaVersionCtx.set(null);
-    this.router.navigate(['/crm/propuestas/nueva'], {
-      queryParams: { versionDe: ctx.codigoPropuesta },
-    });
+    if (!ctx || this.creandoVersion()) return;
+    this.creandoVersion.set(true);
+    try {
+      const nuevoId = await this.propuestasSvc.crearNuevaVersion(
+        ctx.idPropuesta, datos.motivo, datos.descripcion, datos.bloquesACopiar
+      );
+      this.nuevaVersionCtx.set(null);
+      this.router.navigate(['/crm/propuestas', nuevoId, 'editar']);
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo crear la nueva versión.');
+    } finally {
+      this.creandoVersion.set(false);
+    }
   }
 
   /** Extrae el número de versión de un string tipo "v1", "v2", etc. */
@@ -228,28 +301,65 @@ export class ListaPropuestasComponent implements OnInit {
     return Number.isFinite(n) && n > 0 ? n : 1;
   }
 
-  enviarAVistoBueno(_id: number): void {
-    // Pendiente: HU futura "Modal Enviar a Visto Bueno".
-    this.toastSvc.info('Modal "Enviar a Visto Bueno" — pendiente, otra HU.');
+  enviarAVistoBueno(id: number): void { this.idEnviarVbAbierto.set(id); }
+  cerrarEnviarVb(): void { this.idEnviarVbAbierto.set(null); }
+  onVbEnviado(): void {
+    this.cerrarEnviarVb();
+    this.toastSvc.exito('Propuesta enviada a Visto Bueno.');
+    this.cargar();
+  }
+
+  anularPropuesta(id: number): void { this.idAnularAbierto.set(id); }
+  cerrarAnular(): void { this.idAnularAbierto.set(null); }
+  onAnulada(): void {
+    this.cerrarAnular();
+    this.toastSvc.exito('Propuesta anulada.');
+    this.cargar();
   }
 
   // ─── Helpers de presentación ──────────────────────────────────────────────
-  tipoClase(tipo: string): string {
-    const mapa: Record<string, string> = {
-      servicio: 'badge-tipo--servicio',
-      mixta:    'badge-tipo--mixta',
-      proyecto: 'badge-tipo--proyecto',
-    };
-    return mapa[tipo] ?? '';
+  formatearMonto(monto: number, moneda: string): string {
+    const simbolo = moneda === 'USD' ? 'US$' : 'S/';
+    const valor   = new Intl.NumberFormat('es-PE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(monto);
+    return `${simbolo} ${valor}`;
   }
 
-  formatearMonto(monto: number, moneda: string): string {
-    return new Intl.NumberFormat('es-PE', {
-      style: 'currency',
-      currency: moneda === 'USD' ? 'USD' : 'PEN',
-      currencyDisplay: 'code',
-      minimumFractionDigits: 2,
-    }).format(monto).replace(/^(PEN|USD)\s*/, '');
+  formatearFecha(fecha: string | null | undefined): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleDateString('es-PE', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    });
+  }
+
+  estadoClase(estado: string): string {
+    const mapa: Record<string, string> = {
+      borrador:     'badge--gris',
+      pendiente_vb: 'badge--naranja',
+      enviado:      'badge--azul',
+      aprobado:     'badge--verde',
+      rechazado:    'badge--rojo',
+      anulado:      'badge--rojo',
+      vencido:      'badge--rojo',
+    };
+    return mapa[estado] ?? 'badge--gris';
+  }
+
+  slaClase(item: PropuestaListaItem): string {
+    const d = item.slaDiasRestantes;
+    if (d == null) return 'sla--normal';
+    if (d <= 0)    return 'sla--urgente';
+    if (d <= 3)    return 'sla--advertencia';
+    return 'sla--normal';
+  }
+
+  calcularSlaTexto(item: PropuestaListaItem): string {
+    const d = item.slaDiasRestantes;
+    if (d == null) return '—';
+    if (d === 0)   return 'Hoy';
+    return `${Math.abs(d)}d`;
   }
 
   get paginas(): number[] {

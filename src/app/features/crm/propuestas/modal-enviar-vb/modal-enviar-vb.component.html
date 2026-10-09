@@ -1,0 +1,125 @@
+<app-modal
+  [titulo]="'Enviar a Visto Bueno'"
+  ancho="md"
+  (cerrar)="onCerrar()"
+>
+  <div class="mvb-body">
+    @if (cargando()) {
+      <div class="mvb-loading">
+        <span class="material-symbols-outlined mvb-spin">progress_activity</span>
+        <span>Preparando envío...</span>
+      </div>
+    } @else if (error()) {
+      <div class="mvb-error">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ error() }}</span>
+      </div>
+    } @else if (datos(); as d) {
+      <!-- Chip código -->
+      <span class="mvb-chip">{{ d.numero }} · v{{ d.version }}</span>
+
+      <!-- Resumen -->
+      <div class="mvb-resumen">
+        <div class="mvb-resumen__col">
+          <div class="mvb-resumen__label">CLIENTE</div>
+          <div class="mvb-resumen__valor">{{ d.cliente || '—' }}</div>
+        </div>
+        <div class="mvb-resumen__col">
+          <div class="mvb-resumen__label">REFERENCIA / RQ</div>
+          <div class="mvb-resumen__valor">{{ d.numeroRequerimiento || '—' }}</div>
+        </div>
+        <div class="mvb-resumen__col">
+          <div class="mvb-resumen__label">MONTO TOTAL</div>
+          <div class="mvb-resumen__valor mvb-resumen__valor--total">
+            {{ d.monedaSimbolo || 'S/' }} {{ d.total | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Validaciones -->
+      <div class="mvb-seccion">
+        <div class="mvb-seccion__titulo">VALIDACIONES DEL SISTEMA</div>
+        <ul class="mvb-validaciones">
+          @for (v of d.validaciones; track v.codigo) {
+            <li class="mvb-val" [class.mvb-val--ok]="v.cumple" [class.mvb-val--fail]="!v.cumple">
+              <span class="material-symbols-outlined">{{ v.cumple ? 'check_circle' : 'cancel' }}</span>
+              <span>{{ v.etiqueta }}</span>
+              @if (v.detalle) { <span class="mvb-val__detalle">· {{ v.detalle }}</span> }
+            </li>
+          }
+        </ul>
+      </div>
+
+      <!-- Alerta margen -->
+      @if (d.requiereAprobacionEspecial) {
+        <div class="mvb-alerta">
+          <span class="material-symbols-outlined">warning</span>
+          <div>
+            <div class="mvb-alerta__titulo">{{ d.motivoAlerta || 'Aprobación especial requerida' }}</div>
+            <div class="mvb-alerta__desc">
+              El descuento aplicado ({{ d.descuentoPct | number:'1.1-2' }}%) supera el umbral estándar ({{ d.umbralDescuentoPct | number:'1.1-2' }}%) para este tipo de servicio.
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Aprobador -->
+      <div class="mvb-campo">
+        <label>ENVIAR A PARA VISTO BUENO</label>
+        <div class="mvb-aprobador">
+          <span class="material-symbols-outlined">supervisor_account</span>
+          <div>
+            <div class="mvb-aprobador__nombre">
+              {{ d.nombreAprobador || 'Sin aprobador asignado' }}
+              @if (d.cargoAprobador) { — {{ d.cargoAprobador }} }
+            </div>
+            @if (d.esSuplente && d.nombreJefeDirecto) {
+              <div class="mvb-aprobador__suplente">
+                Suplente de {{ d.nombreJefeDirecto }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Comentarios -->
+      <div class="mvb-campo">
+        <label>COMENTARIOS ADICIONALES</label>
+        <textarea
+          [ngModel]="comentario()"
+          (ngModelChange)="comentario.set($event)"
+          placeholder="Explica el motivo del margen o añade notas para el aprobador..."
+          rows="3"
+        ></textarea>
+      </div>
+
+      <!-- SLA -->
+      <div class="mvb-sla">
+        <span class="material-symbols-outlined">schedule</span>
+        <div>
+          <div class="mvb-sla__titulo">SLA de aprobación: {{ d.slaHoras }} horas</div>
+          <div class="mvb-sla__desc">Acuerdo de nivel de servicio estándar</div>
+        </div>
+        @if (d.fechaLimite) {
+          <div class="mvb-sla__limite">
+            <div><strong>Límite:</strong> {{ d.fechaLimite | date:'dd/MM/yyyy HH:mm' }}</div>
+            <div class="mvb-sla__hint">Tiempo máx. respuesta</div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div modalFooter class="mvb-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="primary"
+      icono="send"
+      [disabled]="!datos()?.puedeEnviar || enviando()"
+      [cargando]="enviando()"
+      (clic)="enviar()"
+    >
+      {{ enviando() ? 'Enviando...' : 'Enviar a Visto Bueno' }}
+    </app-button>
+  </div>
+</app-modal>

@@ -1,0 +1,125 @@
+<app-modal titulo="Importar Equipos desde Excel con IA" ancho="xl" (cerrar)="onCerrar()">
+  <div class="mix-body">
+    <!-- Tabs superiores (del prototipo: 3 tabs) -->
+    <div class="mix-tabs">
+      <button class="mix-tabs__item" [class.activa]="tab() === 'auto'" (click)="cambiarTab('auto')">
+        <span class="mix-tabs__num">{{ totalAuto() }}</span>
+        <span>Coincidencias Automáticas</span>
+      </button>
+      <button class="mix-tabs__item" [class.activa]="tab() === 'manual'" (click)="cambiarTab('manual')">
+        <span class="mix-tabs__num mix-tabs__num--manual">{{ totalManual() }}</span>
+        <span>Discrepancias / Revisión Manual</span>
+      </button>
+      <button class="mix-tabs__item" [class.activa]="tab() === 'completa'" (click)="cambiarTab('completa')">
+        <span class="mix-tabs__num mix-tabs__num--total">{{ totalFilas() }}</span>
+        <span>Vista Previa Completa</span>
+      </button>
+    </div>
+
+    <!-- Archivo + progreso -->
+    <div class="mix-info">
+      <div class="mix-archivo">
+        <span class="material-symbols-outlined">description</span>
+        <div>
+          <div class="mix-archivo__nombre">
+            {{ archivo()?.name || 'Listado_Equipos_Mantenimiento_Antamina.xlsx' }}
+          </div>
+          <div class="mix-archivo__meta">8 equipos detectados</div>
+        </div>
+      </div>
+      <input type="file" accept=".xlsx,.xls" (change)="onArchivoSeleccionado($event)" hidden #inputXls />
+      <div class="mix-progreso">
+        <span class="mix-pill mix-pill--auto">✓ Coincidencias automáticas: {{ totalAuto() }} ({{ progresoAuto() }}%)</span>
+        <span class="mix-pill mix-pill--manual">⚠ Discrepancias / Revisión manual: {{ totalManual() }} ({{ progresoManual() }}%)</span>
+        <span class="mix-pill mix-pill--total">Progreso: {{ totalResueltos() }} de {{ totalFilas() }} resueltos</span>
+      </div>
+    </div>
+
+    <!-- Banner informativo -->
+    <div class="mix-banner">
+      <span class="material-symbols-outlined">lightbulb</span>
+      <span>
+        Vista consolidada de todos los {{ totalFilas() }} equipos procesados del archivo XLS.
+        Revisa el resultado final antes de confirmar la importación a la propuesta correcta.
+      </span>
+      <div class="mix-banner__pills">
+        <span class="mix-mini-pill mix-mini-pill--auto">● {{ totalAuto() }} Automáticos</span>
+        <span class="mix-mini-pill mix-mini-pill--manual">● {{ totalManual() }} Conciliado Manual</span>
+        <span class="mix-mini-pill mix-mini-pill--nuevo">● {{ totalNuevo() }} Nuevo Equipo Creado</span>
+      </div>
+    </div>
+
+    <!-- Tabla de filas -->
+    <div class="mix-tabla-wrap">
+      <table class="mix-tabla">
+        <thead>
+          <tr>
+            <th class="mix-check">
+              <input type="checkbox"
+                     [checked]="totalSeleccionados() === totalFilas()"
+                     (change)="toggleTodos($any($event.target).checked)" />
+            </th>
+            <th>N/S (XLS)</th>
+            <th>CÓDIGO TW ASIGNADO</th>
+            <th>EQUIPO / INSTRUMENTO</th>
+            <th>CAPACIDAD / ALCANCE</th>
+            <th>UBICACIÓN EN SEDE</th>
+            <th>TIPO DE CONCILIACIÓN / ESTADO</th>
+            <th class="mix-acciones">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of filasFiltradas(); track f.nsXls) {
+            <tr>
+              <td class="mix-check">
+                <input type="checkbox" [checked]="f.seleccionado" (change)="toggleFila(f)" />
+              </td>
+              <td class="mix-mono">{{ f.nsXls }}</td>
+              <td>
+                <span class="mix-chip-tw" [class.mix-chip-tw--nuevo]="f.esNuevo">
+                  {{ f.codigoTwAsignado }}
+                  @if (f.esNuevo) { <small>(Nuevo)</small> }
+                </span>
+              </td>
+              <td>{{ f.equipo }}</td>
+              <td>{{ f.capacidadAlcance }}</td>
+              <td>{{ f.ubicacion }}</td>
+              <td>
+                <span class="mix-estado" [ngClass]="claseEstado(f.estado)">
+                  {{ f.estadoLabel }}
+                </span>
+              </td>
+              <td class="mix-acciones">
+                <button class="mix-icon" title="Ver detalle"><span class="material-symbols-outlined">visibility</span></button>
+                <button class="mix-icon" title="Editar"><span class="material-symbols-outlined">edit</span></button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8" class="mix-vacio">Sin equipos para esta vista.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div modalFooter class="mix-footer">
+    <app-button variant="ghost" icono="download" (clic)="descargarReporte()">
+      Descargar reporte completo (.xlsx)
+    </app-button>
+    <div class="mix-footer__meta">
+      <span class="mix-footer__count">● {{ totalSeleccionados() }} de {{ totalFilas() }} equipos seleccionados para importar</span>
+    </div>
+    <div class="mix-footer__der">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button
+        variant="primary"
+        icono="input"
+        [disabled]="totalSeleccionados() === 0"
+        [cargando]="importando()"
+        (clic)="importar()"
+      >
+        Importar los {{ totalSeleccionados() }} Equipos a la Propuesta
+      </app-button>
+    </div>
+  </div>
+</app-modal>

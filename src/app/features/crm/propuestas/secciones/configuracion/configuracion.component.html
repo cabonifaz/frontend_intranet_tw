@@ -175,3 +175,12 @@
   </app-seccion>
 
 </form>
+
+<!-- Modal Detalle de Requerimiento (abierto desde "Ver origen") -->
+@if (idRqAbierto(); as idRq) {
+  <app-detalle-requerimiento
+    [id]="idRq"
+    [modoVolver]="true"
+    (cerrar)="cerrarRq()"
+  />
+}

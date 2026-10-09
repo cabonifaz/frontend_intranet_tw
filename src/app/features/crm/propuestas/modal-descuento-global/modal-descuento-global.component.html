@@ -1,0 +1,114 @@
+<app-modal titulo="Aplicar Descuento Global" ancho="md" (cerrar)="onCerrar()">
+  <div class="mdg-body">
+    @if (codigo()) {
+      <span class="mdg-chip">{{ codigo() }}</span>
+    }
+
+    <!-- Montos actuales -->
+    @if (preview(); as p) {
+      <div class="mdg-cards">
+        <div class="mdg-card">
+          <div class="mdg-card__label">SUBTOTAL ACTUAL</div>
+          <div class="mdg-card__valor">S/ {{ p.subtotalActual | number:'1.2-2' }}</div>
+        </div>
+        <div class="mdg-card">
+          <div class="mdg-card__label">DESCUENTO</div>
+          <div class="mdg-card__valor" [class.mdg-card__valor--rojo]="p.descuentoActual > 0">
+            S/ {{ p.descuentoActual | number:'1.2-2' }}
+          </div>
+        </div>
+        <div class="mdg-card">
+          <div class="mdg-card__label">IGV ({{ p.igvPct | number:'1.0-0' }}%)</div>
+          <div class="mdg-card__valor">S/ {{ p.igvActual | number:'1.2-2' }}</div>
+        </div>
+        <div class="mdg-card">
+          <div class="mdg-card__label">TOTAL</div>
+          <div class="mdg-card__valor mdg-card__valor--azul">S/ {{ p.totalActual | number:'1.2-2' }}</div>
+        </div>
+      </div>
+    }
+
+    <!-- Tipo de descuento -->
+    <div class="mdg-tipo">
+      <label class="mdg-radio">
+        <input type="radio" name="tipo" [checked]="tipo() === 'porcentaje'" (change)="tipo.set('porcentaje')" />
+        <span>Descuento por porcentaje</span>
+      </label>
+      <label class="mdg-radio">
+        <input type="radio" name="tipo" [checked]="tipo() === 'monto'" (change)="tipo.set('monto')" />
+        <span>Descuento por monto fijo</span>
+      </label>
+    </div>
+
+    <!-- Valor + motivo -->
+    <div class="mdg-row">
+      <div class="mdg-campo">
+        <label>{{ tipo() === 'porcentaje' ? 'PORCENTAJE (%)' : 'MONTO (S/)' }}</label>
+        <div class="mdg-input-sufijo">
+          <input
+            type="number"
+            min="0"
+            [max]="tipo() === 'porcentaje' ? 100 : null"
+            step="0.01"
+            [ngModel]="valor()"
+            (ngModelChange)="valor.set(+$event)"
+          />
+          <span>{{ tipo() === 'porcentaje' ? '%' : 'S/' }}</span>
+        </div>
+      </div>
+      <div class="mdg-campo">
+        <label>MOTIVO DEL DESCUENTO</label>
+        <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+          <option [ngValue]="null">Seleccionar motivo...</option>
+          @for (m of motivos(); track m.id) {
+            <option [ngValue]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Preview del nuevo total -->
+    @if (preview(); as p) {
+      @if (p.descuentoNuevo > 0 || valor() > 0) {
+        <div class="mdg-preview">
+          <div class="mdg-preview__header">
+            <span>Descuento aplicado ({{ p.porcentaje ?? valor() | number:'1.1-2' }}{{ tipo() === 'porcentaje' ? '%' : '' }})</span>
+            <strong class="mdg-preview__desc">-S/ {{ p.descuentoNuevo | number:'1.2-2' }}</strong>
+          </div>
+          <div class="mdg-preview__row">
+            <span>NUEVO SUBTOTAL</span>
+            <strong>S/ {{ p.subtotalNuevo | number:'1.2-2' }}</strong>
+          </div>
+          <div class="mdg-preview__row">
+            <span>NUEVO IGV ({{ p.igvPct | number:'1.0-0' }}%)</span>
+            <strong>S/ {{ p.igvNuevo | number:'1.2-2' }}</strong>
+          </div>
+          <div class="mdg-preview__row mdg-preview__row--total">
+            <span>NUEVO TOTAL</span>
+            <strong>S/ {{ p.totalNuevo | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <div modalFooter class="mdg-footer">
+    @if (tieneDescuentoAplicado()) {
+      <app-button variant="danger-ghost" icono="delete" [cargando]="quitando()" (clic)="quitar()">
+        Quitar descuento
+      </app-button>
+    }
+    <div class="mdg-footer__der">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button
+        variant="primary"
+        icono="check"
+        [disabled]="!puedeAplicar()"
+        [cargando]="aplicando()"
+        (clic)="aplicar()"
+      >
+        {{ aplicando() ? 'Aplicando...' : 'Aplicar descuento' }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

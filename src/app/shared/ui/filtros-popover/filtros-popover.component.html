@@ -1,0 +1,48 @@
+<div class="filtros-pop">
+  <button
+    type="button"
+    class="filtros-pop__btn"
+    [class.filtros-pop__btn--activo]="cantidadActivos() > 0"
+    (click)="toggle()"
+  >
+    <span class="material-symbols-outlined filtros-pop__icono">filter_list</span>
+    <span class="filtros-pop__texto">{{ texto() }}</span>
+    @if (cantidadActivos() > 0) {
+      <span class="filtros-pop__badge">{{ cantidadActivos() }}</span>
+    }
+  </button>
+</div>
+
+@if (abierto()) {
+  <div class="filtros-pop__overlay" (click)="cerrar()">
+    <div class="filtros-pop__modal" (click)="$event.stopPropagation()">
+      <div class="filtros-pop__header">
+        <div>
+          <h3 class="filtros-pop__titulo">Filtros</h3>
+          <p class="filtros-pop__subtitulo">Define los criterios de búsqueda</p>
+        </div>
+        <button type="button" class="filtros-pop__cerrar" (click)="cerrar()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="filtros-pop__body">
+        <ng-content></ng-content>
+      </div>
+
+      <div class="filtros-pop__footer">
+        <button type="button" class="filtros-pop__link" (click)="onLimpiar()">
+          Limpiar filtros
+        </button>
+        <div class="filtros-pop__footer-der">
+          <button type="button" class="filtros-pop__cancelar" (click)="cerrar()">
+            Cancelar
+          </button>
+          <button type="button" class="filtros-pop__aplicar" (click)="onAplicar()">
+            Aplicar filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

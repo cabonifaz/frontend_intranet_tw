@@ -156,69 +156,55 @@
   .material-symbols-outlined { font-size: 36px; opacity: 0.5; }
 }
 
-// ── Descuento global (sobre la propuesta o opcionales) ──────────────────────
+// ── Descuento global (HU-11: ya no es fila amarilla con inputs) ─────────────
 .descuento-global {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
-  padding: 10px 14px;
-  background: #FEF3C7;
-  border: 1px dashed #FDE68A;
-  border-radius: 8px;
   margin-bottom: 8px;
 
-  &__label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #92400E;
-    letter-spacing: 0.4px;
-  }
-
-  &__inputs {
-    display: flex;
+  &__aplicado {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    margin-left: auto;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    border-radius: 8px;
+    color: #047857;
+    font-size: 12px;
+
+    .material-symbols-outlined { font-size: 16px; }
   }
 
-  &__o {
-    color: #94A3B8;
-    font-size: 11px;
-    font-style: italic;
-  }
+  &__texto strong { color: #B91C1C; font-weight: 700; }
 
-  label {
-    display: flex;
-    flex-direction: column;
-    font-size: 10px;
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    color: #1D4ED8;
+    font-size: 12px;
     font-weight: 600;
-    color: #64748B;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    gap: 2px;
+    cursor: pointer;
+    margin-left: auto;
+    transition: background 0.15s;
 
-    input {
-      width: 80px;
-      padding: 4px 8px;
-      border: 1px solid #CBD5E1;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #0F172A;
-      background: #FFFFFF;
-      text-align: right;
-      font-family: inherit;
+    .material-symbols-outlined { font-size: 16px; }
 
-      &:focus {
-        outline: none;
-        border-color: #B45309;
-      }
+    &:hover:not(:disabled) {
+      background: #EFF6FF;
+      border-color: #93C5FD;
+    }
 
-      &:disabled {
-        background: #F8FAFC;
-        color: #94A3B8;
-        cursor: not-allowed;
-      }
+    &:disabled {
+      color: #94A3B8;
+      cursor: not-allowed;
     }
   }
 }

@@ -9,10 +9,13 @@ import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-head
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ModalEnviarVbComponent } from '../modal-enviar-vb/modal-enviar-vb.component';
+import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-anular-propuesta.component';
+import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
 
 @Component({
   selector: 'app-propuesta-wizard',
-  imports: [RouterOutlet, RouterLink, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent],
+  imports: [RouterOutlet, RouterLink, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent],
   templateUrl: './propuesta-wizard.component.html',
   styleUrl: './propuesta-wizard.component.scss',
 })
@@ -261,15 +264,42 @@ export class PropuestaWizardComponent implements OnInit {
     if (ok) this.toast.exito('Cambios guardados.');
   }
 
-  /** Último paso en modo EDIT: abre modal "Enviar a Visto Bueno" (HU futura). */
+  readonly modalEnviarVbAbierto = signal(false);
+  readonly modalAnularAbierto   = signal(false);
+  readonly modalPreviewPdfAbierto = signal(false);
+
   enviarAVistoBueno(): void {
-    this.toast.exito('Modal "Enviar a Visto Bueno" — pendiente, otra HU.');
-    console.log('[propuesta] enviar a visto bueno (modal pendiente)');
+    if (!this.draftSvc.draft().idPropuesta) {
+      this.toast.error('Guarda la propuesta antes de enviarla a Visto Bueno.');
+      return;
+    }
+    this.modalEnviarVbAbierto.set(true);
+  }
+  cerrarEnviarVb(): void { this.modalEnviarVbAbierto.set(false); }
+  onVbEnviado(): void {
+    this.cerrarEnviarVb();
+    this.toast.exito('Propuesta enviada a Visto Bueno.');
+    this.router.navigate(['/crm/propuestas']);
+  }
+
+  abrirAnular(): void {
+    if (!this.draftSvc.draft().idPropuesta) {
+      this.toast.error('Guarda la propuesta antes de poder anularla.');
+      return;
+    }
+    this.modalAnularAbierto.set(true);
+  }
+  cerrarAnular(): void { this.modalAnularAbierto.set(false); }
+  onAnulada(): void {
+    this.cerrarAnular();
+    this.toast.exito('Propuesta anulada.');
+    this.router.navigate(['/crm/propuestas']);
   }
 
   verPreviaPdf(): void {
-    console.log('[propuesta] vista previa PDF (pendiente)');
+    this.modalPreviewPdfAbierto.set(true);
   }
+  cerrarPreviewPdf(): void { this.modalPreviewPdfAbierto.set(false); }
 
   formatearMonto(valor: number): string {
     const moneda = this.draftSvc.draft().tipoMoneda || 'USD';

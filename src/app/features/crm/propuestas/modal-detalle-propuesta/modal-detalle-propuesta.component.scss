@@ -1,0 +1,610 @@
+// ─── Variables (clonadas del detalle-requerimiento para mantener línea) ────
+$azul:        #2563EB;
+$azul-bg:     #EFF4FF;
+$verde:       #059669;
+$verde-bg:    #D1FAE5;
+$naranja:     #D97706;
+$naranja-bg:  #FEF3C7;
+$rojo:        #DC2626;
+$rojo-bg:     #FEE2E2;
+$gris-borde:  #E5E7EB;
+$gris-texto:  #6B7280;
+$gris-claro:  #94A3B8;
+$gris-bg:     #F8FAFC;
+$texto-osc:   #111827;
+$blanco:      #FFFFFF;
+
+// ─── Overlay ───────────────────────────────────────────────────────────────
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  background: $blanco;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+// ─── Cargando / Error ──────────────────────────────────────────────────────
+.modal__cargando,
+.modal__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  color: $gris-texto;
+  font-size: 14px;
+}
+.modal__spin {
+  animation: girar 1s linear infinite;
+  font-size: 28px;
+  color: $azul;
+}
+.modal__error { color: $rojo; .material-symbols-outlined { font-size: 40px; } }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+// ─── Header ───────────────────────────────────────────────────────────────
+.modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid $gris-borde;
+  flex-shrink: 0;
+  background: $blanco;
+}
+
+.modal__header-izq {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.modal__icono-wrap {
+  width: 48px;
+  height: 48px;
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modal__icono-doc {
+  font-size: 24px;
+  color: $azul;
+}
+
+.modal__titulo-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.modal__titulo-texto { font-size: 16px; font-weight: 400; color: $texto-osc; }
+.modal__titulo-sep   { font-size: 16px; color: $gris-claro; }
+.modal__numero       { font-size: 16px; font-weight: 900; color: $azul; letter-spacing: -0.4px; }
+
+.modal__creador {
+  font-size: 13px;
+  color: $gris-texto;
+  margin: 4px 0 0;
+  strong { color: $texto-osc; }
+}
+
+.modal__header-der { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+// ─── Badges ────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.badge.estado--azul       { background: #DBEAFE; color: #1D4ED8; }
+.badge.estado--amber      { background: $naranja-bg; color: $naranja; }
+.badge.estado--verde      { background: $verde-bg; color: $verde; }
+.badge.estado--rojo       { background: $rojo-bg; color: $rojo; }
+.badge.estado--gris       { background: #F3F4F6; color: $gris-texto; }
+.badge.estado--gris-claro { background: #F3F4F6; color: $gris-claro; }
+
+// ─── Tabs ──────────────────────────────────────────────────────────────────
+.tabs {
+  display: flex;
+  padding: 0 32px;
+  border-bottom: 1px solid $gris-borde;
+  flex-shrink: 0;
+  overflow-x: auto;
+  background: $blanco;
+  scrollbar-width: thin;        // Firefox
+  scrollbar-color: #CBD5E1 transparent;
+
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 9999px;
+    &:hover { background: #94A3B8; }
+  }
+}
+.tabs__item {
+  padding: 16px 0;
+  margin-right: 32px;
+  font-size: 15px;
+  font-weight: 500;
+  color: $gris-claro;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  &:hover { color: $azul; }
+  &--activo {
+    color: $azul;
+    border-bottom-color: $azul;
+    font-weight: 700;
+  }
+}
+
+// ─── Contenido ─────────────────────────────────────────────────────────────
+.contenido {
+  background: $gris-bg;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+// ─── KPIs ──────────────────────────────────────────────────────────────────
+.kpis-fila {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 1000px) { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 700px)  { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.kpi-icono-wrap {
+  width: 40px;
+  height: 40px;
+  background: $azul-bg;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 20px; color: $azul; }
+
+  &--naranja { background: $naranja-bg; .material-symbols-outlined { color: $naranja; } }
+  &--verde   { background: $verde-bg;   .material-symbols-outlined { color: $verde; } }
+}
+
+.kpi-texto { min-width: 0; flex: 1; }
+.kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: $gris-claro;
+  white-space: nowrap;
+}
+.kpi-valor {
+  font-size: 14px;
+  font-weight: 700;
+  color: $texto-osc;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  &--rojo { color: $rojo; }
+}
+
+// ─── Main grid ────────────────────────────────────────────────────────────
+.main-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 24px;
+  align-items: start;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.col-izq, .col-der {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// ─── Panel ────────────────────────────────────────────────────────────────
+.panel {
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.panel__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  color: $texto-osc;
+  margin-bottom: 20px;
+  .material-symbols-outlined { font-size: 20px; color: $azul; }
+}
+
+// ─── Info grid ────────────────────────────────────────────────────────────
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.info-item { display: flex; flex-direction: column; gap: 4px; }
+.info-label {
+  font-size: 11px;
+  color: $gris-claro;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.info-valor {
+  font-size: 14px;
+  color: $texto-osc;
+  font-weight: 600;
+}
+.info-desc__texto {
+  font-size: 14px;
+  color: $texto-osc;
+  line-height: 1.6;
+  margin: 6px 0 0;
+}
+
+// ─── Flujo workflow ───────────────────────────────────────────────────────
+.flujo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.flujo__paso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 70px;
+  gap: 8px;
+  position: relative;
+}
+.flujo__circulo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E5E7EB;
+  color: $gris-claro;
+  border: 2px solid transparent;
+
+  .material-symbols-outlined { font-size: 18px; }
+}
+.flujo__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: $gris-claro;
+  text-align: center;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+
+.flujo__paso--completado {
+  .flujo__circulo { background: $verde; color: #fff; }
+  .flujo__label   { color: $verde; }
+}
+.flujo__paso--actual {
+  .flujo__circulo { background: $azul-bg; color: $azul; border-color: $azul; }
+  .flujo__label   { color: $azul; }
+}
+.flujo__paso--rechazado,
+.flujo__paso--anulado,
+.flujo__paso--vencido {
+  .flujo__circulo { background: $rojo-bg; color: $rojo; }
+  .flujo__label   { color: $rojo; }
+}
+
+.flujo__anulado {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: $rojo-bg;
+  color: $rojo;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// ─── Resumen Económico (lista) ────────────────────────────────────────────
+.eco-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.eco-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: $gris-texto;
+  strong { color: $texto-osc; font-weight: 700; }
+}
+.eco-desc { color: $rojo !important; }
+.eco-row--total {
+  padding-top: 10px;
+  border-top: 1px solid $gris-borde;
+  font-size: 15px;
+  strong { color: $azul; font-size: 17px; }
+}
+
+// ─── Documentos ──────────────────────────────────────────────────────────
+.doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &--grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    @media (max-width: 700px) { grid-template-columns: 1fr; }
+  }
+}
+.doc-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: $gris-bg;
+  border-radius: 10px;
+
+  &--pend {
+    background: $naranja-bg;
+    color: $naranja;
+    .doc-icono { background: #FDE68A; color: $naranja; }
+  }
+}
+.doc-icono {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: $azul-bg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { color: $azul; font-size: 18px; }
+}
+.doc-texto { flex: 1; min-width: 0; }
+.doc-codigo { font-size: 13px; font-weight: 700; color: $texto-osc; }
+.doc-desc   { font-size: 12px; color: $gris-texto; margin-top: 2px; }
+.doc-fecha  { font-size: 11px; color: $gris-claro; margin-top: 4px; }
+.doc-vacio {
+  padding: 24px;
+  text-align: center;
+  color: $gris-claro;
+  font-size: 13px;
+  font-style: italic;
+}
+
+// ─── Tablas ──────────────────────────────────────────────────────────────
+.tabla-wrap { overflow-x: auto; }
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    background: $gris-bg;
+    color: $gris-texto;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid $gris-borde;
+
+    &.num { text-align: right; }
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    color: $texto-osc;
+    &.num { text-align: right; font-variant-numeric: tabular-nums; }
+  }
+  .mono { font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 12px; }
+  &__fila--actual { background: $azul-bg; }
+}
+.tabla-vacio {
+  text-align: center !important;
+  padding: 24px !important;
+  color: $gris-claro;
+  font-style: italic;
+}
+.pill-actual {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+// ─── Timeline Actividad ──────────────────────────────────────────────────
+.timeline-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px;
+  color: $gris-claro;
+  font-size: 13px;
+
+  .material-symbols-outlined { font-size: 36px; opacity: 0.6; }
+}
+
+.act-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.act-item {
+  display: flex;
+  gap: 14px;
+  padding-bottom: 10px;
+}
+.act-item__izq {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.act-item__icono-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: $azul-bg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  .material-symbols-outlined { font-size: 14px; color: $azul; }
+}
+.act-item__conector {
+  width: 2px;
+  flex: 1;
+  background: $gris-borde;
+  margin-top: 4px;
+}
+.act-item__contenido { flex: 1; min-width: 0; padding-bottom: 10px; }
+.act-item__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.act-item__tipo { font-size: 13px; font-weight: 700; color: $texto-osc; }
+.act-item__fecha { font-size: 11px; color: $gris-claro; }
+.act-item__desc { font-size: 13px; color: $gris-texto; margin: 4px 0 0; line-height: 1.5; }
+.act-item__footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: $gris-claro;
+  .material-symbols-outlined { font-size: 14px; }
+}
+
+// ─── Bloques de texto (Detalle, Recomendaciones, Suministros, Condiciones) ─
+.bloques-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.bloque-grupo {
+  &__titulo {
+    font-size: 14px;
+    font-weight: 700;
+    color: $texto-osc;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed $gris-borde;
+  }
+  &__vinetas {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    li {
+      font-size: 13px;
+      color: $texto-osc;
+      line-height: 1.55;
+    }
+  }
+}
+
+.texto-vacio {
+  padding: 20px;
+  text-align: center;
+  color: $gris-claro;
+  font-size: 13px;
+  font-style: italic;
+}
+
+// Info grid de una sola columna (usado en Forma de Pago · panel derecho)
+.info-grid--una-col { grid-template-columns: 1fr !important; }
+
+// ─── Footer ──────────────────────────────────────────────────────────────
+.modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-top: 1px solid $gris-borde;
+  flex-shrink: 0;
+  background: $blanco;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.modal__footer-izq,
+.modal__footer-der {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

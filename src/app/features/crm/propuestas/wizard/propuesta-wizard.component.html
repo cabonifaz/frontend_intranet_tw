@@ -180,6 +180,13 @@
           </app-button>
         }
 
+        @if (!esNuevo() && draftSvc.draft().esEditable && draftSvc.draft().idPropuesta) {
+          <app-button variant="danger-ghost" tamano="md" icono="block"
+                      (clic)="abrirAnular()">
+            Anular
+          </app-button>
+        }
+
         <app-button variant="ghost" tamano="md" icono="picture_as_pdf"
                     (clic)="verPreviaPdf()">
           Vista Previa PDF
@@ -219,5 +226,32 @@
     [fechaGuardado]="b.fechaGuardado"
     (restaurar)="restaurarBorrador()"
     (descartar)="descartarBorrador()"
+  />
+}
+
+<!-- HU-12 Enviar a Visto Bueno -->
+@if (modalEnviarVbAbierto() && draftSvc.draft().idPropuesta) {
+  <app-modal-enviar-vb
+    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    (cerrar)="cerrarEnviarVb()"
+    (enviado)="onVbEnviado()"
+  />
+}
+
+<!-- HU-12 Anular Propuesta -->
+@if (modalAnularAbierto() && draftSvc.draft().idPropuesta) {
+  <app-modal-anular-propuesta
+    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    (cerrar)="cerrarAnular()"
+    (anulada)="onAnulada()"
+  />
+}
+
+<!-- Vista Previa PDF (mock) -->
+@if (modalPreviewPdfAbierto()) {
+  <app-modal-preview-pdf
+    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [idPropuesta]="draftSvc.draft().idPropuesta ?? 0"
+    (cerrar)="cerrarPreviewPdf()"
   />
 }

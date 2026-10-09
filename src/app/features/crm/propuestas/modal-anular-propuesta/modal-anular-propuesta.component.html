@@ -1,0 +1,102 @@
+<app-modal titulo="Anular Propuesta" ancho="md" (cerrar)="onCerrar()">
+  <div class="map-body">
+    @if (cargando()) {
+      <div class="map-loading">
+        <span class="material-symbols-outlined map-spin">progress_activity</span>
+        <span>Cargando...</span>
+      </div>
+    } @else if (error()) {
+      <div class="map-error">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ error() }}</span>
+      </div>
+    } @else if (datos(); as d) {
+      <!-- Chip + cliente -->
+      <div class="map-chip-row">
+        <span class="map-chip">{{ d.numero }} · v{{ d.version }}</span>
+        <span class="map-cliente">{{ d.cliente || '—' }}</span>
+      </div>
+
+      <!-- Alert impacto rojo -->
+      <div class="map-alert">
+        <span class="material-symbols-outlined">error</span>
+        <div>
+          <div class="map-alert__titulo">Impacto de la acción</div>
+          <div class="map-alert__desc">
+            {{ d.impacto || 'La propuesta se detendrá en el workflow. El RQ y el expediente conservarán el historial. La acción será auditada.' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloqueo si no puede anular -->
+      @if (!d.puedeAnular) {
+        <div class="map-bloqueo">
+          <span class="material-symbols-outlined">block</span>
+          <div>
+            <div class="map-bloqueo__titulo">No se puede anular</div>
+            <div class="map-bloqueo__desc">{{ d.motivoBloqueo || 'Esta propuesta ya no admite anulación en su estado actual.' }}</div>
+          </div>
+        </div>
+      }
+
+      <!-- Motivo -->
+      <div class="map-campo" [class.map-campo--disabled]="!d.puedeAnular">
+        <label>MOTIVO DE ANULACIÓN</label>
+        <select
+          [ngModel]="idMotivo()"
+          (ngModelChange)="idMotivo.set($event)"
+          [disabled]="!d.puedeAnular"
+        >
+          <option [ngValue]="null">Seleccione un motivo...</option>
+          @for (m of d.motivos; track m.id) {
+            <option [ngValue]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Justificación -->
+      <div class="map-campo" [class.map-campo--disabled]="!d.puedeAnular">
+        <label>
+          JUSTIFICACIÓN DETALLADA
+          <span class="map-obligatorio">* Obligatorio</span>
+        </label>
+        <textarea
+          [ngModel]="justificacion()"
+          (ngModelChange)="justificacion.set($event)"
+          placeholder="Describe el motivo técnico por el cual se anula esta propuesta..."
+          rows="3"
+          [disabled]="!d.puedeAnular"
+        ></textarea>
+        <small class="map-hint">
+          Mínimo 20 caracteres ({{ justificacion().trim().length }} / 20)
+        </small>
+      </div>
+
+      <!-- Confirmación crítica -->
+      @if (d.puedeAnular) {
+        <label class="map-check">
+          <input type="checkbox" [checked]="confirmacion()" (change)="confirmacion.set(!confirmacion())" />
+          <div>
+            <div class="map-check__titulo">Confirmación Crítica</div>
+            <div class="map-check__desc">
+              Confirmo que he revisado el impacto de la anulación y que esta acción es irreversible.
+            </div>
+          </div>
+        </label>
+      }
+    }
+  </div>
+
+  <div modalFooter class="map-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button
+      variant="danger"
+      icono="block"
+      [disabled]="!puedeAnular()"
+      [cargando]="anulando()"
+      (clic)="anular()"
+    >
+      {{ anulando() ? 'Anulando...' : 'Anular Propuesta' }}
+    </app-button>
+  </div>
+</app-modal>

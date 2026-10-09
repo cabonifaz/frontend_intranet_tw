@@ -1,0 +1,656 @@
+<div class="overlay" (click)="onCerrar()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <!-- ── Cargando ─────────────────────────────────────────────────── -->
+    @if (cargando()) {
+      <div class="modal__cargando">
+        <span class="material-symbols-outlined modal__spin">progress_activity</span>
+        Cargando propuesta...
+      </div>
+    }
+
+    <!-- ── Error ─────────────────────────────────────────────────────── -->
+    @else if (error()) {
+      <div class="modal__error">
+        <span class="material-symbols-outlined">error</span>
+        {{ error() }}
+        <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Cerrar</app-button>
+      </div>
+    }
+
+    <!-- ── Contenido ─────────────────────────────────────────────────── -->
+    @else if (datos(); as d) {
+
+      <!-- Header -->
+      <div class="modal__header">
+        <div class="modal__header-izq">
+          <div class="modal__icono-wrap">
+            <span class="material-symbols-outlined modal__icono-doc">request_quote</span>
+          </div>
+          <div>
+            <div class="modal__titulo-fila">
+              <span class="modal__titulo-texto">Detalle de Propuesta</span>
+              <span class="modal__titulo-sep">/</span>
+              <span class="modal__numero">{{ d.propuesta.numero }} · v{{ d.propuesta.version }}</span>
+              <span class="badge" [ngClass]="estadoClase(d.propuesta.estado)">
+                {{ d.propuesta.estadoLabel || d.propuesta.estado }}
+              </span>
+            </div>
+            <p class="modal__creador">
+              Comercial <strong>{{ d.propuesta.nombreResponsable || 'Sistema' }}</strong>
+              @if (d.propuesta.fechaCreacion) {
+                · creada el {{ d.propuesta.fechaCreacion | date:"dd 'de' MMMM 'de' yyyy · HH:mm" }}
+              }
+            </p>
+          </div>
+        </div>
+        <div class="modal__header-der">
+          <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
+                      ariaLabel="Cerrar" (clic)="onCerrar()" />
+        </div>
+      </div>
+
+      <!-- Tabs dinámicos (depende de SeccionesActivas de la propuesta) -->
+      <div class="tabs">
+        @for (t of tabs(); track t.id) {
+          <button class="tabs__item"
+                  [class.tabs__item--activo]="tab() === t.id"
+                  (click)="cambiarTab(t.id)">
+            {{ t.label }}
+          </button>
+        }
+      </div>
+
+      <!-- ═══ Tab 1: Resumen (siempre) ═══════════════════════════════ -->
+      @if (tab() === 'resumen') {
+        <div class="contenido">
+
+          <!-- KPIs -->
+          <div class="kpis-fila">
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">business</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">CLIENTE</div>
+                <div class="kpi-valor">{{ d.propuesta.razonSocial || '—' }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">receipt_long</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">RQ</div>
+                <div class="kpi-valor">{{ d.propuesta.numeroRequerimiento || '—' }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap kpi-icono-wrap--verde">
+                <span class="material-symbols-outlined">payments</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">MONTO</div>
+                <div class="kpi-valor">
+                  {{ resumenEconomico().moneda }} {{ resumenEconomico().total | number:'1.2-2' }}
+                </div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">COMERCIAL</div>
+                <div class="kpi-valor">{{ d.propuesta.nombreResponsable || '—' }}</div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icono-wrap kpi-icono-wrap--naranja">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="kpi-texto">
+                <div class="kpi-label">SLA</div>
+                <div class="kpi-valor" [class.kpi-valor--rojo]="d.sla?.vencido">{{ formatearSla() }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main grid: configuración + resumen económico/docs -->
+          <div class="main-grid">
+            <div class="col-izq">
+
+              <!-- Información General (campos de la sección Configuración) -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">info</span>
+                  Información General
+                </div>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <div class="info-label">TIPO DE SERVICIO</div>
+                    <div class="info-valor">{{ d.propuesta.tipoServicio || d.propuesta.tipoPropuesta || '—' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">MONEDA</div>
+                    <div class="info-valor">{{ d.propuesta.moneda || 'USD' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">RESPONSABLE TÉCNICO</div>
+                    <div class="info-valor">{{ d.propuesta.nombreResponsable || d.propuesta.nombreResponsable || '—' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">IGV</div>
+                    <div class="info-valor">
+                      {{ d.propuesta.aplicaIgv ? 'Sí' : 'No' }} ({{ resumenEconomico().igvPct }}%)
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">CONTRATO MARCO</div>
+                    <div class="info-valor">{{ d.numeroContratoMarco || 'Sin vincular' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">SECCIONES INCLUIDAS</div>
+                    <div class="info-valor">{{ tabs().length - 1 }} / 9</div>
+                  </div>
+                </div>
+
+                <!-- Tercerización si aplica -->
+                @if (d.propuesta.esTercerizado) {
+                  <div class="info-desc">
+                    <div class="info-label">TERCERIZACIÓN</div>
+                    <p class="info-desc__texto">
+                      <strong>{{ d.propuesta.terceroRazonSocial || '—' }}</strong>
+                      · RUC {{ d.propuesta.terceroRuc || '—' }}
+                      @if (d.propuesta.terceroDireccion) { · {{ d.propuesta.terceroDireccion }} }
+                    </p>
+                  </div>
+                }
+
+                @if (d.propuesta.referencia) {
+                  <div class="info-desc">
+                    <div class="info-label">REFERENCIA</div>
+                    <p class="info-desc__texto">{{ d.propuesta.referencia }}</p>
+                  </div>
+                }
+                @if (d.propuesta.introduccion) {
+                  <div class="info-desc">
+                    <div class="info-label">INTRODUCCIÓN</div>
+                    <p class="info-desc__texto">{{ d.propuesta.introduccion }}</p>
+                  </div>
+                }
+                @if (d.propuesta.notasGenerales) {
+                  <div class="info-desc">
+                    <div class="info-label">NOTAS GENERALES</div>
+                    <p class="info-desc__texto">{{ d.propuesta.notasGenerales }}</p>
+                  </div>
+                }
+              </div>
+
+              <!-- Workflow -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">account_tree</span>
+                  Workflow de Aprobación
+                </div>
+                <div class="flujo">
+                  @for (p of workflowPasos(); track p.codigo) {
+                    <div class="flujo__paso flujo__paso--{{ p.estado }}">
+                      <div class="flujo__circulo">
+                        @if (p.estado === 'completado') {
+                          <span class="material-symbols-outlined">check</span>
+                        } @else if (p.estado === 'actual') {
+                          <span class="material-symbols-outlined">play_arrow</span>
+                        } @else if (p.estado === 'rechazado' || p.estado === 'anulado' || p.estado === 'vencido') {
+                          <span class="material-symbols-outlined">close</span>
+                        } @else {
+                          <span class="material-symbols-outlined">radio_button_unchecked</span>
+                        }
+                      </div>
+                      <div class="flujo__label">{{ p.etiqueta }}</div>
+                    </div>
+                  }
+                </div>
+                @if (d.workflow.estadoTerminal) {
+                  <div class="flujo__anulado">
+                    <span class="material-symbols-outlined">cancel</span>
+                    Propuesta {{ d.workflow.estadoTerminal }}
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="col-der">
+              <!-- Resumen Económico -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">payments</span>
+                  Resumen Económico
+                </div>
+                <div class="eco-list">
+                  <div class="eco-row">
+                    <span>Subtotal</span>
+                    <strong>{{ resumenEconomico().moneda }} {{ resumenEconomico().subtotal | number:'1.2-2' }}</strong>
+                  </div>
+                  <div class="eco-row">
+                    <span>Descuento</span>
+                    <strong class="eco-desc">-{{ resumenEconomico().moneda }} {{ resumenEconomico().descuento | number:'1.2-2' }}</strong>
+                  </div>
+                  <div class="eco-row">
+                    <span>IGV ({{ resumenEconomico().igvPct }}%)</span>
+                    <strong>{{ resumenEconomico().moneda }} {{ resumenEconomico().igv | number:'1.2-2' }}</strong>
+                  </div>
+                  <div class="eco-row eco-row--total">
+                    <span>TOTAL</span>
+                    <strong>{{ resumenEconomico().moneda }} {{ resumenEconomico().total | number:'1.2-2' }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Documentos vinculados -->
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">folder_open</span>
+                  Documentos Vinculados
+                </div>
+                <ul class="doc-list">
+                  @for (doc of d.documentos; track doc.tipo + (doc.codigo || '')) {
+                    <li class="doc-item" [class.doc-item--pend]="doc.esPendiente">
+                      <div class="doc-icono">
+                        <span class="material-symbols-outlined">{{ iconoDocumento(doc) }}</span>
+                      </div>
+                      <div class="doc-texto">
+                        <div class="doc-codigo">{{ doc.codigo || (doc.esPendiente ? 'Pendiente' : '—') }}</div>
+                        @if (doc.descripcion) { <div class="doc-desc">{{ doc.descripcion }}</div> }
+                      </div>
+                    </li>
+                  } @empty {
+                    <li class="doc-vacio">Sin documentos vinculados.</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab 2: Propuesta (incluye Opcionales como subsección) ══ -->
+      @if (tab() === 'propuesta') {
+        <div class="contenido">
+          <!-- Propuesta Comercial (principal) -->
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">shopping_cart</span>
+              Ítems de la Propuesta Comercial
+            </div>
+            <div class="tabla-wrap">
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Descripción</th>
+                    <th>Alcance</th>
+                    <th class="num">Cant.</th>
+                    <th class="num">Frec.</th>
+                    <th class="num">P. Unit.</th>
+                    <th class="num">Dcto</th>
+                    <th class="num">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (i of itemsPrincipales(); track i.idItem) {
+                    <tr>
+                      <td>{{ i.descripcion }}</td>
+                      <td>{{ i.alcance || '—' }}</td>
+                      <td class="num">{{ i.cantidad }}</td>
+                      <td class="num">{{ i.frecuencia }}</td>
+                      <td class="num">{{ resumenEconomico().moneda }} {{ i.precioUnitario | number:'1.2-2' }}</td>
+                      <td class="num">{{ resumenEconomico().moneda }} {{ i.descuento | number:'1.2-2' }}</td>
+                      <td class="num"><strong>{{ resumenEconomico().moneda }} {{ i.subtotal | number:'1.2-2' }}</strong></td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="7" class="tabla-vacio">Sin ítems registrados.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Subsección Opcionales (solo si la propuesta la incluye) -->
+          @if (tieneOpcionales()) {
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">playlist_add</span>
+                Opcionales
+              </div>
+              <div class="tabla-wrap">
+                <table class="tabla">
+                  <thead>
+                    <tr>
+                      <th>Descripción</th>
+                      <th>Alcance</th>
+                      <th class="num">Cant.</th>
+                      <th class="num">P. Unit.</th>
+                      <th class="num">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (i of itemsOpcionales(); track i.idItem) {
+                      <tr>
+                        <td>{{ i.descripcion }}</td>
+                        <td>{{ i.alcance || '—' }}</td>
+                        <td class="num">{{ i.cantidad }}</td>
+                        <td class="num">{{ resumenEconomico().moneda }} {{ i.precioUnitario | number:'1.2-2' }}</td>
+                        <td class="num"><strong>{{ resumenEconomico().moneda }} {{ i.subtotal | number:'1.2-2' }}</strong></td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="5" class="tabla-vacio">Sin ítems opcionales.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ═══ Tab 3: Detalle (incluye Recomendaciones como subsección) ══ -->
+      @if (tab() === 'detalle') {
+        <div class="contenido">
+          <!-- Detalle Técnico -->
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">description</span>
+              Detalle Técnico
+            </div>
+            @if (textosDetalle().length === 0) {
+              <div class="texto-vacio">Sin bloques de detalle registrados.</div>
+            } @else {
+              <div class="bloques-texto">
+                @for (g of textosDetalle(); track g.titulo) {
+                  <div class="bloque-grupo">
+                    @if (g.titulo) { <h4 class="bloque-grupo__titulo">{{ g.titulo }}</h4> }
+                    @if (g.vinetas.length > 0) {
+                      <ul class="bloque-grupo__vinetas">
+                        @for (v of g.vinetas; track v) { <li>{{ v }}</li> }
+                      </ul>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Subsección Recomendaciones (solo si la propuesta la incluye) -->
+          @if (tieneRecomendaciones()) {
+            <div class="panel">
+              <div class="panel__titulo">
+                <span class="material-symbols-outlined">tips_and_updates</span>
+                Recomendaciones
+              </div>
+              @if (textosRecomendaciones().length === 0) {
+                <div class="texto-vacio">Sin recomendaciones registradas.</div>
+              } @else {
+                <div class="bloques-texto">
+                  @for (g of textosRecomendaciones(); track g.titulo) {
+                    <div class="bloque-grupo">
+                      @if (g.titulo) { <h4 class="bloque-grupo__titulo">{{ g.titulo }}</h4> }
+                      @if (g.vinetas.length > 0) {
+                        <ul class="bloque-grupo__vinetas">
+                          @for (v of g.vinetas; track v) { <li>{{ v }}</li> }
+                        </ul>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ═══ Tab 6: Forma de Pago ════════════════════════════════════ -->
+      @if (tab() === 'forma_pago') {
+        <div class="contenido">
+          <div class="main-grid">
+            <div class="col-izq">
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">payment</span>
+                  Hitos de Pago
+                </div>
+                <div class="tabla-wrap">
+                  <table class="tabla">
+                    <thead>
+                      <tr>
+                        <th class="num" style="width: 110px">%</th>
+                        <th>Condición</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (fp of formasPago(); track fp.id; let i = $index) {
+                        <tr>
+                          <td class="num"><strong>{{ fp.porcentaje }}%</strong></td>
+                          <td>{{ fp.condicionLabel || fp.condicion || '—' }}</td>
+                        </tr>
+                      } @empty {
+                        <tr><td colspan="2" class="tabla-vacio">Sin hitos de pago registrados.</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-der">
+              <div class="panel">
+                <div class="panel__titulo">
+                  <span class="material-symbols-outlined">tune</span>
+                  Términos
+                </div>
+                <div class="info-grid info-grid--una-col">
+                  <div class="info-item">
+                    <div class="info-label">VIGENCIA</div>
+                    <div class="info-valor">{{ d.propuesta.vigenciaDias ?? d.propuesta.validezOferta ?? '—' }} días</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-label">PLAZO DE ENTREGA</div>
+                    <div class="info-valor">{{ d.propuesta.plazoEntregaDias ?? d.propuesta.plazoEntrega ?? '—' }} {{ d.propuesta.plazoEntregaUnidad || 'días' }}</div>
+                  </div>
+                  @if (d.propuesta.plazoEntregaCondicion) {
+                    <div class="info-item">
+                      <div class="info-label">CONDICIÓN</div>
+                      <div class="info-valor">{{ d.propuesta.plazoEntregaCondicion }}</div>
+                    </div>
+                  }
+                  @if (d.propuesta.mostrarGarantia) {
+                    <div class="info-item">
+                      <div class="info-label">GARANTÍA</div>
+                      <div class="info-valor">{{ d.propuesta.garantiaMeses || '—' }} meses</div>
+                    </div>
+                  }
+                  <div class="info-item">
+                    <div class="info-label">TIPO DE CAMBIO</div>
+                    <div class="info-valor">{{ d.propuesta.tipoCambio ? ('S/ ' + (d.propuesta.tipoCambio | number:'1.4-4')) : '—' }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab 7: Suministros del Cliente ══════════════════════════ -->
+      @if (tab() === 'suministros_cliente') {
+        <div class="contenido">
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">inventory_2</span>
+              Suministros a Cargo del Cliente
+            </div>
+            @if (textosSuministrosCliente().length === 0) {
+              <div class="texto-vacio">Sin suministros registrados.</div>
+            } @else {
+              <div class="bloques-texto">
+                @for (g of textosSuministrosCliente(); track g.titulo) {
+                  <div class="bloque-grupo">
+                    @if (g.titulo) { <h4 class="bloque-grupo__titulo">{{ g.titulo }}</h4> }
+                    @if (g.vinetas.length > 0) {
+                      <ul class="bloque-grupo__vinetas">
+                        @for (v of g.vinetas; track v) { <li>{{ v }}</li> }
+                      </ul>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab 8: Condiciones del Servicio ═════════════════════════ -->
+      @if (tab() === 'condiciones') {
+        <div class="contenido">
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">rule</span>
+              Condiciones del Servicio
+            </div>
+            @if (textosCondiciones().length === 0) {
+              <div class="texto-vacio">Sin cláusulas registradas.</div>
+            } @else {
+              <div class="bloques-texto">
+                @for (g of textosCondiciones(); track g.titulo) {
+                  <div class="bloque-grupo">
+                    @if (g.titulo) { <h4 class="bloque-grupo__titulo">{{ g.titulo }}</h4> }
+                    @if (g.vinetas.length > 0) {
+                      <ul class="bloque-grupo__vinetas">
+                        @for (v of g.vinetas; track v) { <li>{{ v }}</li> }
+                      </ul>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab 9: Listado de Equipos ═══════════════════════════════ -->
+      @if (tab() === 'listado_equipos') {
+        <div class="contenido">
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">precision_manufacturing</span>
+              Equipos Vinculados a la Propuesta
+            </div>
+            <div class="tabla-wrap">
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Nº Serie</th>
+                    <th>Código TW</th>
+                    <th>Local / Sede</th>
+                    <th>Tipo</th>
+                    <th>Marca · Modelo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (eq of equipos(); track eq.id) {
+                    <tr>
+                      <td class="mono">{{ eq.numSerie || '—' }}</td>
+                      <td class="mono">{{ eq.codigoTw || '—' }}</td>
+                      <td>{{ eq.localSede || '—' }}</td>
+                      <td>{{ eq.tipo || '—' }} @if (eq.subtipo) { <small>({{ eq.subtipo }})</small> }</td>
+                      <td>{{ eq.marca || '—' }} · {{ eq.modelo || '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="5" class="tabla-vacio">Sin equipos vinculados.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab: Versiones (fijo al final) ══════════════════════════ -->
+      @if (tab() === 'versiones') {
+        <div class="contenido">
+          <div class="panel">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">history</span>
+              Historial de Versiones
+            </div>
+            <div class="tabla-wrap">
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Versión</th>
+                    <th>Estado</th>
+                    <th class="num">Total</th>
+                    <th>Creada</th>
+                    <th>Por</th>
+                    <th>Motivo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (v of d.versiones; track v.idPropuesta) {
+                    <tr [class.tabla__fila--actual]="v.esActual">
+                      <td>
+                        v{{ v.version }}
+                        @if (v.esActual) { <span class="pill-actual">Actual</span> }
+                      </td>
+                      <td><span class="badge" [ngClass]="estadoClase(v.estado)">{{ v.estado }}</span></td>
+                      <td class="num">{{ resumenEconomico().moneda }} {{ v.total | number:'1.2-2' }}</td>
+                      <td>{{ v.fechaCreacion ? (v.fechaCreacion | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                      <td>{{ v.nombreCreador || '—' }}</td>
+                      <td>{{ v.motivoNuevaVersion || '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="6" class="tabla-vacio">Sin versiones adicionales.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Footer -->
+      <div class="modal__footer">
+        <div class="modal__footer-izq">
+          <app-button variant="ghost" tamano="md" icono="picture_as_pdf" (clic)="pedirPreviewPdf()">
+            Vista Previa PDF
+          </app-button>
+          @if (datos()?.propuesta?.idRequerimiento) {
+            <app-button variant="ghost" tamano="md" icono="open_in_new" (clic)="abrirRequerimiento()">
+              Abrir RQ
+            </app-button>
+          }
+        </div>
+        <div class="modal__footer-der">
+          @if (datos()?.acciones?.puedeEditar || datos()?.acciones?.puedeGenerarNuevaVersion) {
+            <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="pedirAnular()">
+              Anular
+            </app-button>
+          }
+          @if (datos()?.acciones?.puedeEditar) {
+            <app-button variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
+              Enviar a VB
+            </app-button>
+          }
+          @if (datos()?.acciones?.accionPrincipal === 'editar') {
+            <app-button variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
+              Editar Propuesta
+            </app-button>
+          } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
+            <app-button variant="primary" tamano="md" icono="sync" (clic)="accionPrincipal()">
+              Generar Nueva Versión
+            </app-button>
+          }
+        </div>
+      </div>
+
+    }
+  </div>
+</div>
