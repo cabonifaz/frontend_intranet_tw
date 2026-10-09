@@ -65,7 +65,11 @@ export interface PropuestaDraft {
   descuentoPct:        number | null;   // % de descuento sobre subtotal propuesta
   descuentoMonto:      number | null;   // Monto fijo (si no se usa pct)
   idMotivoDescuento:   number | null;
-  descuentoOpcionales: number | null;
+  descuentoOpcionales:         number | null;
+  // Migración 48 — paralelo al descuento principal pero para el bloque de opcionales
+  descuentoOpcionalesPct:      number | null;
+  idMotivoDescuentoOpcionales: number | null;
+  totalOpcionales:             number | null;
 
   // Datos del cliente (readonly, vienen del RQ)
   idCliente:    number | null;
@@ -151,7 +155,10 @@ export function crearDraftVacio(): PropuestaDraft {
     descuentoPct:        null,
     descuentoMonto:      null,
     idMotivoDescuento:   null,
-    descuentoOpcionales: null,
+    descuentoOpcionales:         null,
+    descuentoOpcionalesPct:      null,
+    idMotivoDescuentoOpcionales: null,
+    totalOpcionales:             null,
 
     seccionesIncluidas: {
       configuracion:        true,

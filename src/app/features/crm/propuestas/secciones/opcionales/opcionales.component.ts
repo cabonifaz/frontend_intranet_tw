@@ -6,6 +6,7 @@ import { LineaItemPropuesta } from '../../../../../core/models/propuesta-detalle
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
 import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
+import { ModalDescuentoGlobalComponent } from '../../modal-descuento-global/modal-descuento-global.component';
 
 interface SumCatalogo {
   id:          number;
@@ -18,7 +19,7 @@ interface SumCatalogo {
 
 @Component({
   selector: 'app-seccion-opcionales',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent, ModalDescuentoGlobalComponent],
   styles: `:host { display: block; }`,
   templateUrl: './opcionales.component.html',
   styleUrl: '../propuesta/propuesta.component.scss',
@@ -32,6 +33,24 @@ export class OpcionalesComponent implements OnInit {
   readonly cargandoCatalogo = signal(false);
   readonly seleccionado      = signal<number | null>(null);
   readonly seleccionadoLinea = signal<number | null>(null);
+  readonly modalDescuentoAbierto = signal(false);
+
+  abrirModalDescuento(): void {
+    if (!this.draftSvc.draft().idPropuesta) return;
+    this.modalDescuentoAbierto.set(true);
+  }
+  cerrarModalDescuento(): void { this.modalDescuentoAbierto.set(false); }
+
+  /** Al confirmar en el modal, el back ya guardó el descuento. Sincronizamos el draft local. */
+  onDescuentoAplicado(resultado: { descuentoNuevo: number; porcentaje?: number | null; idMotivoDescuento?: number | null; totalNuevo: number }): void {
+    this.draftSvc.actualizar({
+      descuentoOpcionales:              resultado.descuentoNuevo > 0 ? resultado.descuentoNuevo : null,
+      descuentoOpcionalesPct:           resultado.porcentaje ?? null,
+      idMotivoDescuentoOpcionales:      resultado.idMotivoDescuento ?? null,
+      totalOpcionales:                  resultado.totalNuevo,
+    });
+    this.cerrarModalDescuento();
+  }
 
   async ngOnInit(): Promise<void> {
     this.cargandoCatalogo.set(true);

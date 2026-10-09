@@ -26,6 +26,8 @@ export class ModalDescuentoGlobalComponent {
 
   readonly idPropuesta = input.required<number>();
   readonly codigo      = input<string>('');
+  /** 'principal' usa los endpoints HU-11. 'opcionales' usa los paralelos de la migración 48. */
+  readonly seccion     = input<'principal' | 'opcionales'>('principal');
   readonly cerrar      = output<void>();
   readonly aplicado    = output<DescuentoResultado>();
 
@@ -63,12 +65,29 @@ export class ModalDescuentoGlobalComponent {
     });
   }
 
+  /** Delegadores: eligen el endpoint principal o el de opcionales según el input [seccion]. */
+  private previsualizar(dto: { tipo: 'porcentaje' | 'monto' | 'ninguno'; valor: number; idMotivoDescuento?: number | null }) {
+    return this.seccion() === 'opcionales'
+      ? this.svc.previsualizarDescuentoOpcionales(this.idPropuesta(), dto)
+      : this.svc.previsualizarDescuento(this.idPropuesta(), dto);
+  }
+  private aplicarApi(dto: { tipo: 'porcentaje' | 'monto'; valor: number; idMotivoDescuento?: number | null }) {
+    return this.seccion() === 'opcionales'
+      ? this.svc.aplicarDescuentoOpcionales(this.idPropuesta(), dto)
+      : this.svc.aplicarDescuento(this.idPropuesta(), dto);
+  }
+  private quitarApi() {
+    return this.seccion() === 'opcionales'
+      ? this.svc.quitarDescuentoOpcionales(this.idPropuesta())
+      : this.svc.quitarDescuento(this.idPropuesta());
+  }
+
   async ngOnInit(): Promise<void> {
     // Cargar motivos y previsualizar el descuento actual (si lo hay)
     try {
       const [cat, prevActual] = await Promise.all([
         this.maestrosSvc.obtenerCatalogo('MOTIVO_DESCUENTO').catch(() => [] as any[]),
-        this.svc.previsualizarDescuento(this.idPropuesta(), { tipo: 'ninguno', valor: 0 }).catch(() => null),
+        this.previsualizar({ tipo: 'ninguno', valor: 0 }).catch(() => null),
       ]);
       this.motivos.set(cat.map((c: any) => ({ id: Number(c.id), nombre: c.nombre })));
       if (prevActual) {
@@ -87,9 +106,7 @@ export class ModalDescuentoGlobalComponent {
   private async recalcular(tipo: 'porcentaje' | 'monto', valor: number, idMotivo: number | null): Promise<void> {
     this.cargandoPrev.set(true);
     try {
-      const r = await this.svc.previsualizarDescuento(this.idPropuesta(), {
-        tipo, valor, idMotivoDescuento: idMotivo,
-      });
+      const r = await this.previsualizar({ tipo, valor, idMotivoDescuento: idMotivo });
       this.preview.set(r);
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo previsualizar.');
@@ -102,7 +119,7 @@ export class ModalDescuentoGlobalComponent {
     if (!this.puedeAplicar()) return;
     this.aplicando.set(true);
     try {
-      const r = await this.svc.aplicarDescuento(this.idPropuesta(), {
+      const r = await this.aplicarApi({
         tipo: this.tipo(), valor: this.valor(), idMotivoDescuento: this.idMotivo(),
       });
       this.aplicado.emit(r);
@@ -117,7 +134,7 @@ export class ModalDescuentoGlobalComponent {
     if (this.quitando()) return;
     this.quitando.set(true);
     try {
-      const r = await this.svc.quitarDescuento(this.idPropuesta());
+      const r = await this.quitarApi();
       this.aplicado.emit(r);
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo quitar el descuento.');

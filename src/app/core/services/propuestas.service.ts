@@ -354,6 +354,33 @@ export class PropuestasService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // Migración 48 — Descuento específico de Opcionales (mismo shape que HU-11)
+  // ═══════════════════════════════════════════════════════════════════════════
+  async previsualizarDescuentoOpcionales(idPropuesta: number, dto: AplicarDescuentoRequest): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento-opcionales/previsualizar`, dto)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo previsualizar el descuento de opcionales.');
+    return r.datos;
+  }
+
+  async aplicarDescuentoOpcionales(idPropuesta: number, dto: AplicarDescuentoRequest): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.put<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento-opcionales`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo aplicar el descuento de opcionales.');
+    return r.datos;
+  }
+
+  async quitarDescuentoOpcionales(idPropuesta: number): Promise<DescuentoResultado> {
+    const r = await firstValueFrom(
+      this.http.delete<RespuestaApi<DescuentoResultado>>(`${this.base}/${idPropuesta}/descuento-opcionales`)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo quitar el descuento de opcionales.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // HU-12 — Envío a Visto Bueno
   // ═══════════════════════════════════════════════════════════════════════════
   async prepararEnvioVistoBueno(idPropuesta: number): Promise<VistoBuenoPropuesta> {

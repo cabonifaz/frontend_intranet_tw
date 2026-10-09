@@ -63,17 +63,24 @@
     </div>
 
     <div dpanel-footer>
-      <!-- Descuento global sobre opcionales -->
+      <!-- Descuento específico sobre opcionales — mismo modal HU-11 con seccion='opcionales' -->
       <div class="descuento-global">
-        <span class="descuento-global__label">DESCUENTO ESPECÍFICO OPCIONALES:</span>
-        <div class="descuento-global__inputs">
-          <label>
-            Monto fijo
-            <input type="number" min="0" step="0.01"
-                   [value]="draftSvc.draft().descuentoOpcionales ?? 0"
-                   (change)="actualizarDescuentoOpcionales(+$any($event.target).value)" />
-          </label>
-        </div>
+        @if ((draftSvc.draft().descuentoOpcionales ?? 0) > 0) {
+          <div class="descuento-global__aplicado">
+            <span class="material-symbols-outlined">local_offer</span>
+            <span class="descuento-global__texto">
+              Descuento específico aplicado:
+              <strong>-$ {{ formato(draftSvc.draft().descuentoOpcionales ?? 0) }}</strong>
+              @if ((draftSvc.draft().descuentoOpcionalesPct ?? 0) > 0) {
+                ({{ draftSvc.draft().descuentoOpcionalesPct }}%)
+              }
+            </span>
+          </div>
+        }
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+          <span class="material-symbols-outlined">percent</span>
+          {{ (draftSvc.draft().descuentoOpcionales ?? 0) > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
+        </button>
       </div>
 
       <div class="totales-row">
@@ -98,3 +105,13 @@
     </div>
   </app-doble-panel>
 </app-seccion>
+
+@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+  <app-modal-descuento-global
+    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version + ' · Opcionales'"
+    [seccion]="'opcionales'"
+    (cerrar)="cerrarModalDescuento()"
+    (aplicado)="onDescuentoAplicado($event)"
+  />
+}

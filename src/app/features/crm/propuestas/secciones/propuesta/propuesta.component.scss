@@ -209,6 +209,43 @@
   }
 }
 
+// ── Editor inline del descuento (Opcionales) ────────────────────────────────
+// Aparece debajo del botón "Aplicar/Modificar descuento" cuando el usuario pide editar.
+.descuento-editor {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.5px;
+  }
+
+  input[type="number"] {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 100%;
+
+    &:focus { outline: 2px solid #BFDBFE; outline-offset: -1px; border-color: #2563EB; }
+  }
+}
+
 // ── Fila de totales + acciones ──────────────────────────────────────────────
 .totales-row {
   display: flex;
