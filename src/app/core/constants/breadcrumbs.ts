@@ -14,3 +14,11 @@ export function breadcrumbMaestros(...cola: Array<string | BreadcrumbItem>): Bre
     ...cola.map(x => typeof x === 'string' ? { label: x } : x),
   ];
 }
+
+export function breadcrumbDirectorio(...cola: Array<string | BreadcrumbItem>): BreadcrumbItem[] {
+  return [
+    INICIO,
+    { label: 'Directorio', ruta: '/directorio' },
+    ...cola.map(x => typeof x === 'string' ? { label: x } : x),
+  ];
+}

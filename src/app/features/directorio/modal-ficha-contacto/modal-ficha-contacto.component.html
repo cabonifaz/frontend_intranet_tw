@@ -1,0 +1,83 @@
+<app-modal titulo="Ficha de contacto" ancho="md" (cerrar)="onCerrar()">
+  <div class="ficha">
+
+    <!-- ── Encabezado: avatar + nombre + cargo + área ────────────────── -->
+    <div class="ficha__header">
+      <div class="ficha__avatar">{{ iniciales(contacto().nombreCompleto) }}</div>
+      <div class="ficha__ident">
+        <h3 class="ficha__nombre">{{ contacto().nombreCompleto }}</h3>
+        @if (contacto().cargo) {
+          <p class="ficha__cargo">{{ contacto().cargo }}</p>
+        }
+        @if (contacto().areaLabel) {
+          <span class="ficha__area">{{ contacto().areaLabel }}</span>
+        }
+      </div>
+    </div>
+
+    <!-- ── Datos de contacto ────────────────────────────────────────── -->
+    <div class="ficha__grid">
+      <div class="ficha__dato">
+        <span class="ficha__dato-label">
+          <span class="material-symbols-outlined">mail</span>
+          Correo
+        </span>
+        @if (contacto().correo) {
+          <a class="ficha__dato-valor ficha__dato-valor--link" [href]="'mailto:' + contacto().correo">
+            {{ contacto().correo }}
+          </a>
+        } @else {
+          <span class="ficha__dato-valor ficha__dato-valor--vacio">No registrado</span>
+        }
+      </div>
+
+      <div class="ficha__dato">
+        <span class="ficha__dato-label">
+          <span class="material-symbols-outlined">call</span>
+          Teléfono
+        </span>
+        @if (contacto().telefono) {
+          <a class="ficha__dato-valor ficha__dato-valor--link" [href]="'tel:' + contacto().telefono">
+            {{ contacto().telefono }}
+          </a>
+        } @else {
+          <span class="ficha__dato-valor ficha__dato-valor--vacio">No registrado</span>
+        }
+      </div>
+
+      <div class="ficha__dato">
+        <span class="ficha__dato-label">
+          <span class="material-symbols-outlined">dialpad</span>
+          Anexo
+        </span>
+        @if (contacto().anexoCompleto) {
+          <span class="ficha__dato-valor ficha__dato-anexo">{{ contacto().anexoCompleto }}</span>
+        } @else {
+          <span class="ficha__dato-valor ficha__dato-valor--vacio">Sin anexo</span>
+        }
+      </div>
+
+      <div class="ficha__dato">
+        <span class="ficha__dato-label">
+          <span class="material-symbols-outlined">cake</span>
+          Cumpleaños
+        </span>
+        @if (contacto().cumpleanos) {
+          <span class="ficha__dato-valor ficha__dato-cumple">{{ contacto().cumpleanos }}</span>
+        } @else {
+          <span class="ficha__dato-valor ficha__dato-valor--vacio">No registrado</span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div modalFooter class="ficha__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+    @if (contacto().correo) {
+      <a class="ficha__btn-mail" [href]="'mailto:' + contacto().correo">
+        <span class="material-symbols-outlined">send</span>
+        Enviar correo
+      </a>
+    }
+  </div>
+</app-modal>

@@ -43,6 +43,11 @@ export class SidebarComponent {
       etiqueta: 'Maestros',
       ruta:     '/maestros',
     },
+    {
+      icono:    'contact_phone',
+      etiqueta: 'Directorio',
+      ruta:     '/directorio',
+    },
   ];
 
   readonly expandidos = signal<Set<string>>(this.calcularExpandidosIniciales());

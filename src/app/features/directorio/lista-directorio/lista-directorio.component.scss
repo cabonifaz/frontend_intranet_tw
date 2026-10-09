@@ -1,0 +1,97 @@
+.directorio-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
+}
+
+// ── Celda: contacto (avatar + nombre + cargo) ───────────────────────────────
+.contacto-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__nombre {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+  }
+
+  &__cargo {
+    font-size: 12px;
+    color: #64748B;
+  }
+}
+
+// ── Badge Área ──────────────────────────────────────────────────────────────
+.badge-area {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+// ── Links de correo / teléfono ──────────────────────────────────────────────
+.link-mail,
+.link-tel {
+  color: #2563EB;
+  text-decoration: none;
+  font-size: 13px;
+
+  &:hover { text-decoration: underline; }
+}
+
+.anexo {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12px;
+  color: #475569;
+  background: #F1F5F9;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.cumple {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #DB2777;
+  font-size: 13px;
+  font-weight: 600;
+
+  .material-symbols-outlined {
+    font-size: 16px;
+  }
+}
+
+.dim {
+  color: #CBD5E1;
+  font-size: 13px;
+}

@@ -52,6 +52,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'directorio',
+        loadComponent: () =>
+          import('./features/directorio/lista-directorio/lista-directorio.component').then(
+            m => m.ListaDirectorioComponent
+          ),
+      },
+      {
         path: 'maestros/clientes',
         loadComponent: () =>
           import('./features/maestros/clientes/lista-clientes/lista-clientes.component').then(
