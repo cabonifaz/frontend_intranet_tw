@@ -165,10 +165,16 @@
   <!-- ── Footer con navegación ───────────────────────────────────────────────── -->
   <div class="ficha-footer">
     <div class="wizard__footer">
-      <app-button variant="secondary" tamano="md" icono="arrow_back"
-                  (clic)="irAnterior()">
-        {{ pasoActual() === pasos[0].id ? 'Cancelar y Volver al RQ' : 'Volver al paso anterior' }}
-      </app-button>
+      <div class="wizard__footer-izq">
+        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
+          Cancelar
+        </app-button>
+        @if (!esPrimerPaso) {
+          <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="irAnterior()">
+            Atrás
+          </app-button>
+        }
+      </div>
       <div class="wizard__footer-der">
         <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
         @if (!esNuevo() && draftSvc.draft().esEditable) {

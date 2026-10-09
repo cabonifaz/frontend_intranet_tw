@@ -84,6 +84,9 @@ export class PropuestaWizardComponent implements OnInit {
     //   - Nueva sin query: localStorage (continuar borrador en progreso)
     const qp = this.route.snapshot.queryParamMap;
     const idRequerimiento = Number(qp.get('idRequerimiento') ?? 0);
+    // Si viene con decisión tomada ya desde el modal anterior (?independiente=1 o ?versionDe=X),
+    // no volvemos a mostrar el banner "Propuesta existente detectada".
+    const decisionYaTomada = qp.get('independiente') === '1' || !!qp.get('versionDe');
 
     this.cargandoDatos.set(true);
     try {
@@ -120,7 +123,9 @@ export class PropuestaWizardComponent implements OnInit {
           if (borrador) this.draftSvc.limpiarStorage('nueva');
           const datos = await this.propuestasSvc.obtenerDatosNueva(idRequerimiento);
           this.draftSvc.cargarDraft(prellenarDraftDesdeRq(datos));
-          if (datos.propuestaExistente) {
+          // Solo mostrar el banner cuando el usuario no haya pasado por el modal previo
+          // (si viene con independiente=1 o versionDe=X, ya tomó la decisión).
+          if (datos.propuestaExistente && !decisionYaTomada) {
             this.propuestaPrevia.set({
               codigo:           datos.propuestaExistente.numero,
               versionSiguiente: `v${datos.propuestaExistente.version + 1}`,
@@ -184,6 +189,15 @@ export class PropuestaWizardComponent implements OnInit {
     } else {
       this.router.navigate(['/crm/propuestas']);
     }
+  }
+
+  /** Cancelar: siempre vuelve a la bandeja de propuestas, sin importar el paso actual. */
+  cancelar(): void {
+    this.router.navigate(['/crm/propuestas']);
+  }
+
+  get esPrimerPaso(): boolean {
+    return this.pasoActual() === this.pasos[0].id;
   }
 
   irSiguiente(): void {
