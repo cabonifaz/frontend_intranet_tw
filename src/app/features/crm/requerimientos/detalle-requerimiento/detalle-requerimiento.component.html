@@ -14,7 +14,7 @@
       <div class="modal__error">
         <span class="material-symbols-outlined">error</span>
         {{ error() }}
-        <button class="btn-secundario" (click)="cerrar.emit()">Cerrar</button>
+        <button class="btn-secundario" (click)="cerrar.emit()">{{ modoVolver ? 'Volver' : 'Cerrar' }}</button>
       </div>
     }
 
@@ -41,8 +41,15 @@
           </div>
         </div>
         <div class="modal__header-der">
-          <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
-                      ariaLabel="Cerrar" (clic)="cerrar.emit()" />
+          @if (modoVolver) {
+            <app-button variant="ghost" tamano="md" icono="arrow_back"
+                        ariaLabel="Volver a la propuesta" (clic)="cerrar.emit()">
+              Volver
+            </app-button>
+          } @else {
+            <app-button variant="ghost" tamano="md" icono="close" [soloIcon]="true"
+                        ariaLabel="Cerrar" (clic)="cerrar.emit()" />
+          }
         </div>
       </div>
 
@@ -536,29 +543,31 @@
         </div>
       }
 
-      <!-- Footer -->
-      <div class="modal__footer">
-        @if (esAccionable(f.estado)) {
-          <app-button variant="danger-ghost" tamano="md" icono="cancel"
-                      (clic)="anular.emit(f.idRequerimiento)">
-            Anular Requerimiento
-          </app-button>
-        } @else {
-          <span class="footer-vacio"></span>
-        }
-        <div class="modal__footer-der">
+      <!-- Footer (oculto en modo "ver origen" desde una propuesta) -->
+      @if (!modoVolver) {
+        <div class="modal__footer">
           @if (esAccionable(f.estado)) {
-            <app-button variant="secondary" tamano="md" icono="edit"
-                        (clic)="editar.emit(f.idRequerimiento)">
-              Editar
+            <app-button variant="danger-ghost" tamano="md" icono="cancel"
+                        (clic)="anular.emit(f.idRequerimiento)">
+              Anular Requerimiento
             </app-button>
-            <app-button variant="primary" tamano="md" icono="description"
-                        (clic)="crearPropuesta.emit(f.idRequerimiento)">
-              Crear Propuesta
-            </app-button>
+          } @else {
+            <span class="footer-vacio"></span>
           }
+          <div class="modal__footer-der">
+            @if (esAccionable(f.estado)) {
+              <app-button variant="secondary" tamano="md" icono="edit"
+                          (clic)="editar.emit(f.idRequerimiento)">
+                Editar
+              </app-button>
+              <app-button variant="primary" tamano="md" icono="description"
+                          (clic)="crearPropuesta.emit(f.idRequerimiento)">
+                Crear Propuesta
+              </app-button>
+            }
+          </div>
         </div>
-      </div>
+      }
 
     }
   </div>

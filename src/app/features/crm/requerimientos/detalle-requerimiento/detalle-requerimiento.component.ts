@@ -12,6 +12,10 @@ import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 })
 export class DetalleRequerimientoComponent implements OnInit {
   @Input() id!: number;
+  /** Si true, el modal se abre en modo "lectura embebida" (desde Propuestas):
+   *  - El header muestra un botón "Volver" en lugar de la X
+   *  - Oculta el footer con acciones (Editar / Anular / Crear Propuesta) */
+  @Input() modoVolver = false;
   @Output() cerrar          = new EventEmitter<void>();
   @Output() editar          = new EventEmitter<number>();
   @Output() anular          = new EventEmitter<number>();
@@ -40,10 +44,14 @@ export class DetalleRequerimientoComponent implements OnInit {
     return estado !== ESTADO_RQ.CERRADO && estado !== ESTADO_RQ.ANULADO;
   }
 
+  // El back aún no expone el sub-estado de la propuesta en el detalle del RQ,
+  // así que CON_PROPUESTA solo garantiza "existe una propuesta" (paso = propuesta).
+  // Si/cuando el back incluya el estado de la propuesta (borrador / vb / enviada / aceptada),
+  // podremos saltar al paso real (vb / envio / seguimiento / aceptacion).
   private readonly estadoAStep: Record<string, string> = {
     [ESTADO_RQ.NUEVO]:         'rq',
     [ESTADO_RQ.EN_PROCESO]:    'propuesta',
-    [ESTADO_RQ.CON_PROPUESTA]: 'envio',
+    [ESTADO_RQ.CON_PROPUESTA]: 'propuesta',
     [ESTADO_RQ.CERRADO]:       'aceptacion',
   };
 

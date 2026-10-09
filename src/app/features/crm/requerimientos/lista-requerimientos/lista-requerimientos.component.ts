@@ -8,11 +8,12 @@ import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.compon
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-requerimiento.component';
 import { AnularRequerimientoComponent } from '../anular-requerimiento/anular-requerimiento.component';
+import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent],
+  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, FiltrosPopoverComponent],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })
@@ -45,6 +46,15 @@ export class ListaRequerimientosComponent implements OnInit {
 
   busqueda    = '';
   estadoFiltro = '';
+
+  /** Nº de filtros aplicados (badge del popover). */
+  filtrosActivos(): number { return this.estadoFiltro ? 1 : 0; }
+
+  limpiarFiltros(): void {
+    this.estadoFiltro = '';
+    this.busqueda     = '';
+    this.aplicarFiltros();
+  }
 
   readonly breadcrumb: BreadcrumbItem[] = [
     { label: 'Inicio', ruta: '/dashboard' },
@@ -140,6 +150,16 @@ export class ListaRequerimientosComponent implements OnInit {
     return mapa[estado] ?? '';
   }
 
+  prioridadClase(idPrioridad: number): string {
+    // Convención: 1 = Alta · 2 = Media · 3 = Baja
+    switch (idPrioridad) {
+      case 1:  return 'badge-prioridad--alta';
+      case 2:  return 'badge-prioridad--media';
+      case 3:  return 'badge-prioridad--baja';
+      default: return 'badge-prioridad--media';
+    }
+  }
+
   slaClase(item: RequerimientoListaItem): string {
     if (!item.fechaNecesidad) return 'sla--normal';
     const dias = Math.ceil((new Date(item.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
@@ -149,11 +169,12 @@ export class ListaRequerimientosComponent implements OnInit {
   }
 
   calcularSlaTexto(item: RequerimientoListaItem): string {
-    if (!item.fechaNecesidad) return 'Sin fecha';
+    // Solo mostramos la cantidad de días — el color del punto indica el estado
+    // (verde = normal, naranja = próximo, rojo = urgente/vencido).
+    if (!item.fechaNecesidad) return '—';
     const dias = Math.ceil((new Date(item.fechaNecesidad).getTime() - Date.now()) / 86_400_000);
-    if (dias < 0)   return `${Math.abs(dias)}d vencido`;
-    if (dias === 0) return 'Vence hoy';
-    return `${dias}d restantes`;
+    if (dias === 0) return 'Hoy';
+    return `${Math.abs(dias)}d`;
   }
 
   formatearFecha(fecha: string): string {

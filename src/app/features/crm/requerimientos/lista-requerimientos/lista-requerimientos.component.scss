@@ -372,8 +372,22 @@ $blanco:          #FFFFFF;
   white-space: nowrap;
   border-bottom: 1px solid $gris-borde;
 
-  &--centro { text-align: center; }
+  &--centro       { text-align: center; }
+  &--sede         { width: 160px; }
+  &--responsable  { width: 150px; }
+  &--sla          { width: 70px; }
 }
+
+// Truncar texto largo en Sede y Responsable con ellipsis
+.tabla__sede-nombre,
+.tabla__responsable {
+  display: block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tabla__responsable { max-width: 150px; }
 
 .tabla__fila {
   cursor: pointer;
@@ -526,6 +540,39 @@ $blanco:          #FFFFFF;
 
 .sla--urgente    .sla__label { color: $rojo; font-weight: 600; }
 .sla--advertencia .sla__label { color: $naranja; }
+
+// ── Badge Prioridad ─────────────────────────────────────────────────────────
+.badge-prioridad {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &--alta  {
+    background: rgba($rojo, 0.1); color: $rojo;
+    .badge-prioridad__dot { background: $rojo; }
+  }
+  &--media {
+    background: rgba($naranja, 0.1); color: $naranja;
+    .badge-prioridad__dot { background: $naranja; }
+  }
+  &--baja  {
+    background: $verde-bg; color: $verde;
+    .badge-prioridad__dot { background: $verde; }
+  }
+}
 
 // ── Acciones ─────────────────────────────────────────────────────────────────
 .tabla__acciones {

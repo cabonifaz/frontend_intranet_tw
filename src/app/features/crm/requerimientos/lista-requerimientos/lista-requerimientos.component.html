@@ -40,20 +40,24 @@
     />
   </div>
 
-  <!-- ── Filters Bar ─────────────────────────────────────────────────────────── -->
+  <!-- ── Filters Bar (homologado minimal) ──────────────────────────────────── -->
   <div class="filtros-bar">
     <div class="filtros-bar__izq">
-      <div class="filtros-bar__etiqueta">
-        <span class="material-symbols-outlined filtros-bar__icono">filter_list</span>
-        <span class="filtros-bar__texto">FILTROS</span>
-      </div>
-      <div class="filtros-bar__separador"></div>
-      <select class="filtros-bar__select" [(ngModel)]="estadoFiltro" (change)="aplicarFiltros()">
-        <option value="">Todos</option>
-        @for (est of estadosRq(); track est.id) {
-          <option [value]="est.codigo">{{ est.nombre }}</option>
-        }
-      </select>
+      <app-filtros-popover
+        [cantidadActivos]="filtrosActivos()"
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()"
+      >
+        <div class="col-full">
+          <label>ESTADO DEL REQUERIMIENTO</label>
+          <select [(ngModel)]="estadoFiltro">
+            <option value="">Todos</option>
+            @for (est of estadosRq(); track est.id) {
+              <option [value]="est.codigo">{{ est.nombre }}</option>
+            }
+          </select>
+        </div>
+      </app-filtros-popover>
     </div>
     <div class="filtros-bar__der">
       <div class="campo__con-icono filtros-bar__busqueda">
@@ -90,27 +94,26 @@
           <tr>
             <th class="tabla__th">N.° RQ</th>
             <th class="tabla__th">CLIENTE / RUC</th>
-            <th class="tabla__th">SEDE / CONTACTO</th>
+            <th class="tabla__th tabla__th--sede">SEDE</th>
             <th class="tabla__th">TIPO</th>
-            <th class="tabla__th">ORG</th>
-            <th class="tabla__th">RESPONSABLE</th>
-            <th class="tabla__th">CREACIÓN</th>
+            <th class="tabla__th">PRIORIDAD</th>
+            <th class="tabla__th tabla__th--responsable">RESPONSABLE</th>
+            <th class="tabla__th tabla__th--sla">SLA</th>
             <th class="tabla__th">ESTADO</th>
-            <th class="tabla__th">SLA</th>
             <th class="tabla__th tabla__th--centro">ACCIONES</th>
           </tr>
         </thead>
         <tbody>
           @if (cargando()) {
             <tr>
-              <td colspan="10" class="tabla__td tabla__td--vacio">
+              <td colspan="9" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
                 Cargando requerimientos...
               </td>
             </tr>
           } @else if (items().length === 0) {
             <tr>
-              <td colspan="10" class="tabla__td tabla__td--vacio">
+              <td colspan="9" class="tabla__td tabla__td--vacio">
                 <span class="material-symbols-outlined">inbox</span>
                 No se encontraron requerimientos con los filtros aplicados.
               </td>
@@ -119,7 +122,7 @@
             @for (item of items(); track item.idRequerimiento) {
               <tr class="tabla__fila" (click)="irADetalle(item.idRequerimiento)">
                 <td class="tabla__td">
-                  <span class="tabla__numero-rq">{{ item.numero }}</span>
+                  <span class="tabla__numero-rq" [title]="'Creado el ' + formatearFecha(item.fechaCreacion)">{{ item.numero }}</span>
                 </td>
                 <td class="tabla__td">
                   <div class="tabla__cliente">
@@ -128,31 +131,28 @@
                   </div>
                 </td>
                 <td class="tabla__td">
-                  <div class="tabla__sede">
-                    <span class="tabla__sede-nombre">{{ item.nombreSede ?? '—' }}</span>
-                    <span class="tabla__sede-contacto">{{ item.nombreContacto ?? '—' }}</span>
-                  </div>
+                  <span class="tabla__sede-nombre">{{ item.nombreSede ?? '—' }}</span>
                 </td>
                 <td class="tabla__td">
                   <span class="tabla__label">{{ item.tipoLabel ?? '—' }}</span>
                 </td>
                 <td class="tabla__td">
-                  <span class="tabla__label tabla__label--secundario">{{ item.origenLabel ?? '—' }}</span>
+                  <span class="badge-prioridad {{ prioridadClase(item.idPrioridad) }}">
+                    <span class="badge-prioridad__dot"></span>
+                    {{ item.prioridadLabel ?? '—' }}
+                  </span>
                 </td>
                 <td class="tabla__td">
                   <span class="tabla__responsable">{{ item.responsable ?? '—' }}</span>
-                </td>
-                <td class="tabla__td">
-                  <span class="tabla__fecha">{{ formatearFecha(item.fechaCreacion) }}</span>
-                </td>
-                <td class="tabla__td">
-                  <span class="badge {{ estadoClase(item.estado) }}">{{ item.estadoLabel ?? item.estado }}</span>
                 </td>
                 <td class="tabla__td">
                   <div class="sla {{ slaClase(item) }}">
                     <span class="sla__dot"></span>
                     <span class="sla__label">{{ calcularSlaTexto(item) }}</span>
                   </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge {{ estadoClase(item.estado) }}">{{ item.estadoLabel ?? item.estado }}</span>
                 </td>
                 <td class="tabla__td tabla__td--centro" (click)="$event.stopPropagation()">
                   <div class="tabla__acciones">
