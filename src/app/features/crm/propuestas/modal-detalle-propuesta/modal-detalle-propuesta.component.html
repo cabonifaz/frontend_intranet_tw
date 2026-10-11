@@ -35,6 +35,38 @@
               <span class="badge" [ngClass]="estadoClase(d.propuesta.estado)">
                 {{ d.propuesta.estadoLabel || d.propuesta.estado }}
               </span>
+              @if (correccion(); as c) {
+                <span class="chip-correccion-wrap">
+                  <button type="button"
+                          class="chip-correccion"
+                          [class.chip-correccion--vencida]="c.vencida"
+                          (click)="cambiarTab('correccion')">
+                    <span class="material-symbols-outlined">{{ c.vencida ? 'warning' : 'edit_note' }}</span>
+                    {{ c.vencida ? 'Corrección vencida' : 'Corrección pendiente' }}
+                  </button>
+                  <span class="chip-correccion__tooltip">
+                    @if (c.areas?.length) {
+                      <div class="tt-row">
+                        <strong>Áreas:</strong>
+                        <span class="tt-chips">
+                          @for (a of c.areas; track a.codigo) {
+                            <span class="tt-chip">{{ a.etiqueta }}</span>
+                          }
+                        </span>
+                      </div>
+                    }
+                    @if (c.observaciones) {
+                      <div class="tt-row">{{ c.observaciones }}</div>
+                    }
+                    @if (c.fechaLimite) {
+                      <div class="tt-row">
+                        <strong>Límite:</strong> {{ c.fechaLimite | date:'dd/MM/yyyy HH:mm' }}
+                        @if (c.vencida) { <span class="tt-vencida">VENCIDA</span> }
+                      </div>
+                    }
+                  </span>
+                </span>
+              }
             </div>
             <p class="modal__creador">
               Comercial <strong>{{ d.propuesta.nombreResponsable || 'Sistema' }}</strong>
@@ -55,11 +87,28 @@
         @for (t of tabs(); track t.id) {
           <button class="tabs__item"
                   [class.tabs__item--activo]="tab() === t.id"
+                  [class.tabs__item--correccion]="t.id === 'correccion'"
                   (click)="cambiarTab(t.id)">
             {{ t.label }}
+            @if (tabTieneCorreccion(t.id)) {
+              <span class="tabs__dot" title="Se solicitó corregir esta sección">!</span>
+            }
           </button>
         }
       </div>
+
+      <!-- Aviso de corrección pendiente dentro del tab activo (si aplica) -->
+      @if (observacionTab(tab()); as obs) {
+        <div class="aviso-correccion-wrap">
+          <div class="aviso-correccion-tab">
+            <span class="material-symbols-outlined">priority_high</span>
+            <div>
+              <strong>El supervisor solicitó corregir esta sección.</strong>
+              <p>{{ obs }}</p>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- ═══ Tab 1: Resumen (siempre) ═══════════════════════════════ -->
       @if (tab() === 'resumen') {
@@ -595,7 +644,10 @@
                 </thead>
                 <tbody>
                   @for (v of d.versiones; track v.idPropuesta) {
-                    <tr [class.tabla__fila--actual]="v.esActual">
+                    <tr [class.tabla__fila--actual]="v.esActual"
+                        [class.tabla__fila--clickeable]="!v.esActual"
+                        [title]="v.esActual ? 'Versión actual' : 'Ver detalle de v' + v.version"
+                        (click)="irAVersion(v)">
                       <td>
                         v{{ v.version }}
                         @if (v.esActual) { <span class="pill-actual">Actual</span> }
@@ -611,6 +663,58 @@
                   }
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ═══ Tab: Corrección (solo visible si hay corrección pendiente) ══ -->
+      @if (tab() === 'correccion' && correccion(); as c) {
+        <div class="contenido">
+          <div class="panel panel--correccion" [class.panel--correccion-vencida]="c.vencida">
+            <div class="panel__titulo">
+              <span class="material-symbols-outlined">{{ c.vencida ? 'warning' : 'edit_note' }}</span>
+              {{ c.vencida ? 'Corrección vencida' : 'Corrección pendiente' }}
+            </div>
+
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">SOLICITADA POR</div>
+                <div class="info-valor">{{ c.solicitadoPor || '—' }}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">FECHA DE SOLICITUD</div>
+                <div class="info-valor">
+                  {{ c.solicitadoEn ? (c.solicitadoEn | date:"dd/MM/yyyy · HH:mm") : '—' }}
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">FECHA LÍMITE</div>
+                <div class="info-valor">
+                  {{ c.fechaLimite ? (c.fechaLimite | date:"dd/MM/yyyy · HH:mm") : '—' }}
+                  @if (c.vencida) { <span class="pill-vencido">VENCIDA</span> }
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">RESPONSABLE DE CORREGIR</div>
+                <div class="info-valor">{{ c.nombreResponsable || '—' }}</div>
+              </div>
+            </div>
+
+            @if (c.areas?.length) {
+              <div class="correccion-bloque">
+                <div class="correccion-label">ÁREAS A CORREGIR</div>
+                <div class="correccion-areas">
+                  @for (a of c.areas; track a.codigo) {
+                    <span class="chip-area-grande">{{ a.etiqueta }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <div class="correccion-bloque">
+              <div class="correccion-label">OBSERVACIONES</div>
+              <div class="correccion-obs">{{ c.observaciones || '—' }}</div>
             </div>
           </div>
         </div>
@@ -655,10 +759,7 @@
               </app-button>
             }
           } @else {
-            <!-- Modo Aprobador (HU-15 / HU-16): acciones de VB -->
-            <app-button variant="ghost" tamano="md" icono="swap_horiz" (clic)="accionAprobador.emit('reasignar')">
-              Reasignar
-            </app-button>
+            <!-- Modo Aprobador (HU-15): acciones de VB -->
             <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
               Rechazar
             </app-button>

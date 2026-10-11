@@ -3,10 +3,14 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
+export interface OpcionMotivoNuevaVersion {
+  id:     number;
+  nombre: string;
+}
+
 export interface DatosNuevaVersion {
-  motivo:         string;
-  descripcion:    string;
-  bloquesACopiar: string[];
+  idMotivo:    number;
+  descripcion: string;
 }
 
 /**
@@ -24,38 +28,25 @@ export class ModalCrearNuevaVersionComponent {
   readonly codigoPropuesta = input.required<string>();
   readonly versionActual   = input<number>(1);
   readonly enviando        = input<boolean>(false);
+  readonly motivos         = input<OpcionMotivoNuevaVersion[]>([]);
 
   readonly continuar = output<DatosNuevaVersion>();
   readonly cerrar    = output<void>();
 
-  readonly motivo       = signal('');
-  readonly descripcion  = signal('');
-  readonly copiarItems         = signal(true);
-  readonly copiarCondiciones   = signal(true);
-  readonly copiarEquipos       = signal(true);
-  readonly copiarRecomend      = signal(true);
+  readonly idMotivo    = signal<number | null>(null);
+  readonly descripcion = signal('');
 
   readonly puedeContinuar = computed(() =>
-    this.motivo().trim().length > 0 && !this.enviando()
+    this.idMotivo() !== null && this.descripcion().trim().length > 0 && !this.enviando()
   );
 
   get versionSiguiente(): string { return `v${this.versionActual() + 1}`; }
 
-  bloquesACopiar(): string[] {
-    const l: string[] = [];
-    if (this.copiarItems())       l.push('items');
-    if (this.copiarCondiciones()) l.push('condiciones');
-    if (this.copiarEquipos())     l.push('equipos');
-    if (this.copiarRecomend())    l.push('recomendaciones');
-    return l;
-  }
-
   onContinuar(): void {
     if (!this.puedeContinuar()) return;
     this.continuar.emit({
-      motivo:         this.motivo().trim(),
-      descripcion:    this.descripcion().trim(),
-      bloquesACopiar: this.bloquesACopiar(),
+      idMotivo:    this.idMotivo()!,
+      descripcion: this.descripcion().trim(),
     });
   }
 }

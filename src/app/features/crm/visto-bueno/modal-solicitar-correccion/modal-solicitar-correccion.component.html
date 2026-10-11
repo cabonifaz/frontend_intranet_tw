@@ -1,24 +1,26 @@
 <app-modal titulo="Solicitar Corrección" ancho="md" (cerrar)="onCerrar()">
   <div class="msc">
 
-    <span class="msc__chip">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+    <span class="msc__chip">{{ contexto().numero }} · v{{ contexto().version }}</span>
 
-    <!-- Áreas a corregir -->
     <div class="msc__campo">
       <label>ÁREAS A CORREGIR *</label>
-      <div class="msc__areas">
-        @for (a of areas; track a.codigo) {
-          <label class="msc__area">
-            <input type="checkbox"
-                   [checked]="seleccionada(a.codigo)"
-                   (change)="toggleArea(a.codigo)" />
-            <span>{{ a.label }}</span>
-          </label>
-        }
-      </div>
+      @if (cargandoDatos()) {
+        <small>Cargando áreas...</small>
+      } @else {
+        <div class="msc__areas">
+          @for (a of areas(); track a.codigo) {
+            <label class="msc__area">
+              <input type="checkbox"
+                     [checked]="seleccionada(a.codigo)"
+                     (change)="toggleArea(a.codigo)" />
+              <span>{{ a.etiqueta }}</span>
+            </label>
+          }
+        </div>
+      }
     </div>
 
-    <!-- Observaciones -->
     <div class="msc__campo">
       <label>OBSERVACIONES DETALLADAS *</label>
       <textarea
@@ -27,20 +29,19 @@
         [ngModel]="observaciones()"
         (ngModelChange)="observaciones.set($event)"
       ></textarea>
-      <small class="msc__hint">Mínimo 20 caracteres ({{ observaciones().length }}/20)</small>
+      <small class="msc__hint">Mínimo 10 caracteres ({{ observaciones().length }}/10)</small>
     </div>
 
-    <!-- Responsable + Fecha límite -->
     <div class="msc__row">
       <div class="msc__campo">
         <label>RESPONSABLE</label>
         <div class="msc__responsable">
           <span class="msc__responsable-avatar">
-            {{ (contexto().nombreComercial.charAt(0) + (contexto().nombreComercial.split(' ')[1]?.charAt(0) ?? '')).toUpperCase() }}
+            {{ (contexto().comercial.charAt(0) + (contexto().comercial.split(' ')[1]?.charAt(0) ?? '')).toUpperCase() }}
           </span>
           <div class="msc__responsable-info">
             <small>Asignar a:</small>
-            <strong>{{ contexto().nombreComercial }}</strong>
+            <strong>{{ contexto().comercial }}</strong>
           </div>
         </div>
       </div>
@@ -50,7 +51,6 @@
       </div>
     </div>
 
-    <!-- Info -->
     <div class="msc__info">
       <span class="material-symbols-outlined">info</span>
       <div>

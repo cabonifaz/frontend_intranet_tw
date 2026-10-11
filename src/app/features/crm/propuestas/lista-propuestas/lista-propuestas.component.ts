@@ -266,6 +266,7 @@ export class ListaPropuestasComponent implements OnInit {
     else if (evt === 'nueva_version') {
       const item = this.items().find(i => i.idPropuesta === id);
       if (!item) return;
+      this.cargarMotivosNuevaVersion();
       this.nuevaVersionCtx.set({
         idPropuesta:     id,
         codigoPropuesta: item.codigo,
@@ -292,6 +293,7 @@ export class ListaPropuestasComponent implements OnInit {
       this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
     } else {
       // Ya fue enviada a VB o más allá → abre modal "Crear nueva versión".
+      this.cargarMotivosNuevaVersion();
       this.nuevaVersionCtx.set({
         idPropuesta:     item.idPropuesta,
         codigoPropuesta: item.codigo,
@@ -302,13 +304,14 @@ export class ListaPropuestasComponent implements OnInit {
 
   /** Modal "crear nueva versión" → llama al back y navega al wizard. */
   readonly creandoVersion = signal(false);
-  async onConfirmarNuevaVersion(datos: { motivo: string; descripcion: string; bloquesACopiar: string[] }): Promise<void> {
+  readonly motivosNuevaVersion = signal<{ id: number; nombre: string }[]>([]);
+  async onConfirmarNuevaVersion(datos: { idMotivo: number; descripcion: string }): Promise<void> {
     const ctx = this.nuevaVersionCtx();
     if (!ctx || this.creandoVersion()) return;
     this.creandoVersion.set(true);
     try {
       const nuevoId = await this.propuestasSvc.crearNuevaVersion(
-        ctx.idPropuesta, datos.motivo, datos.descripcion, datos.bloquesACopiar
+        ctx.idPropuesta, datos.idMotivo, datos.descripcion
       );
       this.nuevaVersionCtx.set(null);
       this.router.navigate(['/crm/propuestas', nuevoId, 'editar']);
@@ -316,6 +319,15 @@ export class ListaPropuestasComponent implements OnInit {
       this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo crear la nueva versión.');
     } finally {
       this.creandoVersion.set(false);
+    }
+  }
+
+  private async cargarMotivosNuevaVersion(): Promise<void> {
+    if (this.motivosNuevaVersion().length > 0) return;
+    try {
+      this.motivosNuevaVersion.set(await this.propuestasSvc.obtenerMotivosNuevaVersion());
+    } catch {
+      // Si falla, el select queda vacío y el usuario no podrá confirmar; mostrará error del back.
     }
   }
 

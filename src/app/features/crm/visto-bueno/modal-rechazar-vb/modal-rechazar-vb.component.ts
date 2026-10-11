@@ -1,12 +1,14 @@
-import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { MaestrosService } from '../../../../core/services/maestros.service';
-import { RechazarVbRequest } from '../../../../core/models/visto-bueno.model';
-import { ContextoAprobar } from '../modal-aprobar-vb/modal-aprobar-vb.component';
-
-interface MotivoOpcion { id: number; nombre: string; }
+import { VistoBuenoService } from '../../../../core/services/visto-bueno.service';
+import {
+  DecisionVb,
+  ItemBandejaVb,
+  OpcionCatalogoVb,
+  ResolverVbRequest,
+} from '../../../../core/models/visto-bueno.model';
 
 @Component({
   selector: 'app-modal-rechazar-vb',
@@ -15,48 +17,48 @@ interface MotivoOpcion { id: number; nombre: string; }
   styleUrl: './modal-rechazar-vb.component.scss',
 })
 export class ModalRechazarVbComponent implements OnInit {
-  private readonly maestrosSvc = inject(MaestrosService);
+  private readonly svc = inject(VistoBuenoService);
 
-  readonly contexto   = input.required<ContextoAprobar>();
-  readonly cerrar     = output<void>();
-  readonly confirmado = output<RechazarVbRequest>();
+  readonly contexto    = input.required<ItemBandejaVb>();
+  readonly cerrar      = output<void>();
+  readonly confirmado  = output<{ idPropuesta: number; dto: ResolverVbRequest }>();
 
-  readonly idMotivo    = signal<number | null>(null);
-  readonly justificacion = signal<string>('');
-  readonly motivos     = signal<MotivoOpcion[]>([]);
-  readonly enviando    = signal(false);
+  readonly motivos        = signal<OpcionCatalogoVb[]>([]);
+  readonly idMotivo       = signal<number | null>(null);
+  readonly justificacion  = signal<string>('');
+  readonly enviando       = signal(false);
+  readonly cargandoDatos  = signal(true);
 
   readonly puedeRechazar = computed(() =>
-    this.idMotivo() !== null && this.justificacion().trim().length >= 20 && !this.enviando()
+    this.idMotivo() !== null &&
+    this.justificacion().trim().length >= 10 &&
+    !this.enviando()
   );
 
   async ngOnInit(): Promise<void> {
-    // Mocks — en producción vendrán de MOTIVO_RECHAZO_VB
-    this.motivos.set([
-      { id: 1, nombre: 'Precio no competitivo' },
-      { id: 2, nombre: 'Alcance insuficiente' },
-      { id: 3, nombre: 'Condiciones comerciales no aceptables' },
-      { id: 4, nombre: 'Cliente ya tiene propuesta aprobada similar' },
-      { id: 5, nombre: 'Falta de información técnica suficiente' },
-      { id: 6, nombre: 'Riesgo financiero elevado' },
-    ]);
-    this.maestrosSvc.obtenerCatalogo('MOTIVO_RECHAZO_VB')
-      .then(c => this.motivos.set(c.map((x: any) => ({ id: Number(x.id), nombre: x.nombre }))))
-      .catch(() => { /* mantener mocks */ });
+    try {
+      const d: DecisionVb = await this.svc.prepararDecision(this.contexto().idPropuesta);
+      this.motivos.set(d.motivosRechazo);
+    } catch { /* el padre maneja el error */ }
+    finally { this.cargandoDatos.set(false); }
   }
 
-  formatearMonto(valor: number, simbolo: string): string {
+  formatearMonto(valor: number, simbolo?: string | null): string {
+    const s = simbolo ?? 'S/';
     const v = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
-    return `${simbolo} ${v}`;
+    return `${s} ${v}`;
   }
 
   rechazar(): void {
     if (!this.puedeRechazar()) return;
     this.enviando.set(true);
     this.confirmado.emit({
-      idVb:          this.contexto().idVb,
-      idMotivo:      this.idMotivo()!,
-      justificacion: this.justificacion().trim(),
+      idPropuesta: this.contexto().idPropuesta,
+      dto: {
+        accion:          'rechazar',
+        idMotivoRechazo: this.idMotivo()!,
+        comentario:      this.justificacion().trim(),
+      },
     });
   }
 

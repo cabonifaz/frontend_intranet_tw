@@ -11,17 +11,17 @@
     <!-- Motivo (requerido) -->
     <div class="mcnv-campo">
       <label>MOTIVO <span class="mcnv-obl">* Obligatorio</span></label>
-      <input
-        type="text"
-        placeholder="Ej: Ajuste de precios por cambio de alcance..."
-        [ngModel]="motivo()"
-        (ngModelChange)="motivo.set($event)"
-      />
+      <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+        <option [ngValue]="null">Seleccione un motivo...</option>
+        @for (m of motivos(); track m.id) {
+          <option [ngValue]="m.id">{{ m.nombre }}</option>
+        }
+      </select>
     </div>
 
-    <!-- Descripción opcional -->
+    <!-- Descripción (requerida por el back) -->
     <div class="mcnv-campo">
-      <label>DESCRIPCIÓN DE CAMBIOS <span class="mcnv-opc">(opcional)</span></label>
+      <label>DESCRIPCIÓN DE CAMBIOS <span class="mcnv-obl">* Obligatorio</span></label>
       <textarea
         rows="3"
         placeholder="Detalla los cambios que harás en esta nueva versión..."
@@ -30,28 +30,6 @@
       ></textarea>
     </div>
 
-    <!-- Bloques a copiar -->
-    <div class="mcnv-campo">
-      <label>CONTENIDO A COPIAR DE LA VERSIÓN ANTERIOR</label>
-      <div class="mcnv-checks">
-        <label class="mcnv-check">
-          <input type="checkbox" [checked]="copiarItems()" (change)="copiarItems.set(!copiarItems())" />
-          Ítems de propuesta
-        </label>
-        <label class="mcnv-check">
-          <input type="checkbox" [checked]="copiarCondiciones()" (change)="copiarCondiciones.set(!copiarCondiciones())" />
-          Condiciones del servicio
-        </label>
-        <label class="mcnv-check">
-          <input type="checkbox" [checked]="copiarEquipos()" (change)="copiarEquipos.set(!copiarEquipos())" />
-          Equipos vinculados
-        </label>
-        <label class="mcnv-check">
-          <input type="checkbox" [checked]="copiarRecomend()" (change)="copiarRecomend.set(!copiarRecomend())" />
-          Recomendaciones
-        </label>
-      </div>
-    </div>
   </div>
 
   <div modalFooter class="mcnv-footer">

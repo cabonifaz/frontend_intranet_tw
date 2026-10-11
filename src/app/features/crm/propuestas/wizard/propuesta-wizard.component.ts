@@ -12,10 +12,12 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { ModalEnviarVbComponent } from '../modal-enviar-vb/modal-enviar-vb.component';
 import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-anular-propuesta.component';
 import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
+import { VistoBuenoService } from '../../../../core/services/visto-bueno.service';
+import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-propuesta-wizard',
-  imports: [RouterOutlet, RouterLink, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent],
+  imports: [RouterOutlet, RouterLink, DatePipe, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent],
   templateUrl: './propuesta-wizard.component.html',
   styleUrl: './propuesta-wizard.component.scss',
 })
@@ -54,6 +56,26 @@ export class PropuestaWizardComponent implements OnInit {
   // ?versionDe=PROP-002581). En el prototipo aparece siempre arriba.
   readonly propuestaPrevia = signal<{ codigo: string; versionSiguiente: string } | null>(null);
 
+  /** Última corrección pendiente solicitada por el supervisor en VB (null si no hay). */
+  readonly correccion = signal<import('../../../../core/models/visto-bueno.model').CorreccionPropuesta | null>(null);
+  private readonly vbSvc = inject(VistoBuenoService);
+
+  /** Set de PasoId (rutas del stepper) que tienen área marcada para corregir. */
+  readonly pasosConCorreccion = computed<Set<string>>(() => {
+    const c = this.correccion();
+    if (!c?.areas?.length) return new Set();
+    // Los códigos del catálogo (configuracion, forma_pago, suministros_cliente, listado_equipos)
+    // usan "_" mientras que los pasos del wizard usan "-". Normalizamos.
+    return new Set(c.areas.map(a => a.codigo.replace(/_/g, '-')));
+  });
+
+  pasoTieneCorreccion(pasoId: string): boolean { return this.pasosConCorreccion().has(pasoId); }
+
+  /** Observación del supervisor (misma para todas las secciones; se repite dentro de cada paso). */
+  observacionPasoActual(): string | null {
+    return this.pasoTieneCorreccion(this.pasoActual()) ? (this.correccion()?.observaciones ?? null) : null;
+  }
+
   async ngOnInit(): Promise<void> {
     this.idParam.set(this.route.snapshot.paramMap.get('id') ?? 'nueva');
 
@@ -91,14 +113,15 @@ export class PropuestaWizardComponent implements OnInit {
     this.cargandoDatos.set(true);
     try {
       if (!this.esNuevo()) {
-        const detalle = await this.propuestasSvc.obtenerPropuestaPorId(Number(this.idParam()));
+        const idProp = Number(this.idParam());
+        const [detalle, corr] = await Promise.all([
+          this.propuestasSvc.obtenerPropuestaPorId(idProp),
+          this.vbSvc.obtenerCorreccion(idProp).catch(() => null),
+        ]);
         this.draftSvc.cargarDraft(mapDetalleToDraft(detalle));
-        if (detalle.idPropuestaPadre) {
-          this.propuestaPrevia.set({
-            codigo:           detalle.numero,
-            versionSiguiente: `v${detalle.version}`,
-          });
-        }
+        this.correccion.set(corr && corr.estado === 'pendiente' ? corr : null);
+        // En modo edición nunca mostramos el banner "Propuesta existente detectada": ya
+        // estamos dentro de la versión que el usuario eligió editar, no creando una nueva.
       } else if (idRequerimiento > 0) {
         // Si el usuario ya decidió (Restaurar/Descartar) en esta sesión del wizard,
         // respetamos la decisión y no volvemos a mostrar el modal.

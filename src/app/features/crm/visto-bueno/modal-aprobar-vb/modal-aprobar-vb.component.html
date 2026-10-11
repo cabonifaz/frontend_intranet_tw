@@ -5,11 +5,11 @@
     <div class="mav__resumen">
       <div class="mav__dato">
         <span class="mav__dato-label">PROPUESTA</span>
-        <span class="mav__dato-valor">{{ contexto().codigoPropuesta }} · v{{ contexto().version }}</span>
+        <span class="mav__dato-valor">{{ contexto().numero }} · v{{ contexto().version }}</span>
       </div>
       <div class="mav__dato">
         <span class="mav__dato-label">COMERCIAL</span>
-        <span class="mav__dato-valor">{{ contexto().nombreComercial }}</span>
+        <span class="mav__dato-valor">{{ contexto().comercial }}</span>
       </div>
       <div class="mav__dato mav__dato--full">
         <span class="mav__dato-label">CLIENTE</span>
@@ -17,9 +17,32 @@
       </div>
       <div class="mav__dato mav__dato--monto">
         <span class="mav__dato-label">MONTO</span>
-        <span class="mav__dato-valor mav__dato-valor--verde">{{ formatearMonto(contexto().monto, contexto().monedaSimbolo) }}</span>
+        <span class="mav__dato-valor mav__dato-valor--verde">
+          {{ formatearMonto(contexto().total, contexto().monedaSimbolo) }}
+        </span>
       </div>
     </div>
+
+    <!-- Validaciones requeridas -->
+    @if (cargandoDatos()) {
+      <div class="mav__cargando">
+        <span class="material-symbols-outlined mav__spinner">progress_activity</span>
+        Cargando validaciones...
+      </div>
+    } @else if (validaciones().length > 0) {
+      <div class="mav__validaciones">
+        <h4>Validaciones Requeridas</h4>
+        @for (v of validaciones(); track v.codigo) {
+          <label class="mav__check">
+            <input type="checkbox" [checked]="esConfirmada(v.codigo)" (change)="toggleValidacion(v.codigo)" />
+            <span>
+              {{ v.texto }}
+              @if (v.obligatoria) { <small class="mav__requerido">obligatoria</small> }
+            </span>
+          </label>
+        }
+      </div>
+    }
 
     <!-- Comentario opcional -->
     <div class="mav__campo">
@@ -31,17 +54,6 @@
         (ngModelChange)="comentario.set($event)"
       ></textarea>
     </div>
-
-    <!-- Checkbox obligatorio -->
-    <label class="mav__check">
-      <input type="checkbox"
-             [checked]="confirmo()"
-             (change)="confirmo.set(!confirmo())" />
-      <div class="mav__check-texto">
-        <strong>Confirmo que he revisado la propuesta y otorgo visto bueno.</strong>
-        <small>Esta acción registrará su firma digital y actualizará el estado de la propuesta.</small>
-      </div>
-    </label>
 
   </div>
 

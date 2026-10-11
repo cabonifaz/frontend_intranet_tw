@@ -1,19 +1,15 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { VistoBuenoService } from '../../../../core/services/visto-bueno.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
-  AprobadorOpcion,
-  AreaCorreccion,
-  AprobarVbRequest,
-  ComercialOpcion,
-  EstadoVb,
-  ESTADOS_VB_TABS,
+  BandejaVb,
+  FiltrosBandejaVb,
+  ItemBandejaVb,
   KpisVb,
-  ReasignarAprobadorRequest,
-  RechazarVbRequest,
-  SolicitarCorreccionRequest,
-  VbListaItem,
+  OpcionFiltro,
+  PoliticasVb,
+  ResolverVbRequest,
 } from '../../../../core/models/visto-bueno.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
@@ -25,23 +21,23 @@ import { ModalCompararVersionesComponent } from '../modal-comparar-versiones/mod
 import { ModalAprobarVbComponent } from '../modal-aprobar-vb/modal-aprobar-vb.component';
 import { ModalRechazarVbComponent } from '../modal-rechazar-vb/modal-rechazar-vb.component';
 import { ModalSolicitarCorreccionComponent } from '../modal-solicitar-correccion/modal-solicitar-correccion.component';
-import { ModalReasignarAprobadorComponent } from '../modal-reasignar-aprobador/modal-reasignar-aprobador.component';
 
-type AccionVb = 'aprobar' | 'rechazar' | 'solicitar_correccion' | 'reasignar' | 'comparar_versiones';
+type AccionVb = 'aprobar' | 'rechazar' | 'solicitar_correccion' | 'comparar_versiones';
 
-interface ContextoAccion {
-  idVb:            number;
-  idPropuesta:     number;
-  codigoPropuesta: string;
-  version:         number;
-  razonSocial:     string;
-  nombreComercial: string;
-  monto:           number;
-  monedaSimbolo:   string;
-  slaHorasRestantes: number;
-  nombreAprobador: string;
-  fechaSolicitud:  string;
-}
+const ESTADOS_VB_TABS: { codigo: string; label: string }[] = [
+  { codigo: '',          label: 'Todos' },
+  { codigo: 'pendiente', label: 'Pendientes' },
+  { codigo: 'aprobado',  label: 'Aprobados' },
+  { codigo: 'rechazado', label: 'Rechazados' },
+  { codigo: 'devuelto',  label: 'Devueltos' },
+];
+
+const SLA_OPCIONES: { codigo: string; label: string }[] = [
+  { codigo: '',         label: 'Todos' },
+  { codigo: 'en_plazo', label: 'En plazo' },
+  { codigo: 'proximo',  label: 'Próximo a vencer' },
+  { codigo: 'vencido',  label: 'Vencidos' },
+];
 
 @Component({
   selector: 'app-lista-visto-bueno',
@@ -49,24 +45,31 @@ interface ContextoAccion {
     FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
     FiltrosPopoverComponent, ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
     ModalAprobarVbComponent, ModalRechazarVbComponent, ModalSolicitarCorreccionComponent,
-    ModalReasignarAprobadorComponent,
   ],
   templateUrl: './lista-visto-bueno.component.html',
   styleUrl: './lista-visto-bueno.component.scss',
 })
-export class ListaVistoBuenoComponent implements OnInit {
+export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
+  /** Refresca la bandeja automáticamente para captar cancelaciones (p.ej. nueva versión del comercial). */
+  private static readonly POLLING_MS = 45_000;
+
   private readonly vbSvc    = inject(VistoBuenoService);
   private readonly toastSvc = inject(ToastService);
+
+  private pollingId: ReturnType<typeof setInterval> | null = null;
 
   readonly cargando = signal(true);
   readonly error    = signal('');
 
   readonly kpis = signal<KpisVb>({ pendientes: 0, proximosVencer: 0, vencidos: 0, aprobadasHoy: 0, devueltas: 0 });
-  readonly items = signal<VbListaItem[]>([]);
+  readonly items = signal<ItemBandejaVb[]>([]);
   readonly total = signal(0);
 
-  readonly comerciales = signal<ComercialOpcion[]>([]);
+  readonly comerciales = signal<OpcionFiltro[]>([]);
+  readonly monedas     = signal<OpcionFiltro[]>([]);
+  readonly politicas   = signal<PoliticasVb | null>(null);
   readonly estadosTabs = ESTADOS_VB_TABS;
+  readonly slaOpciones = SLA_OPCIONES;
   readonly diasOpciones = [7, 15, 30, 60, 90];
 
   readonly pagina    = signal(1);
@@ -76,25 +79,27 @@ export class ListaVistoBuenoComponent implements OnInit {
   readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
   // Filtros
-  busqueda = '';
-  idComercialFiltro: number | 'todos' = 'todos';
-  estadoFiltro: EstadoVb | 'todos' = 'pendiente';
-  monedaFiltro: 'PEN' | 'USD' | 'todas' = 'todas';
+  idComercialFiltro: number | '' = '';
+  estadoFiltro = 'pendiente';
+  idMonedaFiltro: number | '' = '';
+  slaFiltro = '';
   diasFiltro = 30;
 
   filtrosActivos(): number {
     let n = 0;
-    if (this.idComercialFiltro !== 'todos') n++;
-    if (this.estadoFiltro      !== 'pendiente') n++;
-    if (this.monedaFiltro      !== 'todas') n++;
-    if (this.diasFiltro        !== 30) n++;
+    if (this.idComercialFiltro !== '') n++;
+    if (this.estadoFiltro       !== 'pendiente') n++;
+    if (this.idMonedaFiltro     !== '') n++;
+    if (this.slaFiltro          !== '') n++;
+    if (this.diasFiltro         !== 30) n++;
     return n;
   }
 
   limpiarFiltros(): void {
-    this.idComercialFiltro = 'todos';
+    this.idComercialFiltro = '';
     this.estadoFiltro      = 'pendiente';
-    this.monedaFiltro      = 'todas';
+    this.idMonedaFiltro    = '';
+    this.slaFiltro         = '';
     this.diasFiltro        = 30;
     this.aplicarFiltros();
   }
@@ -104,38 +109,46 @@ export class ListaVistoBuenoComponent implements OnInit {
   // Modales
   readonly idDetalleAbierto      = signal<number | null>(null);
   readonly compararCtx           = signal<{ idPropuesta: number } | null>(null);
-  readonly aprobarCtx            = signal<ContextoAccion | null>(null);
-  readonly rechazarCtx           = signal<ContextoAccion | null>(null);
-  readonly solicitarCorreccionCtx= signal<ContextoAccion | null>(null);
-  readonly reasignarCtx          = signal<ContextoAccion | null>(null);
+  readonly aprobarCtx            = signal<ItemBandejaVb | null>(null);
+  readonly rechazarCtx           = signal<ItemBandejaVb | null>(null);
+  readonly solicitarCorreccionCtx= signal<ItemBandejaVb | null>(null);
 
   async ngOnInit(): Promise<void> {
-    this.vbSvc.obtenerComerciales().then(c => this.comerciales.set(c)).catch(() => {});
     await this.cargar();
+    this.pollingId = setInterval(() => { void this.cargar(true); }, ListaVistoBuenoComponent.POLLING_MS);
   }
 
-  async cargar(): Promise<void> {
-    this.cargando.set(true);
+  ngOnDestroy(): void {
+    if (this.pollingId !== null) {
+      clearInterval(this.pollingId);
+      this.pollingId = null;
+    }
+  }
+
+  async cargar(silencioso = false): Promise<void> {
+    if (!silencioso) this.cargando.set(true);
     this.error.set('');
     try {
-      const [bandeja, kpis] = await Promise.all([
-        this.vbSvc.obtenerBandeja({
-          idComercial: this.idComercialFiltro === 'todos' ? undefined : this.idComercialFiltro,
-          estado:      this.estadoFiltro,
-          moneda:      this.monedaFiltro,
-          dias:        this.diasFiltro,
-          pagina:      this.pagina(),
-          porPagina:   this.porPagina(),
-        }),
-        this.vbSvc.obtenerKpis(),
-      ]);
-      this.items.set(bandeja.items);
-      this.total.set(bandeja.total);
-      this.kpis.set(kpis);
+      const filtros: FiltrosBandejaVb = {
+        idComercial: this.idComercialFiltro === '' ? undefined : this.idComercialFiltro,
+        estado:      this.estadoFiltro  || undefined,
+        idMoneda:    this.idMonedaFiltro === '' ? undefined : this.idMonedaFiltro,
+        sla:         this.slaFiltro      || undefined,
+        dias:        this.diasFiltro,
+        pagina:      this.pagina(),
+        porPagina:   this.porPagina(),
+      };
+      const b: BandejaVb = await this.vbSvc.obtenerBandeja(filtros);
+      this.kpis.set(b.kpis);
+      this.items.set(b.items);
+      this.total.set(b.total);
+      this.comerciales.set(b.comerciales);
+      this.monedas.set(b.monedas);
+      this.politicas.set(b.politicas);
     } catch (e: unknown) {
-      this.error.set(e instanceof Error ? e.message : 'Error al cargar la bandeja de VB.');
+      if (!silencioso) this.error.set(e instanceof Error ? e.message : 'Error al cargar la bandeja de VB.');
     } finally {
-      this.cargando.set(false);
+      if (!silencioso) this.cargando.set(false);
     }
   }
 
@@ -160,139 +173,82 @@ export class ListaVistoBuenoComponent implements OnInit {
     return rango;
   }
 
-  verDetalle(item: VbListaItem): void {
+  verDetalle(item: ItemBandejaVb): void {
     this.idDetalleAbierto.set(item.idPropuesta);
   }
 
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
 
   // Acciones del detalle en modoAprobador
-  onAccionDetalle(evt: AccionVb, item?: VbListaItem): void {
-    // Buscar el VbListaItem a partir del idPropuesta abierto (si vino del modal detalle)
+  onAccionDetalle(evt: AccionVb, item?: ItemBandejaVb): void {
     const propId = this.idDetalleAbierto();
     const vb = item ?? this.items().find(i => i.idPropuesta === propId);
     if (!vb) { this.toastSvc.error('No se encontró el registro de VB.'); return; }
 
-    const ctx: ContextoAccion = {
-      idVb:            vb.idVb,
-      idPropuesta:     vb.idPropuesta,
-      codigoPropuesta: vb.codigoPropuesta,
-      version:         vb.version,
-      razonSocial:     vb.razonSocial,
-      nombreComercial: vb.nombreComercial,
-      monto:           vb.monto,
-      monedaSimbolo:   vb.monedaSimbolo,
-      slaHorasRestantes: vb.slaHorasRestantes,
-      nombreAprobador: vb.nombreAprobador,
-      fechaSolicitud:  vb.fechaSolicitud,
-    };
-
-    // Cierra el detalle si está abierto antes de abrir el modal de acción (patrón swap)
     this.idDetalleAbierto.set(null);
 
     switch (evt) {
-      case 'aprobar':              this.aprobarCtx.set(ctx); break;
-      case 'rechazar':             this.rechazarCtx.set(ctx); break;
-      case 'solicitar_correccion': this.solicitarCorreccionCtx.set(ctx); break;
-      case 'reasignar':            this.reasignarCtx.set(ctx); break;
+      case 'aprobar':              this.aprobarCtx.set(vb); break;
+      case 'rechazar':             this.rechazarCtx.set(vb); break;
+      case 'solicitar_correccion': this.solicitarCorreccionCtx.set(vb); break;
       case 'comparar_versiones':   this.compararCtx.set({ idPropuesta: vb.idPropuesta }); break;
     }
   }
 
-  async onAprobarConfirmado(dto: AprobarVbRequest): Promise<void> {
+  async onResolverConfirmado(idPropuesta: number, dto: ResolverVbRequest, msgOk: string): Promise<void> {
     try {
-      await this.vbSvc.aprobar(dto);
-      this.toastSvc.exito('Propuesta aprobada correctamente.');
+      await this.vbSvc.resolver(idPropuesta, dto);
+      this.toastSvc.exito(msgOk);
       this.aprobarCtx.set(null);
-      await this.cargar();
-    } catch (e: unknown) {
-      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo aprobar.');
-    }
-  }
-
-  async onRechazarConfirmado(dto: RechazarVbRequest): Promise<void> {
-    try {
-      await this.vbSvc.rechazar(dto);
-      this.toastSvc.exito('Propuesta rechazada.');
       this.rechazarCtx.set(null);
-      await this.cargar();
-    } catch (e: unknown) {
-      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo rechazar.');
-    }
-  }
-
-  async onCorreccionConfirmada(dto: SolicitarCorreccionRequest): Promise<void> {
-    try {
-      await this.vbSvc.solicitarCorreccion(dto);
-      this.toastSvc.exito('Corrección solicitada al comercial.');
       this.solicitarCorreccionCtx.set(null);
       await this.cargar();
     } catch (e: unknown) {
-      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo solicitar corrección.');
-    }
-  }
-
-  async onReasignarConfirmada(dto: ReasignarAprobadorRequest): Promise<void> {
-    try {
-      await this.vbSvc.reasignar(dto);
-      this.toastSvc.exito('Propuesta reasignada al nuevo aprobador.');
-      this.reasignarCtx.set(null);
-      await this.cargar();
-    } catch (e: unknown) {
-      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo reasignar.');
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo registrar la decisión.');
     }
   }
 
   // Helpers UI
-  formatearMonto(monto: number, simbolo: string): string {
+  formatearMonto(monto: number, simbolo?: string | null): string {
+    const s = simbolo ?? 'S/';
     const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${simbolo} ${valor}`;
+    return `${s} ${valor}`;
   }
 
-  estadoClase(estado: EstadoVb): string {
-    const mapa: Record<EstadoVb, string> = {
-      pendiente:     'badge--naranja',
-      aprobado:      'badge--verde',
-      rechazado:     'badge--rojo',
-      en_correccion: 'badge--azul',
-      reasignado:    'badge--gris',
+  estadoClase(estado: string): string {
+    const mapa: Record<string, string> = {
+      pendiente: 'badge--naranja',
+      aprobado:  'badge--verde',
+      rechazado: 'badge--rojo',
+      devuelto:  'badge--azul',
     };
     return mapa[estado] ?? 'badge--gris';
   }
 
-  estadoLabel(estado: EstadoVb): string {
-    const mapa: Record<EstadoVb, string> = {
-      pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado',
-      en_correccion: 'En corrección', reasignado: 'Reasignado',
+  estadoLabel(estado: string): string {
+    const mapa: Record<string, string> = {
+      pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado', devuelto: 'En corrección',
     };
-    return mapa[estado];
+    return mapa[estado] ?? estado;
   }
 
-  slaClase(item: VbListaItem): string {
-    if (item.slaVencido)              return 'sla--urgente';
-    if (item.slaHorasRestantes <= 1)  return 'sla--advertencia';
+  slaClase(item: ItemBandejaVb): string {
+    if (item.slaEstado === 'vencido' || item.slaEstado === 'fuera_de_plazo') return 'sla--urgente';
+    if (item.slaEstado === 'proximo') return 'sla--advertencia';
     return 'sla--normal';
   }
 
-  slaTexto(item: VbListaItem): string {
-    if (item.slaVencido) return `Vencido ${Math.abs(Math.round(item.slaHorasRestantes))}h`;
-    if (item.slaHorasRestantes < 1) return `${Math.round(item.slaHorasRestantes * 60)}min`;
-    return `${Math.round(item.slaHorasRestantes * 10) / 10}h`;
+  slaTexto(item: ItemBandejaVb): string {
+    if (item.slaEstado === 'vencido') return `Vencido ${Math.abs(Math.round(item.horasRestantes))}h`;
+    if (item.horasRestantes < 1) return `${Math.max(0, Math.round(item.horasRestantes * 60))}min`;
+    return `${Math.round(item.horasRestantes * 10) / 10}h`;
   }
 
-  /** Badge color para descuento: verde ≤5%, ámbar 5-15%, rojo >15% (según política de aprobación). */
+  /** Badge color para descuento: verde ≤5%, ámbar 5-15%, rojo >15%. */
   descuentoClase(pct: number): string {
     if (pct <= 0)  return 'badge-pct--neutro';
     if (pct <= 5)  return 'badge-pct--verde';
     if (pct <= 15) return 'badge-pct--ambar';
-    return 'badge-pct--rojo';
-  }
-
-  /** Badge color para margen: verde ≥25%, ámbar 15-25%, rojo <15% (umbrales típicos; ajustar según negocio). */
-  margenClase(pct: number | null): string {
-    if (pct === null)  return 'badge-pct--neutro';
-    if (pct >= 25) return 'badge-pct--verde';
-    if (pct >= 15) return 'badge-pct--ambar';
     return 'badge-pct--rojo';
   }
 

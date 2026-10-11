@@ -28,9 +28,9 @@
         <div class="col-full">
           <label>COMERCIAL</label>
           <select [(ngModel)]="idComercialFiltro">
-            <option [ngValue]="'todos'">Todos los comerciales</option>
-            @for (c of comerciales(); track c.idUsuario) {
-              <option [ngValue]="c.idUsuario">{{ c.nombreCompleto }}</option>
+            <option [ngValue]="''">Todos los comerciales</option>
+            @for (c of comerciales(); track c.id) {
+              <option [ngValue]="c.id">{{ c.nombre }}</option>
             }
           </select>
         </div>
@@ -46,14 +46,24 @@
 
         <div>
           <label>MONEDA</label>
-          <select [(ngModel)]="monedaFiltro">
-            <option value="todas">Todas</option>
-            <option value="PEN">Soles (S/)</option>
-            <option value="USD">Dólares (US$)</option>
+          <select [(ngModel)]="idMonedaFiltro">
+            <option [ngValue]="''">Todas</option>
+            @for (m of monedas(); track m.id) {
+              <option [ngValue]="m.id">{{ m.nombre }}</option>
+            }
           </select>
         </div>
 
-        <div class="col-full">
+        <div>
+          <label>SLA</label>
+          <select [(ngModel)]="slaFiltro">
+            @for (s of slaOpciones; track s.codigo) {
+              <option [value]="s.codigo">{{ s.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
           <label>ÚLTIMOS DÍAS</label>
           <select [(ngModel)]="diasFiltro">
             @for (d of diasOpciones; track d) {
@@ -86,8 +96,8 @@
             <th class="tabla__th">CLIENTE / RUC</th>
             <th class="tabla__th tabla__th--derecha">MONTO</th>
             <th class="tabla__th tabla__th--centro">DCTO.</th>
-            <th class="tabla__th tabla__th--centro">MARGEN</th>
             <th class="tabla__th">COMERCIAL</th>
+            <th class="tabla__th">APROBADOR</th>
             <th class="tabla__th tabla__th--sla">SLA</th>
             <th class="tabla__th">ESTADO</th>
             <th class="tabla__th tabla__th--centro">ACCIONES</th>
@@ -114,10 +124,13 @@
                 <td class="tabla__td">
                   <div class="tabla__propuesta-cell">
                     <div class="tabla__propuesta">
-                      <span class="tabla__codigo" [title]="item.referencia">{{ item.codigoPropuesta }}</span>
+                      <span class="tabla__codigo" [title]="item.referencia">{{ item.numero }}</span>
                       <span class="tabla__version">v{{ item.version }}</span>
+                      @if (item.requiereAprobacionEspecial) {
+                        <span class="chip-especial" title="Requiere aprobación especial">★</span>
+                      }
                     </div>
-                    <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.codigoRq }}</span>
+                    <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.numeroRq ?? '—' }}</span>
                   </div>
                 </td>
                 <td class="tabla__td">
@@ -127,23 +140,31 @@
                   </div>
                 </td>
                 <td class="tabla__td tabla__td--derecha">
-                  <span class="tabla__monto">{{ formatearMonto(item.monto, item.monedaSimbolo) }}</span>
+                  <span class="tabla__monto">{{ formatearMonto(item.total, item.monedaSimbolo) }}</span>
                 </td>
                 <td class="tabla__td tabla__td--centro">
                   <span class="badge-pct {{ descuentoClase(item.descuentoPct) }}">
                     {{ item.descuentoPct > 0 ? item.descuentoPct + '%' : '—' }}
                   </span>
                 </td>
-                <td class="tabla__td tabla__td--centro">
-                  <span class="badge-pct {{ margenClase(item.margenPct) }}">
-                    {{ item.margenPct !== null ? item.margenPct + '%' : '—' }}
-                  </span>
-                </td>
                 <td class="tabla__td">
                   <div class="tabla__persona">
-                    <span class="tabla__avatar tabla__avatar--comercial">{{ iniciales(item.nombreComercial) }}</span>
-                    <span class="tabla__persona-nombre">{{ item.nombreComercial }}</span>
+                    <span class="tabla__avatar tabla__avatar--comercial">{{ iniciales(item.comercial) }}</span>
+                    <span class="tabla__persona-nombre">{{ item.comercial }}</span>
                   </div>
+                </td>
+                <td class="tabla__td">
+                  @if (item.aprobador) {
+                    <div class="tabla__persona">
+                      <span class="tabla__avatar tabla__avatar--aprobador">{{ iniciales(item.aprobador) }}</span>
+                      <span class="tabla__persona-nombre">
+                        {{ item.aprobador }}
+                        @if (item.aprobadorEsSuplente) { <small>(suplente)</small> }
+                      </span>
+                    </div>
+                  } @else {
+                    <span class="dim">—</span>
+                  }
                 </td>
                 <td class="tabla__td">
                   <div class="sla {{ slaClase(item) }}">
@@ -152,13 +173,13 @@
                   </div>
                 </td>
                 <td class="tabla__td">
-                  <span class="badge {{ estadoClase(item.estado) }}">{{ estadoLabel(item.estado) }}</span>
+                  <span class="badge {{ estadoClase(item.estadoVb) }}">{{ estadoLabel(item.estadoVb) }}</span>
                 </td>
                 <td class="tabla__td tabla__td--centro">
                   <div class="tabla__acciones" (click)="$event.stopPropagation()">
                     <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                                 ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
-                    @if (item.estado === 'pendiente') {
+                    @if (item.estadoVb === 'pendiente' && item.puedeResolver) {
                       <app-button variant="ghost" tamano="sm" icono="check_circle" [soloIcon]="true"
                                   ariaLabel="Aprobar" title="Aprobar" (clic)="onAccionDetalle('aprobar', item)" />
                     }
@@ -222,6 +243,7 @@
     [modoAprobador]="true"
     (cerrar)="cerrarDetalle()"
     (accionAprobador)="onAccionDetalle($event)"
+    (verVersion)="idDetalleAbierto.set($event)"
   />
 }
 
@@ -237,7 +259,7 @@
   <app-modal-aprobar-vb
     [contexto]="ctx"
     (cerrar)="aprobarCtx.set(null)"
-    (confirmado)="onAprobarConfirmado($event)"
+    (confirmado)="onResolverConfirmado($event.idPropuesta, $event.dto, 'Propuesta aprobada correctamente.')"
   />
 }
 
@@ -245,7 +267,7 @@
   <app-modal-rechazar-vb
     [contexto]="ctx"
     (cerrar)="rechazarCtx.set(null)"
-    (confirmado)="onRechazarConfirmado($event)"
+    (confirmado)="onResolverConfirmado($event.idPropuesta, $event.dto, 'Propuesta rechazada.')"
   />
 }
 
@@ -253,14 +275,6 @@
   <app-modal-solicitar-correccion
     [contexto]="ctx"
     (cerrar)="solicitarCorreccionCtx.set(null)"
-    (confirmado)="onCorreccionConfirmada($event)"
-  />
-}
-
-@if (reasignarCtx(); as ctx) {
-  <app-modal-reasignar-aprobador
-    [contexto]="ctx"
-    (cerrar)="reasignarCtx.set(null)"
-    (confirmado)="onReasignarConfirmada($event)"
+    (confirmado)="onResolverConfirmado($event.idPropuesta, $event.dto, 'Corrección solicitada al comercial.')"
   />
 }

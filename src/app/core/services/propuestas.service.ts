@@ -315,15 +315,25 @@ export class PropuestasService {
   // ═══════════════════════════════════════════════════════════════════════════
   // HU-10 — Nueva versión de propuesta
   // ═══════════════════════════════════════════════════════════════════════════
-  async crearNuevaVersion(idPropuesta: number, motivo: string, descripcion?: string, bloques?: string[]): Promise<number> {
+  async crearNuevaVersion(idPropuesta: number, idMotivo: number, descripcion: string): Promise<number> {
     const r = await firstValueFrom(
       this.http.post<RespuestaApi<{ idPropuesta: number }>>(
         `${this.base}/${idPropuesta}/nueva-version`,
-        { motivo, descripcion: descripcion ?? '', bloquesACopiar: bloques ?? [] }
+        { idMotivoNuevaVersion: idMotivo, descripcionCambios: descripcion }
       )
     );
     if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo crear la nueva versión.');
     return r.datos.idPropuesta;
+  }
+
+  async obtenerMotivosNuevaVersion(): Promise<{ id: number; nombre: string }[]> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<{ id: number; nombre: string }[]>>(
+        `${environment.apiUrl}/api/maestros/catalogos/MOTIVO_NUEVA_VERSION`
+      )
+    );
+    if (!r.datos) return [];
+    return r.datos.map(m => ({ id: m.id, nombre: m.nombre }));
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

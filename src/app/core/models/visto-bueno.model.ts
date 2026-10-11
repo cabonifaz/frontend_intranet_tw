@@ -1,207 +1,289 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Sprint 3 — Módulo 4: Visto Bueno (HU-13, HU-14, HU-15, HU-16)
-// Modelo del front. Los endpoints reales están pendientes de Bryan.
-// Mientras tanto, VistoBuenoService usa mocks internos (USAR_MOCK = true).
+// Mapea 1:1 con los DTOs del back (ver src/TW.Intranet.Aplicacion/Dtos/VistoBuenoDtos.cs).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Estado del registro de visto_bueno (tabla visto_bueno del back). */
-export type EstadoVb = 'pendiente' | 'aprobado' | 'rechazado' | 'en_correccion' | 'reasignado';
+// ══════════════════════ HU-13 — Bandeja ══════════════════════
 
-/** Fila de la tabla de la bandeja de VB (HU-13). */
-export interface VbListaItem {
-  idVb:            number;
-  idPropuesta:     number;
-  codigoPropuesta: string;      // ej. "PROP-002590"
-  version:         number;      // ej. 1
-  codigoRq:        string;      // ej. "RQ-2024-002"
-  idCliente:       number;
-  razonSocial:     string;
-  ruc:             string;
-  referencia:      string;      // "Mantenimiento Planta..."
-  monto:           number;
-  moneda:          'PEN' | 'USD';
-  monedaSimbolo:   string;      // "S/" | "US$"
-  /** Porcentaje de descuento aplicado (0 si no tiene). Badge color: verde ≤5, ámbar ≤15, rojo >15. */
-  descuentoPct:    number;
-  /** Porcentaje de margen de utilidad calculado por el back. Puede ser null si aún no se calcula. */
-  margenPct:       number | null;
-  idComercial:     number;
-  nombreComercial: string;      // autor de la propuesta
-  idAprobador:     number;
-  nombreAprobador: string;      // jefe asignado actualmente
-  estado:          EstadoVb;
-  slaHoras:        number;
-  slaHorasRestantes: number;    // negativo si vencido
-  slaVencido:      boolean;
-  fechaSolicitud:  string;      // ISO
+/** Filtros de la bandeja. */
+export interface FiltrosBandejaVb {
+  idComercial?: number;
+  /** pendiente | aprobado | devuelto | rechazado (vacío = todos) */
+  estado?:      string;
+  idMoneda?:    number;
+  /** en_plazo | proximo | vencido | cumplido | fuera_de_plazo */
+  sla?:         string;
+  /** 0 = todo; los pendientes se ven siempre */
+  dias?:        number;
+  pagina?:      number;
+  porPagina?:   number;
 }
 
-/** Cards KPI superiores de la bandeja. */
 export interface KpisVb {
-  pendientes:       number;
-  proximosVencer:   number;  // SLA entre 0% y 25% restante
-  vencidos:         number;
-  aprobadasHoy:     number;
-  devueltas:        number;  // estado 'en_correccion' hoy
+  pendientes:     number;
+  proximosVencer: number;
+  vencidos:       number;
+  aprobadasHoy:   number;
+  devueltas:      number;
 }
 
-/** Paginado del listado. */
-export interface VbPaginado {
-  items:     VbListaItem[];
-  total:     number;
-  pagina:    number;
-  porPagina: number;
+export interface ItemBandejaVb {
+  idVb:                        number;
+  idPropuesta:                 number;
+  numero:                      string;   // ej. "PROP-002590"
+  version:                     number;
+  idRequerimiento?:            number | null;
+  numeroRq?:                   string | null;
+  idCliente:                   number;
+  razonSocial:                 string;
+  ruc?:                        string | null;
+  referencia?:                 string | null;
+  total:                       number;
+  idMoneda:                    number;
+  moneda?:                     string | null;
+  monedaSimbolo?:              string | null;
+  descuentoPct:                number;
+  idComercial:                 number;
+  comercial:                   string;
+  idAprobador?:                number | null;
+  aprobador?:                  string | null;
+  aprobadorEsSuplente:         boolean;
+  /** pendiente | aprobado | devuelto | rechazado */
+  estadoVb:                    string;
+  fechaSolicitud?:             string | null;
+  fechaRespuesta?:             string | null;
+  venceEn?:                    string | null;
+  slaHoras:                    number;
+  horasTranscurridas:          number;
+  horasRestantes:              number;
+  /** en_plazo | proximo | vencido (pendientes) · cumplido | fuera_de_plazo (resueltos) */
+  slaEstado:                   string;
+  requiereAprobacionEspecial:  boolean;
+  comentarioSolicitud?:        string | null;
+  comentarioRespuesta?:        string | null;
+  puedeResolver:               boolean;
 }
 
-// ─── HU-14: Comparar Versiones ────────────────────────────────────────────
+export interface OpcionFiltro {
+  id:      number;
+  nombre:  string;
+  codigo?: string | null;
+}
 
-/** Datos para el modal de "Comparar Versiones" (HU-14). */
-export interface CompararVersionesData {
-  idPropuesta:     number;
-  codigoPropuesta: string;
-  referencia:      string;
-  versiones:       VersionDisponible[];
-  base:            VersionCompleta;      // la versión seleccionada como base
-  destino:         VersionCompleta;      // la versión seleccionada como destino
-  diferencia:      DiferenciaResumen;
+export interface PoliticasVb {
+  descuentoAprobacionEspecialPct: number;
+  margenMinimoPct:                number;
+  slaHorasHabiles:                number;
+  jornadaInicio:                  number;
+  jornadaFin:                     number;
+  proximoVencerPct:               number;
+}
+
+export interface BandejaVb {
+  kpis:        KpisVb;
+  items:       ItemBandejaVb[];
+  total:       number;
+  pagina:      number;
+  porPagina:   number;
+  comerciales: OpcionFiltro[];
+  monedas:     OpcionFiltro[];
+  politicas:   PoliticasVb;
+}
+
+// ══════════════════════ HU-15 — Resolver ══════════════════════
+
+export type AccionResolver = 'aprobar' | 'corregir' | 'rechazar';
+
+export interface ResolverVbRequest {
+  accion:                   AccionResolver;
+  comentario?:              string;
+  validacionesConfirmadas?: string[];
+  idMotivoRechazo?:         number | null;
+  areas?:                   string[];
+  fechaLimite?:             string | null;    // ISO
+}
+
+export interface ResultadoResolverVb {
+  idPropuesta:   number;
+  estado:        string;
+  estadoVb:      string;
+  idCorreccion?: number | null;
+  fechaLimite?:  string | null;
+}
+
+// ══════════════════════ HU-15 — Preparar modales de decisión ══════════════════════
+
+export interface ValidacionRequerida {
+  codigo:      string;
+  texto:       string;
+  obligatoria: boolean;
+}
+
+export interface OpcionCatalogoVb {
+  id:     number;
+  nombre: string;
+}
+
+export interface AreaCorreccion {
+  codigo:   string;
+  etiqueta: string;
+}
+
+export interface DecisionVb {
+  idPropuesta:            number;
+  numero:                 string;
+  version:                number;
+  estado:                 string;
+  total:                  number;
+  monedaSimbolo?:         string | null;
+  monedaCodigo?:          string | null;
+  cliente?:               string | null;
+  idComercial?:           number | null;
+  nombreComercial?:       string | null;
+  idVistoBueno?:          number | null;
+  puedeResolver:          boolean;
+  motivoBloqueo?:         string | null;
+  fechaLimiteSugerida?:   string | null;
+  validacionesRequeridas: ValidacionRequerida[];
+  motivosRechazo:         OpcionCatalogoVb[];
+  areasCorreccion:        AreaCorreccion[];
+}
+
+export interface CorreccionPropuesta {
+  idCorreccion:      number;
+  estado:            string;
+  observaciones:     string;
+  fechaLimite?:      string | null;
+  vencida:           boolean;
+  solicitadoEn?:     string | null;
+  solicitadoPor?:    string | null;
+  idResponsable?:    number | null;
+  nombreResponsable?: string | null;
+  atendidaEn?:       string | null;
+  areas:             AreaCorreccion[];
+}
+
+// ══════════════════════ HU-14 — Validaciones previas ══════════════════════
+
+export type NivelValidacion = 'ok' | 'alerta' | 'error' | 'no_disponible';
+
+export interface ValidacionPrevia {
+  codigo:   string;
+  etiqueta: string;
+  nivel:    NivelValidacion;
+  detalle:  string;
+}
+
+export interface ResumenEconomicoVb {
+  idMoneda:         number;
+  monedaSimbolo?:   string | null;
+  total:            number;
+  lineaCredito?:    number | null;
+  creditoConsumido: number;
+  ventaConCosto?:   number | null;
+  costo?:           number | null;
+  margenPct?:       number | null;
+  margenMinimoPct:  number;
+  items:            number;
+  itemsSinCosto:    number;
+  descuentoPct:     number;
+  veCostos:         boolean;
+}
+
+export interface ValidacionesVb {
+  validaciones:     ValidacionPrevia[];
+  resumen:          ResumenEconomicoVb;
+  /** BAJO | MODERADO | ALTO */
+  riesgoFinanciero: string;
+}
+
+// ══════════════════════ HU-14 — Comparar versiones ══════════════════════
+
+export interface CabeceraVersion {
+  idPropuesta:        number;
+  numero:             string;
+  version:            number;
+  estado:             string;
+  fechaEmision?:      string | null;
+  referencia?:        string | null;
+  tipoServicio?:      string | null;
+  cliente?:           string | null;
+  idMoneda:           number;
+  moneda?:            string | null;
+  monedaSimbolo?:     string | null;
+  subtotal:           number;
+  descuentoMonto:     number;
+  descuentoPct:       number;
+  igvPct:             number;
+  igvMonto:           number;
+  total:              number;
+  aplicaIgv:          boolean;
+  plazoEntregaDias?:  number | null;
+  vigenciaDias?:      number | null;
+  condicionPago?:     string | null;
+  formaPago?:         string | null;
+  descripcionCambios?: string | null;
+  motivoNuevaVersion?: string | null;
+}
+
+/** Estado: agregado | modificado | eliminado | igual */
+export interface DiferenciaItem {
+  estado:               string;
+  seccion:              string;
+  descripcion:          string;
+  cantidadBase?:        number | null;
+  cantidadDestino?:     number | null;
+  precioUnitarioBase?:  number | null;
+  precioUnitarioDestino?: number | null;
+  subtotalBase?:        number | null;
+  subtotalDestino?:     number | null;
+  camposModificados:    string[];
+}
+
+export interface DiferenciaCampo {
+  campo:        string;
+  etiqueta:     string;
+  valorBase?:   string | null;
+  valorDestino?: string | null;
+  estado:       string;
+}
+
+export interface DiferenciaElemento {
+  estado:      string;
+  descripcion: string;
+  detalle?:    string | null;
+}
+
+export interface ResumenComparacion {
+  diferenciaTotal:  number;
+  diferenciaPct:    number;
+  itemsBase:        number;
+  itemsDestino:     number;
+  itemsAgregados:   number;
+  itemsModificados: number;
+  itemsEliminados:  number;
+  /** BAJO | MODERADO | ALTO */
+  riesgoFinanciero: string;
+  motivosRiesgo:    string[];
 }
 
 export interface VersionDisponible {
-  idPropuesta: number;
-  version:     number;
-  estado:      string;
-  fechaEmision: string;
-  esActual:    boolean;
-}
-
-export interface VersionCompleta {
   idPropuesta:   number;
   version:       number;
   estado:        string;
-  fechaEmision:  string;
-  subtotal:      number;
-  igvPct:        number;
-  igvMonto:      number;
-  descuentoMonto: number;
-  total:         number;
-  monedaSimbolo: string;
-  items:         ItemVersion[];
-  condiciones:   CondicionVersion[];
-  equipos:       EquipoVersion[];
-  textos:        TextoVersion[];
+  fechaEmision?: string | null;
 }
 
-export interface ItemVersion       { descripcion: string; cantidad: number; precioUnitario: number; subtotal: number; }
-export interface CondicionVersion  { tipo: string; valor: string; }
-export interface EquipoVersion     { numSerie: string; marca: string; modelo: string; }
-export interface TextoVersion      { seccion: string; texto: string; }
-
-/** Resumen diferencial entre dos versiones (cards KPIs). */
-export interface DiferenciaResumen {
-  diferenciaTotal:      number;     // destino.total - base.total
-  diferenciaPct:        number;     // porcentaje
-  itemsAgregados:       number;
-  itemsModificados:     number;
-  itemsEliminados:      number;
-  cambiosItems:         string;     // "5 vs 4"
-  riesgoFinanciero:     'BAJO' | 'MODERADO' | 'ALTO';
+export interface ComparacionVersiones {
+  base:                CabeceraVersion;
+  destino:             CabeceraVersion;
+  resumen:             ResumenComparacion;
+  financiero:          DiferenciaCampo[];
+  items:               DiferenciaItem[];
+  condiciones:         DiferenciaCampo[];
+  equipos:             DiferenciaElemento[];
+  textos:              DiferenciaElemento[];
+  validacionesDestino: ValidacionPrevia[];
+  versiones:           VersionDisponible[];
 }
 
-/** Validaciones previas (HU-14 panel). */
-export interface ValidacionesPrevias {
-  limiteCredito: ValidacionItem;
-  margen:        ValidacionItem;
-  stock:         ValidacionItem;
-}
-
-export interface ValidacionItem {
-  estado:  'ok' | 'warning' | 'error';
-  mensaje: string;
-}
-
-// ─── HU-15: Decisiones ─────────────────────────────────────────────────────
-
-/** Request para aprobar VB. */
-export interface AprobarVbRequest {
-  idVb:       number;
-  comentario?: string;
-  confirmoRevision: boolean;    // checkbox obligatorio
-}
-
-/** Request para rechazar propuesta. */
-export interface RechazarVbRequest {
-  idVb:          number;
-  idMotivo:      number;
-  justificacion: string;        // mínimo 20 chars
-}
-
-/** Área a corregir en el modal "Solicitar Corrección". */
-export type AreaCorreccion =
-  | 'configuracion' | 'items_precios' | 'descuento' | 'detalle'
-  | 'forma_pago'    | 'condiciones'   | 'equipos'   | 'documentos';
-
-/** Request para solicitar corrección. */
-export interface SolicitarCorreccionRequest {
-  idVb:          number;
-  areas:         AreaCorreccion[];        // al menos 1
-  observaciones: string;                  // mínimo 20 chars
-  fechaLimite:   string;                  // ISO datetime
-}
-
-// ─── HU-16: Reasignar Aprobador ────────────────────────────────────────────
-
-/** Opción del autocomplete de aprobadores. */
-export interface AprobadorOpcion {
-  idUsuario:      number;
-  nombreCompleto: string;
-  cargo:          string;
-  area:           string;
-  areaLabel:      string;
-  rolSistema:     string;      // 'supervisor' | 'administrador'
-  nivel:          number;      // 1=admin, 2=supervisor
-}
-
-/** Request para reasignar aprobador. */
-export interface ReasignarAprobadorRequest {
-  idVb:              number;
-  idNuevoAprobador:  number;
-  idMotivo:          number;
-  comentario?:       string;
-  reiniciarSla:      boolean;
-}
-
-// ─── Filtros + catálogos ──────────────────────────────────────────────────
-
-/** Filtros de la bandeja (HU-13). */
-export interface FiltrosVb {
-  idComercial?:  number;
-  estado?:       EstadoVb | 'todos';
-  moneda?:       'PEN' | 'USD' | 'todas';
-  dias?:         number;         // últimos N días (default 30)
-  pagina?:       number;
-  porPagina?:    number;
-}
-
-export interface ComercialOpcion {
-  idUsuario:      number;
-  nombreCompleto: string;
-}
-
-export const ESTADOS_VB_TABS: { codigo: EstadoVb | 'todos'; label: string }[] = [
-  { codigo: 'todos',          label: 'Todos' },
-  { codigo: 'pendiente',      label: 'Pendientes' },
-  { codigo: 'aprobado',       label: 'Aprobados' },
-  { codigo: 'rechazado',      label: 'Rechazados' },
-  { codigo: 'en_correccion',  label: 'En corrección' },
-];
-
-export const AREAS_CORRECCION: { codigo: AreaCorreccion; label: string }[] = [
-  { codigo: 'configuracion',  label: 'Configuración'  },
-  { codigo: 'items_precios',  label: 'Ítems y precios' },
-  { codigo: 'descuento',      label: 'Descuento'      },
-  { codigo: 'detalle',        label: 'Detalle'        },
-  { codigo: 'forma_pago',     label: 'Forma de Pago'  },
-  { codigo: 'condiciones',    label: 'Condiciones'    },
-  { codigo: 'equipos',        label: 'Equipos'        },
-  { codigo: 'documentos',     label: 'Documentos'     },
-];

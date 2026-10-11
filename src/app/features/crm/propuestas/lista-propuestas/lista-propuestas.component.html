@@ -247,6 +247,7 @@
     [codigoPropuesta]="ctx.codigoPropuesta"
     [versionActual]="ctx.versionActual"
     [enviando]="creandoVersion()"
+    [motivos]="motivosNuevaVersion()"
     (continuar)="onConfirmarNuevaVersion($event)"
     (cerrar)="nuevaVersionCtx.set(null)"
   />
@@ -259,6 +260,7 @@
     (cerrar)="cerrarDetalle()"
     (accion)="onAccionDetalle($event)"
     (verRequerimiento)="onVerRequerimiento($event)"
+    (verVersion)="idDetalleAbierto.set($event)"
   />
 }
 

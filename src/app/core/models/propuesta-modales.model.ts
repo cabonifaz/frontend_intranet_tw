@@ -128,12 +128,8 @@ export interface VistoBuenoPropuesta {
   total:                number;
   monedaSimbolo?:       string;
 
-  idAprobador?:         number | null;
-  nombreAprobador?:     string;
-  cargoAprobador?:      string;
-  esSuplente:           boolean;
-  idJefeDirecto?:       number | null;
-  nombreJefeDirecto?:   string;
+  /** Área del comercial autor: todo supervisor/administrador activo de esa área recibe el VB. */
+  areaEquipoAprobador?: string | null;
 
   slaHoras:             number;
   fechaLimite?:         string | null;

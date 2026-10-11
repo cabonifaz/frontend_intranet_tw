@@ -1,9 +1,11 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ToastService } from '../../../../core/services/toast.service';
 import { PropuestasService } from '../../../../core/services/propuestas.service';
+import { VistoBuenoService } from '../../../../core/services/visto-bueno.service';
+import { CorreccionPropuesta } from '../../../../core/models/visto-bueno.model';
 import {
   PropuestaDetalleModal,
   WorkflowPropuesta,
@@ -20,9 +22,26 @@ type Tab =
   | 'suministros_cliente'
   | 'condiciones'
   | 'listado_equipos'
-  | 'versiones';
+  | 'versiones'
+  | 'correccion';   // Solo visible si hay corrección pendiente
 
 interface TabDef { id: Tab; label: string; }
+
+/**
+ * Mapeo área del catálogo AREA_CORRECCION_PROPUESTA → tab del modal detalle.
+ * Los tabs del modal combinan algunas áreas (propuesta+opcionales, detalle+recomendaciones).
+ */
+const AREA_A_TAB: Record<string, Tab> = {
+  configuracion:       'resumen',   // La configuración se refleja en Información General del Resumen
+  propuesta:           'propuesta',
+  opcionales:          'propuesta',
+  detalle:             'detalle',
+  recomendaciones:     'detalle',
+  forma_pago:          'forma_pago',
+  suministros_cliente: 'suministros_cliente',
+  condiciones:         'condiciones',
+  listado_equipos:     'listado_equipos',
+};
 
 interface GrupoTextos { titulo: string; vinetas: string[]; }
 
@@ -36,11 +55,12 @@ export class ModalDetallePropuestaComponent {
   private readonly router        = inject(Router);
   private readonly toast         = inject(ToastService);
   private readonly propuestasSvc = inject(PropuestasService);
+  private readonly vbSvc         = inject(VistoBuenoService);
 
   readonly idPropuesta = input.required<number>();
   /** Si true, el modal se abre desde la Bandeja de Visto Bueno: oculta las acciones del
    *  comercial (Editar / Enviar VB / Anular / Nueva Versión) y muestra las del aprobador
-   *  (Aprobar / Rechazar / Solicitar Corrección / Reasignar / Comparar Versiones). */
+   *  (Aprobar / Rechazar / Solicitar Corrección / Comparar Versiones). */
   readonly modoAprobador = input<boolean>(false);
 
   readonly cerrar      = output<void>();
@@ -48,16 +68,20 @@ export class ModalDetallePropuestaComponent {
   readonly accion      = output<'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf'>();
   /** Se emite con el idRequerimiento cuando el usuario pide "Abrir RQ". El padre swap-ea los modales. */
   readonly verRequerimiento = output<number>();
-  /** Acciones del modo aprobador (HU-15 / HU-16). El padre maneja los modales de VB. */
-  readonly accionAprobador = output<'aprobar' | 'rechazar' | 'solicitar_correccion' | 'reasignar' | 'comparar_versiones'>();
+  /** Acciones del modo aprobador (HU-15). El padre maneja los modales de VB. */
+  readonly accionAprobador = output<'aprobar' | 'rechazar' | 'solicitar_correccion' | 'comparar_versiones'>();
+  /** El usuario hizo click en una versión distinta a la actual en el tab Versiones. El padre reemplaza el detalle. */
+  readonly verVersion = output<number>();
 
   readonly cargando = signal(true);
   readonly error    = signal('');
   readonly datos    = signal<PropuestaDetalleModal | null>(null);
   readonly tab      = signal<Tab>('resumen');
+  /** Última solicitud de corrección pendiente (null si no hay o ya está atendida). */
+  readonly correccion = signal<CorreccionPropuesta | null>(null);
 
   /**
-   * Tabs del detalle = las 9 secciones del wizard + Versiones.
+   * Tabs del detalle = las 9 secciones del wizard + Versiones + Corrección (si aplica).
    * Algunas secciones son opcionales (dependen de SeccionesActivas del back),
    * otras siempre se muestran (Resumen, Forma de Pago, Listado de Equipos,
    * Versiones). Si la propuesta se creó con 4-5 secciones, el resto se oculta.
@@ -80,8 +104,41 @@ export class ModalDetallePropuestaComponent {
     if (activas.has('condiciones'))         resultado.push({ id: 'condiciones',         label: 'Condiciones' });
     resultado.push({ id: 'listado_equipos', label: 'Listado de Equipos' });
     resultado.push({ id: 'versiones',       label: 'Versiones' });
+    if (this.correccion()) resultado.push({ id: 'correccion', label: 'Corrección' });
     return resultado;
   });
+
+  /** Tabs que tienen al menos un área marcada en la corrección pendiente. */
+  readonly tabsConCorreccion = computed<Set<Tab>>(() => {
+    const c = this.correccion();
+    if (!c?.areas?.length) return new Set();
+    const s = new Set<Tab>();
+    for (const a of c.areas) {
+      const tab = AREA_A_TAB[a.codigo];
+      if (tab) s.add(tab);
+    }
+    return s;
+  });
+
+  tabTieneCorreccion(id: Tab): boolean { return this.tabsConCorreccion().has(id); }
+
+  /** Devuelve el texto de observación si el tab tiene corrección, null si no. */
+  observacionTab(id: Tab): string | null {
+    return this.tabTieneCorreccion(id) ? (this.correccion()?.observaciones ?? null) : null;
+  }
+
+  /** Tooltip del chip de corrección en el header: resume áreas, observación y fecha límite. */
+  tooltipCorreccion(): string {
+    const c = this.correccion();
+    if (!c) return '';
+    const partes = [`Áreas: ${c.areas?.map(a => a.etiqueta).join(', ') || '—'}`];
+    if (c.observaciones) partes.push(c.observaciones);
+    if (c.fechaLimite) {
+      const d = new Date(c.fechaLimite);
+      partes.push(`Límite: ${d.toLocaleString('es-PE')}${c.vencida ? ' (VENCIDA)' : ''}`);
+    }
+    return partes.join('\n');
+  }
 
   tieneOpcionales(): boolean      { return this.seccionesActivas().has('opcionales'); }
   tieneRecomendaciones(): boolean { return this.seccionesActivas().has('recomendaciones'); }
@@ -146,10 +203,30 @@ export class ModalDetallePropuestaComponent {
     return grupos;
   }
 
-  async ngOnInit(): Promise<void> {
+  constructor() {
+    // Recarga el detalle cada vez que cambia idPropuesta (incluido saltos entre versiones
+    // desde el tab Versiones sin cerrar el modal).
+    effect(() => {
+      const id = this.idPropuesta();
+      if (id <= 0) return;
+      void this.cargarDetalle(id);
+    });
+  }
+
+  private async cargarDetalle(id: number): Promise<void> {
+    this.cargando.set(true);
+    this.error.set('');
+    this.datos.set(null);
+    this.correccion.set(null);
+    this.tab.set('resumen');
     try {
-      const r = await this.propuestasSvc.obtenerDetalleModal(this.idPropuesta());
-      this.datos.set(r);
+      const [detalle, corr] = await Promise.all([
+        this.propuestasSvc.obtenerDetalleModal(id),
+        this.vbSvc.obtenerCorreccion(id).catch(() => null),
+      ]);
+      this.datos.set(detalle);
+      // Solo mostramos el banner si la corrección sigue pendiente (no atendida).
+      this.correccion.set(corr && corr.estado === 'pendiente' ? corr : null);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar la propuesta.');
     } finally {
@@ -189,6 +266,11 @@ export class ModalDetallePropuestaComponent {
   pedirEnviarVB():   void { this.accion.emit('enviar_vb'); }
   pedirAnular():     void { this.accion.emit('anular'); }
   pedirPreviewPdf(): void { this.accion.emit('preview_pdf'); }
+
+  irAVersion(v: VersionPropuesta): void {
+    if (v.esActual || v.idPropuesta === this.idPropuesta()) return;
+    this.verVersion.emit(v.idPropuesta);
+  }
 
   // ─── Helpers de render ─────────────────────────────────────────────────────
   formatearSla(): string {

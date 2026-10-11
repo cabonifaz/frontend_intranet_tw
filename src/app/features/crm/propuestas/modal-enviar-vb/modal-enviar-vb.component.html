@@ -63,21 +63,18 @@
         </div>
       }
 
-      <!-- Aprobador -->
+      <!-- Equipo aprobador (bandeja compartida por área + rol) -->
       <div class="mvb-campo">
-        <label>ENVIAR A PARA VISTO BUENO</label>
+        <label>EQUIPO APROBADOR</label>
         <div class="mvb-aprobador">
-          <span class="material-symbols-outlined">supervisor_account</span>
+          <span class="material-symbols-outlined">groups</span>
           <div>
             <div class="mvb-aprobador__nombre">
-              {{ d.nombreAprobador || 'Sin aprobador asignado' }}
-              @if (d.cargoAprobador) { — {{ d.cargoAprobador }} }
+              Supervisores y administradores del área {{ d.areaEquipoAprobador || '—' }}
             </div>
-            @if (d.esSuplente && d.nombreJefeDirecto) {
-              <div class="mvb-aprobador__suplente">
-                Suplente de {{ d.nombreJefeDirecto }}
-              </div>
-            }
+            <div class="mvb-aprobador__suplente">
+              Cualquiera del equipo podrá resolver el visto bueno.
+            </div>
           </div>
         </div>
       </div>

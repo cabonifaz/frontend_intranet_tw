@@ -34,19 +34,32 @@
     letter-spacing: 0.5px;
   }
 
-  input, textarea {
+  input, textarea, select {
     width: 100%;
     padding: 10px 12px;
     border: 1px solid #CBD5E1;
     border-radius: 8px;
     font-size: 13px;
     font-family: inherit;
+    color: #0F172A;
+    background: #FFFFFF;
 
     &:focus {
       outline: none;
       border-color: #2563EB;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
+  }
+
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748B'%3e%3cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 36px;
+    cursor: pointer;
   }
 
   textarea { resize: vertical; }

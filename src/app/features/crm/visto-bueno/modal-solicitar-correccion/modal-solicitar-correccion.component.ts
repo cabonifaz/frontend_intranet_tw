@@ -1,13 +1,14 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { VistoBuenoService } from '../../../../core/services/visto-bueno.service';
 import {
   AreaCorreccion,
-  AREAS_CORRECCION,
-  SolicitarCorreccionRequest,
+  DecisionVb,
+  ItemBandejaVb,
+  ResolverVbRequest,
 } from '../../../../core/models/visto-bueno.model';
-import { ContextoAprobar } from '../modal-aprobar-vb/modal-aprobar-vb.component';
 
 @Component({
   selector: 'app-modal-solicitar-correccion',
@@ -15,49 +16,72 @@ import { ContextoAprobar } from '../modal-aprobar-vb/modal-aprobar-vb.component'
   templateUrl: './modal-solicitar-correccion.component.html',
   styleUrl: './modal-solicitar-correccion.component.scss',
 })
-export class ModalSolicitarCorreccionComponent {
-  readonly contexto   = input.required<ContextoAprobar & { nombreComercial: string }>();
-  readonly cerrar     = output<void>();
-  readonly confirmado = output<SolicitarCorreccionRequest>();
+export class ModalSolicitarCorreccionComponent implements OnInit {
+  private readonly svc = inject(VistoBuenoService);
 
-  readonly areas          = AREAS_CORRECCION;
-  readonly areasSel       = signal<Set<AreaCorreccion>>(new Set());
+  readonly contexto    = input.required<ItemBandejaVb>();
+  readonly cerrar      = output<void>();
+  readonly confirmado  = output<{ idPropuesta: number; dto: ResolverVbRequest }>();
+
+  readonly cargandoDatos  = signal(true);
+  readonly areas          = signal<AreaCorreccion[]>([]);
+  readonly areasSel       = signal<Set<string>>(new Set());
   readonly observaciones  = signal<string>('');
-  readonly fechaLimite    = signal<string>(this.fechaDefault());
+  readonly fechaLimite    = signal<string>('');
   readonly enviando       = signal(false);
 
   readonly puedeEnviar = computed(() =>
     this.areasSel().size > 0 &&
-    this.observaciones().trim().length >= 20 &&
+    this.observaciones().trim().length >= 10 &&
     !!this.fechaLimite() &&
     !this.enviando()
   );
 
-  toggleArea(a: AreaCorreccion): void {
+  async ngOnInit(): Promise<void> {
+    try {
+      const d: DecisionVb = await this.svc.prepararDecision(this.contexto().idPropuesta);
+      this.areas.set(d.areasCorreccion);
+      this.fechaLimite.set(this.formatearInput(d.fechaLimiteSugerida) || this.fechaDefault());
+    } catch {
+      this.fechaLimite.set(this.fechaDefault());
+    } finally {
+      this.cargandoDatos.set(false);
+    }
+  }
+
+  toggleArea(codigo: string): void {
     const set = new Set(this.areasSel());
-    if (set.has(a)) set.delete(a);
-    else set.add(a);
+    if (set.has(codigo)) set.delete(codigo);
+    else set.add(codigo);
     this.areasSel.set(set);
   }
 
-  seleccionada(a: AreaCorreccion): boolean { return this.areasSel().has(a); }
+  seleccionada(codigo: string): boolean { return this.areasSel().has(codigo); }
 
   solicitar(): void {
     if (!this.puedeEnviar()) return;
     this.enviando.set(true);
     this.confirmado.emit({
-      idVb:          this.contexto().idVb,
-      areas:         [...this.areasSel()],
-      observaciones: this.observaciones().trim(),
-      fechaLimite:   new Date(this.fechaLimite()).toISOString(),
+      idPropuesta: this.contexto().idPropuesta,
+      dto: {
+        accion:      'corregir',
+        areas:       [...this.areasSel()],
+        comentario:  this.observaciones().trim(),
+        fechaLimite: new Date(this.fechaLimite()).toISOString(),
+      },
     });
   }
 
   onCerrar(): void { this.cerrar.emit(); }
 
   private fechaDefault(): string {
-    // Default: hoy + 24h, formato datetime-local YYYY-MM-DDThh:mm
     const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    return this.formatearInput(d.toISOString());
+  }
+
+  private formatearInput(iso?: string | null): string {
+    if (!iso) return '';
+    const d = new Date(iso);
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }

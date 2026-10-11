@@ -129,6 +129,207 @@ $blanco:      #FFFFFF;
 .badge.estado--gris       { background: #F3F4F6; color: $gris-texto; }
 .badge.estado--gris-claro { background: #F3F4F6; color: $gris-claro; }
 
+// ─── Chip corrección (header) + tooltip custom ─────────────────────────────
+.chip-correccion-wrap {
+  position: relative;
+  display: inline-flex;
+
+  &:hover .chip-correccion__tooltip { opacity: 1; visibility: visible; transform: translateY(0); }
+}
+.chip-correccion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px 3px 7px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: 999px;
+  color: #78350F;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:hover { background: #FDE68A; }
+
+  .material-symbols-outlined { font-size: 15px !important; }
+
+  &--vencida {
+    background: #FEE2E2;
+    border-color: #FCA5A5;
+    color: #7F1D1D;
+    &:hover { background: #FECACA; }
+  }
+
+  &__tooltip {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translate(-50%, -4px);
+    min-width: 300px;
+    max-width: 380px;
+    padding: 12px 14px;
+    background: #FFFFFF;
+    color: #0F172A;
+    border: 1px solid #E2E8F0;
+    border-top: 3px solid #D97706;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    font-weight: 500;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+    z-index: 100;
+    pointer-events: none;
+    text-align: left;
+
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-bottom-color: #D97706;
+    }
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: calc(100% - 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-bottom-color: #FFFFFF;
+    }
+
+    strong { color: #78350F; font-weight: 700; }
+    .tt-row { margin-top: 8px; &:first-child { margin-top: 0; } }
+    .tt-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 4px; vertical-align: middle; }
+    .tt-chip {
+      padding: 2px 8px;
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      color: #78350F;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .tt-vencida {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      background: #DC2626;
+      color: #FFF;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+  }
+}
+
+// ─── Aviso de corrección dentro de un tab afectado ─────────────────────────
+// Wrap: hereda el fondo gris del cuerpo del modal para que el aviso no quede
+// "flotando" sobre el blanco del header. El aviso en sí es un card ámbar.
+.aviso-correccion-wrap {
+  background: $gris-bg;
+  padding: 16px 32px 0;
+}
+// Cuando hay aviso justo antes del contenido, reducimos el padding-top del
+// contenido para que no se vea un gap exagerado entre el aviso y el primer panel.
+.aviso-correccion-wrap + .contenido { padding-top: 14px; }
+
+.aviso-correccion-tab {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #FEF3C7;
+  border-left: 3px solid #D97706;
+  border-radius: 6px;
+  color: #78350F;
+  font-size: 12.5px;
+
+  .material-symbols-outlined {
+    font-size: 20px !important;
+    color: #D97706;
+    flex-shrink: 0;
+  }
+
+  strong { font-weight: 700; }
+  p { margin: 2px 0 0; opacity: 0.9; line-height: 1.4; }
+}
+
+// ─── Panel detallado de corrección (en tab Corrección) ─────────────────────
+.panel--correccion {
+  border-top: 3px solid #D97706;
+  background: #FFFBEB;
+}
+.panel--correccion-vencida {
+  border-top-color: #B91C1C;
+  background: #FEF2F2;
+}
+.correccion-bloque { margin-top: 14px; }
+.correccion-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #78350F;
+  margin-bottom: 6px;
+}
+.correccion-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-area-grande {
+  padding: 4px 12px;
+  background: #FDE68A;
+  color: #78350F;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.correccion-obs {
+  padding: 10px 12px;
+  background: #FFFFFF;
+  border: 1px solid #FCD34D;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #0F172A;
+  white-space: pre-wrap;
+}
+.pill-vencido {
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #B91C1C;
+  color: #FFF;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+// ─── Dot/badge en tabs con corrección ──────────────────────────────────────
+.tabs__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  background: #DC2626;
+  color: #FFF;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tabs__item--correccion { color: #D97706; }
+
 // ─── Tabs ──────────────────────────────────────────────────────────────────
 .tabs {
   display: flex;
@@ -466,6 +667,11 @@ $blanco:      #FFFFFF;
   }
   .mono { font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 12px; }
   &__fila--actual { background: $azul-bg; }
+  &__fila--clickeable {
+    cursor: pointer;
+    transition: background 0.12s ease;
+    &:hover { background: #F8FAFC; }
+  }
 }
 .tabla-vacio {
   text-align: center !important;

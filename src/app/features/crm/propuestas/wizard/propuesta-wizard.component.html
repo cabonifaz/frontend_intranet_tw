@@ -22,6 +22,35 @@
     }
   </app-page-header>
 
+  <!-- ── Banner corrección pendiente (devuelta desde VB) ───────────────────── -->
+  @if (correccion(); as c) {
+    <div class="banner-correccion" [class.banner-correccion--vencida]="c.vencida">
+      <span class="material-symbols-outlined banner-correccion__icono">
+        {{ c.vencida ? 'warning' : 'edit_note' }}
+      </span>
+      <div class="banner-correccion__texto">
+        <strong>Corrección solicitada</strong>
+        @if (c.areas?.length) {
+          <span class="banner-correccion__areas">
+            @for (a of c.areas; track a.codigo; let last = $last) {
+              <span class="chip-area">{{ a.etiqueta }}</span>
+              @if (!last) { <span class="separador">·</span> }
+            }
+          </span>
+        }
+        <p class="banner-correccion__obs">{{ c.observaciones }}</p>
+        <small class="banner-correccion__meta">
+          Solicitada por <strong>{{ c.solicitadoPor || '—' }}</strong>
+          @if (c.solicitadoEn) { el {{ c.solicitadoEn | date:'dd/MM/yyyy HH:mm' }} }
+          @if (c.fechaLimite) {
+            · Límite <strong>{{ c.fechaLimite | date:'dd/MM/yyyy HH:mm' }}</strong>
+            @if (c.vencida) { <span class="pill-vencido">VENCIDA</span> }
+          }
+        </small>
+      </div>
+    </div>
+  }
+
   <!-- ── Banner propuesta existente ──────────────────────────────────────────── -->
   @if (propuestaPrevia() && !bannerCerrado()) {
     <div class="banner-aviso">
@@ -53,6 +82,7 @@
       <a class="stepper__paso"
          [class.stepper__paso--activo]="paso.id === pasoActual()"
          [class.stepper__paso--completado]="i + 1 < pasoActivoNumero()"
+         [class.stepper__paso--correccion]="pasoTieneCorreccion(paso.id)"
          [routerLink]="rutaPaso(paso)">
         <span class="stepper__numero">
           @if (i + 1 < pasoActivoNumero()) {
@@ -62,6 +92,9 @@
           }
         </span>
         <span class="stepper__label">{{ paso.etiqueta }}</span>
+        @if (pasoTieneCorreccion(paso.id)) {
+          <span class="stepper__dot" title="Se solicitó corregir esta sección">!</span>
+        }
       </a>
       @if (!$last) {
         <span class="stepper__separador"></span>
@@ -72,6 +105,16 @@
   <!-- ── Grid de ficha: main (secciones) + sidebar sticky ─────────────────────── -->
   <div class="ficha-grid" [class.ficha-grid--full]="!mostrarSidebar()">
     <main class="ficha-main" [class.ficha-main--lectura]="!draftSvc.draft().esEditable">
+      <!-- Aviso de corrección específico del paso actual (si está entre las áreas marcadas) -->
+      @if (observacionPasoActual(); as obs) {
+        <div class="aviso-correccion-paso">
+          <span class="material-symbols-outlined">priority_high</span>
+          <div>
+            <strong>El supervisor solicitó corregir esta sección.</strong>
+            <p>{{ obs }}</p>
+          </div>
+        </div>
+      }
       <router-outlet />
     </main>
 

@@ -43,6 +43,88 @@
   .material-symbols-outlined { font-size: 16px; }
 }
 
+// ── Aviso de corrección dentro de un paso afectado ─────────────────────────
+.aviso-correccion-paso {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #FEF3C7;
+  border-left: 3px solid #D97706;
+  border-radius: 6px;
+  color: #78350F;
+  font-size: 13px;
+
+  .material-symbols-outlined {
+    font-size: 20px !important;
+    color: #D97706;
+    flex-shrink: 0;
+  }
+
+  strong { font-weight: 700; }
+  p { margin: 2px 0 0; opacity: 0.9; line-height: 1.4; }
+}
+
+// ── Banner "Corrección pendiente" (devuelta desde VB) ──────────────────────
+.banner-correccion {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-left: 4px solid #D97706;
+  border-radius: 10px;
+  color: #78350F;
+
+  &--vencida {
+    background: #FEE2E2;
+    border-color: #FCA5A5;
+    border-left-color: #B91C1C;
+    color: #7F1D1D;
+  }
+
+  &__icono { font-size: 24px !important; flex-shrink: 0; margin-top: 1px; }
+  &__texto { flex: 1; min-width: 0; }
+
+  strong { display: inline-block; margin-right: 8px; font-weight: 700; }
+
+  &__areas {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+
+    .chip-area {
+      padding: 2px 8px;
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .separador { color: #A16207; }
+  }
+
+  &__obs {
+    margin: 6px 0 4px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  &__meta { font-size: 12px; opacity: 0.85; }
+
+  .pill-vencido {
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: #B91C1C;
+    color: #FFF;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+}
+
 // ── Banner "Propuesta existente detectada" ──────────────────────────────────
 .banner-aviso {
   display: flex;
@@ -165,6 +247,31 @@
         border-color: #2563EB;
       }
     }
+
+    &--correccion {
+      color: #B91C1C;
+
+      .stepper__numero {
+        background: #FEE2E2;
+        color: #B91C1C;
+        border-color: #FCA5A5;
+      }
+    }
+  }
+
+  &__dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #DC2626;
+    color: #FFF;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
   }
 
   &__numero {
