@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
@@ -13,6 +13,7 @@ import {
   ClienteDetalle,
   ClienteListaItem,
   ClientesPaginado,
+  ConsultaRuc,
   ContactoListaItem,
   GuardarCategoriaRequest,
   GuardarClienteRequest,
@@ -52,6 +53,33 @@ export class MaestrosService {
     );
     if (!r.datos) throw new Error(r.mensaje);
     return r.datos;
+  }
+
+  /**
+   * Consulta los datos del contribuyente en SUNAT (vía OpenRUC, con caché de 30 días en el back).
+   * Lanza Error con el mensaje del back si el RUC es inválido, es RUC 10, no existe
+   * o el servicio no está disponible.
+   */
+  async consultarRuc(ruc: string, forzar = false): Promise<ConsultaRuc> {
+    try {
+      const r = await firstValueFrom(
+        this.http.get<RespuestaApi<ConsultaRuc>>(
+          `${this.base}/clientes/consulta-ruc/${encodeURIComponent(ruc)}`,
+          { params: forzar ? { forzar: 'true' } : {} },
+        )
+      );
+      if (!r.datos) throw new Error(r.mensaje);
+      return r.datos;
+    } catch (e: unknown) {
+      if (e instanceof HttpErrorResponse) {
+        throw new Error(
+          e.status === 403
+            ? 'No tiene permiso para consultar RUC.'
+            : (e.error?.mensaje ?? 'No se pudo consultar el RUC. Intente nuevamente.'),
+        );
+      }
+      throw e;
+    }
   }
 
   async guardarCliente(dto: GuardarClienteRequest): Promise<number> {

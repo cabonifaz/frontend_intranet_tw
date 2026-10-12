@@ -15,7 +15,7 @@ import { AreasClienteService } from '../../../../core/services/areas-cliente.ser
 import { RequisitosSsomaService, RequisitoSsoma } from '../../../../core/services/requisitos-ssoma.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import { AreaCliente, CatalogoItem, CategoriaCliente, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { AreaCliente, CatalogoItem, CategoriaCliente, ConsultaRuc, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
@@ -73,6 +73,11 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(false);
+
+  // ── Consulta de RUC (SUNAT vía OpenRUC, caché de 30 días en el back) ──
+  readonly consultandoRuc = signal(false);
+  readonly consultaRuc    = signal<ConsultaRuc | null>(null);
+  readonly errorRuc       = signal('');
   readonly estadoCliente     = signal('Borrador');
   // Código de ficha visible en ambos modos (pedido cliente T1 2026-10-06).
   // Nuevo: "CLI-{año}-NUEVO". Editar: codigo real del cliente, con fallback a ID.
@@ -151,6 +156,78 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
 
   esRequisitoAplicable(codigo: string): boolean {
     return this.ssomaAplicables().includes(codigo);
+  }
+
+  constructor() {
+    // Si el usuario cambia el RUC después de consultar, el resultado ya no aplica.
+    this.formulario.get('ruc')!.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((valor: string) => {
+        const actual = this.consultaRuc();
+        if (actual && actual.ruc !== (valor ?? '').trim()) this.consultaRuc.set(null);
+        this.errorRuc.set('');
+      });
+  }
+
+  /** Advertencias del back, sin la de "ya registrado" cuando es este mismo cliente. */
+  advertenciasRuc(): string[] {
+    const c = this.consultaRuc();
+    if (!c) return [];
+    return this.esOtroClienteConRuc()
+      ? c.advertencias
+      : c.advertencias.filter(a => !a.includes('registrado como cliente'));
+  }
+
+  /** El RUC consultado pertenece a OTRO cliente ya registrado. */
+  esOtroClienteConRuc(): boolean {
+    const existente = this.consultaRuc()?.clienteExistente;
+    return !!existente && existente.idCliente !== this.idCliente;
+  }
+
+  /** Consulta el RUC y completa razón social, domicilio fiscal y condición. */
+  async consultarRuc(forzar = false): Promise<void> {
+    const control = this.formulario.get('ruc')!;
+    control.markAsTouched();
+    if (control.invalid || this.consultandoRuc()) return;
+
+    const ruc = (control.value as string).trim();
+    this.consultandoRuc.set(true);
+    this.errorRuc.set('');
+    try {
+      const datos = await this.maestrosSvc.consultarRuc(ruc, forzar);
+      this.consultaRuc.set(datos);
+      this.formulario.patchValue({
+        razonSocial:            datos.razonSocial,
+        domicilioFiscal:        datos.domicilioFiscal ?? this.formulario.get('domicilioFiscal')?.value ?? '',
+        condicionContribuyente: datos.condicion ? this.capitalizar(datos.condicion) : 'Habido',
+      });
+      this.formulario.get('razonSocial')?.markAsTouched();
+      this.toastSvc.exito(datos.desdeCache
+        ? 'Datos SUNAT cargados (consulta reciente guardada).'
+        : 'Datos SUNAT cargados.');
+    } catch (e: unknown) {
+      this.consultaRuc.set(null);
+      this.errorRuc.set(e instanceof Error ? e.message : 'No se pudo consultar el RUC.');
+    } finally {
+      this.consultandoRuc.set(false);
+    }
+  }
+
+  /**
+   * Abre la ficha del cliente que ya tiene este RUC. Se pasa por la lista para que
+   * Angular cree de nuevo la ficha (la ruta :id reutiliza el componente y no recarga).
+   */
+  async abrirClienteExistente(): Promise<void> {
+    const existente = this.consultaRuc()?.clienteExistente;
+    if (!existente) return;
+    await this.router.navigateByUrl('/maestros/clientes', { skipLocationChange: true });
+    await this.router.navigate(['/maestros/clientes', existente.idCliente]);
+  }
+
+  /** "NO HABIDO" → "No habido" (mismo formato que el valor por defecto 'Habido'). */
+  private capitalizar(texto: string): string {
+    const t = texto.trim().toLowerCase();
+    return t.charAt(0).toUpperCase() + t.slice(1);
   }
 
   async ngOnInit(): Promise<void> {

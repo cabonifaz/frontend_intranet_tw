@@ -48,21 +48,42 @@
                 <div class="campo__input-group">
                   <input
                     class="campo__input"
+                    [class.campo__input--con-badge]="consultaRuc()"
                     type="text"
+                    inputmode="numeric"
                     placeholder="20523456789"
                     formControlName="ruc"
                     maxlength="11"
+                    (keydown.enter)="$event.preventDefault(); consultarRuc()"
                   />
-                  <span class="badge-sunat">
-                    <span class="badge-sunat__dot"></span>
-                    Válido SUNAT
-                  </span>
+                  @if (consultaRuc(); as c) {
+                    @if (c.esActivo && c.esHabido) {
+                      <span class="badge-sunat badge-sunat--compacto" [title]="'Válido SUNAT: ' + c.estado + ' · ' + c.condicion">
+                        <span class="material-symbols-outlined">check</span>
+                      </span>
+                    } @else {
+                      <span class="badge-sunat badge-sunat--compacto badge-sunat--alerta" [title]="'Revisar en SUNAT: ' + (c.estado ?? '—') + ' · ' + (c.condicion ?? '—')">
+                        <span class="material-symbols-outlined">priority_high</span>
+                      </span>
+                    }
+                  }
                 </div>
-                <button class="btn-consultar" type="button">
-                  <span class="material-symbols-outlined">search</span>
-                  Consultar
+                <button
+                  class="btn-consultar"
+                  type="button"
+                  [disabled]="consultandoRuc() || formulario.get('ruc')?.invalid"
+                  (click)="consultarRuc()"
+                  title="Traer razón social, condición y domicilio fiscal desde SUNAT"
+                >
+                  <span class="material-symbols-outlined" [class.btn-consultar__girando]="consultandoRuc()">
+                    {{ consultandoRuc() ? 'progress_activity' : 'search' }}
+                  </span>
+                  {{ consultandoRuc() ? 'Consultando…' : 'Consultar' }}
                 </button>
               </div>
+              @if (errorRuc()) {
+                <span class="campo__error">{{ errorRuc() }}</span>
+              }
               @if (formulario.get('ruc')?.touched) {
                 @if (formulario.get('ruc')?.hasError('required')) {
                   <span class="campo__error">El RUC es obligatorio.</span>
@@ -95,6 +116,40 @@
               </select>
             </div>
           </div>
+
+          @if (consultaRuc(); as c) {
+            <div class="ruc-resultado" [class.ruc-resultado--alerta]="advertenciasRuc().length > 0">
+              <div class="ruc-resultado__cabecera">
+                <span class="material-symbols-outlined">{{ advertenciasRuc().length > 0 ? 'warning' : 'verified' }}</span>
+                <span class="ruc-resultado__titulo">
+                  SUNAT: {{ c.estado ?? '—' }} · {{ c.condicion ?? '—' }}
+                </span>
+                <span class="ruc-resultado__meta">
+                  @if (c.fechaDato) { Padrón al {{ c.fechaDato }} · }
+                  {{ c.desdeCache ? 'consulta guardada' : 'consulta en línea' }}
+                </span>
+                @if (c.desdeCache) {
+                  <button type="button" class="ruc-resultado__refrescar" [disabled]="consultandoRuc()" (click)="consultarRuc(true)">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Actualizar
+                  </button>
+                }
+              </div>
+              @if (advertenciasRuc().length > 0) {
+                <ul class="ruc-resultado__avisos">
+                  @for (a of advertenciasRuc(); track a) {
+                    <li>{{ a }}</li>
+                  }
+                </ul>
+              }
+              @if (esOtroClienteConRuc()) {
+                <a class="ruc-resultado__enlace" href="" (click)="$event.preventDefault(); abrirClienteExistente()">
+                  <span class="material-symbols-outlined">open_in_new</span>
+                  Abrir ficha de {{ c.clienteExistente!.razonSocial }}
+                </a>
+              }
+            </div>
+          }
 
           <!-- Fila 2: Razón Social + Nombre Comercial -->
           <div class="campo-2col">

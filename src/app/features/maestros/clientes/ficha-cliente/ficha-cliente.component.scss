@@ -1035,3 +1035,123 @@
     color: #fff;
   }
 }
+
+// ── Consulta de RUC (SUNAT vía OpenRUC) ───────────────────────────────────────
+
+.campo__ruc-row .campo__input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.campo__input--con-badge { padding-right: 34px; }
+
+.badge-sunat {
+  top: 50%;
+  transform: translateY(-50%);
+
+  // Ícono redondo dentro del input: la columna del RUC es angosta y un texto
+  // taparía los dígitos. El detalle (estado · condición) va en el panel de abajo.
+  &--compacto {
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 9999px;
+    overflow: hidden;
+
+    .material-symbols-outlined { font-size: 14px; font-weight: 700; }
+  }
+
+  &--alerta {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    color: #B45309;
+  }
+}
+
+.btn-consultar {
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &:hover:disabled { background: #2563EB; }
+
+  &__girando { animation: girar-ruc 0.9s linear infinite; }
+}
+
+@keyframes girar-ruc {
+  to { transform: rotate(360deg); }
+}
+
+.ruc-resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #065F46;
+
+  &--alerta {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    color: #92400E;
+  }
+
+  &__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+
+  &__titulo { font-weight: 700; }
+
+  &__meta {
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  &__refrescar {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: inherit;
+    cursor: pointer;
+
+    .material-symbols-outlined { font-size: 13px; }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__avisos {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__enlace {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    font-weight: 600;
+    color: #1D4ED8;
+    text-decoration: none;
+
+    .material-symbols-outlined { font-size: 14px; }
+
+    &:hover { text-decoration: underline; }
+  }
+}

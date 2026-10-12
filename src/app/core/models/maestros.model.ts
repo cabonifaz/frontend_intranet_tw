@@ -231,3 +231,34 @@ export interface GuardarAreaClienteRequest {
 export interface CambiarEstadoAreaClienteRequest {
   estado: string;
 }
+
+// ── Consulta de RUC (OpenRUC + caché del back) ───────────────────────────────
+// GET /api/maestros/clientes/consulta-ruc/{ruc}?forzar=false
+
+export interface ClienteExistenteRuc {
+  idCliente:   number;
+  razonSocial: string;
+  estado:      string | null;
+}
+
+export interface ConsultaRuc {
+  ruc:              string;
+  razonSocial:      string;
+  estado:           string | null;   // ACTIVO, BAJA DE OFICIO, SUSPENSION TEMPORAL...
+  condicion:        string | null;   // HABIDO, NO HABIDO, NO HALLADO...
+  esActivo:         boolean;
+  esHabido:         boolean;
+  direccion:        string | null;
+  ubigeo:           string | null;
+  departamento:     string | null;
+  provincia:        string | null;
+  distrito:         string | null;
+  domicilioFiscal:  string | null;   // dirección + distrito - provincia - departamento
+  fuente:           string | null;
+  fechaDato:        string | null;   // yyyy-MM-dd (corte del padrón SUNAT)
+  proveedor:        string;
+  consultadoEn:     string;
+  desdeCache:       boolean;
+  advertencias:     string[];
+  clienteExistente: ClienteExistenteRuc | null;
+}
