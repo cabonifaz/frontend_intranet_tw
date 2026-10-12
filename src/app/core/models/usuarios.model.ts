@@ -75,3 +75,29 @@ export interface CambiarEstadoUsuarioRequest {
   estado: string;
 }
 
+
+// ── Servicio de correo (Brevo) ───────────────────────────────────────────────
+
+/** Respuesta de POST /api/maestros/usuarios. */
+export interface UsuarioGuardado {
+  idUsuario:        number;
+  correoSolicitado: boolean;        // se marcó "enviar credenciales"
+  correoEnviado:    boolean;
+  correoDestino:    string | null;
+  correoError:      string | null;
+}
+
+/** Respuesta de POST /api/maestros/usuarios/{id}/reenviar-credenciales. */
+export interface ReenvioCredenciales {
+  idUsuario:          number;
+  correo:             string;
+  correoEnviado:      boolean;
+  correoError:        string | null;
+  /** Solo llega si el correo NO salió: hay que entregarla por otro medio. */
+  contrasenaTemporal: string | null;
+}
+
+export interface ResultadoConMensaje<T> {
+  datos:   T;
+  mensaje: string;
+}

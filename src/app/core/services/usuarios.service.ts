@@ -1,11 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   CambiarEstadoUsuarioRequest,
   GuardarUsuarioRequest,
+  ReenvioCredenciales,
+  ResultadoConMensaje,
+  UsuarioGuardado,
   UsuarioDetalle,
   UsuarioListaItem,
   UsuariosPaginado,
@@ -62,14 +65,52 @@ export class UsuariosService {
     return r.datos;
   }
 
-  async guardarUsuario(dto: GuardarUsuarioRequest): Promise<number> {
-    if (USAR_MOCK) return this.mockGuardarUsuario(dto);
+  /**
+   * Crea o edita un usuario. Al crear con "enviar credenciales" el back envía el correo:
+   * `datos.correoEnviado` indica si salió (el usuario se crea aunque el correo falle).
+   */
+  async guardarUsuario(dto: GuardarUsuarioRequest): Promise<ResultadoConMensaje<UsuarioGuardado>> {
+    if (USAR_MOCK) {
+      const id = await this.mockGuardarUsuario(dto);
+      return {
+        mensaje: dto.idUsuario === 0 ? 'Usuario registrado correctamente.' : 'Usuario actualizado correctamente.',
+        datos: { idUsuario: id, correoSolicitado: false, correoEnviado: false, correoDestino: null, correoError: null },
+      };
+    }
 
-    const r = await firstValueFrom(
-      this.http.post<RespuestaApi<number>>(`${this.base}/usuarios`, dto)
-    );
-    if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
-    return r.datos!;
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaApi<UsuarioGuardado>>(`${this.base}/usuarios`, dto)
+      );
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+      return { datos: r.datos, mensaje: r.mensaje };
+    } catch (e: unknown) {
+      throw this.errorLegible(e, 'Error al guardar el usuario.');
+    }
+  }
+
+  /**
+   * Genera una nueva contraseña temporal (cambio obligatorio al ingresar) y la envía por correo.
+   * Si el correo no sale, `datos.contrasenaTemporal` trae la clave para entregarla a mano.
+   */
+  async reenviarCredenciales(idUsuario: number): Promise<ResultadoConMensaje<ReenvioCredenciales>> {
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaApi<ReenvioCredenciales>>(`${this.base}/usuarios/${idUsuario}/reenviar-credenciales`, {})
+      );
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje);
+      return { datos: r.datos, mensaje: r.mensaje };
+    } catch (e: unknown) {
+      throw this.errorLegible(e, 'No se pudieron reenviar las credenciales.');
+    }
+  }
+
+  private errorLegible(e: unknown, porDefecto: string): Error {
+    if (e instanceof HttpErrorResponse) {
+      if (e.status === 403) return new Error('No tiene permiso para realizar esta acción.');
+      return new Error(e.error?.mensaje ?? porDefecto);
+    }
+    return e instanceof Error ? e : new Error(porDefecto);
   }
 
   async cambiarEstadoUsuario(dto: CambiarEstadoUsuarioRequest): Promise<void> {

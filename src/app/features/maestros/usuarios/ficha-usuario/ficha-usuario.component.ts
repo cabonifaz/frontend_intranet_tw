@@ -39,6 +39,7 @@ interface RequisitoAlta {
   cumplido: boolean;
 }
 
+import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 @Component({
   selector: 'app-ficha-usuario',
   imports: [
@@ -56,6 +57,7 @@ interface RequisitoAlta {
     CampoComponent,
     ModalBorradorComponent,
     ModalMantenimientoAreasComponent,
+    PermisoDirective,
   ],
   templateUrl: './ficha-usuario.component.html',
   styleUrl: './ficha-usuario.component.scss',
@@ -97,6 +99,14 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
   readonly guardandoSuplente   = signal(false);
   readonly errorSuplente       = signal('');
   readonly copiado          = signal(false);
+
+  // ── Reenviar credenciales por correo (modo edición) ──
+  readonly confirmandoReenvio = signal(false);
+  readonly reenviando         = signal(false);
+  /** Clave a entregar a mano cuando el correo no salió (no se guarda en ningún lado). */
+  readonly contrasenaManual   = signal<string | null>(null);
+  readonly mensajeReenvio     = signal('');
+  readonly copiadoManual      = signal(false);
 
   idUsuario = 0;
 
@@ -538,6 +548,46 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     this.copiado.set(false);
   }
 
+  // ─── Reenviar credenciales ────────────────────────────────────────────
+  pedirReenvioCredenciales(): void {
+    this.contrasenaManual.set(null);
+    this.mensajeReenvio.set('');
+    this.confirmandoReenvio.set(true);
+  }
+
+  cancelarReenvioCredenciales(): void {
+    this.confirmandoReenvio.set(false);
+  }
+
+  async reenviarCredenciales(): Promise<void> {
+    if (this.reenviando() || !this.idUsuario) return;
+    this.reenviando.set(true);
+    try {
+      const { datos, mensaje } = await this.usuariosSvc.reenviarCredenciales(this.idUsuario);
+      this.confirmandoReenvio.set(false);
+      if (datos.correoEnviado) {
+        this.toastSvc.exito(mensaje);
+      } else {
+        this.contrasenaManual.set(datos.contrasenaTemporal);
+        this.mensajeReenvio.set(mensaje);
+      }
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudieron reenviar las credenciales.');
+    } finally {
+      this.reenviando.set(false);
+    }
+  }
+
+  async copiarContrasenaManual(): Promise<void> {
+    const pass = this.contrasenaManual();
+    if (!pass) return;
+    try {
+      await navigator.clipboard.writeText(pass);
+      this.copiadoManual.set(true);
+      setTimeout(() => this.copiadoManual.set(false), 2000);
+    } catch { /* noop */ }
+  }
+
   async copiarContrasena(): Promise<void> {
     const pass = this.formulario.get('contrasenaTemporal')?.value;
     if (!pass) return;
@@ -630,14 +680,17 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         autenticacion2fa:             !!v.autenticacion2fa,
         guardarComoBorrador:          false,
       };
-      await this.usuariosSvc.guardarUsuario(dto);
+      const { datos, mensaje } = await this.usuariosSvc.guardarUsuario(dto);
       this.borradorSvc.borrar(this.borradorKey);
       this.salidaControlada = true;
-      this.toastSvc.exito(
-        this.esNuevo()
+      if (datos.correoSolicitado && !datos.correoEnviado) {
+        // El usuario se creó, pero el correo no salió: aviso largo para que lo reenvíe.
+        this.toastSvc.error(mensaje, 10000);
+      } else {
+        this.toastSvc.exito(mensaje || (this.esNuevo()
           ? 'Usuario registrado y activado correctamente.'
-          : 'Usuario actualizado correctamente.'
-      );
+          : 'Usuario actualizado correctamente.'));
+      }
       this.router.navigate(['/maestros/usuarios']);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al guardar el usuario.';

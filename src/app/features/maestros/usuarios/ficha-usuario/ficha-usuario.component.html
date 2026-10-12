@@ -315,13 +315,52 @@
             </span>
           </label>
 
+          @if (!esNuevo()) {
+            <div class="reenvio" *appPermiso="'usuario_guardar'">
+              <div class="reenvio__texto">
+                <span class="reenvio__titulo">Reenviar credenciales por correo</span>
+                <span class="reenvio__desc">Genera una nueva contraseña temporal, la envía al correo del usuario y le obliga a cambiarla al ingresar. La contraseña actual deja de funcionar.</span>
+              </div>
+              @if (!confirmandoReenvio()) {
+                <button type="button" class="btn-icono" (click)="pedirReenvioCredenciales()" [disabled]="reenviando()">
+                  <span class="material-symbols-outlined">forward_to_inbox</span>
+                  Reenviar credenciales
+                </button>
+              } @else {
+                <div class="reenvio__confirmar">
+                  <span>¿Generar una nueva contraseña y enviarla?</span>
+                  <button type="button" class="btn-icono btn-icono--primario" (click)="reenviarCredenciales()" [disabled]="reenviando()">
+                    <span class="material-symbols-outlined">{{ reenviando() ? 'hourglass_top' : 'send' }}</span>
+                    {{ reenviando() ? 'Enviando…' : 'Sí, enviar' }}
+                  </button>
+                  <button type="button" class="btn-icono" (click)="cancelarReenvioCredenciales()" [disabled]="reenviando()">Cancelar</button>
+                </div>
+              }
+            </div>
+            @if (contrasenaManual(); as pass) {
+              <div class="reenvio-manual">
+                <span class="material-symbols-outlined">warning</span>
+                <div class="reenvio-manual__cuerpo">
+                  <span>{{ mensajeReenvio() }}</span>
+                  <div class="reenvio-manual__clave">
+                    <code>{{ pass }}</code>
+                    <button type="button" class="btn-icono" (click)="copiarContrasenaManual()">
+                      <span class="material-symbols-outlined">{{ copiadoManual() ? 'check' : 'content_copy' }}</span>
+                      {{ copiadoManual() ? 'Copiado' : 'Copiar' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+
           @if (esNuevo()) {
             <label class="check-row">
               <input type="checkbox" formControlName="enviarCredencialesCorreo" />
               <span class="check-row__box"></span>
               <span class="check-row__texto">
-                <span class="check-row__titulo">Enviar credenciales y enlace de activación por correo electrónico institucional</span>
-                <span class="check-row__desc">Se remitirá una notificación cifrada a la dirección configurada con la guía de inicio rápido y enrolamiento corporativo.</span>
+                <span class="check-row__titulo">Enviar credenciales por correo electrónico institucional</span>
+                <span class="check-row__desc">Al guardar, el usuario recibirá su usuario, la contraseña inicial y el enlace a la intranet. Si el correo no se puede enviar, el usuario se crea igual y podrá reenviarlas desde su ficha.</span>
               </span>
             </label>
           }
