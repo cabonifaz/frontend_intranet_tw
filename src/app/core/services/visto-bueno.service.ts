@@ -9,7 +9,9 @@ import {
   CorreccionPropuesta,
   DecisionVb,
   FiltrosBandejaVb,
+  ResolverRevocacionVbRequest,
   ResolverVbRequest,
+  ResultadoResolverRevocacionVb,
   ResultadoResolverVb,
   ValidacionesVb,
 } from '../models/visto-bueno.model';
@@ -87,6 +89,18 @@ export class VistoBuenoService {
       this.http.post<RespuestaApi<ResultadoResolverVb>>(`${this.basePropuesta}/${idPropuesta}/visto-bueno/resolver`, dto)
     );
     if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo registrar la decisión.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-13b — Resolver solicitud de revocación de VB (aprobar | rechazar)
+  // ═══════════════════════════════════════════════════════════════════════════
+  async resolverRevocacion(idPropuesta: number, dto: ResolverRevocacionVbRequest): Promise<ResultadoResolverRevocacionVb> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<ResultadoResolverRevocacionVb>>(
+        `${this.basePropuesta}/${idPropuesta}/revocacion/resolver`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo resolver la revocación.');
     return r.datos;
   }
 }

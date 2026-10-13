@@ -20,6 +20,21 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
         sessionStorage.removeItem(TOKEN_KEY);
         router.navigate(['/login']);
       }
+
+      // El back envuelve respuestas en RespuestaDto { idTipoMensaje, mensaje, datos }.
+      // Cuando responde 400/500 con un mensaje de negocio, lo propagamos como Error
+      // para que `e instanceof Error ? e.message : ...` en los services muestre el mensaje
+      // real en el toast en vez del fallback genérico.
+      const body = err.error;
+      const mensajeBack = typeof body === 'object' && body !== null && typeof body.mensaje === 'string'
+        ? body.mensaje
+        : null;
+      if (mensajeBack) {
+        const enriched = new Error(mensajeBack) as Error & { httpError: HttpErrorResponse };
+        enriched.httpError = err;
+        return throwError(() => enriched);
+      }
+
       return throwError(() => err);
     })
   );

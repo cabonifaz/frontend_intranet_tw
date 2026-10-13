@@ -1,0 +1,96 @@
+<app-modal
+  titulo="Registrar Aceptación de Propuesta"
+  [subtitulo]="subtitulo()"
+  icono="thumb_up"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargandoDatos()) {
+    <div class="loading"><span class="material-symbols-outlined spin">progress_activity</span> Cargando...</div>
+  } @else if (datos(); as d) {
+
+   <div class="mas-body">
+    <!-- Resumen de propuesta -->
+    <div class="resumen">
+      <div class="resumen__hdr">
+        <span class="material-symbols-outlined">check_circle</span>
+        <div>
+          <strong>Confirmación de aceptación</strong>
+          <small>Esta acción cerrará la etapa de seguimiento y habilitará la gestión de órdenes de compra.</small>
+        </div>
+      </div>
+      <div class="resumen__datos">
+        <div><small>MONTO</small><span>{{ formatearMonto(d.cabecera.total, d.cabecera.monedaSimbolo) }}</span></div>
+        <div><small>RESPONSABLE</small><span>{{ d.cabecera.responsable ?? '—' }}</span></div>
+        <div><small>DÍAS TRANSCURRIDOS</small><span>{{ d.cabecera.diasTranscurridos }} días</span></div>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="campo">
+        <label>TIPO DE ACEPTACIÓN *</label>
+        <select [ngModel]="idTipoAceptacion()" (ngModelChange)="idTipoAceptacion.set($event)">
+          <option [ngValue]="null">Seleccione...</option>
+          @for (t of d.tiposAceptacion; track t.id) {
+            <option [ngValue]="t.id">{{ t.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label>FECHA Y HORA DE ACEPTACIÓN *</label>
+        <input type="datetime-local" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" />
+      </div>
+      <div class="campo campo--full">
+        <label>CONTACTO QUE ACEPTÓ</label>
+        <select [ngModel]="idContacto()" (ngModelChange)="idContacto.set($event)">
+          <option [ngValue]="null">—</option>
+          @for (c of d.contactos; track c.idContacto) {
+            <option [ngValue]="c.idContacto">
+              {{ c.nombres }}{{ c.cargo ? ' — ' + c.cargo : '' }}
+            </option>
+          }
+        </select>
+      </div>
+      <div class="campo campo--full">
+        <label>COMENTARIO (OPCIONAL)</label>
+        <textarea rows="3" placeholder="Añade contexto sobre la aceptación..."
+                  [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
+      </div>
+    </div>
+
+    <!-- Evidencia -->
+    <div class="evidencia-box">
+      <label>EVIDENCIA DE ACEPTACIÓN <small>(opcional, máx. 5)</small></label>
+      <input type="file" multiple (change)="onArchivosSeleccionados($event)" />
+      @if (archivos().length > 0) {
+        <ul class="evidencia-list">
+          @for (a of archivos(); track $index) {
+            <li>
+              <span>{{ a.name }}</span>
+              <button type="button" (click)="quitarArchivo($index)">✕</button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="info-panel">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        <strong>Próxima etapa: Órdenes de Compra</strong>
+        <small>Al confirmar, la propuesta pasará a estado "Aceptada" y aparecerá en el módulo de OC pendientes.</small>
+      </div>
+    </div>
+   </div>
+
+  }
+
+  <div modalFooter class="mas__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="check"
+                [disabled]="!puedeGuardar()" [cargando]="enviando()" (clic)="guardar()">
+      Confirmar Aceptación
+    </app-button>
+  </div>
+</app-modal>

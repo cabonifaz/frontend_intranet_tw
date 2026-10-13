@@ -59,8 +59,20 @@ export class PermisosService {
     return this.accionesPermitidas().has(accion);
   }
 
+  /** ¿Tiene al menos una de las acciones indicadas? Útil para contenedores
+   *  (ej. mostrar "Maestros" en el sidebar si tiene acceso a cualquier maestro). */
+  puedeAlguna(acciones: string[]): boolean {
+    const set = this.accionesPermitidas();
+    return acciones.some(a => set.has(a));
+  }
+
   /** Rápido: nivel de acceso del usuario a un módulo. 'ninguno' si no tiene. */
   accesoAModulo(modulo: string): PermisoModulo['acceso'] {
     return this._permisos().find(p => p.modulo === modulo)?.acceso ?? 'ninguno';
+  }
+
+  /** ¿Tiene algún nivel de acceso (!= 'ninguno') al módulo? */
+  tieneAccesoModulo(modulo: string): boolean {
+    return this.accesoAModulo(modulo) !== 'ninguno';
   }
 }

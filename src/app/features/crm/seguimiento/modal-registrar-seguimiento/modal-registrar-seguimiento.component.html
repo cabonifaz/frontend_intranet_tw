@@ -1,0 +1,224 @@
+<app-modal
+  titulo="Registrar Seguimiento"
+  [subtitulo]="datos() ? datos()!.cabecera.numero + ' / ' + datos()!.cabecera.razonSocial : ''"
+  icono="track_changes"
+  iconoColor="azul"
+  ancho="lg"
+  (cerrar)="onCerrar()">
+
+  @if (cargandoDatos()) {
+    <div class="loading"><span class="material-symbols-outlined spin">progress_activity</span> Cargando...</div>
+  } @else if (datos(); as d) {
+
+    <!-- HU-19 — Banner según comportamiento de la pendiente -->
+    @if (comportamientoPendiente() === 'ejecutar') {
+      <div class="mrs-banner mrs-banner--ejecutar">
+        <span class="material-symbols-outlined">play_circle</span>
+        <div>
+          <strong>Ejecutando tarea agendada</strong>
+          <small>Al guardar, se marcará como realizada: <b>{{ nombreAccionPendiente() ?? 'tarea pendiente' }}</b></small>
+        </div>
+      </div>
+    } @else if (comportamientoPendiente() === 'mantener') {
+      <div class="mrs-banner mrs-banner--mantener">
+        <span class="material-symbols-outlined">bookmark</span>
+        <div>
+          <strong>La tarea pendiente se mantiene</strong>
+          <small>No podrás programar otra. Al guardar, la pendiente seguirá vigente:
+                 <b>{{ nombreAccionPendiente() ?? '—' }}</b></small>
+        </div>
+      </div>
+    } @else if (comportamientoPendiente() === 'cancelar') {
+      <div class="mrs-banner mrs-banner--cancelar">
+        <span class="material-symbols-outlined">cancel</span>
+        <div>
+          <strong>Cancelarás la tarea pendiente</strong>
+          <small>Al guardar, se cancelará: <b>{{ nombreAccionPendiente() ?? '—' }}</b>. Puedes programar una nueva abajo.</small>
+        </div>
+      </div>
+    }
+
+    <!-- Selector de variante -->
+    <div class="variantes">
+      <button type="button" class="variantes__item"
+              [class.variantes__item--activa]="variante() === 'general'"
+              [disabled]="tipoBloqueado()"
+              (click)="cambiarVariante('general')">
+        <span class="material-symbols-outlined">edit_note</span>
+        <span>General</span>
+      </button>
+      <button type="button" class="variantes__item"
+              [class.variantes__item--activa]="variante() === 'correo'"
+              [disabled]="tipoBloqueado()"
+              (click)="cambiarVariante('correo')">
+        <span class="material-symbols-outlined">mail</span>
+        <span>Correo</span>
+      </button>
+    </div>
+
+    <!-- ─── General ────────────────────────────────────────────── -->
+    @if (variante() === 'general') {
+      <div class="form-grid">
+        <div class="campo">
+          <label>TIPO DE SEGUIMIENTO *</label>
+          <select [ngModel]="idCanal()" (ngModelChange)="idCanal.set($event)" [disabled]="tipoBloqueado()">
+            <option [ngValue]="null">Seleccione...</option>
+            @for (t of d.tiposSeguimiento; track t.id) {
+              <option [ngValue]="t.id">{{ t.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label>RESULTADO *</label>
+          <select [ngModel]="idResultado()" (ngModelChange)="idResultado.set($event)">
+            <option [ngValue]="null">Seleccione...</option>
+            @for (r of d.resultados; track r.id) {
+              <option [ngValue]="r.id">{{ r.nombre }}</option>
+            }
+          </select>
+        </div>
+        <!-- Duración dinámica: solo si el tipo seleccionado es Llamada -->
+        @if (esCanalLlamada()) {
+          <div class="campo">
+            <label>DURACIÓN (MIN) *</label>
+            <input type="number" min="1" placeholder="Ej: 5"
+                   [ngModel]="duracionMinutos()" (ngModelChange)="duracionMinutos.set($event)" />
+          </div>
+        }
+        <div class="campo">
+          <label>CONTACTO</label>
+          <select [ngModel]="idContacto()" (ngModelChange)="idContacto.set($event)">
+            <option [ngValue]="null">—</option>
+            @for (c of d.contactos; track c.idContacto) {
+              <option [ngValue]="c.idContacto">{{ c.nombres }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label>FECHA DE REGISTRO</label>
+          <input type="datetime-local" [ngModel]="fechaInteraccion()" (ngModelChange)="fechaInteraccion.set($event)" />
+        </div>
+        <div class="campo campo--full">
+          <label>{{ esCanalLlamada() ? 'NOTAS DE LA LLAMADA *' : 'DETALLE DEL SEGUIMIENTO' }}</label>
+          <textarea rows="4"
+                    [placeholder]="esCanalLlamada() ? 'Describe los puntos discutidos...' : 'Puntos clave de la conversación o avances logrados...'"
+                    [ngModel]="notas()" (ngModelChange)="notas.set($event)"></textarea>
+        </div>
+      </div>
+    }
+
+    <!-- ─── Correo ────────────────────────────────────────────── -->
+    @if (variante() === 'correo') {
+      <div class="form-correo">
+        <div class="campo-correo">
+          <span class="campo-correo__label">DE</span>
+          <input type="text" readonly [value]="d.cabecera.correoUsuario ?? ''" />
+        </div>
+        <div class="campo-correo">
+          <span class="campo-correo__label">PARA</span>
+          <input type="text" placeholder="correo@dominio.com, otro@..."
+                 [ngModel]="correoPara()" (ngModelChange)="correoPara.set($event)" />
+        </div>
+        <div class="campo-correo">
+          <span class="campo-correo__label">CC</span>
+          <input type="text" placeholder="(opcional)"
+                 [ngModel]="correoCc()" (ngModelChange)="correoCc.set($event)" />
+        </div>
+        <div class="campo-correo">
+          <span class="campo-correo__label">ASUNTO</span>
+          <input type="text" [ngModel]="correoAsunto()" (ngModelChange)="correoAsunto.set($event)" />
+        </div>
+
+        @if (d.plantillas.length > 0) {
+          <div class="plantillas">
+            <label>PLANTILLA</label>
+            <select [ngModel]="idPlantilla()" (ngModelChange)="aplicarPlantilla($event)">
+              <option [ngValue]="null">— Sin plantilla —</option>
+              @for (p of d.plantillas; track p.idPlantilla) {
+                <option [ngValue]="p.idPlantilla">{{ p.nombre }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <textarea class="correo-cuerpo" rows="10"
+                  placeholder="Escribe aquí el contenido del correo..."
+                  [ngModel]="correoCuerpo()" (ngModelChange)="correoCuerpo.set($event)"></textarea>
+      </div>
+    }
+
+    <!-- Programar próxima acción (oculto si el user eligió "mantener la pendiente") -->
+    @if (!ocultaProgramar()) {
+    <div class="programar-box" [class.programar-box--activa]="programarProxima()">
+      <label class="programar-head">
+        <input type="checkbox" [checked]="programarProxima()" (change)="programarProxima.set(!programarProxima())" />
+        <div>
+          <strong>Programar próxima acción</strong>
+          <small>Definir una tarea automática de seguimiento</small>
+        </div>
+      </label>
+
+      @if (programarProxima()) {
+        <div class="form-grid form-grid--3">
+          <div class="campo">
+            <label>TIPO DE TAREA</label>
+            <select [ngModel]="idTipoAccion()" (ngModelChange)="idTipoAccion.set($event)">
+              <option [ngValue]="null">Seleccione...</option>
+              @for (t of d.tiposTarea; track t.id) {
+                <option [ngValue]="t.id">{{ t.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label>FECHA Y HORA PROGRAMADA</label>
+            <input type="datetime-local" [ngModel]="fechaProxima()" (ngModelChange)="fechaProxima.set($event)" />
+          </div>
+          <div class="campo">
+            <label>PRIORIDAD</label>
+            <select [ngModel]="idPrioridadProxima()" (ngModelChange)="idPrioridadProxima.set($event)">
+              <option [ngValue]="null">—</option>
+              @for (p of d.prioridades; track p.id) {
+                <option [ngValue]="p.id">{{ p.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo campo--full">
+            <label>RESPONSABLE</label>
+            <select [ngModel]="idResponsableProxima()" (ngModelChange)="idResponsableProxima.set($event)">
+              <option [ngValue]="null">—</option>
+              @for (r of d.responsables; track r.id) {
+                <option [ngValue]="r.id">{{ r.nombre }}{{ r.esUsuarioActual ? ' (Yo)' : '' }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+    </div>
+    }
+
+    <!-- Adjuntos -->
+    <div class="adjuntos-box">
+      <label>DOCUMENTOS ADJUNTOS <small>(opcional, máx. 5)</small></label>
+      <input type="file" multiple (change)="onArchivosSeleccionados($event)" />
+      @if (archivos().length > 0) {
+        <ul class="adjuntos-list">
+          @for (a of archivos(); track $index) {
+            <li>
+              <span>{{ a.name }}</span>
+              <button type="button" (click)="quitarArchivo($index)">✕</button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+  }
+
+  <div modalFooter class="mrs__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="save"
+                [disabled]="!puedeGuardar()" [cargando]="enviando()" (clic)="guardar()">
+      Guardar Seguimiento
+    </app-button>
+  </div>
+</app-modal>

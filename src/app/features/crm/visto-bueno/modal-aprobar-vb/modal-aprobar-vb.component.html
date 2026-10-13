@@ -1,4 +1,10 @@
-<app-modal titulo="Aprobar Visto Bueno" ancho="md" (cerrar)="onCerrar()">
+<app-modal
+  titulo="Aprobar Visto Bueno"
+  subtitulo="Confirma las validaciones del catálogo y aprueba la propuesta."
+  icono="task_alt"
+  iconoColor="verde"
+  ancho="md"
+  (cerrar)="onCerrar()">
   <div class="mav">
 
     <!-- Resumen de la propuesta -->
@@ -35,8 +41,8 @@
         @for (v of validaciones(); track v.codigo) {
           <label class="mav__check">
             <input type="checkbox" [checked]="esConfirmada(v.codigo)" (change)="toggleValidacion(v.codigo)" />
-            <span>
-              {{ v.texto }}
+            <span class="mav__check-texto">
+              <span class="mav__check-label">{{ v.texto }}</span>
               @if (v.obligatoria) { <small class="mav__requerido">obligatoria</small> }
             </span>
           </label>

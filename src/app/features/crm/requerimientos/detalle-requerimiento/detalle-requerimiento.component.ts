@@ -3,10 +3,11 @@ import { CrmService } from '../../../../core/services/crm.service';
 import { RequerimientoFicha } from '../../../../core/models/crm.model';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 
 @Component({
   selector: 'app-detalle-requerimiento',
-  imports: [ButtonComponent],
+  imports: [ButtonComponent, SiPermisoDirective],
   templateUrl: './detalle-requerimiento.component.html',
   styleUrl:    './detalle-requerimiento.component.scss',
 })

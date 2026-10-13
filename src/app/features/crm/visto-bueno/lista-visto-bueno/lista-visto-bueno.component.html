@@ -129,6 +129,11 @@
                       @if (item.requiereAprobacionEspecial) {
                         <span class="chip-especial" title="Requiere aprobación especial">★</span>
                       }
+                      @if (esRevocacion(item)) {
+                        <span class="chip-revocacion" title="Solicitud de revocación">
+                          <span class="material-symbols-outlined">undo</span> Revocación
+                        </span>
+                      }
                     </div>
                     <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.numeroRq ?? '—' }}</span>
                   </div>
@@ -276,5 +281,14 @@
     [contexto]="ctx"
     (cerrar)="solicitarCorreccionCtx.set(null)"
     (confirmado)="onResolverConfirmado($event.idPropuesta, $event.dto, 'Corrección solicitada al comercial.')"
+  />
+}
+
+<!-- HU-13b Modal Resolver Revocación de VB -->
+@if (revocacionCtx(); as ctx) {
+  <app-modal-resolver-revocacion
+    [contexto]="ctx"
+    (cerrar)="cerrarRevocacion()"
+    (resuelto)="onRevocacionResuelta($event)"
   />
 }

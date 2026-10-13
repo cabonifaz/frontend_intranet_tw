@@ -7,6 +7,7 @@ import {
   CambiarContrasenaRequest,
   IniciarSesionEntrada,
   IniciarSesionSalida,
+  MisDatos,
   RespuestaApi,
   UsuarioSesion,
 } from '../models/autenticacion.model';
@@ -35,6 +36,47 @@ export class AutenticacionService {
   );
 
   readonly usuarioActual = this._usuarioActual.asReadonly();
+
+  constructor() {
+    // Al bootstrap, si el usuario ya está autenticado (sesión persistida en storage),
+    // precargamos sus permisos Y refrescamos sus datos (rol/área pueden haber cambiado
+    // en el back desde el último login).
+    if (this._usuarioActual()) {
+      void this.permisosSvc.cargar();
+      void this.refrescarMisDatos();
+    }
+  }
+
+  /**
+   * Refresca nombre/rol/área del usuario autenticado contra el back y actualiza
+   * el signal + storage. Lo llama el constructor al bootstrap y se puede llamar
+   * también manualmente (ej. tras cambiar el rol del propio usuario).
+   */
+  async refrescarMisDatos(): Promise<void> {
+    try {
+      const r = await firstValueFrom(
+        this.http.get<RespuestaApi<MisDatos>>(`${environment.apiUrl}/api/autenticacion/me`)
+      );
+      if (r.idTipoMensaje !== 2 || !r.datos) return;
+
+      const actual = this._usuarioActual();
+      if (!actual) return;
+      const actualizado: UsuarioSesion = {
+        nombre:                 r.datos.nombre,
+        apellido:               r.datos.apellido,
+        correo:                 r.datos.correo,
+        rolSistema:             r.datos.rolSistema,
+        rolSistemaLabel:        r.datos.rolSistemaLabel,
+        area:                   r.datos.area,
+        forzarCambioContrasena: r.datos.forzarCambioContrasena,
+      };
+      this._usuarioActual.set(actualizado);
+      const storage = localStorage.getItem(USUARIO_KEY) ? localStorage : sessionStorage;
+      storage.setItem(USUARIO_KEY, JSON.stringify(actualizado));
+    } catch {
+      // Silencioso: si falla, nos quedamos con lo que había.
+    }
+  }
 
   async iniciarSesion(entrada: IniciarSesionEntrada, recordarme: boolean): Promise<void> {
     const respuesta = USAR_MOCK

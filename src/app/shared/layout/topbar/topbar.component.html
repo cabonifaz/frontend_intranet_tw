@@ -87,7 +87,7 @@
       >
         <div class="topbar__user-info">
           <span class="topbar__user-nombre">{{ usuario()?.nombre }} {{ usuario()?.apellido }}</span>
-          <span class="topbar__user-rol">{{ usuario()?.rolSistema }}</span>
+          <span class="topbar__user-rol">{{ usuario()?.rolSistemaLabel || usuario()?.rolSistema }}</span>
         </div>
         <div class="topbar__avatar">
           {{ usuario()?.nombre?.charAt(0) ?? '?' }}
@@ -109,7 +109,7 @@
               </div>
             </div>
             <div class="user-panel__badges">
-              <span class="user-panel__rol-badge">{{ usuario()?.rolSistema }}</span>
+              <span class="user-panel__rol-badge">{{ usuario()?.rolSistemaLabel || usuario()?.rolSistema }}</span>
               <div class="user-panel__sede">
                 <span class="material-symbols-outlined user-panel__sede-icono">location_on</span>
                 <span class="user-panel__sede-texto">Lima Central</span>

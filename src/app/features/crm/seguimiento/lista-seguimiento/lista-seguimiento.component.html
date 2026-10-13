@@ -1,0 +1,262 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <div class="pagina__header">
+    <div class="pagina__header-izq">
+      <app-breadcrumb [items]="breadcrumb" />
+      <h1 class="pagina__titulo">CRM / Seguimiento Comercial</h1>
+      <p class="pagina__subtitulo">Pipeline de propuestas enviadas, próximas acciones y cierre de oportunidades</p>
+    </div>
+  </div>
+
+  <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <app-kpi-card icono="trending_up"      etiqueta="EN SEGUIMIENTO"      [valor]="kpis().enSeguimiento"       variante="azul"  />
+    <app-kpi-card icono="hourglass_bottom" etiqueta="SIN RESPUESTA"       [valor]="kpis().sinRespuesta"        variante="azul"  />
+    <app-kpi-card icono="warning"          etiqueta="SEGUIMIENTOS VENCIDOS" [valor]="kpis().seguimientosVencidos" variante="rojo" />
+    <app-kpi-card icono="check_circle"     etiqueta="ACEPTADAS ESTE MES"  [valor]="kpis().aceptadasMes"        variante="verde" />
+    <app-kpi-card icono="cancel"           etiqueta="RECHAZADAS ESTE MES" [valor]="kpis().rechazadasMes"       variante="rojo"  />
+    <app-kpi-card icono="receipt_long"     etiqueta="OC PENDIENTES"       [valor]="kpis().ocPendientes"        variante="ambar" />
+  </div>
+
+  <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
+  <div class="filtros-bar">
+    <div class="filtros-bar__izq">
+      <app-filtros-popover [cantidadActivos]="filtrosActivos()" (limpiar)="limpiarFiltros()" (aplicar)="aplicarFiltros()">
+        <div class="filtros-seccion">Filtros</div>
+
+        <div class="col-full">
+          <label>RESPONSABLE</label>
+          <select [(ngModel)]="idResponsableFiltro">
+            <option [ngValue]="''">Todos</option>
+            @for (r of responsables(); track r.id) {
+              <option [ngValue]="r.id">{{ r.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="col-full">
+          <label>ESTADO</label>
+          <select [(ngModel)]="estadoFiltro">
+            @for (e of estadosTabs; track e.codigo) {
+              <option [value]="e.codigo">{{ e.label }}</option>
+            }
+          </select>
+        </div>
+      </app-filtros-popover>
+    </div>
+    <div class="filtros-bar__der">
+      <div class="campo__con-icono filtros-bar__busqueda">
+        <span class="material-symbols-outlined campo__icono-input">search</span>
+        <input
+          class="campo__input campo__input--icono filtros-bar__input"
+          type="text"
+          placeholder="Buscar propuesta, RQ, cliente o RUC..."
+          [(ngModel)]="busqueda"
+          (keyup.enter)="aplicarFiltros()"
+        />
+      </div>
+      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
+                  ariaLabel="Actualizar" title="Actualizar" (clic)="aplicarFiltros()" />
+    </div>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────── -->
+  @if (error()) {
+    <div class="tabla-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- ── Tabla ───────────────────────────────────────────────────────────── -->
+  <div class="tabla-card">
+    <div class="tabla-card__scroll">
+      <table class="tabla">
+        <thead class="tabla__head">
+          <tr>
+            <th class="tabla__th">PROPUESTA</th>
+            <th class="tabla__th">RQ</th>
+            <th class="tabla__th">CLIENTE / RUC</th>
+            <th class="tabla__th">CONTACTO</th>
+            <th class="tabla__th tabla__th--derecha">MONTO</th>
+            <th class="tabla__th">FECHA ENVÍO</th>
+            <th class="tabla__th tabla__th--centro">DÍAS</th>
+            <th class="tabla__th">PRÓXIMA ACCIÓN</th>
+            <th class="tabla__th">ESTADO</th>
+            <th class="tabla__th tabla__th--sla">SLA</th>
+            <th class="tabla__th tabla__th--centro">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (cargando()) {
+            <tr><td colspan="11" class="tabla__td tabla__td--vacio">
+              <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
+              Cargando seguimiento...
+            </td></tr>
+          } @else if (items().length === 0) {
+            <tr><td colspan="11" class="tabla__td tabla__td--vacio">
+              <span class="material-symbols-outlined">inbox</span>
+              No hay propuestas en seguimiento con los filtros aplicados.
+            </td></tr>
+          } @else {
+            @for (item of items(); track item.idPropuesta) {
+              <tr class="tabla__fila" (click)="verDetalle(item)">
+                <td class="tabla__td">
+                  <div class="tabla__propuesta">
+                    <span class="tabla__codigo">{{ item.numero }}</span>
+                    <span class="tabla__version">v{{ item.version }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">{{ item.numeroRq ?? '—' }}</td>
+                <td class="tabla__td">
+                  <div class="tabla__cliente">
+                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  @if (item.contacto) {
+                    <div class="tabla__persona">
+                      <span class="tabla__avatar">{{ iniciales(item.contacto) }}</span>
+                      <span class="tabla__persona-nombre">{{ item.contacto }}</span>
+                    </div>
+                  } @else {
+                    <span class="dim">Sin respuesta</span>
+                  }
+                </td>
+                <td class="tabla__td tabla__td--derecha">
+                  <span class="tabla__monto">{{ formatearMonto(item.total, item.monedaSimbolo) }}</span>
+                </td>
+                <td class="tabla__td">
+                  {{ item.fechaEnvio ? (item.fechaEnvio | date:'dd/MM/yyyy') : '—' }}
+                </td>
+                <td class="tabla__td tabla__td--centro">{{ item.diasTranscurridos }}</td>
+                <td class="tabla__td">
+                  <div class="accion-cell">
+                    <span class="accion-cell__titulo">{{ textoAccion(item) }}</span>
+                    @if (item.prioridadAccion) {
+                      <span class="accion-cell__prio prio--{{ item.prioridadAccionCodigo?.toLowerCase() }}">
+                        {{ item.prioridadAccion }}
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="tabla__td">
+                  <span class="badge {{ estadoClase(item.estadoSeguimiento) }}">
+                    {{ estadoLabel(item.estadoSeguimiento) }}
+                  </span>
+                </td>
+                <td class="tabla__td">
+                  <div class="sla {{ slaClase(item) }}">
+                    <div class="sla__bar">
+                      <div class="sla__bar-fill" [style.width.%]="item.slaPct ?? 0"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="tabla__td tabla__td--centro">
+                  <div class="tabla__acciones" (click)="$event.stopPropagation()">
+                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                                ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (!cargando() && total() > 0) {
+      <div class="paginacion">
+        <span class="paginacion__info">Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} propuestas</span>
+        <div class="paginacion__btns">
+          <app-button variant="secondary" tamano="sm" icono="chevron_left"  [soloIcon]="true" ariaLabel="Anterior"
+                      [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)" />
+          @for (p of paginas; track p) {
+            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm" (clic)="irPagina(p)">{{ p }}</app-button>
+          }
+          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true" ariaLabel="Siguiente"
+                      [disabled]="pagina() === totalPaginas()" (clic)="irPagina(pagina() + 1)" />
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- ── Modal Detalle ─────────────────────────────────────────────────────── -->
+@if (idDetalleAbierto(); as id) {
+  <app-modal-detalle-seguimiento
+    [idPropuesta]="id"
+    (cerrar)="cerrarDetalle()"
+    (accion)="onAccionDetalle($event)"
+  />
+}
+
+<!-- ── Modales de acción ─────────────────────────────────────────────────── -->
+@if (registrarCtx(); as ctx) {
+  <app-modal-registrar-seguimiento
+    [idPropuesta]="ctx.item.idPropuesta"
+    [comportamientoPendiente]="ctx.comportamiento"
+    [nombreAccionPendiente]="ctx.item.proximaAccion"
+    [fechaAccionPendiente]="ctx.item.proximaAccionFecha"
+    [codigoAccionPendiente]="ctx.item.proximaAccionCodigo"
+    (cerrar)="registrarCtx.set(null)"
+    (confirmado)="registrarCtx.set(null); onConfirmadoCambio()"
+  />
+}
+
+<!-- HU-19 Decider: pregunta qué hacer con la tarea pendiente antes de registrar otra -->
+@if (decidirPendienteCtx(); as ctx) {
+  <app-modal-decidir-pendiente
+    [codigo]="ctx.numero"
+    [razonSocial]="ctx.razonSocial"
+    [nombreAccion]="ctx.proximaAccion ?? '—'"
+    [fechaAccion]="ctx.proximaAccionFecha"
+    [responsableAccion]="ctx.responsable"
+    (cerrar)="cerrarDecidirPendiente()"
+    (seleccionado)="onDecisionPendiente($event)"
+  />
+}
+
+@if (reprogramarCtx(); as ctx) {
+  <app-modal-reprogramar-accion
+    [idPropuesta]="ctx.idPropuesta"
+    (cerrar)="reprogramarCtx.set(null)"
+    (confirmado)="reprogramarCtx.set(null); onConfirmadoCambio()"
+  />
+}
+
+@if (aceptacionCtx(); as ctx) {
+  <app-modal-aceptacion-seguimiento
+    [idPropuesta]="ctx.idPropuesta"
+    (cerrar)="aceptacionCtx.set(null)"
+    (confirmado)="aceptacionCtx.set(null); onConfirmadoCambio()"
+  />
+}
+
+@if (rechazoCtx(); as ctx) {
+  <app-modal-rechazo-seguimiento
+    [idPropuesta]="ctx.idPropuesta"
+    (cerrar)="rechazoCtx.set(null)"
+    (confirmado)="rechazoCtx.set(null); onConfirmadoCambio()"
+  />
+}
+
+@if (cerrarSinVentaCtx(); as ctx) {
+  <app-modal-cerrar-sin-venta
+    [idPropuesta]="ctx.idPropuesta"
+    (cerrar)="cerrarSinVentaCtx.set(null)"
+    (confirmado)="cerrarSinVentaCtx.set(null); onConfirmadoCambio()"
+  />
+}
+
+<!-- HU-21 Modal selector del tipo de cierre (aceptación / rechazo / sin venta) -->
+@if (selectorCierreCtx(); as ctx) {
+  <app-modal-selector-cierre
+    [codigo]="ctx.numero"
+    [razonSocial]="ctx.razonSocial"
+    (cerrar)="cerrarSelectorCierre()"
+    (seleccionado)="onCierreSeleccionado($event)"
+  />
+}

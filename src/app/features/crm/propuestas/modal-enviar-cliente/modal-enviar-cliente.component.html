@@ -1,0 +1,130 @@
+<app-modal
+  titulo="Enviar Propuesta al Cliente"
+  [subtitulo]="subtitulo()"
+  icono="send"
+  iconoColor="azul"
+  ancho="lg"
+  (cerrar)="onCerrar()">
+
+  <div class="mec-body">
+    @if (cargandoDatos()) {
+      <div class="mec-loading">
+        <span class="material-symbols-outlined mec-spin">progress_activity</span>
+        <span>Cargando datos...</span>
+      </div>
+    } @else if (datos(); as d) {
+
+      <!-- Advertencia -->
+      <div class="mec-alert">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <div class="mec-alert__titulo">Al enviar, la propuesta queda inmutable</div>
+          <div class="mec-alert__desc">
+            La propuesta pasa al pipeline de Seguimiento Comercial. Para cambios posteriores
+            necesitarás generar una nueva versión.
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario tipo correo -->
+      <div class="mec-correo">
+        <div class="mec-correo__fila">
+          <span class="mec-correo__label">DE</span>
+          <input type="text" readonly [value]="d.cabecera.correoUsuario ?? ''" />
+        </div>
+        <div class="mec-correo__fila">
+          <span class="mec-correo__label">PARA *</span>
+          <input type="text"
+                 placeholder="correo@dominio.com, otro@..."
+                 [ngModel]="para()" (ngModelChange)="para.set($event)" />
+        </div>
+        <div class="mec-correo__fila">
+          <span class="mec-correo__label">CC</span>
+          <input type="text" placeholder="(opcional)"
+                 [ngModel]="cc()" (ngModelChange)="cc.set($event)" />
+        </div>
+        <div class="mec-correo__fila">
+          <span class="mec-correo__label">ASUNTO *</span>
+          <input type="text" [ngModel]="asunto()" (ngModelChange)="asunto.set($event)" />
+        </div>
+      </div>
+
+      <!-- Contactos del cliente (chips para añadir rápido) -->
+      @if (d.contactos.length > 0) {
+        <div class="mec-contactos">
+          <label>CONTACTOS DEL CLIENTE</label>
+          <div class="mec-contactos__list">
+            @for (c of d.contactos; track trackByContacto($index, c)) {
+              <button type="button" class="mec-chip-contacto"
+                      [title]="c.correo ?? ''"
+                      (click)="usarContacto(c.correo)">
+                <span class="material-symbols-outlined">person_add</span>
+                {{ c.nombres }}
+                @if (c.esContactoPrincipal) { <small class="mec-chip-contacto__flag">principal</small> }
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Plantilla -->
+      @if (d.plantillas.length > 0) {
+        <div class="mec-plantilla">
+          <label>PLANTILLA</label>
+          <select [ngModel]="idPlantilla()" (ngModelChange)="aplicarPlantilla($event)">
+            @for (p of d.plantillas; track trackByPlantilla($index, p)) {
+              <option [ngValue]="p.idPlantilla">{{ p.nombre }}</option>
+            }
+          </select>
+        </div>
+      }
+
+      <!-- Cuerpo del correo (editor WYSIWYG) -->
+      <div class="mec-cuerpo">
+        <label>CUERPO DEL CORREO *</label>
+        <app-editor-correo
+          [html]="cuerpoHtml()"
+          placeholder="Mensaje para el cliente..."
+          (htmlChange)="cuerpoHtml.set($event)" />
+      </div>
+
+      <!-- PDF adjunto automático (previsualizable) -->
+      <div class="mec-adjuntos">
+        <label>ADJUNTOS</label>
+        <div class="mec-adjunto">
+          <span class="material-symbols-outlined mec-adjunto__icono">picture_as_pdf</span>
+          <div class="mec-adjunto__info">
+            <strong>{{ d.cabecera.numero }}-v{{ d.cabecera.version }}.pdf</strong>
+            @if (pdfCargando()) {
+              <small><span class="material-symbols-outlined mec-spin">progress_activity</span> Generando vista previa...</small>
+            } @else if (pdfError()) {
+              <small class="mec-adjunto__error">{{ pdfError() }}</small>
+            } @else if (pdfUrl()) {
+              <small>Listo — se adjuntará al enviar</small>
+            } @else {
+              <small>Se adjuntará al enviar</small>
+            }
+          </div>
+          @if (pdfUrl()) {
+            <button type="button" class="mec-adjunto__btn" (click)="verPdf()" title="Abrir PDF en nueva pestaña">
+              <span class="material-symbols-outlined">open_in_new</span>
+              Ver PDF
+            </button>
+          }
+          <span class="mec-adjunto__chip">
+            <span class="material-symbols-outlined">check_circle</span>
+            Adjunto
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div modalFooter class="mec-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="send"
+                [disabled]="!puedeEnviar()" [cargando]="enviando()" (clic)="enviarCorreo()">
+      {{ enviando() ? 'Enviando...' : 'Enviar al Cliente' }}
+    </app-button>
+  </div>
+</app-modal>

@@ -547,7 +547,8 @@
       @if (!modoVolver) {
         <div class="modal__footer">
           @if (esAccionable(f.estado)) {
-            <app-button variant="danger-ghost" tamano="md" icono="cancel"
+            <app-button *twSiPermiso="'rq_anular'"
+                        variant="danger-ghost" tamano="md" icono="cancel"
                         (clic)="anular.emit(f.idRequerimiento)">
               Anular Requerimiento
             </app-button>
@@ -556,11 +557,13 @@
           }
           <div class="modal__footer-der">
             @if (esAccionable(f.estado)) {
-              <app-button variant="secondary" tamano="md" icono="edit"
+              <app-button *twSiPermiso="'rq_guardar'"
+                          variant="secondary" tamano="md" icono="edit"
                           (clic)="editar.emit(f.idRequerimiento)">
                 Editar
               </app-button>
-              <app-button variant="primary" tamano="md" icono="description"
+              <app-button *twSiPermiso="'propuesta_guardar'"
+                          variant="primary" tamano="md" icono="description"
                           (clic)="crearPropuesta.emit(f.idRequerimiento)">
                 Crear Propuesta
               </app-button>

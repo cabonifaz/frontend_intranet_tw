@@ -1,0 +1,55 @@
+.loading {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 30px; color: #64748B; font-size: 14px;
+  .spin { animation: spin 1s linear infinite; font-size: 20px; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.mrr-body { display: flex; flex-direction: column; gap: 14px; padding: 4px 2px; }
+
+.advertencia {
+  padding: 14px 16px; background: #FEE2E2;
+  border: 1px solid #FCA5A5; border-radius: 10px;
+  display: flex; align-items: flex-start; gap: 10px;
+  .material-symbols-outlined { font-size: 24px; color: #DC2626; }
+  strong { display: block; font-size: 13.5px; color: #991B1B; }
+  small  { display: block; margin-top: 2px; font-size: 12px; color: #B91C1C; }
+}
+
+.resumen {
+  padding: 12px 14px; background: #FEF2F2; border-radius: 8px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  > div {
+    display: flex; flex-direction: column;
+    small { font-size: 10px; font-weight: 700; color: #991B1B; letter-spacing: 0.3px; }
+    span  { font-size: 13px; color: #0F172A; font-weight: 600; margin-top: 2px; }
+  }
+}
+
+.form-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+}
+.campo {
+  display: flex; flex-direction: column; gap: 5px;
+  &--full { grid-column: 1 / -1; }
+  label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  input, select, textarea {
+    padding: 9px 12px; border: 1px solid #CBD5E1; border-radius: 7px; font-size: 13.5px;
+    background: #FFF; color: #0F172A; font-family: inherit;
+    &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+  }
+  textarea { resize: vertical; min-height: 90px; }
+}
+
+.contador {
+  font-size: 10px; font-weight: 600; color: #DC2626; text-transform: none; letter-spacing: 0;
+  &--ok { color: #059669; }
+}
+
+.mrr__footer {
+  display: flex !important; justify-content: flex-end; gap: 10px; width: 100%;
+  padding: 14px 22px !important; border-top: 1px solid #E2E8F0; background: #FAFBFC;
+}

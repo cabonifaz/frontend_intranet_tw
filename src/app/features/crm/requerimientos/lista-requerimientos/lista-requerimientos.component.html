@@ -7,7 +7,7 @@
       <h1 class="pagina__titulo">CRM / Requerimientos</h1>
       <p class="pagina__subtitulo">Gestión centralizada de solicitudes comerciales y técnicas de clientes</p>
     </div>
-    <app-button variant="primary" icono="add" (clic)="irANuevo()">
+    <app-button *twSiPermiso="'rq_guardar'" variant="primary" icono="add" (clic)="irANuevo()">
       Nuevo Requerimiento
     </app-button>
   </div>
@@ -160,7 +160,8 @@
                                 ariaLabel="Ver detalle" title="Ver detalle"
                                 (clic)="irADetalle(item.idRequerimiento)" />
                     @if (esAccionable(item.estado)) {
-                      <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                      <app-button *twSiPermiso="'rq_guardar'"
+                                  variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
                                   ariaLabel="Editar" title="Editar"
                                   (clic)="irAEditar(item.idRequerimiento)" />
                     }

@@ -1,0 +1,155 @@
+.mec-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px;
+}
+
+.mec-loading {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 30px; color: #64748B; font-size: 13px;
+}
+.mec-spin { animation: mec-spin 1s linear infinite; font-size: 20px; }
+@keyframes mec-spin { to { transform: rotate(360deg); } }
+
+.mec-alert {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+  color: #1E40AF;
+  .material-symbols-outlined { font-size: 20px; flex-shrink: 0; color: #2563EB; }
+  &__titulo { font-size: 13px; font-weight: 700; }
+  &__desc { font-size: 12px; margin-top: 4px; line-height: 1.5; }
+}
+
+/* ─── Formulario tipo correo ─── */
+.mec-correo {
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #FFF;
+  overflow: hidden;
+  &__fila {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #E2E8F0;
+    &:last-child { border-bottom: 0; }
+  }
+  &__label { font-size: 10.5px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; }
+  input {
+    border: none; padding: 4px 0; font-size: 13.5px; color: #0F172A; background: transparent;
+    &:focus { outline: none; }
+    &[readonly] { color: #64748B; }
+  }
+}
+
+/* ─── Contactos chip-list ─── */
+.mec-contactos {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; }
+  &__list { display: flex; flex-wrap: wrap; gap: 6px; }
+}
+.mec-chip-contacto {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  border-radius: 9999px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  .material-symbols-outlined { font-size: 14px; }
+  &:hover { background: #DBEAFE; }
+  &__flag {
+    padding: 1px 6px; margin-left: 3px;
+    background: #DBEAFE; border-radius: 9999px;
+    font-size: 9.5px; font-weight: 700; text-transform: uppercase;
+  }
+}
+
+/* ─── Plantilla selector ─── */
+.mec-plantilla {
+  display: flex; align-items: center; gap: 10px;
+  label { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; }
+  select {
+    flex: 1; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 7px;
+    font-size: 13px; background: #FFF; color: #0F172A;
+    &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+  }
+}
+
+/* ─── Cuerpo del correo (editor WYSIWYG) ─── */
+.mec-cuerpo {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; }
+}
+
+/* ─── Adjuntos ─── */
+.mec-adjuntos {
+  display: flex; flex-direction: column; gap: 6px;
+  label { font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px; }
+}
+.mec-adjunto {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+
+  &__icono {
+    font-size: 28px;
+    color: #DC2626;
+    flex-shrink: 0;
+  }
+  &__info {
+    flex: 1;
+    display: flex; flex-direction: column;
+    strong { font-size: 13px; color: #0F172A; font-weight: 600; }
+    small  {
+      font-size: 11.5px; color: #64748B; margin-top: 2px;
+      display: inline-flex; align-items: center; gap: 4px;
+      .material-symbols-outlined { font-size: 14px; }
+    }
+  }
+  &__error { color: #DC2626 !important; }
+  &__btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px;
+    background: #FFF;
+    color: #2563EB;
+    border: 1px solid #BFDBFE;
+    border-radius: 7px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    .material-symbols-outlined { font-size: 15px; }
+    &:hover { background: #EFF6FF; }
+  }
+  &__chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: #ECFDF5;
+    color: #047857;
+    border: 1px solid #A7F3D0;
+    border-radius: 9999px;
+    font-size: 11px; font-weight: 700;
+    .material-symbols-outlined { font-size: 14px; }
+  }
+}
+
+.mec-spin {
+  animation: mec-spin 1s linear infinite;
+}
+
+.mec-footer {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px !important;
+  border-top: 1px solid #E2E8F0;
+  background: #FAFBFC;
+}

@@ -1,0 +1,53 @@
+<app-modal
+  titulo="Solicitar Revocación de Visto Bueno"
+  subtitulo="Pide al supervisor del área revertir la aprobación para volver a editar la propuesta."
+  icono="undo"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <div class="msr-body">
+    <!-- Chip + cliente -->
+    <div class="msr-chip-row">
+      <span class="msr-chip">{{ codigo() }}{{ version() > 0 ? ' · v' + version() : '' }}</span>
+      <span class="msr-cliente">{{ razonSocial() || '—' }}</span>
+    </div>
+
+    <!-- Alert impacto ámbar -->
+    <div class="msr-alert">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        <div class="msr-alert__titulo">Esta solicitud va al supervisor del área</div>
+        <div class="msr-alert__desc">
+          Si la aprueba, la propuesta vuelve a borrador y podrás ajustarla.
+          Si la rechaza, la propuesta se mantiene como aprobada y deberás enviarla al cliente.
+        </div>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="msr-campo">
+      <label>
+        MOTIVO DE LA REVOCACIÓN
+        <span class="msr-obligatorio">* Obligatorio</span>
+      </label>
+      <textarea
+        [ngModel]="motivo()"
+        (ngModelChange)="motivo.set($event)"
+        placeholder="Describe por qué necesitas revocar la aprobación (cambios en el alcance, error de fondo, cliente desistió, etc.)."
+        rows="4"
+      ></textarea>
+      <small class="msr-hint">
+        Mínimo 10 caracteres ({{ longitud() }} / 10)
+      </small>
+    </div>
+  </div>
+
+  <div modalFooter class="msr-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="undo"
+                [disabled]="!puedeEnviar()" [cargando]="enviando()" (clic)="solicitar()">
+      {{ enviando() ? 'Enviando...' : 'Enviar Solicitud' }}
+    </app-button>
+  </div>
+</app-modal>

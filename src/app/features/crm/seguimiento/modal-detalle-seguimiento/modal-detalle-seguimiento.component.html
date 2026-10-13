@@ -1,0 +1,268 @@
+<app-modal
+  titulo="Detalle de Seguimiento"
+  [subtitulo]="datos() ? datos()!.cabecera.numero + ' / ' + datos()!.cabecera.razonSocial : 'Cargando...'"
+  icono="track_changes"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mds__loading">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Cargando detalle...
+    </div>
+  } @else if (error()) {
+    <div class="mds__error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  } @else if (datos(); as d) {
+
+   <div class="mds-wrapper">
+    <!-- KPIs del cabecera -->
+    <div class="kpis-fila">
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap"><span class="material-symbols-outlined">description</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">PROPUESTA</div>
+          <div class="kpi-valor">{{ d.cabecera.numero }} · v{{ d.cabecera.version }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap kpi-icono-wrap--verde"><span class="material-symbols-outlined">payments</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">MONTO</div>
+          <div class="kpi-valor">{{ formatearMonto(d.cabecera.total, d.cabecera.monedaSimbolo) }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap"><span class="material-symbols-outlined">person</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">RESPONSABLE</div>
+          <div class="kpi-valor">{{ d.cabecera.responsable ?? '—' }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap"><span class="material-symbols-outlined">calendar_today</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">DÍAS TRANSCURRIDOS</div>
+          <div class="kpi-valor">{{ d.cabecera.diasTranscurridos }} Días</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap kpi-icono-wrap--ambar"><span class="material-symbols-outlined">schedule</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">SLA</div>
+          <div class="kpi-valor" [ngClass]="slaClase(d.cabecera.slaEstado)">
+            {{ textoSla(d.cabecera.minutosParaAccion) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'resumen'"           (click)="cambiarTab('resumen')">Resumen</button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'timeline'"          (click)="cambiarTab('timeline')">Timeline</button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'contactos'"         (click)="cambiarTab('contactos')">Contactos</button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'proximas_acciones'" (click)="cambiarTab('proximas_acciones')">Próximas Acciones</button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'documentos'"        (click)="cambiarTab('documentos')">Documentos</button>
+    </div>
+
+    <!-- Tab: Resumen -->
+    @if (tab() === 'resumen') {
+      <div class="contenido">
+        <div class="panel">
+          <div class="panel__titulo">
+            <span class="material-symbols-outlined">info</span>
+            Datos de la Oportunidad
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">CONTACTO PRINCIPAL</div>
+              <div class="info-valor">{{ d.cabecera.contacto ?? '—' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">CARGO</div>
+              <div class="info-valor">{{ d.cabecera.cargoContacto ?? '—' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">TELÉFONO</div>
+              <div class="info-valor">{{ d.cabecera.telefonoContacto ?? '—' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">CORREO</div>
+              <div class="info-valor">{{ d.cabecera.correoContacto ?? '—' }}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">ESTADO</div>
+              <div class="info-valor"><span class="badge" [ngClass]="estadoClase(d.cabecera.estadoSeguimiento)">{{ estadoLabel(d.cabecera.estadoSeguimiento) }}</span></div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">INTERACCIONES</div>
+              <div class="info-valor">{{ d.cabecera.interacciones }}</div>
+            </div>
+          </div>
+        </div>
+
+        @if (d.cabecera.proximaAccion) {
+          <div class="panel panel--accion">
+            <div class="accion-hdr">
+              <span class="material-symbols-outlined accion-hdr__icono">task</span>
+              <div class="accion-hdr__texto">
+                <div class="accion-hdr__label">PRÓXIMA ACCIÓN</div>
+                <h3 class="accion-hdr__titulo">{{ d.cabecera.proximaAccion }}</h3>
+              </div>
+              @if (d.cabecera.prioridadAccion) {
+                <span class="prio-pill prio-pill--{{ d.cabecera.prioridadAccionCodigo?.toLowerCase() }}">
+                  PRIORIDAD {{ d.cabecera.prioridadAccion.toUpperCase() }}
+                </span>
+              }
+            </div>
+            <div class="accion-info">
+              <div class="accion-info__item">
+                <span class="material-symbols-outlined">event</span>
+                <span>{{ d.cabecera.proximaAccionFecha ? (d.cabecera.proximaAccionFecha | date:'dd/MM/yyyy HH:mm') : 'Sin fecha' }}</span>
+              </div>
+              <div class="accion-info__item">
+                <span class="material-symbols-outlined">person</span>
+                <span>{{ d.cabecera.asignado ?? d.cabecera.responsable ?? '—' }}</span>
+              </div>
+              <div class="accion-info__botones">
+                @if (d.cabecera.puedeReprogramar) {
+                  <app-button *twSiPermiso="'propuesta_seguimiento_reprogramar'"
+                              variant="ghost" tamano="md" icono="schedule" (clic)="emitirAccion('reprogramar')">
+                    Reprogramar
+                  </app-button>
+                }
+                @if (d.cabecera.puedeRegistrarSeguimiento) {
+                  <app-button *twSiPermiso="'propuesta_seguimiento_registrar'"
+                              variant="primary" tamano="md" (clic)="emitirAccion('ejecutar_pendiente')">
+                    Ejecutar ahora
+                  </app-button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Tab: Timeline -->
+    @if (tab() === 'timeline') {
+      <div class="contenido">
+        <div class="timeline">
+          @for (ev of d.timeline; track ev.fecha + ev.tipo) {
+            <div class="timeline__item">
+              <div class="timeline__icono timeline__icono--{{ ev.tipo }}">
+                <span class="material-symbols-outlined">{{ iconoTimeline(ev.tipo) }}</span>
+              </div>
+              <div class="timeline__body">
+                <div class="timeline__fecha">{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</div>
+                <div class="timeline__titulo">{{ ev.titulo }}</div>
+                @if (ev.descripcion) { <div class="timeline__desc">{{ ev.descripcion }}</div> }
+                @if (ev.usuario) { <small class="timeline__meta">Por {{ ev.usuario }}</small> }
+              </div>
+            </div>
+          } @empty {
+            <p class="vacio">Sin eventos registrados.</p>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Contactos -->
+    @if (tab() === 'contactos') {
+      <div class="contenido">
+        <div class="contactos-grid">
+          @for (c of d.contactos; track c.idContacto) {
+            <div class="contacto-card">
+              <div class="contacto-hdr">
+                <strong>{{ c.nombres }}</strong>
+                @if (c.esContactoPrincipal) { <span class="chip">Principal</span> }
+                @if (c.autorizadoAprobarCotizaciones) { <span class="chip chip--amber">Aprueba cotizaciones</span> }
+              </div>
+              @if (c.cargo) { <div class="contacto-row">Cargo: {{ c.cargo }}</div> }
+              @if (c.correo) { <div class="contacto-row">✉ {{ c.correo }}</div> }
+              @if (c.telefonoMovil) { <div class="contacto-row">📱 {{ c.telefonoMovil }}</div> }
+            </div>
+          } @empty {
+            <p class="vacio">Sin contactos registrados.</p>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Próximas Acciones -->
+    @if (tab() === 'proximas_acciones') {
+      <div class="contenido">
+        <table class="tabla-acciones">
+          <thead>
+            <tr><th>Tipo</th><th>Fecha</th><th>Prioridad</th><th>Asignado</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            @for (a of d.proximasAcciones; track a.idSeguimiento) {
+              <tr>
+                <td>{{ a.tipo }}</td>
+                <td>{{ a.fecha ? (a.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                <td>{{ a.prioridad ?? '—' }}</td>
+                <td>{{ a.asignado ?? '—' }}</td>
+                <td><span class="badge-estado">{{ a.estado }}</span></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="vacio-td">Sin acciones programadas.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Tab: Documentos -->
+    @if (tab() === 'documentos') {
+      <div class="contenido">
+        <table class="tabla-acciones">
+          <thead><tr><th>Tipo</th><th>Nombre</th><th>Fecha</th><th>Versión</th><th></th></tr></thead>
+          <tbody>
+            @for (doc of d.documentos; track doc.nombre + doc.fecha) {
+              <tr>
+                <td>{{ doc.tipo }}</td>
+                <td>{{ doc.nombre }}</td>
+                <td>{{ doc.fecha ? (doc.fecha | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>v{{ doc.version }}</td>
+                <td>
+                  @if (doc.url) {
+                    <a [href]="doc.url" target="_blank" rel="noopener">Abrir</a>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="vacio-td">Sin documentos.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+   </div>
+
+  }
+
+  <div modalFooter class="mds__footer">
+    @if (datos(); as d) {
+      <div class="mds__footer-der">
+        <!-- HU-21 — Un solo botón de cierre; abre el selector con las 3 opciones (aceptación/rechazo/sin venta). -->
+        @if (d.cabecera.puedeRegistrarAceptacion || d.cabecera.puedeRegistrarRechazo || d.cabecera.puedeCerrarSinVenta) {
+          <app-button *twSiPermiso="'propuesta_seguimiento_cerrar'"
+                      variant="secondary" icono="stop_circle" (clic)="emitirAccion('cerrar_seguimiento')">
+            Cerrar Seguimiento
+          </app-button>
+        }
+        @if (d.cabecera.puedeRegistrarSeguimiento) {
+          <app-button *twSiPermiso="'propuesta_seguimiento_registrar'"
+                      variant="primary" icono="add" (clic)="emitirAccion('registrar')">
+            Registrar Seguimiento
+          </app-button>
+        }
+      </div>
+    }
+  </div>
+</app-modal>

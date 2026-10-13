@@ -739,36 +739,63 @@
         </div>
         <div class="modal__footer-der">
           @if (!modoAprobador()) {
-            @if (datos()?.acciones?.puedeEditar || datos()?.acciones?.puedeGenerarNuevaVersion) {
-              <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="pedirAnular()">
-                Anular
-              </app-button>
-            }
-            @if (datos()?.acciones?.puedeEditar) {
-              <app-button variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
-                Enviar a VB
-              </app-button>
-            }
-            @if (datos()?.acciones?.accionPrincipal === 'editar') {
-              <app-button variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
-                Editar Propuesta
-              </app-button>
-            } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
-              <app-button variant="primary" tamano="md" icono="sync" (clic)="accionPrincipal()">
-                Generar Nueva Versión
-              </app-button>
+            @if (esPendienteRevocacion()) {
+              <!-- HU-13b — Revocación pendiente: la propuesta está esperando resolución del supervisor. -->
+              <span class="footer-nota">
+                <span class="material-symbols-outlined">hourglass_top</span>
+                Esperando resolución del supervisor
+              </span>
+            } @else {
+              @if ((datos()?.acciones?.puedeEditar || datos()?.acciones?.puedeGenerarNuevaVersion) && !esAprobado()) {
+                <app-button *twSiPermiso="'propuesta_anular'"
+                            variant="danger-ghost" tamano="md" icono="block" (clic)="pedirAnular()">
+                  Anular
+                </app-button>
+              }
+              @if (esAprobado()) {
+                <!-- HU-13b — En lugar de Anular en estado aprobado, el comercial puede pedir al jefe revocar la aprobación. -->
+                <app-button *twSiPermiso="'propuesta_solicitar_revocacion'"
+                            variant="danger-ghost" tamano="md" icono="undo" (clic)="pedirSolicitarRevocacion()">
+                  Solicitar Revocación
+                </app-button>
+              }
+              @if (datos()?.acciones?.puedeEditar) {
+                <app-button *twSiPermiso="'propuesta_enviar_vb'"
+                            variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
+                  Enviar a VB
+                </app-button>
+              }
+              @if (datos()?.acciones?.accionPrincipal === 'editar') {
+                <app-button *twSiPermiso="'propuesta_guardar'"
+                            variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
+                  Editar Propuesta
+                </app-button>
+              } @else if (esAprobado()) {
+                <!-- HU-10b — Propuesta aprobada por VB: siguiente paso es enviarla al cliente. -->
+                <app-button *twSiPermiso="'propuesta_enviar_cliente'"
+                            variant="primary" tamano="md" icono="send" (clic)="pedirEnviarCliente()">
+                  Enviar al Cliente
+                </app-button>
+              } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
+                <app-button *twSiPermiso="'propuesta_nueva_version'"
+                            variant="primary" tamano="md" icono="sync" (clic)="accionPrincipal()">
+                  Generar Nueva Versión
+                </app-button>
+              }
             }
           } @else {
-            <!-- Modo Aprobador (HU-15): acciones de VB -->
-            <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
-              Rechazar
-            </app-button>
-            <app-button variant="secondary" tamano="md" icono="edit" (clic)="accionAprobador.emit('solicitar_correccion')">
-              Solicitar Corrección
-            </app-button>
-            <app-button variant="primary" tamano="md" icono="check_circle" (clic)="accionAprobador.emit('aprobar')">
-              Aprobar Propuesta
-            </app-button>
+            <!-- Modo Aprobador (HU-15): acciones de VB. Las 3 son del supervisor con propuesta_vb_resolver. -->
+            <ng-container *twSiPermiso="'propuesta_vb_resolver'">
+              <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
+                Rechazar
+              </app-button>
+              <app-button variant="secondary" tamano="md" icono="edit" (clic)="accionAprobador.emit('solicitar_correccion')">
+                Solicitar Corrección
+              </app-button>
+              <app-button variant="primary" tamano="md" icono="check_circle" (clic)="accionAprobador.emit('aprobar')">
+                Aprobar Propuesta
+              </app-button>
+            </ng-container>
           }
         </div>
       </div>

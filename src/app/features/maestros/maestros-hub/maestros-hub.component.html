@@ -12,7 +12,7 @@
   </div>
 
   <div class="hub-grid">
-    @for (m of maestros; track m.titulo) {
+    @for (m of maestros(); track m.titulo) {
       @if (m.ruta) {
         <a class="hub-card" [routerLink]="m.ruta">
           <div class="hub-card__icono-box">

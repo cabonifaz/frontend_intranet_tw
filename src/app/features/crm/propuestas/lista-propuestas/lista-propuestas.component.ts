@@ -18,19 +18,22 @@ import { ModalElegirRqComponent } from '../modal-elegir-rq/modal-elegir-rq.compo
 import { ModalPropuestaExistenteComponent } from '../modal-propuesta-existente/modal-propuesta-existente.component';
 import { ModalCrearNuevaVersionComponent } from '../modal-crear-nueva-version/modal-crear-nueva-version.component';
 import { ModalDetallePropuestaComponent } from '../modal-detalle-propuesta/modal-detalle-propuesta.component';
+import { ModalSolicitarRevocacionComponent } from '../modal-solicitar-revocacion/modal-solicitar-revocacion.component';
+import { ModalEnviarClienteComponent } from '../modal-enviar-cliente/modal-enviar-cliente.component';
 import { ModalEnviarVbComponent } from '../modal-enviar-vb/modal-enviar-vb.component';
 import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-anular-propuesta.component';
 import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
 import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
 import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
+import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 
 @Component({
   selector: 'app-lista-propuestas',
   imports: [
     FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
-    ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent,
-    FiltrosPopoverComponent, DetalleRequerimientoComponent,
+    ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent, ModalSolicitarRevocacionComponent, ModalEnviarClienteComponent,
+    FiltrosPopoverComponent, DetalleRequerimientoComponent, SiPermisoDirective,
   ],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
@@ -87,6 +90,12 @@ export class ListaPropuestasComponent implements OnInit {
   readonly idDetalleAbierto  = signal<number | null>(null);
   readonly idEnviarVbAbierto = signal<number | null>(null);
   readonly idAnularAbierto   = signal<number | null>(null);
+  readonly revocacionCtx     = signal<{
+    idPropuesta: number;
+    codigo:      string;
+    version:     number;
+    razonSocial: string;
+  } | null>(null);
   readonly idPdfAbierto      = signal<number | null>(null);
   readonly codigoPdfAbierto  = signal<string>('');
   /** Al abrir el RQ desde el detalle de propuesta, se oculta el detalle y se abre el del RQ.
@@ -252,9 +261,26 @@ export class ListaPropuestasComponent implements OnInit {
     }
   }
 
-  onAccionDetalle(evt: 'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf'): void {
+  onAccionDetalle(evt: 'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf' | 'enviar_cliente' | 'solicitar_revocacion'): void {
     const id = this.idDetalleAbierto();
     if (!id) return;
+    if (evt === 'enviar_cliente') {
+      this.cerrarDetalle();
+      this.idEnviarClienteAbierto.set(id);
+      return;
+    }
+    if (evt === 'solicitar_revocacion') {
+      const item = this.items().find(i => i.idPropuesta === id);
+      if (!item) return;
+      this.cerrarDetalle();
+      this.revocacionCtx.set({
+        idPropuesta: id,
+        codigo:      item.codigo,
+        version:     this.parsearVersion(item.version),
+        razonSocial: item.razonSocial ?? '',
+      });
+      return;
+    }
     this.cerrarDetalle();
     if (evt === 'enviar_vb')    this.idEnviarVbAbierto.set(id);
     else if (evt === 'anular')  this.idAnularAbierto.set(id);
@@ -273,6 +299,13 @@ export class ListaPropuestasComponent implements OnInit {
         versionActual:   this.parsearVersion(item.version),
       });
     }
+  }
+
+  readonly idEnviarClienteAbierto = signal<number | null>(null);
+  cerrarEnviarCliente(): void { this.idEnviarClienteAbierto.set(null); }
+  onEnviadoCliente(): void {
+    this.cerrarEnviarCliente();
+    this.cargar();
   }
 
   /** Guard reutilizable (template + handler) para propuestas en estado terminal 'anulado'. */
@@ -350,6 +383,12 @@ export class ListaPropuestasComponent implements OnInit {
   onAnulada(): void {
     this.cerrarAnular();
     this.toastSvc.exito('Propuesta anulada.');
+    this.cargar();
+  }
+
+  cerrarRevocacion(): void { this.revocacionCtx.set(null); }
+  onRevocacionSolicitada(): void {
+    this.cerrarRevocacion();
     this.cargar();
   }
 

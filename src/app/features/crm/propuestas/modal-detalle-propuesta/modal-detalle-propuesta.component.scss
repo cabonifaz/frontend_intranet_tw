@@ -814,3 +814,17 @@ $blanco:      #FFFFFF;
   gap: 12px;
   flex-wrap: wrap;
 }
+
+.footer-nota {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  .material-symbols-outlined { font-size: 18px; color: #D97706; }
+}

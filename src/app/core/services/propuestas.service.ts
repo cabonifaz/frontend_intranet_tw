@@ -16,7 +16,10 @@ import {
   AnularPropuestaRequest,
   AplicarDescuentoRequest,
   DescuentoResultado,
+  EnviarPropuestaClienteRequest,
   EnviarVistoBuenoRequest,
+  EnvioPropuestaClienteResultado,
+  PreparacionEnvioCliente,
   PropuestaDetalleModal,
   VistoBuenoPropuesta,
 } from '../models/propuesta-modales.model';
@@ -428,6 +431,46 @@ export class PropuestasService {
     return r.datos;
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-10b — Envío de propuesta al cliente (post VB aprobado)
+  // ═══════════════════════════════════════════════════════════════════════════
+  async obtenerPdfBlob(idPropuesta: number): Promise<Blob> {
+    const r = await firstValueFrom(
+      this.http.get(`${this.base}/${idPropuesta}/pdf`, { responseType: 'blob' })
+    );
+    return r;
+  }
+
+  async prepararEnvioCliente(idPropuesta: number): Promise<PreparacionEnvioCliente> {
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<PreparacionEnvioCliente>>(
+        `${this.base}/${idPropuesta}/enviar-cliente/preparar`)
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo preparar el envío al cliente.');
+    return r.datos;
+  }
+
+  async enviarAlCliente(idPropuesta: number, dto: EnviarPropuestaClienteRequest): Promise<EnvioPropuestaClienteResultado> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<EnvioPropuestaClienteResultado>>(
+        `${this.base}/${idPropuesta}/enviar-cliente`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo enviar la propuesta al cliente.');
+    return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-13b — Solicitar revocación de VB (comercial)
+  // ═══════════════════════════════════════════════════════════════════════════
+  async solicitarRevocacionVb(idPropuesta: number, motivo: string): Promise<{ idPropuesta: number; estado: string; idVb: number }> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<{ idPropuesta: number; estado: string; idVb: number }>>(
+        `${this.base}/${idPropuesta}/solicitar-revocacion`, { motivo })
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo solicitar la revocación.');
+    return r.datos;
+  }
+
   // ─── HTTP real ──────────────────────────────────────────────────────────────
   private async obtenerPaginaInterna(f: FiltrosPropuestas): Promise<PropuestasPaginado> {
     let params = new HttpParams()
@@ -435,7 +478,10 @@ export class PropuestasService {
       .set('porPagina', f.porPagina);
 
     if (f.busqueda) params = params.set('busqueda', f.busqueda);
-    if (f.estado && f.estado !== 'todas') params = params.set('estado', f.estado);
+    // Los códigos de ESTADOS_PROPUESTA_TABS son GRUPOS (borrador, por_vb, por_enviar,
+    // en_seguimiento, aceptada, rechazada, por_consolidar), no estados literales de BD.
+    // El back los interpreta con el parámetro grupoEstado (SP_ObtenerPropuestas: p_grupo_estado).
+    if (f.estado && f.estado !== 'todas') params = params.set('grupoEstado', f.estado);
 
     const r = await firstValueFrom(
       this.http.get<RespuestaApi<PropuestasPaginadoDtoApi>>(this.base, { params })

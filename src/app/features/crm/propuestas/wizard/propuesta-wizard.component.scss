@@ -43,33 +43,14 @@
   .material-symbols-outlined { font-size: 16px; }
 }
 
-// ── Aviso de corrección dentro de un paso afectado ─────────────────────────
-.aviso-correccion-paso {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  background: #FEF3C7;
-  border-left: 3px solid #D97706;
-  border-radius: 6px;
-  color: #78350F;
-  font-size: 13px;
-
-  .material-symbols-outlined {
-    font-size: 20px !important;
-    color: #D97706;
-    flex-shrink: 0;
-  }
-
-  strong { font-weight: 700; }
-  p { margin: 2px 0 0; opacity: 0.9; line-height: 1.4; }
-}
-
 // ── Banner "Corrección pendiente" (devuelta desde VB) ──────────────────────
 .banner-correccion {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+  // El wizard ya tiene gap: 16px entre hijos; aquí lo reducimos para acercar
+  // el banner al page-header de arriba sin pegarlo del todo.
+  margin-top: -6px;
+  margin-bottom: 0;
   padding: 14px 18px;
   background: #FEF3C7;
   border: 1px solid #FCD34D;

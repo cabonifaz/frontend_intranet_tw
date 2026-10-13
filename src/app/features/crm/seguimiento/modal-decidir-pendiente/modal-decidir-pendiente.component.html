@@ -1,0 +1,72 @@
+<app-modal
+  titulo="Tienes una tarea pendiente"
+  subtitulo="Decide qué hacer con la tarea agendada antes de registrar la nueva actividad."
+  icono="info"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <div class="mdp-body">
+    <!-- Chip + cliente -->
+    <div class="mdp-chip-row">
+      <span class="mdp-chip">{{ codigo() }}</span>
+      <span class="mdp-cliente">{{ razonSocial() || '—' }}</span>
+    </div>
+
+    <!-- Tarjeta de la tarea pendiente -->
+    <div class="mdp-pendiente">
+      <span class="material-symbols-outlined mdp-pendiente__icono">event_available</span>
+      <div class="mdp-pendiente__texto">
+        <div class="mdp-pendiente__label">PRÓXIMA ACCIÓN PROGRAMADA</div>
+        <strong>{{ nombreAccion() }}</strong>
+        <div class="mdp-pendiente__meta">
+          @if (fechaAccion()) {
+            <span class="mdp-pendiente__meta-item">
+              <span class="material-symbols-outlined">event</span>
+              {{ fechaAccion() | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+          }
+          @if (responsableAccion()) {
+            <span class="mdp-pendiente__meta-item">
+              <span class="material-symbols-outlined">person</span>
+              {{ responsableAccion() }}
+            </span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <p class="mdp-pregunta">¿Qué quieres hacer?</p>
+
+    <button type="button" class="mdp-opcion" (click)="elegir('ejecutar')">
+      <span class="material-symbols-outlined mdp-opcion__icono">play_circle</span>
+      <div class="mdp-opcion__texto">
+        <strong>Ejecutar esa tarea</strong>
+        <small>Hice la actividad agendada y la voy a registrar ahora.</small>
+      </div>
+      <span class="material-symbols-outlined mdp-opcion__chevron">arrow_forward</span>
+    </button>
+
+    <button type="button" class="mdp-opcion" (click)="elegir('mantener')">
+      <span class="material-symbols-outlined mdp-opcion__icono">bookmark</span>
+      <div class="mdp-opcion__texto">
+        <strong>Registrar otra actividad y mantener la pendiente</strong>
+        <small>Hice algo distinto. La tarea agendada sigue en pie.</small>
+      </div>
+      <span class="material-symbols-outlined mdp-opcion__chevron">arrow_forward</span>
+    </button>
+
+    <button type="button" class="mdp-opcion mdp-opcion--danger" (click)="elegir('cancelar')">
+      <span class="material-symbols-outlined mdp-opcion__icono">cancel</span>
+      <div class="mdp-opcion__texto">
+        <strong>Cancelar la pendiente y registrar otra</strong>
+        <small>Ya no haré esa actividad. Voy a registrar algo nuevo.</small>
+      </div>
+      <span class="material-symbols-outlined mdp-opcion__chevron">arrow_forward</span>
+    </button>
+  </div>
+
+  <div modalFooter class="mdp-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+  </div>
+</app-modal>

@@ -4,10 +4,8 @@
 
   <app-page-header
     icono="description"
-    titulo="Nueva Propuesta Comercial"
-    [subtitulo]="draftSvc.draft().codigoRequerimiento
-      ? 'Generando documento basado en el requerimiento ' + draftSvc.draft().codigoRequerimiento + (draftSvc.draft().razonSocial ? ' · ' + draftSvc.draft().razonSocial : '')
-      : 'Propuesta independiente (sin vínculo a requerimiento)'"
+    [titulo]="tituloHeader()"
+    [subtitulo]="subtituloHeader()"
   >
     @if (!draftSvc.draft().esEditable) {
       <span class="badge-lectura">
@@ -105,16 +103,6 @@
   <!-- ── Grid de ficha: main (secciones) + sidebar sticky ─────────────────────── -->
   <div class="ficha-grid" [class.ficha-grid--full]="!mostrarSidebar()">
     <main class="ficha-main" [class.ficha-main--lectura]="!draftSvc.draft().esEditable">
-      <!-- Aviso de corrección específico del paso actual (si está entre las áreas marcadas) -->
-      @if (observacionPasoActual(); as obs) {
-        <div class="aviso-correccion-paso">
-          <span class="material-symbols-outlined">priority_high</span>
-          <div>
-            <strong>El supervisor solicitó corregir esta sección.</strong>
-            <p>{{ obs }}</p>
-          </div>
-        </div>
-      }
       <router-outlet />
     </main>
 

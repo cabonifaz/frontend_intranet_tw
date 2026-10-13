@@ -1,4 +1,10 @@
-<app-modal titulo="Anular Propuesta" ancho="md" (cerrar)="onCerrar()">
+<app-modal
+  titulo="Anular Propuesta"
+  subtitulo="Anula la propuesta de forma permanente. Esta acción es crítica."
+  icono="block"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
   <div class="map-body">
     @if (cargando()) {
       <div class="map-loading">

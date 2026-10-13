@@ -1,7 +1,19 @@
 <div class="modal-overlay" (click)="onOverlayClick($event)">
   <div class="modal modal--{{ ancho() }}">
-    <div class="modal__header">
-      <h2 class="modal__titulo">{{ titulo() }}</h2>
+    <div class="modal__header" [class.modal__header--rico]="tieneHeaderRico()">
+      <div class="modal__header-izq">
+        @if (icono(); as ic) {
+          <div class="modal__icono-wrap modal__icono-wrap--{{ iconoColor() }}">
+            <span class="material-symbols-outlined modal__icono">{{ ic }}</span>
+          </div>
+        }
+        <div class="modal__textos">
+          <h2 class="modal__titulo">{{ titulo() }}</h2>
+          @if (subtitulo(); as sub) {
+            <p class="modal__subtitulo">{{ sub }}</p>
+          }
+        </div>
+      </div>
       @if (cerrable()) {
         <button class="modal__cerrar" type="button" (click)="onCerrar()" title="Cerrar">
           <span class="material-symbols-outlined">close</span>

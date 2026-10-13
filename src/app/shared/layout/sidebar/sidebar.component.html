@@ -7,7 +7,7 @@
 
   <!-- Nav items -->
   <ul class="sidebar__nav" role="list">
-    @for (item of navItems; track item.etiqueta) {
+    @for (item of navItems(); track item.etiqueta) {
       @if (item.hijos) {
         <!-- ── Grupo expandible ────────────────────────────────────────── -->
         <li class="sidebar__grupo" [class.sidebar__grupo--activo]="grupoActivo(item)">

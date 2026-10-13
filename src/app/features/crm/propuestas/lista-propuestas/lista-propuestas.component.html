@@ -7,7 +7,7 @@
       <h1 class="pagina__titulo">CRM / Propuestas</h1>
       <p class="pagina__subtitulo">Gestión de propuestas, versiones y avance del ciclo comercial</p>
     </div>
-    <app-button variant="primary" icono="add" (clic)="irANuevo()">
+    <app-button *twSiPermiso="'propuesta_guardar'" variant="primary" icono="add" (clic)="irANuevo()">
       Nueva Propuesta
     </app-button>
   </div>
@@ -172,16 +172,20 @@
                     <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                                 ariaLabel="Ver detalle" title="Ver detalle"
                                 (clic)="verDetalle(item.idPropuesta)" />
-                    <!-- Editar: solo si NO está anulada. Borrador → edición directa. Enviada/aprobada/rechazada/vencida → nueva versión. -->
+                    <!-- Editar: solo si NO está anulada. Borrador → edición directa (requiere propuesta_guardar).
+                         Resto → nueva versión (requiere propuesta_nueva_version). -->
                     @if (!esAnulada(item)) {
-                      <app-button variant="ghost" tamano="sm"
-                                  [icono]="item.estado === 'borrador' ? 'edit' : 'sync'" [soloIcon]="true"
-                                  [ariaLabel]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
-                                  [title]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
-                                  (clic)="editarPropuesta(item)" />
+                      <ng-container *twSiPermiso="item.estado === 'borrador' ? 'propuesta_guardar' : 'propuesta_nueva_version'">
+                        <app-button variant="ghost" tamano="sm"
+                                    [icono]="item.estado === 'borrador' ? 'edit' : 'sync'" [soloIcon]="true"
+                                    [ariaLabel]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                                    [title]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                                    (clic)="editarPropuesta(item)" />
+                      </ng-container>
                     }
                     @if (item.estado === 'borrador') {
-                      <app-button variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
+                      <app-button *twSiPermiso="'propuesta_enviar_vb'"
+                                  variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
                                   ariaLabel="Enviar a Visto Bueno" title="Enviar a Visto Bueno"
                                   (clic)="enviarAVistoBueno(item.idPropuesta)" />
                     }
@@ -279,6 +283,27 @@
     [idPropuesta]="id"
     (cerrar)="cerrarEnviarVb()"
     (enviado)="onVbEnviado()"
+  />
+}
+
+<!-- ── HU-13b Modal Solicitar Revocación de VB ──────────────────────────── -->
+@if (revocacionCtx(); as ctx) {
+  <app-modal-solicitar-revocacion
+    [idPropuesta]="ctx.idPropuesta"
+    [codigo]="ctx.codigo"
+    [version]="ctx.version"
+    [razonSocial]="ctx.razonSocial"
+    (cerrar)="cerrarRevocacion()"
+    (enviado)="onRevocacionSolicitada()"
+  />
+}
+
+<!-- ── HU-10b Modal Enviar al Cliente ───────────────────────────────────── -->
+@if (idEnviarClienteAbierto(); as id) {
+  <app-modal-enviar-cliente
+    [idPropuesta]="id"
+    (cerrar)="cerrarEnviarCliente()"
+    (enviado)="onEnviadoCliente()"
   />
 }
 

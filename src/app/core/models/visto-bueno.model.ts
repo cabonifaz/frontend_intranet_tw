@@ -20,11 +20,12 @@ export interface FiltrosBandejaVb {
 }
 
 export interface KpisVb {
-  pendientes:     number;
-  proximosVencer: number;
-  vencidos:       number;
-  aprobadasHoy:   number;
-  devueltas:      number;
+  pendientes:              number;
+  proximosVencer:          number;
+  vencidos:                number;
+  aprobadasHoy:            number;
+  devueltas:               number;
+  revocacionesPendientes:  number;
 }
 
 export interface ItemBandejaVb {
@@ -48,8 +49,14 @@ export interface ItemBandejaVb {
   idAprobador?:                number | null;
   aprobador?:                  string | null;
   aprobadorEsSuplente:         boolean;
-  /** pendiente | aprobado | devuelto | rechazado */
+  /** pendiente | aprobado | devuelto | rechazado | revocacion_pendiente | revocacion_aprobada | revocacion_rechazada */
   estadoVb:                    string;
+  /** HU-13b: aprobacion | revocacion. Distingue aprobación clásica de solicitud de revocación. */
+  tipoVb:                      'aprobacion' | 'revocacion';
+  idVbPadre?:                  number | null;
+  motivoRevocacion?:           string | null;
+  idSolicitante?:              number | null;
+  solicitante?:                string | null;
   fechaSolicitud?:             string | null;
   fechaRespuesta?:             string | null;
   venceEn?:                    string | null;
@@ -109,6 +116,39 @@ export interface ResultadoResolverVb {
   estadoVb:      string;
   idCorreccion?: number | null;
   fechaLimite?:  string | null;
+}
+
+// ══════════════════════ HU-13b — Revocación de VB ══════════════════════
+
+export interface SolicitarRevocacionVbRequest {
+  motivo: string;
+}
+
+export interface ResultadoSolicitarRevocacionVb {
+  idPropuesta: number;
+  numero:      string;
+  version:     number;
+  estado:      string;    // pendiente_revocacion
+  idVb:        number;
+  idVbPadre?:  number | null;
+}
+
+export type AccionResolverRevocacion = 'aprobar' | 'rechazar';
+
+export interface ResolverRevocacionVbRequest {
+  accion:      AccionResolverRevocacion;
+  comentario?: string;
+}
+
+export interface ResultadoResolverRevocacionVb {
+  idPropuesta:    number;
+  numero:         string;
+  version:        number;
+  estado:         string;    // revocada (aprobar) | aprobado (rechazar)
+  estadoVb:       string;    // revocacion_aprobada | revocacion_rechazada
+  idVb:           number;
+  /** Si accion='aprobar': id de la nueva propuesta creada en borrador. 0 si 'rechazar'. */
+  idNuevaVersion: number;
 }
 
 // ══════════════════════ HU-15 — Preparar modales de decisión ══════════════════════

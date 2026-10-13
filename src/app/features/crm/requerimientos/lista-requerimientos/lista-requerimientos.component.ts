@@ -10,10 +10,11 @@ import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-
 import { AnularRequerimientoComponent } from '../anular-requerimiento/anular-requerimiento.component';
 import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
+import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, FiltrosPopoverComponent],
+  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, FiltrosPopoverComponent, SiPermisoDirective],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })

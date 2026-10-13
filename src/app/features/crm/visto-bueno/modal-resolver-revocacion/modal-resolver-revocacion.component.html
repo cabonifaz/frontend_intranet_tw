@@ -1,0 +1,84 @@
+<app-modal
+  titulo="Resolver Solicitud de Revocación"
+  subtitulo="Decide si aceptas o rechazas la solicitud del comercial para revertir el visto bueno."
+  icono="undo"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <div class="mrr-body">
+    <!-- Chip + cliente -->
+    <div class="mrr-chip-row">
+      <span class="mrr-chip">{{ contexto().numero }} · v{{ contexto().version }}</span>
+      <span class="mrr-cliente">{{ contexto().razonSocial || '—' }}</span>
+    </div>
+
+    <!-- Motivo del comercial -->
+    <div class="mrr-alert">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        <div class="mrr-alert__titulo">
+          Solicitud enviada por {{ contexto().solicitante ?? contexto().comercial }}
+          @if (contexto().fechaSolicitud) {
+            <small>· {{ contexto().fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</small>
+          }
+        </div>
+        <div class="mrr-alert__desc">
+          {{ contexto().motivoRevocacion ?? contexto().comentarioSolicitud ?? '—' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen propuesta -->
+    <div class="mrr-resumen">
+      <div><small>MONTO</small><span>{{ contexto().monedaSimbolo ?? 'S/' }} {{ contexto().total | number:'1.2-2' }}</span></div>
+      <div><small>COMERCIAL</small><span>{{ contexto().comercial }}</span></div>
+      <div><small>REQUERIMIENTO</small><span>{{ contexto().numeroRq ?? '—' }}</span></div>
+    </div>
+
+    <!-- Impacto de cada decisión -->
+    <div class="mrr-impacto">
+      <div class="mrr-impacto__item mrr-impacto__item--ok">
+        <span class="material-symbols-outlined">check_circle</span>
+        <div>
+          <div class="mrr-impacto__titulo">Si apruebas</div>
+          <div class="mrr-impacto__desc">La propuesta vuelve a <b>borrador</b> para que el comercial la ajuste y la reenvíe a VB.</div>
+        </div>
+      </div>
+      <div class="mrr-impacto__item mrr-impacto__item--warn">
+        <span class="material-symbols-outlined">cancel</span>
+        <div>
+          <div class="mrr-impacto__titulo">Si rechazas</div>
+          <div class="mrr-impacto__desc">La propuesta se mantiene <b>aprobada</b>. El comercial deberá enviarla al cliente o aceptar tu decisión.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comentario -->
+    <div class="mrr-campo">
+      <label>
+        COMENTARIO
+        <span class="mrr-hint-inline">Opcional al aprobar · Obligatorio al rechazar (mín. 10)</span>
+      </label>
+      <textarea
+        [ngModel]="comentario()"
+        (ngModelChange)="comentario.set($event)"
+        placeholder="Deja un comentario para el comercial..."
+        rows="3"
+      ></textarea>
+      @if (longitudComentario() > 0 && longitudComentario() < 10) {
+        <small class="mrr-hint mrr-hint--warn">{{ longitudComentario() }} / 10 (si vas a rechazar)</small>
+      }
+    </div>
+  </div>
+
+  <div modalFooter class="mrr-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="danger" icono="cancel" [cargando]="enviando()" (clic)="rechazar()">
+      Rechazar Revocación
+    </app-button>
+    <app-button variant="primary" icono="check_circle" [cargando]="enviando()" (clic)="aprobar()">
+      Aprobar Revocación
+    </app-button>
+  </div>
+</app-modal>

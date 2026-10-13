@@ -33,6 +33,30 @@ export class PropuestaWizardComponent implements OnInit {
   readonly idParam = signal<string>('nueva');
   readonly esNuevo = computed(() => this.idParam() === 'nueva');
 
+  /** Título contextual del header: "Nueva Propuesta Comercial" al crear, o
+   *  "Editar Propuesta PROP-XXX · vN" al editar una versión existente. */
+  readonly tituloHeader = computed(() => {
+    if (this.esNuevo()) return 'Nueva Propuesta Comercial';
+    const d = this.draftSvc.draft();
+    const partes = ['Editar Propuesta'];
+    if (d.codigo) partes.push(d.codigo);
+    if (d.version) partes.push('· ' + d.version);
+    return partes.join(' ');
+  });
+
+  /** Subtítulo contextual del header. */
+  readonly subtituloHeader = computed(() => {
+    const d = this.draftSvc.draft();
+    if (this.esNuevo()) {
+      return d.codigoRequerimiento
+        ? 'Generando documento basado en el requerimiento ' + d.codigoRequerimiento + (d.razonSocial ? ' · ' + d.razonSocial : '')
+        : 'Propuesta independiente (sin vínculo a requerimiento)';
+    }
+    return d.codigoRequerimiento
+      ? 'Requerimiento ' + d.codigoRequerimiento + (d.razonSocial ? ' · ' + d.razonSocial : '')
+      : (d.razonSocial || 'Propuesta independiente');
+  });
+
   readonly pasoActual    = signal<string>('configuracion');
   readonly guardando     = signal(false);
   readonly cargandoDatos = signal(false);
@@ -70,11 +94,6 @@ export class PropuestaWizardComponent implements OnInit {
   });
 
   pasoTieneCorreccion(pasoId: string): boolean { return this.pasosConCorreccion().has(pasoId); }
-
-  /** Observación del supervisor (misma para todas las secciones; se repite dentro de cada paso). */
-  observacionPasoActual(): string | null {
-    return this.pasoTieneCorreccion(this.pasoActual()) ? (this.correccion()?.observaciones ?? null) : null;
-  }
 
   async ngOnInit(): Promise<void> {
     this.idParam.set(this.route.snapshot.paramMap.get('id') ?? 'nueva');

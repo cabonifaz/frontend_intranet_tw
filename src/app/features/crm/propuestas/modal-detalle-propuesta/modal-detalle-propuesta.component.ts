@@ -45,9 +45,11 @@ const AREA_A_TAB: Record<string, Tab> = {
 
 interface GrupoTextos { titulo: string; vinetas: string[]; }
 
+import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
+
 @Component({
   selector: 'app-modal-detalle-propuesta',
-  imports: [CommonModule, DatePipe, ButtonComponent],
+  imports: [CommonModule, DatePipe, ButtonComponent, SiPermisoDirective],
   templateUrl: './modal-detalle-propuesta.component.html',
   styleUrl: './modal-detalle-propuesta.component.scss',
 })
@@ -64,8 +66,8 @@ export class ModalDetallePropuestaComponent {
   readonly modoAprobador = input<boolean>(false);
 
   readonly cerrar      = output<void>();
-  /** Se emite cuando el usuario pide abrir el modal "Enviar a VB" / "Anular" / "Nueva Versión" / "Preview PDF". */
-  readonly accion      = output<'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf'>();
+  /** Se emite cuando el usuario pide abrir un modal relacionado con la propuesta. */
+  readonly accion      = output<'enviar_vb' | 'anular' | 'nueva_version' | 'preview_pdf' | 'enviar_cliente' | 'solicitar_revocacion'>();
   /** Se emite con el idRequerimiento cuando el usuario pide "Abrir RQ". El padre swap-ea los modales. */
   readonly verRequerimiento = output<number>();
   /** Acciones del modo aprobador (HU-15). El padre maneja los modales de VB. */
@@ -263,9 +265,19 @@ export class ModalDetallePropuestaComponent {
     else this.toast.info('Esta propuesta no admite edición directa.');
   }
 
-  pedirEnviarVB():   void { this.accion.emit('enviar_vb'); }
-  pedirAnular():     void { this.accion.emit('anular'); }
-  pedirPreviewPdf(): void { this.accion.emit('preview_pdf'); }
+  pedirEnviarVB():         void { this.accion.emit('enviar_vb'); }
+  pedirAnular():           void { this.accion.emit('anular'); }
+  pedirPreviewPdf():       void { this.accion.emit('preview_pdf'); }
+  pedirEnviarCliente():    void { this.accion.emit('enviar_cliente'); }
+  pedirSolicitarRevocacion(): void { this.accion.emit('solicitar_revocacion'); }
+
+  esAprobado(): boolean {
+    return (this.datos()?.propuesta?.estado || '').toLowerCase() === 'aprobado';
+  }
+
+  esPendienteRevocacion(): boolean {
+    return (this.datos()?.propuesta?.estado || '').toLowerCase() === 'pendiente_revocacion';
+  }
 
   irAVersion(v: VersionPropuesta): void {
     if (v.esActual || v.idPropuesta === this.idPropuesta()) return;
@@ -304,11 +316,14 @@ export class ModalDetallePropuestaComponent {
 
   estadoClase(estado: string): string {
     const e = estado.toLowerCase();
-    if (e.includes('acepta'))  return 'estado--verde';
-    if (e.includes('rechaz'))  return 'estado--rojo';
-    if (e.includes('vencid') || e.includes('anul'))  return 'estado--gris';
-    if (e.includes('seguim'))  return 'estado--azul';
-    if (e.includes('borrad'))  return 'estado--gris-claro';
-    return 'estado--amber';
+    if (e.includes('aprob') || e.includes('acepta')) return 'estado--verde';
+    if (e.includes('rechaz'))                        return 'estado--rojo';
+    if (e.includes('anul'))                          return 'estado--gris';
+    if (e.includes('vencid'))                        return 'estado--rojo';
+    if (e.includes('devuel') || e.includes('correc')) return 'estado--amber';
+    if (e.includes('pendient'))                      return 'estado--amber';
+    if (e.includes('enviad') || e.includes('seguim')) return 'estado--azul';
+    if (e.includes('borrad'))                        return 'estado--gris-claro';
+    return 'estado--gris-claro';
   }
 }

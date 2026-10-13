@@ -1,0 +1,114 @@
+<app-modal
+  titulo="Reprogramar Próxima Acción"
+  [subtitulo]="subtitulo()"
+  icono="schedule_send"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargandoDatos()) {
+    <div class="loading"><span class="material-symbols-outlined spin">progress_activity</span> Cargando...</div>
+  } @else if (datos(); as d) {
+
+    <!-- Acción actual -->
+    <div class="accion-actual">
+      <div class="accion-actual__hdr">
+        <span class="material-symbols-outlined">event_available</span>
+        <strong>Acción programada actual</strong>
+      </div>
+      <div class="accion-actual__body">
+        <div><small>TAREA</small><span>{{ d.accionActual.proximaAccion ?? '—' }}</span></div>
+        <div><small>FECHA ACTUAL</small><span>{{ (d.accionActual.fechaProgramada | date:'dd/MM/yyyy HH:mm') ?? '—' }}</span></div>
+        <div><small>PRIORIDAD</small><span>{{ d.accionActual.prioridad ?? '—' }}</span></div>
+        <div><small>RESPONSABLE</small><span>{{ d.accionActual.responsable ?? '—' }}</span></div>
+      </div>
+      @if (d.accionActual.reprogramaciones > 0) {
+        <div class="accion-actual__nota">
+          <span class="material-symbols-outlined">info</span>
+          Esta acción ya ha sido reprogramada {{ d.accionActual.reprogramaciones }} vez(ces).
+        </div>
+      }
+    </div>
+
+    <!-- Nueva programación -->
+    <div class="seccion">
+      <h4 class="seccion__titulo">Nueva programación</h4>
+      <div class="form-grid">
+        <div class="campo">
+          <label>TIPO DE TAREA</label>
+          <select [ngModel]="idTipoAccion()" (ngModelChange)="idTipoAccion.set($event)">
+            <option [ngValue]="null">Seleccione...</option>
+            @for (t of d.tiposAccion; track t.id) {
+              <option [ngValue]="t.id">{{ t.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label>FECHA Y HORA NUEVA *</label>
+          <input type="datetime-local" [ngModel]="fechaNueva()" (ngModelChange)="fechaNueva.set($event)" />
+        </div>
+        <div class="campo">
+          <label>PRIORIDAD</label>
+          <select [ngModel]="idPrioridad()" (ngModelChange)="idPrioridad.set($event)">
+            <option [ngValue]="null">—</option>
+            @for (p of d.prioridades; track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="campo">
+          <label>RESPONSABLE</label>
+          <select [ngModel]="idResponsable()" (ngModelChange)="idResponsable.set($event)">
+            <option [ngValue]="null">—</option>
+            @for (r of d.responsables; track r.id) {
+              <option [ngValue]="r.id">{{ r.nombre }}{{ r.esUsuarioActual ? ' (Yo)' : '' }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="seccion">
+      <h4 class="seccion__titulo">Motivo de la reprogramación *</h4>
+      <div class="motivos">
+        @for (m of d.motivos; track m.id) {
+          <label class="motivo-item" [class.motivo-item--activa]="idMotivo() === m.id">
+            <input type="radio" name="motivo" [checked]="idMotivo() === m.id" (change)="idMotivo.set(m.id)" />
+            <span>{{ m.nombre }}</span>
+          </label>
+        }
+      </div>
+      <div class="campo campo--full">
+        <label>DETALLE (OPCIONAL)</label>
+        <textarea rows="3" placeholder="Agrega una explicación o contexto adicional..."
+                  [ngModel]="detalle()" (ngModelChange)="detalle.set($event)"></textarea>
+      </div>
+    </div>
+
+    @if (d.historial.length > 0) {
+      <div class="historial">
+        <h4 class="seccion__titulo">Historial de reprogramaciones ({{ d.historial.length }})</h4>
+        <ul>
+          @for (h of d.historial; track h.idReprogramacion) {
+            <li>
+              <strong>{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</strong>
+              <span>{{ h.motivo }}</span>
+              @if (h.detalle) { <small>{{ h.detalle }}</small> }
+              @if (h.usuario) { <em>por {{ h.usuario }}</em> }
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+  }
+
+  <div modalFooter class="mra__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="schedule_send"
+                [disabled]="!puedeGuardar()" [cargando]="enviando()" (clic)="guardar()">
+      Reprogramar Acción
+    </app-button>
+  </div>
+</app-modal>

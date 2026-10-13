@@ -1,0 +1,60 @@
+<app-modal
+  titulo="Registrar Rechazo de Propuesta"
+  [subtitulo]="subtitulo()"
+  icono="thumb_down"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargandoDatos()) {
+    <div class="loading"><span class="material-symbols-outlined spin">progress_activity</span> Cargando...</div>
+  } @else if (datos(); as d) {
+
+   <div class="mrr-body">
+    <!-- Advertencia impacto -->
+    <div class="advertencia">
+      <span class="material-symbols-outlined">warning</span>
+      <div>
+        <strong>Impacto del rechazo</strong>
+        <small>Esta acción cerrará el seguimiento y marcará la propuesta como rechazada. Documenta el motivo con detalle para alimentar el análisis comercial.</small>
+      </div>
+    </div>
+
+    <div class="resumen">
+      <div><small>MONTO PERDIDO</small><span>{{ formatearMonto(d.cabecera.total, d.cabecera.monedaSimbolo) }}</span></div>
+      <div><small>RESPONSABLE</small><span>{{ d.cabecera.responsable ?? '—' }}</span></div>
+      <div><small>DÍAS INVERTIDOS</small><span>{{ d.cabecera.diasTranscurridos }} días</span></div>
+    </div>
+
+    <div class="form-grid">
+      <div class="campo">
+        <label>MOTIVO DEL RECHAZO *</label>
+        <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+          <option [ngValue]="null">Seleccione un motivo...</option>
+          @for (m of d.motivosRechazo; track m.id) {
+            <option [ngValue]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="campo">
+        <label>FECHA Y HORA DEL RECHAZO *</label>
+        <input type="datetime-local" [ngModel]="fecha()" (ngModelChange)="fecha.set($event)" />
+      </div>
+      <div class="campo campo--full">
+        <label>COMENTARIO * <small class="contador" [class.contador--ok]="longitudComentario() >= 20">{{ longitudComentario() }}/20 mínimo</small></label>
+        <textarea rows="4" placeholder="Describe el contexto del rechazo (quién lo comunicó, por qué, qué podría haber cambiado el resultado)..."
+                  [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
+      </div>
+    </div>
+   </div>
+
+  }
+
+  <div modalFooter class="mrr__footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="danger" icono="close"
+                [disabled]="!puedeGuardar()" [cargando]="enviando()" (clic)="guardar()">
+      Confirmar Rechazo
+    </app-button>
+  </div>
+</app-modal>

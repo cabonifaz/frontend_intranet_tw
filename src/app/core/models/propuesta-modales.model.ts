@@ -181,3 +181,77 @@ export interface AnularPropuestaRequest {
   justificacion:        string;
   confirmacionCritica:  boolean;
 }
+
+// ── HU-10b — Enviar al cliente ────────────────────────────────────────────────
+
+export interface CabeceraEnvioCliente {
+  idPropuesta:     number;
+  numero:          string;
+  version:         number;
+  idCliente:       number;
+  razonSocial:     string;
+  ruc?:            string | null;
+  referencia?:     string | null;
+  total:           number;
+  idMoneda:        number;
+  monedaSimbolo?:  string | null;
+  moneda?:         string | null;
+  idContacto?:     number | null;
+  contacto?:       string | null;
+  correoContacto?: string | null;
+  idUsuario:       number;
+  usuario?:        string | null;
+  correoUsuario?:  string | null;
+  cargoUsuario?:   string | null;
+  fechaServidor?:  string | null;
+}
+
+export interface ContactoEnvioCliente {
+  idContacto:            number;
+  nombres:               string;
+  cargo?:                string | null;
+  correo?:               string | null;
+  telefonoMovil?:        string | null;
+  telefonoAnexo?:        string | null;
+  esContactoPropuesta:   boolean;
+  esContactoPrincipal:   boolean;
+}
+
+export interface PlantillaEnvioCliente {
+  idPlantilla: number;
+  codigo:      string;
+  nombre:      string;
+  asunto:      string;
+  cuerpoHtml:  string;
+}
+
+export interface PreparacionEnvioCliente {
+  cabecera:    CabeceraEnvioCliente;
+  contactos:   ContactoEnvioCliente[];
+  plantillas:  PlantillaEnvioCliente[];
+}
+
+export interface DestinatarioEnvioCliente {
+  correo:      string;
+  nombre?:     string | null;
+  idContacto?: number | null;
+}
+
+export interface EnviarPropuestaClienteRequest {
+  idPlantilla?: number | null;
+  para:         DestinatarioEnvioCliente[];
+  cc:           DestinatarioEnvioCliente[];
+  asunto:       string;
+  cuerpoHtml:   string;
+}
+
+export interface EnvioPropuestaClienteResultado {
+  idPropuesta:        number;
+  numero:             string;
+  version:            number;
+  estado:             string;
+  fechaEnvioCliente?: string | null;
+  enviadoClientePor?: number | null;
+  correoEnviado:      boolean;
+  correoError?:       string | null;
+}

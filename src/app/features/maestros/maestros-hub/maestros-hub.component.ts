@@ -1,12 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../shared/ui/breadcrumb/breadcrumb.component';
+import { PermisosService } from '../../../core/services/permisos.service';
 
 interface MaestroCard {
   icono:       string;
   titulo:      string;
   descripcion: string;
   ruta:        string | null;
+  /** Módulo que habilita el card. Si el usuario no tiene acceso, el card se oculta. */
+  modulo?:     string;
 }
 
 @Component({
@@ -16,59 +19,75 @@ interface MaestroCard {
   styleUrl: './maestros-hub.component.scss',
 })
 export class MaestrosHubComponent {
+  private readonly permisos = inject(PermisosService);
+
   readonly breadcrumb: BreadcrumbItem[] = [
     { label: 'Inicio',    ruta: '/dashboard' },
     { label: 'Maestros' },
   ];
 
-  readonly maestros: MaestroCard[] = [
+  private readonly maestrosAll: MaestroCard[] = [
     {
       icono:       'business',
       titulo:      'Clientes',
       descripcion: 'Directorio de clientes corporativos, sedes operativas y contactos autorizados.',
       ruta:        '/maestros/clientes',
+      modulo:      'maestro_clientes',
     },
     {
       icono:       'category',
       titulo:      'Categorías de Cliente',
       descripcion: 'Clasificación comercial: nivel VIP, prioridad de atención y reglas de rentabilidad.',
       ruta:        '/maestros/categorias',
+      modulo:      'maestro_clientes',
     },
     {
       icono:       'manage_accounts',
       titulo:      'Usuarios',
       descripcion: 'Gestión de cuentas, roles, permisos y suplencias temporales del personal interno.',
       ruta:        '/maestros/usuarios',
+      modulo:      'maestro_usuarios',
     },
     {
       icono:       'article',
       titulo:      'Textos Base',
       descripcion: 'Catálogo maestro de cláusulas, saludos y recomendaciones reutilizables en propuestas comerciales.',
       ruta:        '/maestros/textos-base',
+      modulo:      'maestro_textos_base',
     },
     {
       icono:       'inventory_2',
       titulo:      'Suministros',
       descripcion: 'Catálogo técnico-comercial de suministros, insumos, repuestos, equipos y servicios asignables a propuestas.',
       ruta:        '/maestros/suministros',
+      modulo:      'maestro_suministros',
     },
     {
       icono:       'menu_book',
       titulo:      'Procedimientos',
       descripcion: 'Catálogo de procedimientos metrológicos, normas técnicas y documentos aprobados para calibración y mantenimiento.',
       ruta:        '/maestros/procedimientos',
+      modulo:      'maestro_procedimientos',
     },
     {
       icono:       'precision_manufacturing',
       titulo:      'Equipos de Cliente',
       descripcion: 'Parque de instrumentos y balanzas en campo por cliente y sede operativa, con hoja de vida y trazabilidad ISO 17025.',
       ruta:        '/maestros/equipos',
+      modulo:      'maestro_equipos_cliente',
     },
     {
       icono:       'health_and_safety',
       titulo:      'Requisitos SSOMA',
       descripcion: 'Catálogo maestro de requisitos de seguridad asignables a los clientes (SCTR, EPP, inducciones, exámenes médicos).',
       ruta:        '/maestros/requisitos-ssoma',
+      modulo:      'maestro_clientes',   // está dentro del dominio de clientes
     },
   ];
+
+  /** Cards filtrados según nivel de acceso del usuario a cada módulo. */
+  readonly maestros = computed<MaestroCard[]>(() => {
+    if (!this.permisos.cargado()) return this.maestrosAll;
+    return this.maestrosAll.filter(c => !c.modulo || this.permisos.tieneAccesoModulo(c.modulo));
+  });
 }

@@ -21,15 +21,17 @@ import { ModalCompararVersionesComponent } from '../modal-comparar-versiones/mod
 import { ModalAprobarVbComponent } from '../modal-aprobar-vb/modal-aprobar-vb.component';
 import { ModalRechazarVbComponent } from '../modal-rechazar-vb/modal-rechazar-vb.component';
 import { ModalSolicitarCorreccionComponent } from '../modal-solicitar-correccion/modal-solicitar-correccion.component';
+import { ModalResolverRevocacionComponent } from '../modal-resolver-revocacion/modal-resolver-revocacion.component';
 
 type AccionVb = 'aprobar' | 'rechazar' | 'solicitar_correccion' | 'comparar_versiones';
 
 const ESTADOS_VB_TABS: { codigo: string; label: string }[] = [
-  { codigo: '',          label: 'Todos' },
-  { codigo: 'pendiente', label: 'Pendientes' },
-  { codigo: 'aprobado',  label: 'Aprobados' },
-  { codigo: 'rechazado', label: 'Rechazados' },
-  { codigo: 'devuelto',  label: 'Devueltos' },
+  { codigo: '',                     label: 'Todos' },
+  { codigo: 'pendiente',            label: 'Pendientes' },
+  { codigo: 'revocacion_pendiente', label: 'Revocaciones' },
+  { codigo: 'aprobado',             label: 'Aprobados' },
+  { codigo: 'rechazado',            label: 'Rechazados' },
+  { codigo: 'devuelto',             label: 'Devueltos' },
 ];
 
 const SLA_OPCIONES: { codigo: string; label: string }[] = [
@@ -45,6 +47,7 @@ const SLA_OPCIONES: { codigo: string; label: string }[] = [
     FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
     FiltrosPopoverComponent, ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
     ModalAprobarVbComponent, ModalRechazarVbComponent, ModalSolicitarCorreccionComponent,
+    ModalResolverRevocacionComponent,
   ],
   templateUrl: './lista-visto-bueno.component.html',
   styleUrl: './lista-visto-bueno.component.scss',
@@ -61,7 +64,7 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   readonly cargando = signal(true);
   readonly error    = signal('');
 
-  readonly kpis = signal<KpisVb>({ pendientes: 0, proximosVencer: 0, vencidos: 0, aprobadasHoy: 0, devueltas: 0 });
+  readonly kpis = signal<KpisVb>({ pendientes: 0, proximosVencer: 0, vencidos: 0, aprobadasHoy: 0, devueltas: 0, revocacionesPendientes: 0 });
   readonly items = signal<ItemBandejaVb[]>([]);
   readonly total = signal(0);
 
@@ -112,6 +115,7 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   readonly aprobarCtx            = signal<ItemBandejaVb | null>(null);
   readonly rechazarCtx           = signal<ItemBandejaVb | null>(null);
   readonly solicitarCorreccionCtx= signal<ItemBandejaVb | null>(null);
+  readonly revocacionCtx         = signal<ItemBandejaVb | null>(null);
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -174,10 +178,23 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   }
 
   verDetalle(item: ItemBandejaVb): void {
+    // HU-13b: si la fila es una solicitud de revocación pendiente, abrir modal dedicado.
+    if (item.tipoVb === 'revocacion' && item.estadoVb === 'revocacion_pendiente') {
+      this.revocacionCtx.set(item);
+      return;
+    }
     this.idDetalleAbierto.set(item.idPropuesta);
   }
 
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
+
+  cerrarRevocacion(): void { this.revocacionCtx.set(null); }
+  onRevocacionResuelta(_evt: { accion: 'aprobar' | 'rechazar'; idNuevaVersion: number }): void {
+    // La nueva versión (si se aprobó) queda en el módulo Propuestas del comercial autor,
+    // no en VB. El supervisor solo necesita recargar la bandeja para que la fila desaparezca.
+    this.cerrarRevocacion();
+    this.cargar();
+  }
 
   // Acciones del detalle en modoAprobador
   onAccionDetalle(evt: AccionVb, item?: ItemBandejaVb): void {
@@ -217,10 +234,13 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
 
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
-      pendiente: 'badge--naranja',
-      aprobado:  'badge--verde',
-      rechazado: 'badge--rojo',
-      devuelto:  'badge--azul',
+      pendiente:            'badge--naranja',
+      aprobado:             'badge--verde',
+      rechazado:            'badge--rojo',
+      devuelto:             'badge--azul',
+      revocacion_pendiente: 'badge--naranja',
+      revocacion_aprobada:  'badge--verde',
+      revocacion_rechazada: 'badge--rojo',
     };
     return mapa[estado] ?? 'badge--gris';
   }
@@ -228,8 +248,15 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   estadoLabel(estado: string): string {
     const mapa: Record<string, string> = {
       pendiente: 'Pendiente', aprobado: 'Aprobado', rechazado: 'Rechazado', devuelto: 'En corrección',
+      revocacion_pendiente: 'Revocación solicitada',
+      revocacion_aprobada:  'Revocación aprobada',
+      revocacion_rechazada: 'Revocación rechazada',
     };
     return mapa[estado] ?? estado;
+  }
+
+  esRevocacion(item: ItemBandejaVb): boolean {
+    return item.tipoVb === 'revocacion';
   }
 
   slaClase(item: ItemBandejaVb): string {

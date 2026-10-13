@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { autenticacionGuard } from './core/guards/autenticacion.guard';
 import { cambioContrasenaGuard } from './core/guards/cambio-contrasena.guard';
+import { permisoRutaGuard } from './core/guards/permiso-ruta.guard';
 import { AppLayoutComponent } from './shared/layout/app-layout/app-layout.component';
 
 export const routes: Routes = [
@@ -200,6 +201,7 @@ export const routes: Routes = [
       },
       {
         path: 'crm/propuestas',
+        canActivate: [permisoRutaGuard('propuesta_ver')],
         loadComponent: () =>
           import('./features/crm/propuestas/lista-propuestas/lista-propuestas.component').then(
             m => m.ListaPropuestasComponent
@@ -207,13 +209,23 @@ export const routes: Routes = [
       },
       {
         path: 'crm/visto-bueno',
+        canActivate: [permisoRutaGuard('propuesta_vb_bandeja')],
         loadComponent: () =>
           import('./features/crm/visto-bueno/lista-visto-bueno/lista-visto-bueno.component').then(
             m => m.ListaVistoBuenoComponent
           ),
       },
       {
+        path: 'crm/seguimiento',
+        canActivate: [permisoRutaGuard('propuesta_seguimiento_bandeja')],
+        loadComponent: () =>
+          import('./features/crm/seguimiento/lista-seguimiento/lista-seguimiento.component').then(
+            m => m.ListaSeguimientoComponent
+          ),
+      },
+      {
         path: 'crm/propuestas/nueva',
+        canActivate: [permisoRutaGuard('propuesta_guardar')],
         loadComponent: () =>
           import('./features/crm/propuestas/wizard/propuesta-wizard.component').then(
             m => m.PropuestaWizardComponent
@@ -233,6 +245,7 @@ export const routes: Routes = [
       },
       {
         path: 'crm/propuestas/:id/editar',
+        canActivate: [permisoRutaGuard('propuesta_ver')],
         loadComponent: () =>
           import('./features/crm/propuestas/wizard/propuesta-wizard.component').then(
             m => m.PropuestaWizardComponent
@@ -252,6 +265,7 @@ export const routes: Routes = [
       },
       {
         path: 'crm/requerimientos',
+        canActivate: [permisoRutaGuard('rq_ver')],
         loadComponent: () =>
           import('./features/crm/requerimientos/lista-requerimientos/lista-requerimientos.component').then(
             m => m.ListaRequerimientosComponent
@@ -259,6 +273,7 @@ export const routes: Routes = [
       },
       {
         path: 'crm/requerimientos/nuevo',
+        canActivate: [permisoRutaGuard('rq_guardar')],
         loadComponent: () =>
           import('./features/crm/requerimientos/ficha-requerimiento/ficha-requerimiento.component').then(
             m => m.FichaRequerimientoComponent
@@ -266,6 +281,7 @@ export const routes: Routes = [
       },
       {
         path: 'crm/requerimientos/:id/editar',
+        canActivate: [permisoRutaGuard('rq_ver')],
         loadComponent: () =>
           import('./features/crm/requerimientos/ficha-requerimiento/ficha-requerimiento.component').then(
             m => m.FichaRequerimientoComponent

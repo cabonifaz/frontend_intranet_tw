@@ -63,32 +63,59 @@
     }
   }
 
+  // Validaciones — mismo patrón del sistema (ej. modal Solicitar Corrección):
+  // card con borde sutil, fondo blanco; al marcar pasa a azul claro con borde azul.
+  &__validaciones h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+    margin: 0 0 10px;
+  }
+
   &__check {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 12px;
-    background: #F0FDF4;
-    border: 1px solid #BBF7D0;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid #E2E8F0;
     border-radius: 8px;
+    background: #FFFFFF;
     cursor: pointer;
+    font-size: 13px;
+    color: #0F172A;
+    transition: all 0.15s;
+
+    &:last-of-type { margin-bottom: 0; }
 
     input[type="checkbox"] {
       margin-top: 2px;
-      width: 16px;
-      height: 16px;
-      accent-color: #16A34A;
+      width: 15px;
+      height: 15px;
+      accent-color: #2563EB;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    &:has(input:checked) {
+      background: #EFF6FF;
+      border-color: #2563EB;
+      color: #1D4ED8;
+
+      .mav__check-label { font-weight: 600; }
+      .mav__requerido   { color: #2563EB; }
     }
   }
 
   &__check-texto {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-
-    strong { font-size: 13px; color: #166534; }
-    small  { font-size: 11px; color: #15803D; }
+    gap: 2px;
+    line-height: 1.4;
   }
+
+  &__check-label { font-size: 13px; color: inherit; font-weight: 500; }
+  &__requerido  { font-size: 11px; color: #94A3B8; font-weight: 500; }
 
   &__footer {
     display: flex !important;

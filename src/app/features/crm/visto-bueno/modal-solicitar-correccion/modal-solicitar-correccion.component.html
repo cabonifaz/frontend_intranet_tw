@@ -1,4 +1,10 @@
-<app-modal titulo="Solicitar Corrección" ancho="md" (cerrar)="onCerrar()">
+<app-modal
+  titulo="Solicitar Corrección"
+  subtitulo="Devuelve la propuesta al comercial para que corrija las secciones indicadas."
+  icono="edit_note"
+  iconoColor="ambar"
+  ancho="md"
+  (cerrar)="onCerrar()">
   <div class="msc">
 
     <span class="msc__chip">{{ contexto().numero }} · v{{ contexto().version }}</span>

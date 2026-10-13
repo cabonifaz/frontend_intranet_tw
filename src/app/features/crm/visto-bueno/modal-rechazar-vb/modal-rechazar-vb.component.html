@@ -1,13 +1,13 @@
-<app-modal ancho="md" titulo="" [cerrable]="true" (cerrar)="onCerrar()">
+<app-modal
+  titulo="Rechazar Propuesta"
+  subtitulo="Rechaza la propuesta de forma definitiva, indicando el motivo."
+  icono="cancel"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
   <div class="mrv">
 
-    <div class="mrv__header">
-      <span class="material-symbols-outlined mrv__header-icon">cancel</span>
-      <div>
-        <h3>Rechazar Propuesta</h3>
-        <span class="mrv__chip">{{ contexto().numero }} · v{{ contexto().version }}</span>
-      </div>
-    </div>
+    <span class="mrv__chip">{{ contexto().numero }} · v{{ contexto().version }}</span>
 
     <div class="mrv__resumen">
       <div class="mrv__dato">
