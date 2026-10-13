@@ -67,7 +67,8 @@ export class ModalSolicitarCorreccionComponent implements OnInit {
         accion:      'corregir',
         areas:       [...this.areasSel()],
         comentario:  this.observaciones().trim(),
-        fechaLimite: new Date(this.fechaLimite()).toISOString(),
+        // Hora local de Lima sin zona (el back y MySQL trabajan en UTC-5)
+        fechaLimite: `${this.formatearInput(this.fechaLimite())}:00`,
       },
     });
   }

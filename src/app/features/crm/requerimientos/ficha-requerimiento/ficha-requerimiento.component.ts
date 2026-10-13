@@ -157,8 +157,8 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
   }
 
   formatearFechaRelativa(fecha: string): string {
-    const utc   = fecha.endsWith('Z') || fecha.includes('+') ? fecha : fecha + 'Z';
-    const diff  = Date.now() - new Date(utc).getTime();
+    // El back devuelve hora de Lima sin zona: el navegador la interpreta como hora local
+    const diff  = Date.now() - new Date(fecha).getTime();
     if (diff < 0) return 'Ahora mismo';
     const mins  = Math.floor(diff / 60_000);
     const horas = Math.floor(diff / 3_600_000);

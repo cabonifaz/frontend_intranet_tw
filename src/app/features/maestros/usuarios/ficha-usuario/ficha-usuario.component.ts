@@ -90,7 +90,7 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
   readonly codigoFicha      = signal('');
 
   // Fecha máxima permitida para "Fecha de Nacimiento" (hoy, en formato yyyy-mm-dd).
-  readonly fechaHoyIso      = new Date().toISOString().slice(0, 10);
+  readonly fechaHoyIso      = new Date().toLocaleDateString('en-CA'); // yyyy-MM-dd en hora local
   readonly jefes            = signal<UsuarioListaItem[]>([]);
   readonly comerciales      = signal<UsuarioListaItem[]>([]);
   readonly suplenciasComoTitular  = signal<SuplenteListaItem[]>([]);
