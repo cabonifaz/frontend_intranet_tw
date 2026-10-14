@@ -224,6 +224,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/ordenes-compra',
+        loadComponent: () =>
+          import('./features/crm/ordenes-compra/lista-ordenes-compra/lista-ordenes-compra.component').then(
+            m => m.ListaOrdenesCompraComponent
+          ),
+      },
+      {
         path: 'crm/propuestas/nueva',
         canActivate: [permisoRutaGuard('propuesta_guardar')],
         loadComponent: () =>

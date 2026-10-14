@@ -1,0 +1,399 @@
+<app-modal
+  titulo="Detalle de Orden de Compra"
+  icono="description"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  <!-- Estado de carga / error -->
+  @if (cargando()) {
+    <div class="oc-cargando">
+      <span class="material-symbols-outlined oc-spinner">progress_activity</span>
+      Cargando orden de compra...
+    </div>
+  } @else if (error()) {
+    <div class="oc-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  } @else if (datos(); as det) {
+    @let d = det.resumen;
+
+    <!-- ── Barra superior: nº OC + estado + editar ───────────────── -->
+    <div class="oc-head">
+      <div class="oc-head__izq">
+        <div class="oc-head__ref">
+          <span class="oc-head__label">Referencia:</span>
+          <strong>{{ d.numeroOc }}</strong>
+        </div>
+        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">{{ estadoChip(d.estadoVisual || d.estado).label }}</span>
+      </div>
+      <app-button variant="secondary" tamano="sm" icono="edit" (clic)="editar()">Editar</app-button>
+    </div>
+
+    <!-- ── Chips informativos ────────────────────────────────────── -->
+    <div class="oc-chips">
+      <div class="oc-chip">
+        <span class="oc-chip__label">CLIENTE</span>
+        <span class="oc-chip__valor">{{ d.razonSocial }}</span>
+      </div>
+      <div class="oc-chip">
+        <span class="oc-chip__label">RQ</span>
+        <span class="oc-chip__valor">{{ d.numeroRq ?? '—' }}</span>
+      </div>
+      <div class="oc-chip">
+        <span class="oc-chip__label">PROPUESTA</span>
+        <span class="oc-chip__valor">
+          {{ d.numeroPropuesta ?? '—' }}
+          @if (d.versionPropuesta) {<span class="oc-chip__sub"> v{{ d.versionPropuesta }}</span>}
+        </span>
+      </div>
+      <div class="oc-chip">
+        <span class="oc-chip__label">MONTO OC</span>
+        <span class="oc-chip__valor">{{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</span>
+      </div>
+      <div class="oc-chip">
+        <span class="oc-chip__label">COBERTURA</span>
+        <span class="oc-chip__valor oc-chip__valor--pct">{{ d.coberturaPct }}%</span>
+      </div>
+      <div class="oc-chip">
+        <span class="oc-chip__label">ESTADO</span>
+        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">{{ estadoChip(d.estadoVisual || d.estado).label }}</span>
+      </div>
+    </div>
+
+    <!-- ── Tabs ──────────────────────────────────────────────────── -->
+    <div class="oc-tabs">
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'resumen'" (click)="cambiarTab('resumen')">Resumen</button>
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'aplicaciones'" (click)="cambiarTab('aplicaciones')">Aplicaciones</button>
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'documentos'" (click)="cambiarTab('documentos')">Documentos</button>
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'validaciones'" (click)="cambiarTab('validaciones')">Validaciones</button>
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'workflow'" (click)="cambiarTab('workflow')">Workflow</button>
+      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'historial'" (click)="cambiarTab('historial')">Historial</button>
+    </div>
+
+    <!-- ── Contenido tab RESUMEN ─────────────────────────────────── -->
+    @if (tab() === 'resumen') {
+      <div class="oc-grid">
+        <!-- Columna izquierda: Datos generales + Vinculaciones -->
+        <div class="oc-col">
+          <section class="oc-card">
+            <div class="oc-card__title">
+              <span class="material-symbols-outlined">info</span>
+              Datos Generales
+            </div>
+            <div class="oc-datos">
+              <div class="oc-dato"><label>N.º OC</label><span>{{ d.numeroOc }}</span></div>
+              <div class="oc-dato"><label>Cliente / RUC</label><span>{{ d.razonSocial }} / {{ d.ruc ?? '—' }}</span></div>
+              <div class="oc-dato"><label>Fecha de emisión</label><span>{{ d.fechaOc | date:'dd/MM/yyyy' }}</span></div>
+              <div class="oc-dato"><label>Fecha de recepción</label><span>{{ d.fechaRecepcion ? (d.fechaRecepcion | date:'dd/MM/yyyy') : '—' }}</span></div>
+              <div class="oc-dato"><label>Moneda / Monto</label><span>{{ d.moneda ?? '—' }} {{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</span></div>
+              <div class="oc-dato"><label>Vigencia</label><span>{{ d.vigenciaHasta ? (d.vigenciaHasta | date:'dd/MM/yyyy') : '—' }}</span></div>
+              <div class="oc-dato"><label>Responsable</label><span>{{ d.responsable ?? '—' }}</span></div>
+              <div class="oc-dato oc-dato--full">
+                <label>Referencia de servicio</label>
+                <span>{{ d.referenciaServicio ?? '—' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="oc-card">
+            <div class="oc-card__title">
+              <span class="material-symbols-outlined">link</span>
+              Vinculaciones del Proceso
+            </div>
+            <div class="oc-vinculos">
+              @for (v of det.vinculaciones; track v.tipo + '-' + (v.idEntidad ?? 0)) {
+                <div class="oc-vinculo" [class.oc-vinculo--pendiente]="!v.disponible">
+                  <span class="material-symbols-outlined oc-vinculo__icon">{{ iconoVinculo(v.tipo) }}</span>
+                  <div class="oc-vinculo__cuerpo">
+                    <span class="oc-vinculo__tipo">{{ etiquetaVinculo(v.tipo) }}</span>
+                    <strong>{{ v.codigo ?? '—' }}</strong>
+                  </div>
+                  @if (!v.disponible) {
+                    <span class="oc-vinculo__chip">PENDIENTE</span>
+                  } @else {
+                    <app-button variant="ghost" tamano="sm" icono="open_in_new" [soloIcon]="true"
+                                ariaLabel="Ver" title="Ver" />
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        </div>
+
+        <!-- Columna derecha: Cobertura + Checklist -->
+        <div class="oc-col">
+          <section class="oc-card">
+            <div class="oc-card__title">
+              <span class="material-symbols-outlined">payments</span>
+              Cobertura Económica
+              <span [class]="coberturaChip(d.coberturaCodigo).clase + ' oc-card__chip'">
+                {{ coberturaChip(d.coberturaCodigo).label }}
+              </span>
+            </div>
+            <div class="oc-cobertura">
+              <div class="oc-cob-row">
+                <span>Monto Propuesta</span>
+                <strong>{{ formatearMonto(d.montoPropuesta, d.monedaSimbolo) }}</strong>
+              </div>
+              <div class="oc-cob-row">
+                <span>Monto OC Recibida</span>
+                <strong>{{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</strong>
+              </div>
+              <div class="oc-cob-row oc-cob-row--saldo">
+                <span>Diferencia / Saldo</span>
+                <strong [class.saldo--neg]="d.saldo < 0" [class.saldo--ok]="d.saldo === 0">
+                  {{ formatearMonto(d.saldo, d.monedaSimbolo) }}
+                </strong>
+              </div>
+              <div class="oc-barra">
+                <div [class]="coberturaBarraClase(d.coberturaCodigo)" [style.width.%]="(d.coberturaPct ?? 0) > 100 ? 100 : (d.coberturaPct ?? 0)"></div>
+              </div>
+              <div class="oc-barra-txt">
+                Validación: {{ d.coberturaPct ?? 0 }}% · {{ formatearMonto(d.montoOc, d.monedaSimbolo) }} / {{ formatearMonto(d.montoPropuesta, d.monedaSimbolo) }}
+              </div>
+            </div>
+          </section>
+
+          <section class="oc-card">
+            <div class="oc-card__title">
+              <span class="material-symbols-outlined">rule</span>
+              Checklist de Validación
+            </div>
+            <ul class="oc-checklist">
+              @for (c of det.checklist; track c.codigo) {
+                <li [class.oc-check--ok]="c.cumple" [class.oc-check--bad]="!c.cumple">
+                  <span class="material-symbols-outlined">{{ c.cumple ? 'check_circle' : 'cancel' }}</span>
+                  <span>{{ c.descripcion }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        </div>
+      </div>
+    }
+
+    <!-- ── Contenido otros tabs (placeholders) ──────────────────── -->
+    @if (tab() === 'aplicaciones') {
+      <div class="oc-placeholder">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h4>Aplicaciones y Distribución</h4>
+        <p>Distribuye el monto de la OC entre propuestas del cliente, o registra una OC complementaria para cubrir la diferencia.</p>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          @if (puedeDistribuir) {
+            <app-button variant="primary" icono="account_tree" (clic)="distribuir()">Distribuir monto</app-button>
+          }
+          @if (puedeComplementaria) {
+            <app-button variant="secondary" icono="add_to_queue" (clic)="registrarComplementaria()">OC Complementaria</app-button>
+          }
+        </div>
+      </div>
+    }
+    @if (tab() === 'documentos') {
+      @if (cargandoDocs()) {
+        <div class="oc-cargando">
+          <span class="material-symbols-outlined oc-spinner">progress_activity</span>
+          Cargando documentos...
+        </div>
+      } @else if (docs(); as doc) {
+        <div class="docs-wrap">
+          @if (doc.actual; as v) {
+            <div class="docs-head">
+              <div class="docs-head__title">
+                <span class="material-symbols-outlined">description</span>
+                Documento Actual
+              </div>
+              <span class="docs-chip">ÚLTIMA VERSIÓN</span>
+            </div>
+
+            <div class="docs-actual">
+              <span class="material-symbols-outlined docs-actual__icon">picture_as_pdf</span>
+              <div class="docs-actual__meta">
+                <strong>{{ v.nombreArchivo }}</strong>
+                <small>{{ ((v.tamanoBytes ?? 0) / 1024 / 1024) | number:'1.1-2' }} MB · Subido por {{ v.subidoPor }} el {{ v.fechaCarga | date:'dd/MM/yyyy' }}</small>
+              </div>
+              <div class="docs-actual__acciones">
+                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                            ariaLabel="Ver" title="Ver" (clic)="verVersion(v)" />
+                <app-button variant="ghost" tamano="sm" icono="download" [soloIcon]="true"
+                            ariaLabel="Descargar" title="Descargar" (clic)="descargarVersion(v)" />
+                @if (doc.puedeReemplazar && !reemplazando()) {
+                  <app-button variant="secondary" tamano="sm" icono="autorenew"
+                              (clic)="abrirReemplazo()">Reemplazar</app-button>
+                }
+              </div>
+            </div>
+          }
+
+          @if (reemplazando()) {
+            <div class="docs-form">
+              <h4 class="docs-form__title">Subir nueva versión</h4>
+              <div class="docs-form__field">
+                <label>Motivo del reemplazo *</label>
+                <input type="text" [(ngModel)]="motivoReemplazo"
+                       placeholder="Ej: documento corregido, firma faltante, etc." />
+              </div>
+              <div class="docs-form__field">
+                <label>Nuevo archivo *</label>
+                <div class="docs-upload">
+                  @if (nuevoNombre) {
+                    <div class="docs-upload__file">
+                      <span class="material-symbols-outlined">picture_as_pdf</span>
+                      <strong>{{ nuevoNombre }}</strong>
+                      <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
+                                  ariaLabel="Quitar" (clic)="nuevoArchivo = null; nuevoNombre = ''" />
+                    </div>
+                  } @else {
+                    <label class="docs-upload__drop">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                      <span>Seleccionar archivo</span>
+                      <input type="file" accept=".pdf" (change)="onArchivoSeleccionado($event)" hidden />
+                    </label>
+                  }
+                </div>
+              </div>
+              <div class="docs-form__actions">
+                <app-button variant="ghost" tamano="sm" (clic)="cancelarReemplazo()">Cancelar</app-button>
+                <app-button variant="primary" tamano="sm" icono="save" [cargando]="guardandoDoc()"
+                            [disabled]="!nuevoArchivo || !motivoReemplazo.trim()"
+                            (clic)="guardarNuevaVersion()">Guardar nueva versión</app-button>
+              </div>
+            </div>
+          }
+
+          <h4 class="docs-sub-titulo">Historial de Versiones</h4>
+          <div class="docs-tabla-card">
+            <table class="docs-tabla">
+              <thead>
+                <tr>
+                  <th>VERSIÓN</th>
+                  <th>ARCHIVO</th>
+                  <th>FECHA / USUARIO</th>
+                  <th>MOTIVO</th>
+                  <th class="docs-tabla__th--right">ACCIÓN</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of doc.versiones; track v.idDocumento ?? v.version) {
+                  <tr>
+                    <td class="docs-tabla__ver">
+                      v{{ v.version }}
+                      @if (v.esActual) { <span class="docs-tabla__actual">ACTUAL</span> }
+                    </td>
+                    <td>
+                      <span class="docs-tabla__file">
+                        <span class="material-symbols-outlined">picture_as_pdf</span>
+                        {{ v.nombreArchivo }}
+                      </span>
+                    </td>
+                    <td class="docs-tabla__fecha">
+                      <strong>{{ v.fechaCarga | date:'dd/MM/yyyy' }}</strong>
+                      <small>{{ v.subidoPor }}</small>
+                    </td>
+                    <td>{{ v.motivo ?? '—' }}</td>
+                    <td class="docs-tabla__td--right">
+                      <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                                  ariaLabel="Ver" (clic)="verVersion(v)" />
+                      <app-button variant="ghost" tamano="sm" icono="download" [soloIcon]="true"
+                                  ariaLabel="Descargar" (clic)="descargarVersion(v)" />
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+    @if (tab() === 'validaciones') {
+      <div class="oc-placeholder">
+        <span class="material-symbols-outlined">verified</span>
+        <h4>Validaciones</h4>
+        <p>Trazabilidad de validaciones y observaciones registradas (HU-26).</p>
+      </div>
+    }
+    @if (tab() === 'workflow') {
+      <div class="oc-placeholder">
+        <span class="material-symbols-outlined">account_tree</span>
+        <h4>Workflow</h4>
+        <p>Vista de flujo: recepción → validación → liberación → operaciones.</p>
+      </div>
+    }
+    @if (tab() === 'historial') {
+      @if (cargandoAudit()) {
+        <div class="oc-cargando">
+          <span class="material-symbols-outlined oc-spinner">progress_activity</span>
+          Cargando historial...
+        </div>
+      } @else if (auditoria(); as a) {
+        <div class="hist-wrap">
+          <div class="hist-head">
+            <h4>Timeline de Eventos</h4>
+            <app-button variant="primary" tamano="sm" icono="download" (clic)="descargarXlsx()">
+              Descargar XLSX
+            </app-button>
+          </div>
+
+          @if (!a.timeline.length) {
+            <div class="hist-vacio">
+              <span class="material-symbols-outlined">inbox</span>
+              No hay eventos registrados.
+            </div>
+          } @else {
+            <div class="hist-timeline">
+              @for (ev of a.timeline; track trackEvento($index, ev)) {
+                <div class="hist-item">
+                  <div class="hist-item__linea">
+                    <span class="hist-item__dot {{ claseEvento(ev.nivel) }}">
+                      <span class="material-symbols-outlined">{{ iconoEvento(ev.codigo) }}</span>
+                    </span>
+                  </div>
+                  <div class="hist-item__cuerpo">
+                    <div class="hist-item__fila">
+                      <strong>{{ ev.titulo }}</strong>
+                      <span class="hist-item__fecha">{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    @if (ev.usuario) {
+                      <div class="hist-item__usuario">por {{ ev.usuario }}@if (ev.area) { · {{ ev.area }}}</div>
+                    }
+                    @if (ev.descripcion) {
+                      <div class="hist-item__detalle">{{ ev.descripcion }}</div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+
+  <!-- ── Footer ────────────────────────────────────────────────── -->
+  @if (datos(); as det) {
+    @let d = det.resumen;
+    <div modalFooter class="oc-footer">
+      <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+
+      <div class="oc-footer__sep"></div>
+
+      @if (d.idPropuesta) {
+        <app-button variant="secondary" icono="open_in_new" (clic)="abrirPropuesta(d.idPropuesta)">
+          Abrir Propuesta
+        </app-button>
+      }
+
+      @if (puedeValidar) {
+        <app-button variant="secondary" icono="flag" (clic)="observar()">Observar</app-button>
+        <app-button variant="primary" icono="check" (clic)="validar()">Validar OC</app-button>
+      }
+
+      @if (puedeLiberar) {
+        <app-button variant="primary" icono="rocket_launch" (clic)="liberarParaProgramacion()">
+          Liberar para Programación
+        </app-button>
+      }
+    </div>
+  }
+</app-modal>

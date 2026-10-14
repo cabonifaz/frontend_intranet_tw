@@ -1,0 +1,107 @@
+<app-modal
+  titulo="Distribuir Monto de OC"
+  [subtitulo]="ctx() ? ctx()!.ordenCompra.numeroOc + ' · ' + (ctx()!.ordenCompra.razonSocial ?? '') : ''"
+  icono="account_tree"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="dist-cargando">Cargando...</div>
+  } @else if (ctx(); as ctxVal) {
+    @let c = ctxVal.ordenCompra;
+
+    <!-- KPIs superiores -->
+    <div class="dist-kpis">
+      <div class="dist-kpi"><label>MONTO TOTAL OC</label><strong>{{ formatearMonto(c.montoTotal, c.monedaSimbolo) }}</strong></div>
+      <div class="dist-kpi"><label>MONTO APLICADO</label><strong class="verde">{{ formatearMonto(c.montoAplicado, c.monedaSimbolo) }}</strong></div>
+      <div class="dist-kpi"><label>SALDO DISPONIBLE</label><strong class="azul">{{ formatearMonto(c.saldoDisponible, c.monedaSimbolo) }}</strong></div>
+      <div class="dist-kpi dist-kpi--barra">
+        <div class="dist-kpi__head"><label>USO DE FONDOS</label><strong>{{ c.usoPct }}%</strong></div>
+        <div class="dist-barra"><div class="dist-barra__fill" [style.width.%]="c.usoPct"></div></div>
+      </div>
+    </div>
+
+    <!-- Aplicaciones -->
+    <div class="dist-head">
+      <h4 class="dist-seccion">Aplicaciones Registradas</h4>
+      <span class="dist-count">Mostrando {{ ctxVal.aplicaciones.length }} documento(s)</span>
+    </div>
+    <div class="dist-tabla-card">
+      <table class="dist-tabla">
+        <thead>
+          <tr>
+            <th>DOCUMENTO</th>
+            <th>TIPO</th>
+            <th>CLIENTE</th>
+            <th>CONCEPTO</th>
+            <th class="r">REQUERIDO</th>
+            <th class="r">APLICADO</th>
+            <th class="r">PENDIENTE</th>
+            <th>ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ap of ctxVal.aplicaciones; track ap.idPropuesta) {
+            <tr>
+              <td><strong class="dist-doc">{{ ap.numero }}</strong></td>
+              <td>{{ ap.tipo }}</td>
+              <td>{{ ap.cliente ?? '—' }}</td>
+              <td>{{ ap.concepto ?? '—' }}</td>
+              <td class="r">{{ formatearMonto(ap.requerido, c.monedaSimbolo) }}</td>
+              <td class="r verde">{{ formatearMonto(ap.aplicado, c.monedaSimbolo) }}</td>
+              <td class="r" [class.ambar]="ap.pendiente > 0">{{ formatearMonto(ap.pendiente, c.monedaSimbolo) }}</td>
+              <td>
+                <span class="dist-chip" [class]="'dist-chip--' + ap.estadoCobertura">
+                  {{ ap.estadoCobertura === 'cubierto' ? 'CUBIERTO' : ap.estadoCobertura === 'pendiente' ? 'PENDIENTE' : 'PARCIAL' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Asignar nuevo monto -->
+    <div class="dist-asignar">
+      <h4 class="dist-asignar__title">
+        <span class="material-symbols-outlined">add_circle</span>
+        Asignar Nuevo Monto
+      </h4>
+      <div class="dist-asignar__grid">
+        <div class="dist-field">
+          <label>Documento destino</label>
+          <select [(ngModel)]="idPropuestaDestino">
+            <option [ngValue]="null" disabled>Seleccionar...</option>
+            @for (d of destinos(); track d.idPropuesta) {
+              <option [ngValue]="d.idPropuesta">{{ d.numero }} · {{ d.concepto ?? d.cliente ?? '' }}</option>
+            }
+          </select>
+        </div>
+        <div class="dist-field">
+          <label>Monto a aplicar ({{ c.monedaSimbolo }})</label>
+          <input type="number" [(ngModel)]="monto" min="0" [max]="c.saldoDisponible" step="0.01" placeholder="0.00" />
+          <small>El monto no puede exceder el saldo disponible.</small>
+        </div>
+        <div class="dist-field dist-field--resumen">
+          <div class="dist-asignar__row">
+            <span>Saldo OC antes:</span>
+            <strong>{{ formatearMonto(saldoAntes(), c.monedaSimbolo) }}</strong>
+          </div>
+          <div class="dist-asignar__row">
+            <span>Saldo OC después:</span>
+            <strong class="azul">{{ formatearMonto(saldoDespues(), c.monedaSimbolo) }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modalFooter class="dist-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="save"
+                [disabled]="!puedeGuardar || guardando()"
+                [cargando]="guardando()"
+                (clic)="guardar()">Guardar distribución</app-button>
+  </div>
+</app-modal>

@@ -1,0 +1,212 @@
+<app-modal
+  [titulo]="modo() === 'editar' ? 'Editar Orden de Compra' : 'Registrar Orden de Compra Recibida'"
+  [subtitulo]="modo() === 'editar' ? 'Modifica los datos de la OC. Al cambiar monto o moneda regresará a estado Pendiente de validación.' : 'Vincula la documentación contractual a la propuesta aceptada para proceder al servicio.'"
+  icono="receipt_long"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="rc-cargando">
+      <span class="material-symbols-outlined rc-spinner">progress_activity</span>
+      Cargando...
+    </div>
+  } @else if (error()) {
+    <div class="rc-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  } @else {
+
+    <!-- ── Panel propuesta vinculada ─────────────────────────────────── -->
+    @if (modo() === 'editar') {
+      @if (ocEdicion(); as oc) {
+        <div class="rc-vinculo">
+          <div class="rc-vinculo__head">
+            <span class="rc-vinculo__label">DETALLES DE LA PROPUESTA</span>
+            <span class="chip-prop">{{ oc.numeroPropuesta ?? '—' }} <span class="chip-prop__ver">v{{ oc.versionPropuesta }}</span></span>
+          </div>
+          <div class="rc-vinculo__body">
+            <div class="rc-vinculo__col">
+              <div class="rc-pair"><label>CLIENTE</label><strong>{{ oc.razonSocial }}</strong></div>
+              <div class="rc-pair"><label>RUC</label><span>{{ oc.ruc ?? '—' }}</span></div>
+              <div class="rc-pair"><label>SOLICITUD RQ</label><span>{{ oc.numeroRq ?? '—' }}</span></div>
+              <div class="rc-pair"><label>MONTO ESTIMADO</label><strong class="rc-monto-base">{{ formatearMonto(oc.montoPropuesta, oc.monedaSimboloPropuesta) }}</strong></div>
+            </div>
+            <div class="rc-vinculo__cambiar">
+              <span class="rc-vinculo__lock">
+                <span class="material-symbols-outlined">lock</span> Bloqueada
+              </span>
+            </div>
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="rc-vinculo">
+        <div class="rc-vinculo__head">
+          <span class="rc-vinculo__label">DETALLES DE LA PROPUESTA</span>
+          @if (propuestaSel(); as p) {
+            <span class="chip-prop">{{ p.numero }} <span class="chip-prop__ver">v{{ p.version }}</span></span>
+          }
+        </div>
+
+        @if (propuestaSel(); as p) {
+          <div class="rc-vinculo__body">
+            <div class="rc-vinculo__col">
+              <div class="rc-pair"><label>CLIENTE</label><strong>{{ p.razonSocial }}</strong></div>
+              <div class="rc-pair"><label>RUC</label><span>{{ p.ruc ?? '—' }}</span></div>
+              <div class="rc-pair"><label>SOLICITUD RQ</label><span>{{ p.numeroRq ?? '—' }}</span></div>
+              <div class="rc-pair"><label>MONTO ESTIMADO</label><strong class="rc-monto-base">{{ formatearMonto(p.total, p.monedaSimbolo) }}</strong></div>
+            </div>
+            <div class="rc-vinculo__cambiar">
+              @if (!idPropuestaPreseleccionada()) {
+                <app-button variant="ghost" tamano="sm" icono="swap_horiz" (clic)="limpiarSeleccion()">Cambiar</app-button>
+              } @else {
+                <span class="rc-vinculo__lock">
+                  <span class="material-symbols-outlined">lock</span> Preseleccionada
+                </span>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="rc-selector">
+            <label>Selecciona la propuesta aprobada a vincular:</label>
+            <select [ngModel]="null" (ngModelChange)="$event && seleccionarPropuesta($event)">
+              <option [ngValue]="null" disabled>Seleccionar propuesta...</option>
+              @for (p of propuestas(); track p.idPropuesta) {
+                <option [ngValue]="p">{{ p.numero }} v{{ p.version }} · {{ p.razonSocial }} · {{ formatearMonto(p.total, p.monedaSimbolo) }}</option>
+              }
+            </select>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Panel cobertura dinámico (lateral derecho sticky) ─────────── -->
+    @if (propuestaSel(); as p) {
+      <div class="rc-cobertura" [class]="coberturaClase()">
+        <div class="rc-cobertura__header">
+          <span class="rc-cobertura__pct">{{ coberturaPct() }}%</span>
+          <span class="rc-cobertura__label">{{ coberturaLabel() }}</span>
+        </div>
+        <div class="rc-cobertura__row">
+          <span>Monto Propuesta</span>
+          <strong>{{ formatearMonto(p.total, p.monedaSimbolo) }}</strong>
+        </div>
+        <div class="rc-cobertura__row">
+          <span>Monto OC Registrada</span>
+          <strong>{{ formatearMonto(monto, p.monedaSimbolo) }}</strong>
+        </div>
+        <div class="rc-cobertura__row rc-cobertura__diff">
+          <span>Diferencia</span>
+          <strong>{{ formatearMonto(diferencia(), p.monedaSimbolo) }}</strong>
+        </div>
+      </div>
+    }
+
+    <!-- ── Datos de la OC ────────────────────────────────────────────── -->
+    <h3 class="rc-seccion">DATOS DE LA ORDEN DE COMPRA</h3>
+    <div class="rc-grid">
+      <div class="rc-field">
+        <label>N.° OC *</label>
+        <input type="text" [(ngModel)]="numeroOc" placeholder="OC-ANT-99201" />
+      </div>
+      <div class="rc-field">
+        <label>Fecha OC *</label>
+        <input type="date" [(ngModel)]="fechaOc" />
+      </div>
+      <div class="rc-field">
+        <label>Moneda *</label>
+        <select [(ngModel)]="idMoneda">
+          @for (m of monedas(); track m.id) {
+            <option [ngValue]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="rc-field">
+        <label>Monto OC *</label>
+        <input type="number" [(ngModel)]="monto" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="rc-field">
+        <label>Fecha Recepción *</label>
+        <input type="date" [(ngModel)]="fechaRecepcion" />
+      </div>
+      <div class="rc-field">
+        <label>Vigencia (días)</label>
+        <input type="number" [(ngModel)]="vigenciaDias" min="0" placeholder="30" />
+      </div>
+
+      <div class="rc-field rc-field--full">
+        <label>Referencia / Observaciones</label>
+        <input type="text" [(ngModel)]="referencia" placeholder="Ej: Proyecto expansión Tajo Norte" />
+      </div>
+
+      <div class="rc-field rc-field--full">
+        <label>Adjuntar Orden de Compra *</label>
+        <div class="rc-upload">
+          @if (nombreArchivo) {
+            <div class="rc-upload__file">
+              <span class="material-symbols-outlined">picture_as_pdf</span>
+              <div class="rc-upload__meta">
+                <strong>{{ nombreArchivo }}</strong>
+                <small>Subido</small>
+              </div>
+              <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
+                          ariaLabel="Quitar" (clic)="quitarArchivo()" />
+            </div>
+          } @else {
+            <label class="rc-upload__drop">
+              <span class="material-symbols-outlined">cloud_upload</span>
+              <span>Arrastra y suelta el archivo aquí</span>
+              <small>Formatos soportados: PDF, JPG, PNG (Máx 10MB)</small>
+              <input type="file" accept=".pdf" (change)="onArchivoSeleccionado($event)" hidden />
+              <span class="rc-upload__btn">Seleccionar archivo desde mi equipo</span>
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Nota informativa ──────────────────────────────────────────── -->
+    @if (modo() === 'crear') {
+      <div class="rc-nota">
+        <span class="material-symbols-outlined">info</span>
+        Al registrar esta OC, el sistema notificará automáticamente al área de Contabilidad y Operaciones para iniciar la programación del servicio técnico.
+      </div>
+    } @else if (tieneObservacionAbierta) {
+      @if (ocEdicion(); as oc) {
+        <div class="rc-nota rc-nota--danger">
+          <span class="material-symbols-outlined">flag</span>
+          <div>
+            <strong>Esta OC está OBSERVADA</strong>
+            @if (oc.motivoObservacion) {
+              <div class="rc-nota__detalle">Motivo: {{ oc.motivoObservacion }}</div>
+            }
+            <small>Al guardar los cambios, el sistema levantará la observación y notificará al Jefe Comercial para que vuelva a validar la OC.</small>
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="rc-nota rc-nota--warn">
+        <span class="material-symbols-outlined">warning</span>
+        Modificar el monto o la moneda regresará la OC a <strong>Pendiente de validación</strong> y requerirá revalidación por el Jefe Comercial.
+      </div>
+    }
+  }
+
+  <div modalFooter class="rc-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary"
+                [icono]="tieneObservacionAbierta ? 'send' : 'check'"
+                [disabled]="!formularioValido || guardando()"
+                [cargando]="guardando()"
+                (clic)="guardar()">
+      @if (modo() === 'editar') {
+        {{ tieneObservacionAbierta ? 'Guardar y notificar al Jefe' : 'Guardar cambios' }}
+      } @else {
+        Registrar OC
+      }
+    </app-button>
+  </div>
+</app-modal>

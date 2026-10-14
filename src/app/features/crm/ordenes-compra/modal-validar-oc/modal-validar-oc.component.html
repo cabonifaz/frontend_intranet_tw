@@ -1,0 +1,126 @@
+<app-modal
+  titulo="Validar Orden de Compra"
+  [subtitulo]="datos() ? datos()!.resumen.numeroOc + ' · ' + (datos()!.resumen.razonSocial ?? '') : ''"
+  icono="check_circle"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="vl-cargando">Cargando...</div>
+  } @else if (datos(); as d) {
+    <div class="vl-grid">
+      <!-- Columna izquierda -->
+      <div class="vl-col">
+        <h4 class="vl-seccion">RESUMEN COMPARATIVO</h4>
+        <div class="vl-resumen">
+          <div class="vl-resumen__pair">
+            <label>Propuesta Relacionada</label>
+            <strong>{{ d.resumen.numeroPropuesta }}<small> v{{ d.resumen.versionPropuesta }}</small></strong>
+          </div>
+          <div class="vl-resumen__pair">
+            <label>Requerimiento (RQ)</label>
+            <strong>{{ d.resumen.numeroRq ?? '—' }}</strong>
+          </div>
+          <div class="vl-resumen__pair">
+            <label>Cliente / RUC</label>
+            <strong>{{ d.resumen.razonSocial }} / {{ d.resumen.ruc ?? '—' }}</strong>
+          </div>
+          <div class="vl-resumen__pair">
+            <label>Monto Propuesta</label>
+            <strong>{{ formatearMonto(d.resumen.montoPropuesta, d.resumen.monedaSimbolo) }}</strong>
+          </div>
+        </div>
+
+        <h4 class="vl-seccion">CHECKLIST DE VALIDACIÓN</h4>
+        <ul class="vl-checklist">
+          @for (c of d.checklist; track c.codigo) {
+            <li [class.vl-check--ok]="c.cumpleAuto" [class.vl-check--bad]="!c.cumpleAuto">
+              <span class="material-symbols-outlined">{{ c.cumpleAuto ? 'check_circle' : 'cancel' }}</span>
+              <span class="vl-check__texto">
+                {{ c.descripcion }}
+                @if (c.detalle) {<small class="vl-check__detalle">{{ c.detalle }}</small>}
+              </span>
+              @if (c.requiereConfirmacion) {
+                <label class="vl-check__confirm">
+                  <input type="checkbox" [checked]="confirmados().has(c.codigo)"
+                         (change)="toggleConfirmado(c.codigo)" />
+                  <span>Confirmo</span>
+                </label>
+              } @else {
+                <span class="vl-check__chip">{{ c.cumpleAuto ? 'CONFORME' : 'NO CONFORME' }}</span>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+
+      <!-- Columna derecha -->
+      <div class="vl-col">
+        <div class="vl-doc">
+          <div class="vl-doc__head">
+            <span class="vl-doc__nombre">{{ d.resumen.nombreArchivoPdf ?? d.resumen.numeroOc + '.pdf' }}</span>
+            <app-button variant="secondary" tamano="sm" icono="open_in_new" (clic)="abrirDocumento()">Abrir documento</app-button>
+          </div>
+          <div class="vl-doc__preview">
+            @if (pdfBlobUrl(); as url) {
+              <iframe [src]="url" class="vl-doc__iframe" title="Vista previa OC"></iframe>
+            } @else if (cargandoPdf()) {
+              <div class="vl-doc__loading">
+                <span class="material-symbols-outlined">progress_activity</span>
+                Cargando PDF...
+              </div>
+            } @else {
+              <div class="vl-doc__loading">
+                <span class="material-symbols-outlined">picture_as_pdf</span>
+                No se pudo embeber el PDF. Usa "Abrir documento" para verlo.
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (d.resumen.dictamen === 'aprobable') {
+          <div class="vl-aprobable">
+            <span class="material-symbols-outlined">verified</span>
+            <div>
+              <strong>OC APROBABLE</strong>
+              <small>{{ d.resumen.dictamenMensaje ?? 'No se detectaron inconsistencias críticas.' }}</small>
+            </div>
+          </div>
+        } @else if (d.resumen.dictamen === 'con_alertas') {
+          <div class="vl-aprobable vl-aprobable--bad">
+            <span class="material-symbols-outlined">warning</span>
+            <div>
+              <strong>OC CON ALERTAS</strong>
+              <small>{{ d.resumen.dictamenMensaje ?? 'Hay inconsistencias en el checklist.' }}</small>
+            </div>
+          </div>
+        } @else {
+          <div class="vl-aprobable vl-aprobable--bad">
+            <span class="material-symbols-outlined">cancel</span>
+            <div>
+              <strong>NO APROBABLE</strong>
+              <small>{{ d.resumen.dictamenMensaje ?? 'La OC no se puede validar en este estado.' }}</small>
+            </div>
+          </div>
+        }
+
+        <div class="vl-coment">
+          <label>Comentarios de Validación</label>
+          <textarea rows="3" [(ngModel)]="comentario"
+                    placeholder="Escriba aquí observaciones o notas adicionales..."></textarea>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modalFooter class="vl-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <div class="vl-footer__sep"></div>
+    <app-button variant="secondary" icono="flag" (clic)="observar()">Observar OC</app-button>
+    <app-button variant="primary" icono="check"
+                [disabled]="!puedeValidar || guardando()"
+                [cargando]="guardando()"
+                (clic)="validar()">Validar Orden de Compra</app-button>
+  </div>
+</app-modal>

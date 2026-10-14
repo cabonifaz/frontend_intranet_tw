@@ -1,0 +1,107 @@
+<app-modal
+  titulo="Registrar OC Complementaria"
+  [subtitulo]="ctx() ? ctx()!.propuesta.numero + ' · ' + (ctx()!.propuesta.razonSocial ?? '') : ''"
+  icono="add_to_queue"
+  iconoColor="azul"
+  ancho="lg"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="co-cargando">Cargando...</div>
+  } @else if (ctx(); as ctxVal) {
+    @let p = ctxVal.propuesta;
+
+    <!-- Cobertura actual -->
+    <h4 class="co-seccion">COBERTURA ACTUAL</h4>
+    <div class="co-cob">
+      <div class="co-cob__row">
+        <div class="co-cob__pair"><label>Monto propuesta</label><strong>{{ formatearMonto(p.montoPropuesta, p.monedaSimbolo) }}</strong></div>
+        <div class="co-cob__pair"><label>OC existente</label><strong>{{ formatearMonto(p.montoCubierto, p.monedaSimbolo) }}</strong></div>
+        <div class="co-cob__pair"><label>Faltante</label><strong class="ambar">{{ formatearMonto(p.faltante, p.monedaSimbolo) }}</strong></div>
+      </div>
+      <div class="co-cob__barra-head">
+        <span>Estado de cobertura</span>
+        <strong>{{ p.coberturaPct }}%</strong>
+      </div>
+      <div class="co-barra"><div class="co-barra__fill co-barra__fill--parcial" [style.width.%]="p.coberturaPct"></div></div>
+    </div>
+
+    <!-- Nueva OC -->
+    <h4 class="co-seccion">NUEVA OC</h4>
+    <div class="co-grid">
+      <div class="co-field">
+        <label>N.° OC *</label>
+        <input type="text" [(ngModel)]="numeroOc" placeholder="Ej: OC-45002001" />
+      </div>
+      <div class="co-field">
+        <label>Fecha OC *</label>
+        <input type="date" [(ngModel)]="fechaOc" />
+      </div>
+      <div class="co-field">
+        <label>Monto *</label>
+        <input type="number" [(ngModel)]="monto" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="co-field">
+        <label>Moneda</label>
+        <input type="text" [value]="p.moneda ?? ''" disabled />
+      </div>
+      <div class="co-field">
+        <label>Fecha recepción *</label>
+        <input type="date" [(ngModel)]="fechaRecepcion" />
+      </div>
+      <div class="co-field">
+        <label>Vigencia (días)</label>
+        <input type="number" [(ngModel)]="vigenciaDias" min="0" placeholder="30" />
+      </div>
+      <div class="co-field">
+        <label>Archivo *</label>
+        @if (nombreArchivo) {
+          <div class="co-file">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+            <strong>{{ nombreArchivo }}</strong>
+            <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
+                        ariaLabel="Quitar" (clic)="quitarArchivo()" />
+          </div>
+        } @else {
+          <label class="co-upload">
+            <span class="material-symbols-outlined">cloud_upload</span>
+            Adjuntar orden de compra (.pdf)
+            <input type="file" accept=".pdf" (change)="onArchivoSeleccionado($event)" hidden />
+          </label>
+        }
+      </div>
+    </div>
+
+    <!-- Resultado -->
+    <div class="co-resultado" [class.co-resultado--completo]="coberturaTotalPct() >= 100">
+      <div class="co-resultado__chip">
+        <span class="co-resultado__label">RESULTADO CALCULADO</span>
+        <span class="co-resultado__pct">{{ coberturaTotalPct() }}% {{ coberturaTotalPct() >= 100 ? 'COMPLETADO' : 'PARCIAL' }}</span>
+      </div>
+      <div class="co-resultado__row">
+        <div class="co-resultado__item">
+          <label>OC Existente</label>
+          <strong>{{ formatearMonto(p.montoCubierto, p.monedaSimbolo) }}</strong>
+        </div>
+        <span class="co-resultado__sep">+</span>
+        <div class="co-resultado__item">
+          <label>Nueva OC</label>
+          <strong>{{ formatearMonto(monto, p.monedaSimbolo) }}</strong>
+        </div>
+        <span class="co-resultado__sep">=</span>
+        <div class="co-resultado__item">
+          <label>Cobertura Total</label>
+          <strong class="azul">{{ formatearMonto(coberturaTotal(), p.monedaSimbolo) }}</strong>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modalFooter class="co-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="check"
+                [disabled]="!puedeGuardar || guardando()"
+                [cargando]="guardando()"
+                (clic)="guardar()">Registrar OC Complementaria</app-button>
+  </div>
+</app-modal>
