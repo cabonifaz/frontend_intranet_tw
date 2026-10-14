@@ -1,0 +1,11 @@
+<div class="chip">
+  <span class="chip__label">{{ label() }}</span>
+  @if (valor() != null && valor() !== '') {
+    <span class="chip__valor chip__valor--{{ variant() }}">
+      {{ valor() }}
+      @if (sub()) { <span class="chip__sub"> {{ sub() }}</span> }
+    </span>
+  } @else {
+    <ng-content></ng-content>
+  }
+</div>

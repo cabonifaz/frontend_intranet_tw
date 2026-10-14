@@ -1,0 +1,21 @@
+<div class="tabs" role="tablist">
+  @for (t of tabs(); track t.codigo) {
+    @if (!t.oculto) {
+      <button
+        class="tabs__tab"
+        [class.tabs__tab--activo]="activo() === t.codigo"
+        [class.tabs__tab--disabled]="t.deshabilitado"
+        [disabled]="t.deshabilitado"
+        role="tab"
+        type="button"
+        [attr.aria-selected]="activo() === t.codigo"
+        (click)="onClick(t)">
+        @if (t.icono) {
+          <span class="material-symbols-outlined tabs__icono">{{ t.icono }}</span>
+        }
+        {{ t.label }}
+        @if (t.alerta) { <span class="tabs__dot" aria-label="Requiere atención"></span> }
+      </button>
+    }
+  }
+</div>

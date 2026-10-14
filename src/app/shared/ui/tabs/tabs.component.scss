@@ -1,0 +1,51 @@
+:host { display: block; }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #E2E8F0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+
+  &__tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition: color 0.15s;
+
+    &:hover { color: #0F172A; }
+
+    &--activo {
+      color: #2563EB;
+      border-bottom-color: #2563EB;
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      &:hover { color: #64748B; }
+    }
+  }
+
+  &__icono { font-size: 18px; }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #DC2626;
+    display: inline-block;
+    margin-left: 2px;
+  }
+}

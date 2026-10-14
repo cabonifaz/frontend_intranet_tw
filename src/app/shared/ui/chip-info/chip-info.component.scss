@@ -1,0 +1,40 @@
+:host { display: block; }
+
+.chip {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__valor {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &--pct    { font-size: 15px; color: #2563EB; }
+    &--codigo { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; }
+  }
+
+  &__sub {
+    color: #64748B;
+    font-weight: 500;
+    font-size: 11px;
+  }
+}
