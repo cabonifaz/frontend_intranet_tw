@@ -54,12 +54,8 @@
       </div>
 
       <!-- Tabs -->
-      <div class="tabs">
-        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'resumen'"    (click)="tabActiva.set('resumen')">Resumen</button>
-        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'cliente'"    (click)="tabActiva.set('cliente')">Cliente</button>
-        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'comercial'"  (click)="tabActiva.set('comercial')">Comercial</button>
-        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'actividad'"  (click)="tabActiva.set('actividad')">Actividad</button>
-        <button class="tabs__item" [class.tabs__item--activo]="tabActiva() === 'documentos'" (click)="tabActiva.set('documentos')">Documentos</button>
+      <div class="tabs-wrap">
+        <app-tabs [tabs]="tabsDef" [activo]="tabActiva()" (cambio)="tabActiva.set($any($event))" />
       </div>
 
       <!-- ── Tab: Resumen ──────────────────────────────────────────────────────── -->

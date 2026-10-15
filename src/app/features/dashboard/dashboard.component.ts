@@ -8,6 +8,7 @@ import { SeccionComponent }    from '../../shared/ui/seccion/seccion.component';
 import { ButtonComponent }     from '../../shared/ui/button/button.component';
 import { EstadoVacioComponent } from '../../shared/ui/estado-vacio/estado-vacio.component';
 import { KpiCardComponent }    from '../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent }    from '../../shared/ui/kpi-grid/kpi-grid.component';
 
 interface TarjetaKpi {
   etiqueta: string;
@@ -25,7 +26,7 @@ interface ZonaOperativa {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [NgClass, HeroHeaderComponent, SeccionComponent, ButtonComponent, EstadoVacioComponent, KpiCardComponent],
+  imports: [NgClass, HeroHeaderComponent, SeccionComponent, ButtonComponent, EstadoVacioComponent, KpiCardComponent, KpiGridComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

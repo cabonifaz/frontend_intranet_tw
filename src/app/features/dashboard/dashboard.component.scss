@@ -6,215 +6,17 @@
   padding: 24px;
   background: #F8FAFC;
   min-height: 100%;
-
-  &__header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-  }
-
-  &__header-textos { display: flex; flex-direction: column; gap: 4px; }
-
-  &__titulo {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 32px;
-    letter-spacing: -0.48px;
-    color: #111827;
-  }
-
-  &__subtitulo {
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    line-height: 20px;
-    color: #6B7280;
-  }
 }
 
-// ─── Estado ──────────────────────────────────────────────────────────────────
-.dash-estado {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 300px;
-  color: #6B7280;
+// ─── Link proyectado al header de app-seccion ────────────────────────────────
+.panel__link {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-
-  &--error { color: #E31B23; .material-symbols-outlined { font-size: 36px; } }
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #E5E7EB;
-  border-top-color: #2563EB;
-  border-radius: 50%;
-  animation: girar 0.7s linear infinite;
-}
-@keyframes girar { to { transform: rotate(360deg); } }
-
-// ─── Botón primario ──────────────────────────────────────────────────────────
-.btn-primario {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  background: #2563EB;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.15s;
+  font-weight: 600;
+  font-size: 13px;
+  color: #2563EB;
+  text-decoration: none;
   white-space: nowrap;
-
-  &:hover { background: #1D4ED8; }
-  .material-symbols-outlined { font-size: 20px; }
-}
-
-// ─── KPI Grid ────────────────────────────────────────────────────────────────
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-
-  @media (max-width: 1100px) { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 600px)  { grid-template-columns: 1fr; }
-}
-
-// ─── KPI Card ────────────────────────────────────────────────────────────────
-.kpi-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  background: #FFFFFF;
-  transition: box-shadow 0.15s;
-
-  &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-
-  &__icono-ctn {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  &__icono {
-    font-size: 24px;
-    font-variation-settings: 'FILL' 1;
-  }
-
-  &__contenido {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__etiqueta {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 11px;
-    line-height: 16px;
-    letter-spacing: 0.55px;
-    text-transform: uppercase;
-    color: #6B7280;
-  }
-
-  &__valor {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 28px;
-    line-height: 28px;
-    color: #111827;
-  }
-
-  // ── Variantes ────────────────────────────────────────────────────────────
-  &--normal {
-    background: #FFFFFF;
-    border-color: #E5E7EB;
-    .kpi-card__icono-ctn { background: #EFF4FF; }
-    .kpi-card__icono     { color: #2563EB; }
-    .kpi-card__valor     { color: #111827; }
-  }
-
-  &--exito {
-    background: #FFFFFF;
-    border-color: #E5E7EB;
-    .kpi-card__icono-ctn { background: #EFF4FF; }
-    .kpi-card__icono     { color: #059669; }
-    .kpi-card__valor     { color: #059669; }
-  }
-
-  &--alerta {
-    background: #FEF3C7;
-    border-color: #FDE68A;
-    .kpi-card__icono-ctn { background: rgba(255, 255, 255, 0.5); }
-    .kpi-card__icono     { color: #D97706; }
-    .kpi-card__valor     { color: #D97706; }
-  }
-
-  &--peligro {
-    background: #FEE2E2;
-    border-color: #FECACA;
-    .kpi-card__icono-ctn { background: rgba(255, 255, 255, 0.5); }
-    .kpi-card__icono     { color: #E31B23; }
-    .kpi-card__valor     { color: #E31B23; }
-  }
-}
-
-// ─── Panel base ───────────────────────────────────────────────────────────────
-.panel {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  overflow: hidden;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid #E5E7EB;
-  }
-
-  &__barra {
-    width: 4px;
-    height: 24px;
-    background: #2563EB;
-    border-radius: 9999px;
-    flex-shrink: 0;
-  }
-
-  &__titulo {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 18px;
-    line-height: 24px;
-    color: #111827;
-    flex: 1;
-  }
-
-  &__link {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 13px;
-    color: #2563EB;
-    text-decoration: none;
-    white-space: nowrap;
-    &:hover { text-decoration: underline; }
-  }
+  &:hover { text-decoration: underline; }
 }
 
 // ─── Tabla ────────────────────────────────────────────────────────────────────
@@ -326,8 +128,6 @@
   display: flex;
   gap: 24px;
   align-items: stretch;
-
-  .zona-panel { flex: 1; min-width: 0; }
 }
 
 // ─── Zona panel ──────────────────────────────────────────────────────────────
@@ -428,41 +228,7 @@
   }
 }
 
-// ─── SLA Panel Oscuro ─────────────────────────────────────────────────────────
-.sla-panel-oscuro {
-  background: #131B2E;
-  border-radius: 12px;
-  overflow: hidden;
-  width: 300px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  &__barra {
-    width: 4px;
-    height: 24px;
-    background: #2563EB;
-    border-radius: 9999px;
-    flex-shrink: 0;
-  }
-
-  &__titulo {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    color: #FFFFFF;
-    flex: 1;
-  }
-}
-
+// ─── SLA (contenido oscuro proyectado dentro de app-seccion) ─────────────────
 .sla-oscuro {
   flex: 1;
   display: flex;

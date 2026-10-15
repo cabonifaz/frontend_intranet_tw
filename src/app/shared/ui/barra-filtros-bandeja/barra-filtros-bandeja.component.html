@@ -1,0 +1,40 @@
+<div class="barra">
+  <div class="barra__izq">
+    <app-filtros-popover
+      [cantidadActivos]="cantidadActivos()"
+      [texto]="textoFiltros()"
+      (limpiar)="limpiar.emit()"
+      (aplicar)="aplicar.emit()">
+      <ng-content></ng-content>
+    </app-filtros-popover>
+  </div>
+
+  <div class="barra__der">
+    @if (conBusqueda()) {
+      <div class="barra__busqueda">
+        <span class="material-symbols-outlined barra__icono-input">search</span>
+        <input
+          class="barra__input"
+          type="text"
+          [placeholder]="placeholder()"
+          [(ngModel)]="busqueda"
+          (keyup.enter)="aplicar.emit()"
+        />
+      </div>
+    }
+
+    @if (conRefresh()) {
+      <app-button
+        variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
+        ariaLabel="Actualizar" title="Actualizar"
+        (clic)="aplicar.emit()" />
+    }
+
+    @if (conDescarga()) {
+      <app-button
+        variant="secondary" tamano="md" icono="download" [soloIcon]="true"
+        ariaLabel="Exportar" title="Exportar"
+        (clic)="descargar.emit()" />
+    }
+  </div>
+</div>

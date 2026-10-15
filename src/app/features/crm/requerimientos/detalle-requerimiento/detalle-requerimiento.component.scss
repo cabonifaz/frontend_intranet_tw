@@ -145,38 +145,6 @@ $step-pend:   #D3E4FE;
   flex-shrink: 0;
 }
 
-.btn-editar-header {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 16px;
-  border: 1px solid $gris-borde;
-  border-radius: 8px;
-  background: $blanco;
-  color: $gris-texto;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  .material-symbols-outlined { font-size: 16px; }
-  &:hover { border-color: $azul; color: $azul; }
-}
-
-.modal__cerrar {
-  width: 38px;
-  height: 38px;
-  border: 1px solid $gris-borde;
-  border-radius: 8px;
-  background: $blanco;
-  color: $gris-texto;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  .material-symbols-outlined { font-size: 20px; }
-  &:hover { border-color: $rojo; color: $rojo; }
-}
-
 // ── Badges ───────────────────────────────────────────────────────────────────
 .badge {
   display: inline-flex;
@@ -195,34 +163,10 @@ $step-pend:   #D3E4FE;
 .badge--rojo    { background: $rojo-bg;    color: $rojo;      }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
-.tabs {
-  display: flex;
+.tabs-wrap {
   padding: 0 32px;
-  border-bottom: 1px solid $gris-borde;
   flex-shrink: 0;
-  overflow-x: auto;
   background: $blanco;
-}
-
-.tabs__item {
-  padding: 16px 0;
-  margin-right: 32px;
-  font-size: 15px;
-  font-weight: 500;
-  color: $gris-claro;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: -1px;
-  white-space: nowrap;
-  &:hover { color: $azul; }
-  &--activo {
-    color: $azul;
-    border-bottom-color: $azul;
-    font-weight: 700;
-  }
 }
 
 // ── Contenido (scrollable) ────────────────────────────────────────────────────
@@ -885,88 +829,6 @@ $step-pend:   #D3E4FE;
   &:disabled { opacity: 0.4; cursor: default; }
 }
 
-// ── Tab Comercial: Propuestas ─────────────────────────────────────────────────
-.prop-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.prop-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
-  border: 1px solid $gris-borde;
-  border-radius: 10px;
-  background: $gris-bg;
-  transition: border-color 0.15s, background 0.15s;
-  &:hover { border-color: #BFDBFE; background: $azul-bg; }
-}
-
-.prop-item__izq {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.prop-item__icono-wrap {
-  width: 36px;
-  height: 36px;
-  background: $azul-bg;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  .material-symbols-outlined { font-size: 18px; color: $azul; }
-}
-
-.prop-item__numero {
-  font-size: 14px;
-  font-weight: 700;
-  color: $texto-osc;
-}
-
-.prop-item__meta {
-  font-size: 12px;
-  color: $gris-texto;
-  margin-top: 2px;
-}
-
-.prop-item__der {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.prop-item__monto {
-  font-size: 15px;
-  font-weight: 900;
-  color: $verde;
-  letter-spacing: -0.3px;
-}
-
-.prop-item__btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid $gris-borde;
-  border-radius: 6px;
-  background: $blanco;
-  color: $gris-texto;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  .material-symbols-outlined { font-size: 16px; }
-  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
-  &:disabled { opacity: 0.4; cursor: default; }
-}
-
 // ── Tab Actividad: Timeline ───────────────────────────────────────────────────
 .act-timeline {
   display: flex;
@@ -1056,78 +918,6 @@ $step-pend:   #D3E4FE;
 
 .act-item__user-icon { font-size: 14px; color: $gris-claro; }
 
-// ── Tab Documentos: Lista ─────────────────────────────────────────────────────
-.doc-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.doc-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border: 1px solid $gris-borde;
-  border-radius: 10px;
-  background: $gris-bg;
-  transition: border-color 0.15s, background 0.15s;
-  &:hover { border-color: #BFDBFE; background: $azul-bg; }
-}
-
-.doc-item__icono {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  .material-symbols-outlined { font-size: 22px; }
-
-  &--pdf   { background: $rojo-bg;  .material-symbols-outlined { color: $rojo;        } }
-  &--excel { background: $verde-bg; .material-symbols-outlined { color: $verde;        } }
-  &--word  { background: $azul-bg;  .material-symbols-outlined { color: $azul;         } }
-}
-
-.doc-item__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.doc-item__nombre {
-  font-size: 14px;
-  font-weight: 600;
-  color: $texto-osc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.doc-item__meta {
-  font-size: 12px;
-  color: $gris-texto;
-  margin-top: 3px;
-}
-
-.doc-item__btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid $gris-borde;
-  border-radius: 8px;
-  background: $blanco;
-  color: $gris-texto;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.15s;
-  .material-symbols-outlined { font-size: 18px; }
-  &:hover:not(:disabled) { border-color: $azul; color: $azul; }
-  &:disabled { opacity: 0.4; cursor: default; }
-}
-
 // ── Tab Vacío (fallback) ──────────────────────────────────────────────────────
 .tab-vacio-panel {
   min-height: 300px;
@@ -1205,22 +995,6 @@ $step-pend:   #D3E4FE;
   gap: 12px;
 }
 
-.btn-anular {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  background: none;
-  border: none;
-  color: $gris-claro;
-  font-size: 14px;
-  cursor: pointer;
-  transition: color 0.15s;
-  .material-symbols-outlined { font-size: 18px; }
-  &:hover:not(:disabled) { color: $rojo; }
-  &:disabled { opacity: 0.4; cursor: default; }
-}
-
 .btn-secundario {
   padding: 10px 24px;
   border: 1px solid $gris-borde;
@@ -1234,18 +1008,3 @@ $step-pend:   #D3E4FE;
   &:disabled { opacity: 0.4; cursor: default; }
 }
 
-.btn-primario {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  border: 1px solid $azul;
-  border-radius: 8px;
-  background: $blanco;
-  color: $azul;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.15s;
-  .material-symbols-outlined { font-size: 16px; }
-  &:hover { background: $azul; color: $blanco; }
-}

@@ -94,96 +94,23 @@
   }
 }
 
-// ── Celdas específicas (clases proyectadas; shell en app-tabla-paginada) ─────
-.tabla {
-  &__propuesta { display: flex; align-items: center; gap: 8px; }
+// Nota: clases .tabla__* viven en global `styles.scss`.
+// Clases específicas de esta bandeja:
+.tabla__referencia {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 260px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.4;
+}
 
-  &__th--comercial { width: 180px; }
-  &__th--sla       { width: 70px; }
-
-  &__comercial-nombre {
-    display: block;
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__fila {
-    cursor: pointer;
-    &:hover { background: #F8FAFC; }
-  }
-
-  &__codigo {
-    font-weight: 600;
-    color: #0F172A;
-  }
-
-  &__version {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    background: #F1F5F9;
-    color: #475569;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-
-  &__rq {
-    font-weight: 600;
-    color: #0F172A;
-  }
-
-  &__cliente { display: flex; flex-direction: column; gap: 2px; }
-  &__cliente-nombre { font-weight: 500; color: #0F172A; }
-  &__cliente-ruc { font-size: 11px; color: #94A3B8; }
-
-  &__referencia {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    max-width: 260px;
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-
-  &__monto {
-    font-weight: 600;
-    color: #0F172A;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__moneda {
-    font-size: 12px;
-    color: #64748B;
-    font-weight: 500;
-  }
-
-  &__comercial {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  &__avatar {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #DBEAFE;
-    color: #1D4ED8;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  &__comercial-nombre {
-    font-size: 12px;
-    color: #0F172A;
-  }
+.tabla__moneda {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
 }
 
 // ── Badge ESTADO ─────────────────────────────────────────────────────────────

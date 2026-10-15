@@ -62,7 +62,6 @@
     <thead>
       <tr>
         <th>PROPUESTA</th>
-        <th>RQ</th>
         <th>CLIENTE / RUC</th>
         <th>CONTACTO</th>
         <th class="tabla__th--derecha">MONTO</th>
@@ -78,12 +77,14 @@
       @for (item of items(); track item.idPropuesta) {
         <tr class="tabla__fila" (click)="verDetalle(item)">
           <td>
-            <div class="tabla__propuesta">
-              <span class="tabla__codigo">{{ item.numero }}</span>
-              <span class="tabla__version">v{{ item.version }}</span>
+            <div class="tabla__propuesta-cell">
+              <div class="tabla__propuesta">
+                <span class="tabla__codigo">{{ item.numero }}</span>
+                <span class="tabla__version">v{{ item.version }}</span>
+              </div>
+              <span class="tabla__rq">{{ item.numeroRq ?? '—' }}</span>
             </div>
           </td>
-          <td>{{ item.numeroRq ?? '—' }}</td>
           <td>
             <div class="tabla__cliente">
               <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>

@@ -27,39 +27,20 @@
 }
 
 // ─── Tabla ───────────────────────────────────────────────────────────
+/* NOTA: th/td/thead/tbody styling vive en global `styles.scss` bajo
+   `app-tabla-paginada { ... }` porque la view-encapsulation emulada
+   de Angular no permite al scss del shell alcanzar el contenido
+   proyectado dentro de <ng-content>. */
 .tabla {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 
-  :where(thead) { background: #EFF4FF; }
-
-  :where(th) {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748B;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    border-bottom: 1px solid #E2E8F0;
-    white-space: nowrap;
-  }
-
-  :where(tr):not(:first-child) :where(td) {
-    border-top: 1px solid #F1F5F9;
-  }
-
-  :where(td) {
-    padding: 14px 16px;
-    color: #0F172A;
-    vertical-align: middle;
-  }
-
   &__td--vacio {
     text-align: center;
     padding: 48px !important;
     color: #94A3B8;
+    white-space: normal;
 
     .material-symbols-outlined {
       display: block;
@@ -67,10 +48,6 @@
       font-size: 32px;
     }
   }
-
-  &__th--derecha, &__td--derecha { text-align: right; }
-  &__th--centro,  &__td--centro  { text-align: center; }
-  &__th--sla     { width: 90px; }
 
   &__spinner { animation: tp-girar 1s linear infinite; }
 }

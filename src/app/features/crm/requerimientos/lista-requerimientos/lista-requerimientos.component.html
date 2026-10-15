@@ -65,7 +65,7 @@
       @for (item of items(); track item.idRequerimiento) {
         <tr class="tabla__fila" (click)="irADetalle(item.idRequerimiento)">
           <td>
-            <span class="tabla__numero-rq" [title]="'Creado el ' + formatearFecha(item.fechaCreacion)">{{ item.numero }}</span>
+            <span class="tabla__codigo" [title]="'Creado el ' + formatearFecha(item.fechaCreacion)">{{ item.numero }}</span>
           </td>
           <td>
             <div class="tabla__cliente">

@@ -32,7 +32,7 @@
         <div class="kpi-icono-wrap kpi-icono-wrap--verde"><span class="material-symbols-outlined">payments</span></div>
         <div class="kpi-texto">
           <div class="kpi-label">MONTO</div>
-          <div class="kpi-valor">{{ formatearMonto(d.cabecera.total, d.cabecera.monedaSimbolo) }}</div>
+          <div class="kpi-valor">{{ d.cabecera.total | moneda:d.cabecera.monedaSimbolo }}</div>
         </div>
       </div>
       <div class="kpi-card">
@@ -61,12 +61,8 @@
     </div>
 
     <!-- Tabs -->
-    <div class="tabs">
-      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'resumen'"           (click)="cambiarTab('resumen')">Resumen</button>
-      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'timeline'"          (click)="cambiarTab('timeline')">Timeline</button>
-      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'contactos'"         (click)="cambiarTab('contactos')">Contactos</button>
-      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'proximas_acciones'" (click)="cambiarTab('proximas_acciones')">Próximas Acciones</button>
-      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'documentos'"        (click)="cambiarTab('documentos')">Documentos</button>
+    <div class="tabs-wrap">
+      <app-tabs [tabs]="tabsDef" [activo]="tab()" (cambio)="cambiarTab($any($event))" />
     </div>
 
     <!-- Tab: Resumen -->
@@ -151,23 +147,7 @@
     <!-- Tab: Timeline -->
     @if (tab() === 'timeline') {
       <div class="contenido">
-        <div class="timeline">
-          @for (ev of d.timeline; track ev.fecha + ev.tipo) {
-            <div class="timeline__item">
-              <div class="timeline__icono timeline__icono--{{ ev.tipo }}">
-                <span class="material-symbols-outlined">{{ iconoTimeline(ev.tipo) }}</span>
-              </div>
-              <div class="timeline__body">
-                <div class="timeline__fecha">{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</div>
-                <div class="timeline__titulo">{{ ev.titulo }}</div>
-                @if (ev.descripcion) { <div class="timeline__desc">{{ ev.descripcion }}</div> }
-                @if (ev.usuario) { <small class="timeline__meta">Por {{ ev.usuario }}</small> }
-              </div>
-            </div>
-          } @empty {
-            <p class="vacio">Sin eventos registrados.</p>
-          }
-        </div>
+        <app-timeline-eventos [eventos]="timelineUi(d.timeline)" mensajeVacio="Sin eventos registrados." />
       </div>
     }
 

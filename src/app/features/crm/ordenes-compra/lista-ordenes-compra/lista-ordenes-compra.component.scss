@@ -45,37 +45,7 @@
   @media (max-width: 480px)  { grid-template-columns: 1fr; }
 }
 
-// ── Celdas específicas de la bandeja (clases proyectadas) ────────────────────
-.tabla {
-  &__fila {
-    cursor: pointer;
-    &:hover { background: #F8FAFC; }
-  }
-
-  &__codigo  { font-weight: 600; color: #2563EB; }
-  &__version {
-    display: inline-block;
-    margin-left: 4px;
-    padding: 1px 6px;
-    background: #F1F5F9;
-    color: #475569;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  &__cliente  { display: flex; flex-direction: column; gap: 2px; }
-  &__cliente-nombre { font-weight: 500; color: #0F172A; }
-  &__cliente-ruc    { font-size: 11px; color: #94A3B8; }
-  &__monto { font-weight: 600; color: #0F172A; font-variant-numeric: tabular-nums; }
-  &__saldo { font-weight: 700; font-variant-numeric: tabular-nums; }
-
-  &__acciones {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    justify-content: center;
-  }
-}
+// Nota: clases .tabla__* viven en global `styles.scss`.
 
 // ── Saldo (color por signo) ──────────────────────────────────────────────────
 .saldo--pos { color: #0F172A; }

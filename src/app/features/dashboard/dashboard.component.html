@@ -18,7 +18,7 @@
     </app-hero-header>
 
     <!-- KPI Grid -->
-    <div class="kpi-grid">
+    <app-kpi-grid [columnas]="4">
       @for (t of tarjetas(); track t.etiqueta) {
         <app-kpi-card
           [icono]="t.icono"
@@ -27,7 +27,7 @@
           [variante]="t.variante"
         />
       }
-    </div>
+    </app-kpi-grid>
 
     <!-- Alertas operativas -->
     <app-seccion icono="notifications_active" titulo="Alertas Operativas">

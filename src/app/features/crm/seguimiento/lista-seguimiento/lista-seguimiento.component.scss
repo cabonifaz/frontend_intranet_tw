@@ -44,82 +44,29 @@
   @media (max-width: 480px)  { grid-template-columns: 1fr; }
 }
 
-// ── Celdas específicas de la bandeja (clases proyectadas) ────────────────────
-.tabla {
-  &__propuesta { display: flex; align-items: center; gap: 8px; }
+// Nota: clases .tabla__* viven en global `styles.scss`.
+// Específico de esta bandeja: RQ va como subtexto bajo el código de propuesta.
+.tabla__propuesta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 
-  &__fila {
-    cursor: pointer;
-    &:hover { background: #F8FAFC; }
-  }
-
-  &__propuesta-cell {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  &__codigo  { font-weight: 600; color: #0F172A; }
-  &__version {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    background: #F1F5F9;
-    color: #475569;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-  }
-  // RQ ahora va como subtexto bajo PROPUESTA (más compacto, menos columnas)
-  &__rq {
+  .tabla__rq {
     font-size: 11px;
     color: #94A3B8;
     font-weight: 500;
   }
-  &__cliente  { display: flex; flex-direction: column; gap: 2px; }
-  &__cliente-nombre { font-weight: 500; color: #0F172A; }
-  &__cliente-ruc    { font-size: 11px; color: #94A3B8; }
-  &__referencia {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    max-width: 220px;
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.4;
-  }
-  &__monto { font-weight: 600; color: #0F172A; font-variant-numeric: tabular-nums; }
+}
 
-  &__persona { display: inline-flex; align-items: center; gap: 8px; }
-  &__avatar {
-    width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 700;
-    flex-shrink: 0;
-
-    &--comercial { background: #DBEAFE; color: #1D4ED8; }
-    &--aprobador { background: #DCFCE7; color: #166534; }
-  }
-  &__persona-nombre {
-    font-size: 12px;
-    color: #0F172A;
-    max-width: 130px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__acciones {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    justify-content: center;
-  }
+.tabla__referencia {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 220px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 // ── Badge porcentual (Descuento + Margen) ────────────────────────────────────

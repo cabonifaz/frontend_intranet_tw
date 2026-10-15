@@ -6,19 +6,24 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { SeguimientoService } from '../../../../core/services/seguimiento.service';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 import { DetalleSeguimiento } from '../../../../core/models/seguimiento.model';
+import { TimelineEventosComponent, EventoTimeline } from '../../../../shared/ui/timeline-eventos/timeline-eventos.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
+import { TabsComponent, Tab as TabDef } from '../../../../shared/ui/tabs/tabs.component';
+import { CatalogoEstadosService } from '../../../../core/services/catalogo-estados.service';
 
 type Tab = 'resumen' | 'timeline' | 'contactos' | 'proximas_acciones' | 'documentos';
 type AccionDetalle = 'registrar' | 'ejecutar_pendiente' | 'reprogramar' | 'cerrar_seguimiento' | 'aceptar' | 'rechazar' | 'cerrar_sin_venta';
 
 @Component({
   selector: 'app-modal-detalle-seguimiento',
-  imports: [CommonModule, DatePipe, ButtonComponent, ModalComponent, SiPermisoDirective],
+  imports: [CommonModule, DatePipe, ButtonComponent, ModalComponent, SiPermisoDirective, TimelineEventosComponent, MonedaPipe, TabsComponent],
   templateUrl: './modal-detalle-seguimiento.component.html',
   styleUrl: './modal-detalle-seguimiento.component.scss',
 })
 export class ModalDetalleSeguimientoComponent {
-  private readonly svc   = inject(SeguimientoService);
-  private readonly toast = inject(ToastService);
+  private readonly svc           = inject(SeguimientoService);
+  private readonly toast         = inject(ToastService);
+  private readonly catEstados    = inject(CatalogoEstadosService);
 
   readonly idPropuesta = input.required<number>();
   readonly cerrar      = output<void>();
@@ -28,6 +33,14 @@ export class ModalDetalleSeguimientoComponent {
   readonly error    = signal('');
   readonly datos    = signal<DetalleSeguimiento | null>(null);
   readonly tab      = signal<Tab>('resumen');
+
+  readonly tabsDef: TabDef[] = [
+    { codigo: 'resumen',           label: 'Resumen' },
+    { codigo: 'timeline',          label: 'Timeline' },
+    { codigo: 'contactos',         label: 'Contactos' },
+    { codigo: 'proximas_acciones', label: 'Próximas Acciones' },
+    { codigo: 'documentos',        label: 'Documentos' },
+  ];
 
   constructor() {
     effect(() => {
@@ -55,12 +68,6 @@ export class ModalDetalleSeguimientoComponent {
   onCerrar(): void { this.cerrar.emit(); }
   emitirAccion(a: AccionDetalle): void { this.accion.emit(a); }
 
-  formatearMonto(monto: number, simbolo?: string | null): string {
-    const s = simbolo ?? 'S/';
-    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${s} ${valor}`;
-  }
-
   textoSla(min?: number | null): string {
     if (min == null) return '—';
     if (min < 0) {
@@ -81,27 +88,8 @@ export class ModalDetalleSeguimientoComponent {
     return 'sla-txt--normal';
   }
 
-  estadoClase(estado: string): string {
-    const mapa: Record<string, string> = {
-      en_seguimiento:  'badge--azul',
-      sin_respuesta:   'badge--rojo',
-      requiere_ajuste: 'badge--naranja',
-      aceptada:        'badge--verde',
-      rechazada:       'badge--rojo',
-    };
-    return mapa[estado] ?? 'badge--gris';
-  }
-
-  estadoLabel(estado: string): string {
-    const mapa: Record<string, string> = {
-      en_seguimiento:  'En seguimiento',
-      sin_respuesta:   'Sin respuesta',
-      requiere_ajuste: 'Requiere ajuste',
-      aceptada:        'Aceptada',
-      rechazada:       'Rechazada',
-    };
-    return mapa[estado] ?? estado;
-  }
+  estadoClase(estado: string): string { return this.catEstados.obtener('seguimiento', estado).clase; }
+  estadoLabel(estado: string): string { return this.catEstados.obtener('seguimiento', estado).label; }
 
   iconoTimeline(tipo: string): string {
     const mapa: Record<string, string> = {
@@ -120,5 +108,24 @@ export class ModalDetalleSeguimientoComponent {
       orden_compra:       'receipt_long',
     };
     return mapa[tipo] ?? 'event';
+  }
+
+  /** Mapea los eventos del DTO al formato de app-timeline-eventos. */
+  timelineUi(eventos: { fecha?: string | null; tipo: string; titulo: string; descripcion?: string | null; usuario?: string | null }[]): EventoTimeline[] {
+    return eventos.map(ev => ({
+      fecha: ev.fecha,
+      titulo: ev.titulo,
+      descripcion: ev.descripcion,
+      usuario: ev.usuario,
+      icono: this.iconoTimeline(ev.tipo),
+      nivel: this.nivelDe(ev.tipo),
+    }));
+  }
+
+  private nivelDe(tipo: string): 'azul' | 'verde' | 'ambar' | 'rojo' {
+    if (tipo === 'vb_aprobado' || tipo === 'cierre_aceptacion') return 'verde';
+    if (tipo === 'vb_devuelto' || tipo === 'accion_reprogramada') return 'ambar';
+    if (tipo === 'vb_rechazado' || tipo === 'vb_cancelado' || tipo === 'cierre_rechazo' || tipo === 'cierre_sin_venta') return 'rojo';
+    return 'azul';
   }
 }

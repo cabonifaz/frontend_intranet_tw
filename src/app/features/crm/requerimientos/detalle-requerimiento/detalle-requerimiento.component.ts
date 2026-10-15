@@ -4,10 +4,11 @@ import { RequerimientoFicha } from '../../../../core/models/crm.model';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
+import { TabsComponent, Tab as TabDef } from '../../../../shared/ui/tabs/tabs.component';
 
 @Component({
   selector: 'app-detalle-requerimiento',
-  imports: [ButtonComponent, SiPermisoDirective],
+  imports: [ButtonComponent, SiPermisoDirective, TabsComponent],
   templateUrl: './detalle-requerimiento.component.html',
   styleUrl:    './detalle-requerimiento.component.scss',
 })
@@ -28,6 +29,14 @@ export class DetalleRequerimientoComponent implements OnInit {
   readonly error     = signal('');
   readonly ficha     = signal<RequerimientoFicha | null>(null);
   readonly tabActiva = signal<'resumen' | 'cliente' | 'comercial' | 'actividad' | 'documentos'>('resumen');
+
+  readonly tabsDef: TabDef[] = [
+    { codigo: 'resumen',    label: 'Resumen' },
+    { codigo: 'cliente',    label: 'Cliente' },
+    { codigo: 'comercial',  label: 'Comercial' },
+    { codigo: 'actividad',  label: 'Actividad' },
+    { codigo: 'documentos', label: 'Documentos' },
+  ];
 
   readonly pasosFlujo = [
     { key: 'rq',          label: 'RQ'          },

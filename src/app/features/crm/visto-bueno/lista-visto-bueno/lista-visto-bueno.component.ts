@@ -255,10 +255,6 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
     return mapa[estado] ?? estado;
   }
 
-  esRevocacion(item: ItemBandejaVb): boolean {
-    return item.tipoVb === 'revocacion';
-  }
-
   slaClase(item: ItemBandejaVb): string {
     if (item.slaEstado === 'vencido' || item.slaEstado === 'fuera_de_plazo') return 'sla--urgente';
     if (item.slaEstado === 'proximo') return 'sla--advertencia';

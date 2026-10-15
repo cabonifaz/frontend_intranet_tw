@@ -1,0 +1,53 @@
+:host { display: block; }
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  box-sizing: border-box;
+
+  &__izq, &__der {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__der { margin-left: auto; }
+
+  &__busqueda {
+    position: relative;
+  }
+
+  &__icono-input {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #94A3B8;
+    pointer-events: none;
+  }
+
+  &__input {
+    min-width: 320px;
+    height: 36px;
+    width: 100%;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 8px 12px 8px 36px;
+    font-size: 13px;
+    color: #0F172A;
+    background: #FFFFFF;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+}

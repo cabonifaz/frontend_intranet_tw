@@ -94,8 +94,6 @@
         <th>N.º OC</th>
         <th>FECHA OC</th>
         <th>CLIENTE / RUC</th>
-        <th>RQ</th>
-        <th>PROPUESTA</th>
         <th>MONEDA</th>
         <th class="tabla__th--derecha">MONTO OC</th>
         <th class="tabla__th--derecha">MONTO APLICADO</th>
@@ -108,22 +106,23 @@
     <tbody>
       @for (item of items(); track item.idOc) {
         <tr class="tabla__fila" (click)="verDetalle(item)">
-          <td><span class="tabla__codigo">{{ item.numeroOc }}</span></td>
+          <td>
+            <div class="tabla__propuesta-cell">
+              <span class="tabla__codigo">{{ item.numeroOc }}</span>
+              <span class="tabla__rq">{{ item.numeroRq ?? '—' }}</span>
+              @if (item.numeroPropuesta) {
+                <span class="tabla__rq">
+                  {{ item.numeroPropuesta }}@if (item.versionPropuesta) { v{{ item.versionPropuesta }} }
+                </span>
+              }
+            </div>
+          </td>
           <td>{{ item.fechaOc | date:'dd/MM/yyyy' }}</td>
           <td>
             <div class="tabla__cliente">
               <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
               <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
             </div>
-          </td>
-          <td>{{ item.numeroRq ?? '—' }}</td>
-          <td>
-            @if (item.numeroPropuesta) {
-              <span>{{ item.numeroPropuesta }}</span>
-              @if (item.versionPropuesta) {
-                <span class="tabla__version"> v{{ item.versionPropuesta }}</span>
-              }
-            } @else { — }
           </td>
           <td>{{ item.moneda ?? '—' }}</td>
           <td class="tabla__td--derecha">
