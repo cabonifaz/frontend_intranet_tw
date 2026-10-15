@@ -1,12 +1,10 @@
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { SuministrosService, DescripcionCatalogoSuministro } from '../../../../core/services/suministros.service';
 import { FormatosVentanaService } from '../../../../core/services/formatos-ventana.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import {
   GuardarSuministroRequest,
   OpcionCatalogo,
@@ -47,26 +45,17 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
   templateUrl: './ficha-suministro.component.html',
   styleUrl: './ficha-suministro.component.scss',
 })
-export class FichaSuministroComponent implements OnInit, OnDestroy {
+export class FichaSuministroComponent implements OnInit {
   private readonly fb             = inject(FormBuilder);
   private readonly suministrosSvc = inject(SuministrosService);
   private readonly formatoSvc      = inject(FormatosVentanaService);
-  private readonly borradorSvc    = inject(BorradorService);
   private readonly toastSvc       = inject(ToastService);
   private readonly route          = inject(ActivatedRoute);
   private readonly router         = inject(Router);
   private readonly destroyRef     = inject(DestroyRef);
 
-  // Borrador local
-  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
-
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(true);
   readonly totalEdiciones    = signal(0);
@@ -160,6 +149,21 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     idSegundoProcedimiento: [''],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~90 líneas boilerplate).
+  // Usa restoreFn para resincronizar claseActual + validadores dependientes de clase
+  // tras restaurar un borrador (si no, los validators de marca/modelo quedarían desalineados).
+  readonly autosave = useAutosaveBorrador({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/suministros',
+    restoreFn:   (data) => {
+      this.formulario.patchValue(data as object, { emitEvent: false });
+      const claseVal = this.formulario.get('clase')?.value ?? '';
+      this.claseActual.set(claseVal);
+      this.actualizarValidadoresPorClase(claseVal);
+    },
+  });
+
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
     { label: 'Suministros', ruta: '/maestros/suministros' },
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
@@ -220,7 +224,6 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
-    this.borradorKey = `suministros:${nuevo ? 'nuevo' : idParam}`;
 
     // Formato de calidad ISO (opcional). Si viene con etiqueta la mostramos.
     this.formatoSvc.obtener('suministro_ficha')
@@ -229,8 +232,8 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     try {
       if (!nuevo) {
         this.idSuministro = Number(idParam);
+        this.codigoFicha.set(`SUM-ID-${this.idSuministro}`);
         const s = await this.suministrosSvc.obtenerSuministroPorId(this.idSuministro);
-        this.codigoFicha.set(s.codigo || `SUM-ID-${this.idSuministro}`);
         this.formulario.patchValue({
           clase:              s.clase,
           esActivoEnCatalogo: s.esActivoEnCatalogo,
@@ -262,12 +265,8 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
         this.firmaDigital.set(s.firmaDigital);
       }
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`suministros:${nuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el suministro.');
     } finally {
@@ -414,53 +413,6 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
     this.toastSvc.exito('Formulario limpiado.');
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data as object, { emitEvent: false });
-    // Resync claseActual + validadores dependientes de clase
-    const claseVal = this.formulario.get('clase')?.value ?? '';
-    this.claseActual.set(claseVal);
-    this.actualizarValidadoresPorClase(claseVal);
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/suministros']);
-  }
-
   // ─── Guardar ──────────────────────────────────────────────────────────
   async guardar(): Promise<void> {
     if (this.formulario.invalid) {
@@ -468,7 +420,7 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
-    if (this.guardando() || this.guardandoBorrador()) return;
+    if (this.guardando() || this.autosave.guardandoBorrador()) return;
 
     this.guardando.set(true);
     this.error.set('');
@@ -513,8 +465,7 @@ export class FichaSuministroComponent implements OnInit, OnDestroy {
         guardarComoBorrador: false,
       };
       await this.suministrosSvc.guardarSuministro(dto);
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       this.toastSvc.exito(
         this.esNuevo()
           ? 'Suministro registrado y publicado correctamente.'

@@ -13,49 +13,39 @@
     </button>
   </app-page-header>
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" mensaje="Cargando requisitos..." />
-  } @else {
-    @if (requisitos().length === 0) {
-      <app-estado-vacio icono="health_and_safety" mensaje="No hay requisitos registrados.">
-        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="abrirModal()">
-          <span class="material-symbols-outlined">add</span>
-          Crear primer requisito
-        </button>
-      </app-estado-vacio>
-    } @else {
-      <app-tabla-maestro>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Código</th>
-            <th class="tabla__th--acciones">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (req of requisitos(); track req.codigo) {
-            <tr>
-              <td>
-                <span class="req-nombre">{{ req.nombre }}</span>
-              </td>
-              <td>
-                <span class="req-codigo">{{ req.codigo }}</span>
-              </td>
-              <td class="tabla__td--acciones">
-                <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(req)">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </app-tabla-maestro>
-    }
-  }
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="requisitos().length === 0"
+    [error]="error()"
+    [conPaginacion]="false"
+    textoCargando="Cargando requisitos..."
+    textoVacio="No hay requisitos registrados."
+    iconoVacio="health_and_safety">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Código</th>
+        <th class="tabla__th--acciones">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (req of requisitos(); track req.codigo) {
+        <tr class="tabla__fila">
+          <td>
+            <span class="req-nombre">{{ req.nombre }}</span>
+          </td>
+          <td>
+            <span class="req-codigo">{{ req.codigo }}</span>
+          </td>
+          <td class="tabla__td--acciones">
+            <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(req)">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
 </div>
 

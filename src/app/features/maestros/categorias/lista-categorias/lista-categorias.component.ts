@@ -8,8 +8,7 @@ import {
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 import { PageHeaderComponent }   from '../../../../shared/ui/page-header/page-header.component';
-import { EstadoVacioComponent }  from '../../../../shared/ui/estado-vacio/estado-vacio.component';
-import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
 import { BadgeEstadoComponent }  from '../../../../shared/ui/badge-estado/badge-estado.component';
 import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO } from '../../../../core/constants/estados';
@@ -20,8 +19,7 @@ import { ESTADO } from '../../../../core/constants/estados';
     ReactiveFormsModule,
     BreadcrumbComponent,
     PageHeaderComponent,
-    EstadoVacioComponent,
-    TablaMaestroComponent,
+    TablaPaginadaComponent,
     BadgeEstadoComponent,
     PermisoDirective
   ],

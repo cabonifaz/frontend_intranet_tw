@@ -11,6 +11,7 @@
       <app-hero-header
         titulo="Nuevo Requerimiento"
         descripcion="Registrar una nueva necesidad comercial u operativa."
+        [codigoFicha]="codigoFicha()"
         (volver)="cancelar()"
       />
     } @else {
@@ -63,7 +64,6 @@
           titulo="Información del Requerimiento"
           subtitulo="Datos principales del servicio solicitado"
         >
-          <div class="seccion__body">
 
             <!-- Origen + Área -->
             <div class="campo-duo">
@@ -134,7 +134,6 @@
               }
             </div>
 
-          </div>
         </app-seccion>
 
         <!-- ── Sección 2: Contacto y Cliente ── -->
@@ -150,7 +149,6 @@
             </app-button>
           }
 
-          <div class="seccion__body">
 
             <!-- Cliente + Sede + Contacto cards -->
             <div class="campo-trio">
@@ -182,6 +180,13 @@
                    (click)="cliente() && !sede() ? mostrarModalSede.set(true) : null">
                 <span class="cliente-card__label">SEDE / INSTALACIÓN</span>
                 @if (sede()) {
+                  @if (cliente()) {
+                    <button class="cliente-card__btn-cambiar" type="button"
+                            title="Cambiar sede"
+                            (click)="$event.stopPropagation(); mostrarModalSede.set(true)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                  }
                   <div class="cliente-card__filled">
                     <div class="cliente-card__icon-bg">
                       <span class="material-symbols-outlined">location_on</span>
@@ -192,12 +197,6 @@
                         <div class="cliente-card__ruc">{{ sede()!.region }}</div>
                       }
                     </div>
-                    @if (cliente()) {
-                      <button class="cliente-card__btn-cambiar" type="button"
-                              (click)="$event.stopPropagation(); mostrarModalSede.set(true)">
-                        Cambiar
-                      </button>
-                    }
                   </div>
                 } @else if (cliente()) {
                   <div class="cliente-card__placeholder">
@@ -218,6 +217,13 @@
                    (click)="cliente() && !contacto() ? mostrarModalContacto.set(true) : null">
                 <span class="cliente-card__label">CONTACTO DIRECTO</span>
                 @if (contacto()) {
+                  @if (cliente()) {
+                    <button class="cliente-card__btn-cambiar" type="button"
+                            title="Cambiar contacto"
+                            (click)="$event.stopPropagation(); mostrarModalContacto.set(true)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                  }
                   <div class="cliente-card__filled">
                     <div class="cliente-card__icon-bg">
                       <span class="material-symbols-outlined">person</span>
@@ -228,12 +234,6 @@
                         <div class="cliente-card__ruc">{{ contacto()!.cargo }}</div>
                       }
                     </div>
-                    @if (cliente()) {
-                      <button class="cliente-card__btn-cambiar" type="button"
-                              (click)="$event.stopPropagation(); mostrarModalContacto.set(true)">
-                        Cambiar
-                      </button>
-                    }
                   </div>
                 } @else if (cliente()) {
                   <div class="cliente-card__placeholder">
@@ -273,7 +273,6 @@
               </label>
             </div>
 
-          </div>
         </app-seccion>
 
         <!-- ── Sección 3: Documentos Relacionados ── -->
@@ -281,11 +280,9 @@
           icono="folder_open"
           titulo="Documentos Relacionados"
         >
-          <div class="seccion__body">
-            <div class="upload-area">
-              <span class="material-symbols-outlined">upload_file</span>
-              <p>Click o arrastra para adjuntar documentos</p>
-            </div>
+          <div class="upload-area">
+            <span class="material-symbols-outlined">upload_file</span>
+            <p>Click o arrastra para adjuntar documentos</p>
           </div>
         </app-seccion>
 
@@ -420,16 +417,16 @@
         <app-button
           variant="ghost"
           icono="drafts"
-          [disabled]="guardando() || guardandoBorrador()"
-          [cargando]="guardandoBorrador()"
-          (clic)="guardarBorrador()"
+          [disabled]="guardando() || autosave.guardandoBorrador()"
+          [cargando]="autosave.guardandoBorrador()"
+          (clic)="autosave.guardarYSalir()"
         >
           Guardar Borrador
         </app-button>
         <app-button
           variant="primary"
           icono="save"
-          [disabled]="!puedeGuardar || guardando() || guardandoBorrador()"
+          [disabled]="!puedeGuardar || guardando() || autosave.guardandoBorrador()"
           [cargando]="guardando()"
           (clic)="guardar()"
         >
@@ -467,10 +464,10 @@
     />
   }
 
-@if (borradorDisponible(); as draft) {
+@if (autosave.borradorDisponible(); as draft) {
   <app-modal-borrador
     [fechaGuardado]="draft.fechaGuardado"
-    (restaurar)="restaurarBorrador()"
-    (descartar)="descartarBorrador()"
+    (restaurar)="autosave.restaurar()"
+    (descartar)="autosave.descartar()"
   />
 }

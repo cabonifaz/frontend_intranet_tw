@@ -13,87 +13,77 @@
     </button>
   </app-page-header>
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" mensaje="Cargando categorías..." />
-  } @else {
-    @if (categorias().length === 0) {
-      <app-estado-vacio icono="category" mensaje="No hay categorías registradas.">
-        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="abrirModal()">
-          <span class="material-symbols-outlined">add</span>
-          Crear primera categoría
-        </button>
-      </app-estado-vacio>
-    } @else {
-      <app-tabla-maestro>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th class="tabla__th--center">Prioridad</th>
-            <th class="tabla__th--center">% Ganancia Mín.</th>
-            <th class="tabla__th--center">% Ganancia Máx.</th>
-            <th class="tabla__th--center">Estado</th>
-            <th class="tabla__th--acciones">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (cat of categorias(); track cat.idCategoria) {
-            <tr [class.fila-inactiva]="cat.estado === 'Inactivo'">
-              <td>
-                <span class="cat-nombre">{{ cat.nombre }}</span>
-              </td>
-              <td class="cat-desc">{{ cat.descripcion ?? '—' }}</td>
-              <td class="tabla__td--center">
-                @if (cat.prioridadAtencion !== null) {
-                  <span class="badge-prioridad">{{ cat.prioridadAtencion }}</span>
-                } @else {
-                  <span class="cat-vacio">—</span>
-                }
-              </td>
-              <td class="tabla__td--center">
-                @if (cat.pctGananciaMin !== null) {
-                  {{ cat.pctGananciaMin }} %
-                } @else {
-                  <span class="cat-vacio">—</span>
-                }
-              </td>
-              <td class="tabla__td--center">
-                @if (cat.pctGananciaMax !== null) {
-                  {{ cat.pctGananciaMax }} %
-                } @else {
-                  <span class="cat-vacio">—</span>
-                }
-              </td>
-              <td class="tabla__td--center">
-                <app-badge-estado [estado]="cat.estado" />
-              </td>
-              <td class="tabla__td--acciones">
-                <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(cat)">
-                  <span class="material-symbols-outlined">edit</span>
-                </button>
-                <button
-                  class="btn-accion"
-                  [class.btn-accion--activar]="cat.estado === 'Inactivo'"
-                  [class.btn-accion--desactivar]="cat.estado === 'Activo'"
-                  type="button"
-                  [title]="cat.estado === 'Activo' ? 'Desactivar' : 'Activar'"
-                  (click)="toggleEstado(cat, $event)"
-                >
-                  <span class="material-symbols-outlined">
-                    {{ cat.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
-                  </span>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </app-tabla-maestro>
-    }
-  }
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="categorias().length === 0"
+    [error]="error()"
+    [conPaginacion]="false"
+    textoCargando="Cargando categorías..."
+    textoVacio="No hay categorías registradas."
+    iconoVacio="category">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th class="tabla__th--center">Prioridad</th>
+        <th class="tabla__th--center">% Ganancia Mín.</th>
+        <th class="tabla__th--center">% Ganancia Máx.</th>
+        <th class="tabla__th--center">Estado</th>
+        <th class="tabla__th--acciones">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (cat of categorias(); track cat.idCategoria) {
+        <tr class="tabla__fila" [class.fila-inactiva]="cat.estado === 'Inactivo'">
+          <td>
+            <span class="cat-nombre">{{ cat.nombre }}</span>
+          </td>
+          <td class="cat-desc">{{ cat.descripcion ?? '—' }}</td>
+          <td class="tabla__td--center">
+            @if (cat.prioridadAtencion !== null) {
+              <span class="badge-prioridad">{{ cat.prioridadAtencion }}</span>
+            } @else {
+              <span class="cat-vacio">—</span>
+            }
+          </td>
+          <td class="tabla__td--center">
+            @if (cat.pctGananciaMin !== null) {
+              {{ cat.pctGananciaMin }} %
+            } @else {
+              <span class="cat-vacio">—</span>
+            }
+          </td>
+          <td class="tabla__td--center">
+            @if (cat.pctGananciaMax !== null) {
+              {{ cat.pctGananciaMax }} %
+            } @else {
+              <span class="cat-vacio">—</span>
+            }
+          </td>
+          <td class="tabla__td--center">
+            <app-badge-estado [estado]="cat.estado" />
+          </td>
+          <td class="tabla__td--acciones">
+            <button class="btn-accion btn-accion--editar" type="button" title="Editar" (click)="abrirModal(cat)">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button
+              class="btn-accion"
+              [class.btn-accion--activar]="cat.estado === 'Inactivo'"
+              [class.btn-accion--desactivar]="cat.estado === 'Activo'"
+              type="button"
+              [title]="cat.estado === 'Activo' ? 'Desactivar' : 'Activar'"
+              (click)="toggleEstado(cat, $event)"
+            >
+              <span class="material-symbols-outlined">
+                {{ cat.estado === 'Activo' ? 'toggle_on' : 'toggle_off' }}
+              </span>
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
 </div>
 

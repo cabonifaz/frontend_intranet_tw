@@ -1,11 +1,9 @@
-import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { TextosBaseService } from '../../../../core/services/textos-base.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import {
   CATEGORIAS_TEXTO_BASE,
   GuardarTextoBaseRequest,
@@ -45,11 +43,10 @@ import { ToastService } from '../../../../core/services/toast.service';
   templateUrl: './ficha-texto-base.component.html',
   styleUrl: './ficha-texto-base.component.scss',
 })
-export class FichaTextoBaseComponent implements OnInit, OnDestroy {
+export class FichaTextoBaseComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly textosSvc   = inject(TextosBaseService);
   private readonly maestrosSvc = inject(MaestrosService);
-  private readonly borradorSvc = inject(BorradorService);
 
   // Etiquetas de los 4 checkboxes "Servicios Aplicables" vienen del catálogo
   // SERVICIO_TEXTO_BASE (tabla_maestra 87). Las columnas booleanas en el form
@@ -66,18 +63,10 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
   private readonly router      = inject(Router);
   private readonly destroyRef  = inject(DestroyRef);
 
-  // Borrador local (autoguardado + modal Restaurar/Descartar)
-  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
-
   @ViewChild('textareaClausula') textareaClausula?: ElementRef<HTMLTextAreaElement>;
 
   readonly cargando = signal(true);
   readonly guardando = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error   = signal('');
   readonly esNuevo = signal(true);
   readonly renderPreview = signal(false);
@@ -119,6 +108,13 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
     visibleSupervisores:        [true],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~90 líneas boilerplate).
+  readonly autosave = useAutosaveBorrador({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/textos-base',
+  });
+
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
     { label: 'Textos Base', ruta: '/maestros/textos-base' },
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
@@ -154,7 +150,6 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
-    this.borradorKey = `textos-base:${nuevo ? 'nuevo' : idParam}`;
 
     try {
       if (!nuevo) {
@@ -189,60 +184,13 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`textos-base:${nuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el texto base.');
     } finally {
       this.cargando.set(false);
     }
-  }
-
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data as object, { emitEvent: false });
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/textos-base']);
   }
 
   insertarVariable(token: string): void {
@@ -325,7 +273,7 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
-    if (this.guardando() || this.guardandoBorrador()) return;
+    if (this.guardando() || this.autosave.guardandoBorrador()) return;
 
     this.guardando.set(true);
     this.error.set('');
@@ -356,8 +304,7 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
         guardarComoBorrador:        false,
       };
       await this.textosSvc.guardarTextoBase(dto);
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       this.toastSvc.exito(
         this.esNuevo()
           ? 'Texto base registrado y activado correctamente.'

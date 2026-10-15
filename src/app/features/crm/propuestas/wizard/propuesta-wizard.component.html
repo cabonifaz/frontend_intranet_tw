@@ -2,23 +2,19 @@
 
   <app-breadcrumb [items]="breadcrumb()" />
 
-  <app-page-header
-    icono="description"
+  <app-hero-header
     [titulo]="tituloHeader()"
-    [subtitulo]="subtituloHeader()"
+    [descripcion]="subtituloHeader()"
+    [codigoFicha]="codigoFicha()"
+    (volver)="cancelar()"
   >
     @if (!draftSvc.draft().esEditable) {
       <span class="badge-lectura">
         <span class="material-symbols-outlined">lock</span>
         SOLO LECTURA · {{ draftSvc.draft().estado }}
       </span>
-    } @else {
-      <span class="badge-zde">
-        <span class="material-symbols-outlined">bolt</span>
-        ZERO DATA ENTRY ACTIVO
-      </span>
     }
-  </app-page-header>
+  </app-hero-header>
 
   <!-- ── Banner corrección pendiente (devuelta desde VB) ───────────────────── -->
   @if (correccion(); as c) {

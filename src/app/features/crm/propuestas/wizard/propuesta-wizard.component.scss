@@ -8,23 +8,6 @@
   min-height: 100%;
 }
 
-// ── Badge ZERO DATA ENTRY (acción del page-header) ──────────────────────────
-.badge-zde {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: #DBEAFE;
-  color: #1D4ED8;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-
-  .material-symbols-outlined { font-size: 16px; }
-}
-
 // ── Badge SOLO LECTURA (propuesta ya no editable) ──────────────────────────
 .badge-lectura {
   display: inline-flex;

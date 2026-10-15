@@ -176,7 +176,7 @@
           <app-button variant="ghost" icono="cleaning_services" (clic)="limpiarFormulario()">
             Limpiar Formulario
           </app-button>
-          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
+          <app-button variant="ghost" icono="drafts" [cargando]="autosave.guardandoBorrador()" (clic)="autosave.guardarYSalir()">
             Guardar Borrador
           </app-button>
           <app-button variant="primary" icono="check" [cargando]="guardando()" (clic)="guardar()">
@@ -190,11 +190,11 @@
 
 </div>
 
-@if (borradorDisponible(); as draft) {
+@if (autosave.borradorDisponible(); as draft) {
   <app-modal-borrador
     [fechaGuardado]="draft.fechaGuardado"
-    (restaurar)="restaurarBorrador()"
-    (descartar)="descartarBorrador()"
+    (restaurar)="autosave.restaurar()"
+    (descartar)="autosave.descartar()"
   />
 }
 

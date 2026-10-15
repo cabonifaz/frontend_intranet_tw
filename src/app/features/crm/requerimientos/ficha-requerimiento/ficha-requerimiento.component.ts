@@ -1,12 +1,10 @@
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { debounceTime } from 'rxjs';
 import { CrmService } from '../../../../core/services/crm.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import {
   CatalogoItem,
@@ -46,10 +44,9 @@ interface BorradorRequerimiento {
   templateUrl: './ficha-requerimiento.component.html',
   styleUrl: './ficha-requerimiento.component.scss',
 })
-export class FichaRequerimientoComponent implements OnInit, OnDestroy {
+export class FichaRequerimientoComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly crmSvc      = inject(CrmService);
-  private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
@@ -57,16 +54,9 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
 
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(true);
 
-  // Borrador local
-  readonly borradorDisponible = signal<BorradorInfo<BorradorRequerimiento> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
   readonly ficha       = signal<RequerimientoFicha | null>(null);
   readonly origenes    = signal<CatalogoItem[]>([]);
   readonly areas       = signal<CatalogoItem[]>([]);
@@ -81,6 +71,11 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
   readonly esSoloLectura = computed(() => {
     const estado = this.ficha()?.estado;
     return estado === ESTADO_RQ.ANULADO || estado === ESTADO_RQ.CERRADO;
+  });
+
+  readonly codigoFicha = computed(() => {
+    if (this.esNuevo()) return `RQ-${new Date().getFullYear()}-NUEVO`;
+    return this.ficha()?.numero ?? `RQ-ID-${this.idRequerimiento}`;
   });
 
   idRequerimiento = 0;
@@ -180,11 +175,31 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
     clienteDeuda:    [false],
   });
 
+  // Autoguardado + dirty + borrador en un composable. snapshotFn custom porque
+  // además del form se persisten cliente/sede/contacto (sub-estado seleccionado
+  // por los modales de selección).
+  readonly autosave = useAutosaveBorrador<BorradorRequerimiento>({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/crm/requerimientos',
+    snapshotFn:  () => ({
+      form:     this.formulario.getRawValue(),
+      cliente:  this.cliente(),
+      sede:     this.sede(),
+      contacto: this.contacto(),
+    }),
+    restoreFn: (data) => {
+      this.formulario.patchValue(data.form, { emitEvent: false });
+      this.cliente.set(data.cliente);
+      this.sede.set(data.sede);
+      this.contacto.set(data.contacto);
+    },
+  });
+
   async ngOnInit(): Promise<void> {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo   = !idParam;
     this.esNuevo.set(nuevo);
-    this.borradorKey = `requerimientos:${nuevo ? 'nuevo' : idParam}`;
 
     try {
       const cats = await this.crmSvc.obtenerCatalogos();
@@ -218,13 +233,11 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Borrador local: no activar en modo solo-lectura
+      // Autoguardado + detección de borrador (gestionado por composable).
+      // En modo solo-lectura NO se activa — el form está disabled y no deberíamos
+      // crear borradores de algo que el usuario no puede editar.
       if (!this.esSoloLectura()) {
-        const draft = this.borradorSvc.obtener<BorradorRequerimiento>(this.borradorKey);
-        if (draft) {
-          this.borradorDisponible.set(draft);
-        }
-        this.activarAutoguardado();
+        this.autosave.activar(`requerimientos:${nuevo ? 'nuevo' : idParam}`);
       }
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar.');
@@ -233,90 +246,29 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private snapshotBorrador(): BorradorRequerimiento {
-    return {
-      form:     this.formulario.getRawValue(),
-      cliente:  this.cliente(),
-      sede:     this.sede(),
-      contacto: this.contacto(),
-    };
-  }
-
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  private marcarAutoguardadoManual(): void {
-    if (!this.autoguardadoActivo) return;
-    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-    this.huboCambiosAutoguardados = true;
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data.form, { emitEvent: false });
-    this.cliente.set(draft.data.cliente);
-    this.sede.set(draft.data.sede);
-    this.contacto.set(draft.data.contacto);
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/crm/requerimientos']);
-  }
-
   onClienteConfirmado(sel: ClienteSeleccionado): void {
     this.cliente.set(sel);
     this.mostrarModalCliente.set(false);
     this.sede.set(null);
     this.contacto.set(null);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   onSedeConfirmada(sel: SedeSeleccionada): void {
     this.sede.set(sel);
     this.mostrarModalSede.set(false);
     this.contacto.set(null);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   onContactoConfirmado(sel: ContactoSeleccionado): void {
     this.contacto.set(sel);
     this.mostrarModalContacto.set(false);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   async guardar(): Promise<void> {
-    if (this.formulario.invalid || !this.cliente() || this.guardando() || this.guardandoBorrador()) return;
+    if (this.formulario.invalid || !this.cliente() || this.guardando() || this.autosave.guardandoBorrador()) return;
     this.guardando.set(true);
     this.error.set('');
     try {
@@ -336,8 +288,7 @@ export class FichaRequerimientoComponent implements OnInit, OnDestroy {
         clienteDeuda:    v.clienteDeuda,
       };
       await this.crmSvc.guardarRequerimiento(cmd);
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       const msg = this.esNuevo()
         ? 'Requerimiento creado exitosamente.'
         : 'Cambios guardados correctamente.';

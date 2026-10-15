@@ -1,13 +1,11 @@
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
 import { SuplentesService } from '../../../../core/services/suplentes.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasService, AreaItem } from '../../../../core/services/areas.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import { GuardarUsuarioRequest, UsuarioListaItem } from '../../../../core/models/usuarios.model';
 import { CatalogoItem } from '../../../../core/models/maestros.model';
 import { SuplenteListaItem, GuardarSuplenteRequest } from '../../../../core/models/suplentes.model';
@@ -62,28 +60,19 @@ import { PermisoDirective } from '../../../../shared/directives/permiso.directiv
   templateUrl: './ficha-usuario.component.html',
   styleUrl: './ficha-usuario.component.scss',
 })
-export class FichaUsuarioComponent implements OnInit, OnDestroy {
+export class FichaUsuarioComponent implements OnInit {
   private readonly fb           = inject(FormBuilder);
   private readonly usuariosSvc  = inject(UsuariosService);
   private readonly suplentesSvc = inject(SuplentesService);
   private readonly maestrosSvc  = inject(MaestrosService);
   private readonly areasSvc     = inject(AreasService);
-  private readonly borradorSvc  = inject(BorradorService);
   private readonly toastSvc     = inject(ToastService);
   private readonly route        = inject(ActivatedRoute);
   private readonly router       = inject(Router);
   private readonly destroyRef   = inject(DestroyRef);
 
-  // Borrador local
-  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
-
   readonly cargando         = signal(true);
   readonly guardando        = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error            = signal('');
   readonly esNuevo          = signal(true);
   // Código de ficha visible en nuevo y editar (pedido cliente T1 2026-10-06).
@@ -188,6 +177,13 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     autenticacion2fa:          [false],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~90 líneas boilerplate).
+  readonly autosave = useAutosaveBorrador({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/usuarios',
+  });
+
   formSuplente: FormGroup = this.fb.group({
     idSuplente:   [null, Validators.required],
     fechaInicio:  ['', Validators.required],
@@ -259,7 +255,6 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo   = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
-    this.borradorKey = `usuarios:${nuevo ? 'nuevo' : idParam}`;
     this.codigoFicha.set(nuevo ? `USR-${new Date().getFullYear()}-NUEVO` : '');
 
     // Validador dinámico de número de documento según tipo (DNI 8 dígitos, CE 9, Pasaporte alfanumérico 6-12)
@@ -348,12 +343,8 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         this.regenerarContrasena();
       }
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`usuarios:${nuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar los datos.');
     } finally {
@@ -598,56 +589,13 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
     } catch { /* noop */ }
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data as object, { emitEvent: false });
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/usuarios']);
-  }
-
   async guardar(): Promise<void> {
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
-    if (this.guardando() || this.guardandoBorrador()) return;
+    if (this.guardando() || this.autosave.guardandoBorrador()) return;
 
     this.guardando.set(true);
     this.error.set('');
@@ -681,8 +629,7 @@ export class FichaUsuarioComponent implements OnInit, OnDestroy {
         guardarComoBorrador:          false,
       };
       const { datos, mensaje } = await this.usuariosSvc.guardarUsuario(dto);
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       if (datos.correoSolicitado && !datos.correoEnviado) {
         // El usuario se creó, pero el correo no salió: aviso largo para que lo reenvíe.
         this.toastSvc.error(mensaje, 10000);

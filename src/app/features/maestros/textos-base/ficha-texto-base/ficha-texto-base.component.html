@@ -13,7 +13,9 @@
       (volver)="cancelar()"
     />
 
-    <div class="tb-grid" [formGroup]="formulario">
+    <form class="ficha-form" [formGroup]="formulario">
+
+    <div class="tb-grid">
 
       <!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
       <div class="tb-main">
@@ -148,25 +150,6 @@
           </div>
         </app-seccion>
 
-        <!-- Footer -->
-        <app-form-footer cancelarTexto="Cancelar" (cancelar)="cancelar()">
-          <app-button variant="secondary" icono="visibility" (clic)="abrirModalPreview()">
-            Vista Previa en PDF
-          </app-button>
-          <app-button variant="ghost" icono="drafts" [cargando]="guardandoBorrador()" (clic)="guardarBorrador()">
-            Guardar Borrador
-          </app-button>
-          <app-button
-            variant="primary"
-            icono="check"
-            iconoDer="arrow_forward"
-            [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
-            [cargando]="guardando()"
-            (clic)="guardar()"
-          >
-            {{ esNuevo() ? 'Guardar y Activar Texto Base' : 'Guardar Cambios' }}
-          </app-button>
-        </app-form-footer>
       </div>
 
       <!-- ═══ SIDEBAR ══════════════════════════════════════════════════ -->
@@ -285,6 +268,28 @@
 
     </div>
 
+    <!-- Footer full-width debajo del grid -->
+    <app-form-footer cancelarTexto="Cancelar" (cancelar)="cancelar()">
+      <app-button variant="secondary" icono="visibility" (clic)="abrirModalPreview()">
+        Vista Previa en PDF
+      </app-button>
+      <app-button variant="ghost" icono="drafts" [cargando]="autosave.guardandoBorrador()" (clic)="autosave.guardarYSalir()">
+        Guardar Borrador
+      </app-button>
+      <app-button
+        variant="primary"
+        icono="check"
+        iconoDer="arrow_forward"
+        [disabled]="formulario.invalid || guardando() || autosave.guardandoBorrador()"
+        [cargando]="guardando()"
+        (clic)="guardar()"
+      >
+        {{ esNuevo() ? 'Guardar y Activar Texto Base' : 'Guardar Cambios' }}
+      </app-button>
+    </app-form-footer>
+
+    </form>
+
   }
 
 </div>
@@ -363,10 +368,10 @@
   </app-modal>
 }
 
-@if (borradorDisponible(); as draft) {
+@if (autosave.borradorDisponible(); as draft) {
   <app-modal-borrador
     [fechaGuardado]="draft.fechaGuardado"
-    (restaurar)="restaurarBorrador()"
-    (descartar)="descartarBorrador()"
+    (restaurar)="autosave.restaurar()"
+    (descartar)="autosave.descartar()"
   />
 }

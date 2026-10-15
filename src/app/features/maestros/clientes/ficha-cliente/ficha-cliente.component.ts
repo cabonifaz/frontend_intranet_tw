@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -9,12 +9,11 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
 import { RequisitosSsomaService, RequisitoSsoma } from '../../../../core/services/requisitos-ssoma.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import { AreaCliente, CatalogoItem, CategoriaCliente, ConsultaRuc, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
@@ -57,12 +56,11 @@ function validarRuc(control: AbstractControl): ValidationErrors | null {
   templateUrl: './ficha-cliente.component.html',
   styleUrl: './ficha-cliente.component.scss',
 })
-export class FichaClienteComponent implements OnInit, OnDestroy {
+export class FichaClienteComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly areasSvc    = inject(AreasClienteService);
   private readonly ssomaSvc    = inject(RequisitosSsomaService);
-  private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
@@ -70,7 +68,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
 
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(false);
 
@@ -82,13 +79,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   // Código de ficha visible en ambos modos (pedido cliente T1 2026-10-06).
   // Nuevo: "CLI-{año}-NUEVO". Editar: codigo real del cliente, con fallback a ID.
   readonly codigoFicha       = signal('');
-
-  // Borrador local (incluye form + sedesTemp + contactosTemp)
-  readonly borradorDisponible = signal<BorradorInfo<BorradorCliente> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
 
   readonly sedes              = signal<SedeListaItem[]>([]);
   readonly modalSedeOpen      = signal(false);
@@ -136,6 +126,27 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     idCategoria:            [''],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~80 líneas boilerplate).
+  // Usa snapshotFn + restoreFn custom porque además del form se persisten
+  // sedesTemp + contactosTemp + areasCliente (sub-estado del modo "nuevo").
+  readonly autosave = useAutosaveBorrador<BorradorCliente>({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/clientes',
+    snapshotFn:  () => ({
+      form:          this.formulario.getRawValue(),
+      sedesTemp:     this.sedesTemp(),
+      contactosTemp: this.contactosTemp(),
+      areasCliente:  this.areasCliente(),
+    }),
+    restoreFn: (data) => {
+      this.formulario.patchValue(data.form, { emitEvent: false });
+      this.sedesTemp.set(data.sedesTemp ?? []);
+      this.contactosTemp.set(data.contactosTemp ?? []);
+      this.areasCliente.set(data.areasCliente ?? []);
+    },
+  });
+
   // Catálogo global de requisitos SSOMA (consumido de REQUISITO_SSOMA).
   readonly ssomaDisponibles = signal<RequisitoSsoma[]>([]);
   // Códigos de requisitos marcados como aplicables al cliente actual.
@@ -151,7 +162,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     } else {
       this.ssomaAplicables.update(l => l.filter(c => c !== codigo));
     }
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   esRequisitoAplicable(codigo: string): boolean {
@@ -234,7 +245,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     const idParam  = this.route.snapshot.paramMap.get('id');
     const esNuevo  = !idParam || idParam === 'nuevo';
     this.esNuevo.set(esNuevo);
-    this.borradorKey = `clientes:${esNuevo ? 'nuevo' : idParam}`;
     this.codigoFicha.set(esNuevo ? `CLI-${new Date().getFullYear()}-NUEVO` : '');
 
     const catalogsTask = Promise.all([
@@ -303,12 +313,8 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener<BorradorCliente>(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`clientes:${esNuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar.');
     } finally {
@@ -316,66 +322,6 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private snapshotBorrador(): BorradorCliente {
-    return {
-      form:          this.formulario.getRawValue(),
-      sedesTemp:     this.sedesTemp(),
-      contactosTemp: this.contactosTemp(),
-      areasCliente:  this.areasCliente(),
-    };
-  }
-
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  private marcarAutoguardadoManual(): void {
-    if (!this.autoguardadoActivo) return;
-    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-    this.huboCambiosAutoguardados = true;
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data.form, { emitEvent: false });
-    this.sedesTemp.set(draft.data.sedesTemp ?? []);
-    this.contactosTemp.set(draft.data.contactosTemp ?? []);
-    this.areasCliente.set(draft.data.areasCliente ?? []);
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.snapshotBorrador());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/clientes']);
-  }
 
   async guardar(): Promise<void> {
     if (this.formulario.invalid || this.guardando()) return;
@@ -505,8 +451,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
         );
       }
 
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       this.router.navigate(['/maestros/clientes']);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al guardar el cliente.');
@@ -527,7 +472,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
   onAreasActualizadas(nuevas: AreaCliente[]): void {
     this.areasCliente.set(nuevas);
     this.modalAreasOpen.set(false);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   get areasActivas(): AreaCliente[] {
@@ -560,7 +505,7 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
       estado:          ESTADO.ACTIVO,
     };
     this.sedesTemp.update(list => [...list, item]);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
     this.cerrarModal();
   }
 
@@ -585,18 +530,18 @@ export class FichaClienteComponent implements OnInit, OnDestroy {
       estado:                        ESTADO.ACTIVO,
     };
     this.contactosTemp.update(list => [...list, item]);
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
     this.cerrarModalContacto();
   }
 
   eliminarSedeTemp(idSede: number): void {
     this.sedesTemp.update(list => list.filter(s => s.idSede !== idSede));
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   eliminarContactoTemp(idContacto: number): void {
     this.contactosTemp.update(list => list.filter(c => c.idContacto !== idContacto));
-    this.marcarAutoguardadoManual();
+    this.autosave.marcarCambio();
   }
 
   abrirModalNuevaSede(): void {

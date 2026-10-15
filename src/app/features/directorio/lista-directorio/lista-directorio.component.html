@@ -21,89 +21,82 @@
     </select>
   </app-filtros-bar>
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" mensaje="Cargando directorio..." />
-  } @else if (items().length === 0) {
-    <app-estado-vacio icono="person_search" mensaje="No se encontraron contactos con los filtros aplicados." />
-  } @else {
-    <app-tabla-maestro>
-      <thead>
-        <tr>
-          <th>Contacto</th>
-          <th>Área</th>
-          <th>Correo</th>
-          <th>Teléfono</th>
-          <th>Anexo</th>
-          <th>Cumpleaños</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (c of items(); track c.idUsuario) {
-          <tr (click)="abrirContacto(c)">
-            <td>
-              <div class="contacto-info">
-                <div class="contacto-info__avatar">{{ iniciales(c.nombreCompleto) }}</div>
-                <div class="contacto-info__texto">
-                  <div class="contacto-info__nombre">{{ c.nombreCompleto }}</div>
-                  <div class="contacto-info__cargo">{{ c.cargo || '—' }}</div>
-                </div>
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="items().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina"
+    textoCargando="Cargando directorio..."
+    textoVacio="No se encontraron contactos con los filtros aplicados."
+    textoItems="contactos"
+    iconoVacio="person_search"
+    (paginar)="irAPagina($event)">
+    <thead>
+      <tr>
+        <th>Contacto</th>
+        <th>Área</th>
+        <th>Correo</th>
+        <th>Teléfono</th>
+        <th>Anexo</th>
+        <th>Cumpleaños</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of items(); track c.idUsuario) {
+        <tr class="tabla__fila" (click)="abrirContacto(c)">
+          <td>
+            <div class="contacto-info">
+              <div class="contacto-info__avatar">{{ iniciales(c.nombreCompleto) }}</div>
+              <div class="contacto-info__texto">
+                <div class="contacto-info__nombre">{{ c.nombreCompleto }}</div>
+                <div class="contacto-info__cargo">{{ c.cargo || '—' }}</div>
               </div>
-            </td>
-            <td>
-              @if (c.areaLabel) {
-                <span class="badge-area">{{ c.areaLabel }}</span>
-              } @else {
-                <span class="dim">—</span>
-              }
-            </td>
-            <td>
-              @if (c.correo) {
-                <a class="link-mail" [href]="'mailto:' + c.correo" (click)="$event.stopPropagation()">{{ c.correo }}</a>
-              } @else {
-                <span class="dim">—</span>
-              }
-            </td>
-            <td>
-              @if (c.telefono) {
-                <a class="link-tel" [href]="'tel:' + c.telefono" (click)="$event.stopPropagation()">{{ c.telefono }}</a>
-              } @else {
-                <span class="dim">—</span>
-              }
-            </td>
-            <td>
-              @if (c.anexoCompleto) {
-                <span class="anexo">{{ c.anexoCompleto }}</span>
-              } @else {
-                <span class="dim">—</span>
-              }
-            </td>
-            <td>
-              @if (c.cumpleanos) {
-                <span class="cumple">
-                  <span class="material-symbols-outlined">cake</span>
-                  {{ c.cumpleanos }}
-                </span>
-              } @else {
-                <span class="dim">—</span>
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </app-tabla-maestro>
-
-    <app-paginacion
-      [pagina]="pagina()"
-      [total]="total()"
-      [porPagina]="porPagina"
-      etiqueta="contactos"
-      (cambioPagina)="irAPagina($event)"
-    />
-  }
+            </div>
+          </td>
+          <td>
+            @if (c.areaLabel) {
+              <span class="badge-area">{{ c.areaLabel }}</span>
+            } @else {
+              <span class="dim">—</span>
+            }
+          </td>
+          <td>
+            @if (c.correo) {
+              <a class="link-mail" [href]="'mailto:' + c.correo" (click)="$event.stopPropagation()">{{ c.correo }}</a>
+            } @else {
+              <span class="dim">—</span>
+            }
+          </td>
+          <td>
+            @if (c.telefono) {
+              <a class="link-tel" [href]="'tel:' + c.telefono" (click)="$event.stopPropagation()">{{ c.telefono }}</a>
+            } @else {
+              <span class="dim">—</span>
+            }
+          </td>
+          <td>
+            @if (c.anexoCompleto) {
+              <span class="anexo">{{ c.anexoCompleto }}</span>
+            } @else {
+              <span class="dim">—</span>
+            }
+          </td>
+          <td>
+            @if (c.cumpleanos) {
+              <span class="cumple">
+                <span class="material-symbols-outlined">cake</span>
+                {{ c.cumpleanos }}
+              </span>
+            } @else {
+              <span class="dim">—</span>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
 </div>
 

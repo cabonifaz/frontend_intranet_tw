@@ -1,15 +1,13 @@
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { EquiposClienteService } from '../../../../core/services/equipos-cliente.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
 import { FormatosVentanaService } from '../../../../core/services/formatos-ventana.service';
 import { SuministrosService } from '../../../../core/services/suministros.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import {
   FotoEquipo,
   GuardarEquipoClienteRequest,
@@ -47,14 +45,13 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
   templateUrl: './ficha-equipo-cliente.component.html',
   styleUrl: './ficha-equipo-cliente.component.scss',
 })
-export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
+export class FichaEquipoClienteComponent implements OnInit {
   private readonly fb         = inject(FormBuilder);
   private readonly equiposSvc  = inject(EquiposClienteService);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly areasSvc    = inject(AreasClienteService);
   private readonly formatoSvc  = inject(FormatosVentanaService);
   private readonly suministrosSvc = inject(SuministrosService);
-  private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
@@ -62,16 +59,8 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
 
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(true);
-
-  // ─── Borrador local (autoguardado + banner Restaurar/Descartar) ───
-  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
 
   // Metadata (readonly)
   readonly codigoTw          = signal('');
@@ -170,6 +159,13 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     esActivo:               [true],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~90 líneas boilerplate).
+  readonly autosave = useAutosaveBorrador({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/equipos',
+  });
+
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
     { label: 'Equipos de Cliente', ruta: '/maestros/equipos' },
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
@@ -225,7 +221,6 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
-    this.borradorKey = `equipos:${nuevo ? 'nuevo' : idParam}`;
 
     // Formato de calidad ISO (opcional). Si viene con etiqueta la mostramos.
     this.formatoSvc.obtener('equipo_cliente_ficha')
@@ -304,12 +299,8 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`equipos-cliente:${nuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el equipo.');
     } finally {
@@ -407,58 +398,13 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     setTimeout(() => this.suministroDropdownAbierto.set(false), 150);
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  ngOnDestroy(): void {
-    // Si el usuario salió de la ficha después de editar sin usar los botones Guardar/Guardar Borrador/Descartar,
-    // avisamos que el borrador quedó autoguardado para que sepa que puede volver.
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data as object, { emitEvent: false });
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/equipos']);
-  }
-
   async guardar(): Promise<void> {
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
-    if (this.guardando() || this.guardandoBorrador()) return;
+    if (this.guardando() || this.autosave.guardandoBorrador()) return;
 
     this.guardando.set(true);
     this.error.set('');
@@ -505,8 +451,7 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
         guardarComoBorrador:    false,
       };
       await this.equiposSvc.guardarEquipo(dto);
-      this.borradorSvc.borrar(this.borradorKey);   // borra draft tras guardar exitoso
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       this.toastSvc.exito(this.esNuevo() ? 'Equipo registrado correctamente.' : 'Equipo actualizado correctamente.');
       this.router.navigate(['/maestros/equipos']);
     } catch (e: unknown) {

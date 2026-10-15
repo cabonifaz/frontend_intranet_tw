@@ -1,12 +1,10 @@
-import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime } from 'rxjs';
 import { ProcedimientosService } from '../../../../core/services/procedimientos.service';
-import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
+import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
 import {
   GuardarProcedimientoRequest,
 } from '../../../../core/models/procedimientos.model';
@@ -42,10 +40,9 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
   templateUrl: './ficha-procedimiento.component.html',
   styleUrl: './ficha-procedimiento.component.scss',
 })
-export class FichaProcedimientoComponent implements OnInit, OnDestroy {
+export class FichaProcedimientoComponent implements OnInit {
   private readonly fb          = inject(FormBuilder);
   private readonly procSvc     = inject(ProcedimientosService);
-  private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly route       = inject(ActivatedRoute);
   private readonly router      = inject(Router);
@@ -54,16 +51,8 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
 
   private pdfBlobUrl: string | null = null;
 
-  // Borrador local
-  readonly borradorDisponible = signal<BorradorInfo<unknown> | null>(null);
-  private borradorKey = '';
-  private autoguardadoActivo = false;
-  private huboCambiosAutoguardados = false;
-  private salidaControlada = false;
-
   readonly cargando          = signal(true);
   readonly guardando         = signal(false);
-  readonly guardandoBorrador = signal(false);
   readonly error             = signal('');
   readonly esNuevo           = signal(true);
   readonly totalEdiciones    = signal(0);
@@ -101,6 +90,13 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     descripcion:         ['', [Validators.required, Validators.minLength(10)]],
   });
 
+  // Autoguardado + dirty + borrador en un composable (reemplaza ~90 líneas boilerplate).
+  readonly autosave = useAutosaveBorrador({
+    form:        this.formulario,
+    destroyRef:  this.destroyRef,
+    rutaVuelta:  '/maestros/procedimientos',
+  });
+
   readonly breadcrumb = computed<BreadcrumbItem[]>(() => breadcrumbMaestros(
     { label: 'Procedimientos', ruta: '/maestros/procedimientos' },
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
@@ -116,7 +112,9 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     const idParam = this.route.snapshot.paramMap.get('id');
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
-    this.borradorKey = `procedimientos:${nuevo ? 'nuevo' : idParam}`;
+
+    // Prevenir memory leak del blob del PDF al destruir el componente.
+    this.destroyRef.onDestroy(() => this.liberarPdfBlob());
 
     try {
       if (!nuevo) {
@@ -153,12 +151,8 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
         } catch { this.puedeSubirPdf.set(false); }
       }
 
-      // Detectar borrador local y activar autoguardado
-      const draft = this.borradorSvc.obtener(this.borradorKey);
-      if (draft) {
-        this.borradorDisponible.set(draft);
-      }
-      this.activarAutoguardado();
+      // Autoguardado + detección de borrador local (gestionado por composable).
+      this.autosave.activar(`procedimientos:${nuevo ? 'nuevo' : idParam}`);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'Error al cargar el procedimiento.');
     } finally {
@@ -251,57 +245,13 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
     this.toastSvc.exito('Formulario limpiado.');
   }
 
-  // ─── Borrador local ─────────────────────────────────────────────────
-  private activarAutoguardado(): void {
-    this.autoguardadoActivo = true;
-    this.formulario.valueChanges
-      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (!this.autoguardadoActivo) return;
-        this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-        this.huboCambiosAutoguardados = true;
-      });
-  }
-
-  ngOnDestroy(): void {
-    if (!this.salidaControlada && this.huboCambiosAutoguardados && this.borradorSvc.tiene(this.borradorKey)) {
-      this.toastSvc.exito('Borrador autoguardado. Puedes volver cuando quieras para continuar.');
-    }
-    this.liberarPdfBlob();
-  }
-
-  restaurarBorrador(): void {
-    const draft = this.borradorDisponible();
-    if (!draft) return;
-    this.autoguardadoActivo = false;
-    this.formulario.patchValue(draft.data as object, { emitEvent: false });
-    this.autoguardadoActivo = true;
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador restaurado.');
-  }
-
-  descartarBorrador(): void {
-    this.borradorSvc.borrar(this.borradorKey);
-    this.borradorDisponible.set(null);
-    this.toastSvc.exito('Borrador descartado.');
-  }
-
-  async guardarBorrador(): Promise<void> {
-    this.salidaControlada = true;
-    this.guardandoBorrador.set(true);
-    this.borradorSvc.guardar(this.borradorKey, this.formulario.getRawValue());
-    this.toastSvc.exito('Borrador guardado. Puedes continuar más tarde.');
-    this.guardandoBorrador.set(false);
-    this.router.navigate(['/maestros/procedimientos']);
-  }
-
   async guardar(): Promise<void> {
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       this.toastSvc.error('Revisa los campos marcados en rojo.');
       return;
     }
-    if (this.guardando() || this.guardandoBorrador()) return;
+    if (this.guardando() || this.autosave.guardandoBorrador()) return;
 
     this.guardando.set(true);
     this.error.set('');
@@ -321,8 +271,7 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
         guardarComoBorrador: false,
       };
       await this.procSvc.guardarProcedimiento(dto);
-      this.borradorSvc.borrar(this.borradorKey);
-      this.salidaControlada = true;
+      this.autosave.limpiarTrasGuardado();
       this.toastSvc.exito(
         this.esNuevo()
           ? 'Procedimiento registrado y activado correctamente.'

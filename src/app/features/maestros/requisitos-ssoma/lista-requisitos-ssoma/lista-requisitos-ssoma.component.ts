@@ -5,8 +5,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
 import { PageHeaderComponent }   from '../../../../shared/ui/page-header/page-header.component';
-import { EstadoVacioComponent }  from '../../../../shared/ui/estado-vacio/estado-vacio.component';
-import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
 
 /**
  * Mantenimiento del catálogo global "Requisitos SSOMA" (tabla_maestra IdMaestro=48).
@@ -19,8 +18,7 @@ import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla
     ReactiveFormsModule,
     BreadcrumbComponent,
     PageHeaderComponent,
-    EstadoVacioComponent,
-    TablaMaestroComponent,
+    TablaPaginadaComponent,
   ],
   templateUrl: './lista-requisitos-ssoma.component.html',
   styleUrl: './lista-requisitos-ssoma.component.scss',

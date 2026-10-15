@@ -7,9 +7,7 @@ import { BreadcrumbComponent } from '../../../shared/ui/breadcrumb/breadcrumb.co
 import { breadcrumbDirectorio } from '../../../core/constants/breadcrumbs';
 import { PageHeaderComponent } from '../../../shared/ui/page-header/page-header.component';
 import { FiltrosBarComponent } from '../../../shared/ui/filtros-bar/filtros-bar.component';
-import { EstadoVacioComponent } from '../../../shared/ui/estado-vacio/estado-vacio.component';
-import { TablaMaestroComponent } from '../../../shared/ui/tabla-maestro/tabla-maestro.component';
-import { PaginacionComponent } from '../../../shared/ui/paginacion/paginacion.component';
+import { TablaPaginadaComponent } from '../../../shared/ui/tabla-paginada/tabla-paginada.component';
 import { ModalFichaContactoComponent } from '../modal-ficha-contacto/modal-ficha-contacto.component';
 
 const POR_PAGINA = 50;
@@ -21,9 +19,7 @@ const POR_PAGINA = 50;
     BreadcrumbComponent,
     PageHeaderComponent,
     FiltrosBarComponent,
-    EstadoVacioComponent,
-    TablaMaestroComponent,
-    PaginacionComponent,
+    TablaPaginadaComponent,
     ModalFichaContactoComponent,
   ],
   templateUrl: './lista-directorio.component.html',

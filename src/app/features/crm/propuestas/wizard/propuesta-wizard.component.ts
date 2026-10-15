@@ -5,7 +5,7 @@ import { PropuestasService } from '../../../../core/services/propuestas.service'
 import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
 import { PASOS_WIZARD, PasoWizard } from '../../../../core/models/propuesta-detalle.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
-import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -17,7 +17,7 @@ import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-propuesta-wizard',
-  imports: [RouterOutlet, RouterLink, DatePipe, BreadcrumbComponent, PageHeaderComponent, ButtonComponent, ModalBorradorComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent],
+  imports: [RouterOutlet, RouterLink, DatePipe, BreadcrumbComponent, HeroHeaderComponent, ButtonComponent, ModalBorradorComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent],
   templateUrl: './propuesta-wizard.component.html',
   styleUrl: './propuesta-wizard.component.scss',
 })
@@ -42,6 +42,13 @@ export class PropuestaWizardComponent implements OnInit {
     if (d.codigo) partes.push(d.codigo);
     if (d.version) partes.push('· ' + d.version);
     return partes.join(' ');
+  });
+
+  /** Código ficha visible en el header (equivalente a CLI-{año}-NUEVO, USR-..., etc). */
+  readonly codigoFicha = computed(() => {
+    if (this.esNuevo()) return `PROP-${new Date().getFullYear()}-NUEVA`;
+    const d = this.draftSvc.draft();
+    return d.codigo ? (d.version ? `${d.codigo} · ${d.version}` : d.codigo) : `PROP-ID-${this.idParam()}`;
   });
 
   /** Subtítulo contextual del header. */

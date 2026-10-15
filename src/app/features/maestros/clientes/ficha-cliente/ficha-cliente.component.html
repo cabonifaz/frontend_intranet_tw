@@ -639,16 +639,16 @@
         <app-button
           variant="ghost"
           icono="drafts"
-          [disabled]="guardando() || guardandoBorrador()"
-          [cargando]="guardandoBorrador()"
-          (clic)="guardarBorrador()"
+          [disabled]="guardando() || autosave.guardandoBorrador()"
+          [cargando]="autosave.guardandoBorrador()"
+          (clic)="autosave.guardarYSalir()"
         >
           Guardar Borrador
         </app-button>
         <app-button
           variant="primary"
           icono="check"
-          [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
+          [disabled]="formulario.invalid || guardando() || autosave.guardandoBorrador()"
           [cargando]="guardando()"
           (clic)="guardar()"
         >
@@ -681,11 +681,11 @@
   />
 }
 
-@if (borradorDisponible(); as draft) {
+@if (autosave.borradorDisponible(); as draft) {
   <app-modal-borrador
     [fechaGuardado]="draft.fechaGuardado"
-    (restaurar)="restaurarBorrador()"
-    (descartar)="descartarBorrador()"
+    (restaurar)="autosave.restaurar()"
+    (descartar)="autosave.descartar()"
   />
 }
 
