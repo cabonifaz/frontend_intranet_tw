@@ -1,0 +1,68 @@
+:host { display: block; }
+
+.vinc {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+
+  &[data-cols="1"] { grid-template-columns: 1fr; }
+  &[data-cols="2"] { grid-template-columns: repeat(2, 1fr); }
+  &[data-cols="3"] { grid-template-columns: repeat(3, 1fr); }
+  &[data-cols="4"] { grid-template-columns: repeat(4, 1fr); }
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.vinc__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  background: #F8FAFC;
+
+  &--pendiente {
+    opacity: 0.75;
+    background: #FFFFFF;
+    border-style: dashed;
+  }
+}
+
+.vinc__icon { color: #2563EB; font-size: 20px; flex-shrink: 0; }
+
+.vinc__cuerpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12px;
+  min-width: 0;
+
+  strong {
+    color: #0F172A;
+    font-size: 13px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.vinc__tipo {
+  color: #64748B;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.vinc__chip {
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: #FEF3C7;
+  color: #D97706;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}

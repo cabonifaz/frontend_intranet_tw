@@ -14,12 +14,15 @@ import {
   VinculacionOrdenCompraDto,
 } from '../../../../core/models/ordenes-compra.model';
 import { TimelineEventosComponent, EventoTimeline } from '../../../../shared/ui/timeline-eventos/timeline-eventos.component';
+import { ChipInfoComponent } from '../../../../shared/ui/chip-info/chip-info.component';
+import { VinculacionesComponent } from '../../../../shared/ui/vinculaciones/vinculaciones.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 
 type Tab = 'resumen' | 'aplicaciones' | 'documentos' | 'validaciones' | 'workflow' | 'historial';
 
 @Component({
   selector: 'app-modal-detalle-oc',
-  imports: [CommonModule, FormsModule, DatePipe, ButtonComponent, ModalComponent, TimelineEventosComponent],
+  imports: [CommonModule, FormsModule, DatePipe, ButtonComponent, ModalComponent, TimelineEventosComponent, ChipInfoComponent, VinculacionesComponent, MonedaPipe],
   templateUrl: './modal-detalle-oc.component.html',
   styleUrl: './modal-detalle-oc.component.scss',
 })
@@ -235,12 +238,6 @@ export class ModalDetalleOcComponent {
     this.toast.info(`Abrir expediente ${id} — Módulo 7.`);
   }
 
-  formatearMonto(monto: number | null | undefined, simbolo?: string | null): string {
-    if (monto == null) return '—';
-    const s = simbolo ?? 'S/';
-    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${s} ${valor}`;
-  }
 
   estadoChip(estado: string): { clase: string; label: string } {
     const mapa: Record<string, { clase: string; label: string }> = {
@@ -275,26 +272,6 @@ export class ModalDetalleOcComponent {
       insuficiente: 'barra-fill--insuficiente',
     };
     return `barra-fill ${map[codigo] ?? 'barra-fill--parcial'}`;
-  }
-
-  iconoVinculo(tipo: string): string {
-    switch (tipo) {
-      case 'requerimiento':   return 'description';
-      case 'propuesta':       return 'request_quote';
-      case 'expediente':      return 'folder_open';
-      case 'orden_servicio':  return 'engineering';
-      default:                return 'link';
-    }
-  }
-
-  etiquetaVinculo(tipo: string): string {
-    switch (tipo) {
-      case 'requerimiento':   return 'Requerimiento';
-      case 'propuesta':       return 'Propuesta';
-      case 'expediente':      return 'Expediente';
-      case 'orden_servicio':  return 'Orden de Servicio';
-      default:                return tipo;
-    }
   }
 
   private get estadoEfectivo(): string {

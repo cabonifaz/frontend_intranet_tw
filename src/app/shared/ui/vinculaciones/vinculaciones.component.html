@@ -1,0 +1,18 @@
+<div class="vinc" [attr.data-cols]="columnas()">
+  @for (v of items(); track trackVinc($index, v)) {
+    <div class="vinc__item" [class.vinc__item--pendiente]="v.disponible === false">
+      <span class="material-symbols-outlined vinc__icon">{{ iconoDe(v) }}</span>
+      <div class="vinc__cuerpo">
+        <span class="vinc__tipo">{{ etiquetaDe(v) }}</span>
+        <strong>{{ v.codigo ?? '—' }}</strong>
+      </div>
+      @if (v.disponible === false) {
+        <span class="vinc__chip">PENDIENTE</span>
+      } @else {
+        <app-button variant="ghost" tamano="sm" icono="open_in_new" [soloIcon]="true"
+                    ariaLabel="Ver" title="Ver"
+                    (clic)="onAbrir(v)" />
+      }
+    </div>
+  }
+</div>

@@ -33,33 +33,18 @@
 
     <!-- ── Chips informativos ────────────────────────────────────── -->
     <div class="oc-chips">
-      <div class="oc-chip">
-        <span class="oc-chip__label">CLIENTE</span>
-        <span class="oc-chip__valor">{{ d.razonSocial }}</span>
-      </div>
-      <div class="oc-chip">
-        <span class="oc-chip__label">RQ</span>
-        <span class="oc-chip__valor">{{ d.numeroRq ?? '—' }}</span>
-      </div>
-      <div class="oc-chip">
-        <span class="oc-chip__label">PROPUESTA</span>
-        <span class="oc-chip__valor">
-          {{ d.numeroPropuesta ?? '—' }}
-          @if (d.versionPropuesta) {<span class="oc-chip__sub"> v{{ d.versionPropuesta }}</span>}
+      <app-chip-info label="CLIENTE" [valor]="d.razonSocial" />
+      <app-chip-info label="RQ" [valor]="d.numeroRq ?? '—'" />
+      <app-chip-info label="PROPUESTA"
+                     [valor]="d.numeroPropuesta ?? '—'"
+                     [sub]="d.versionPropuesta ? 'v' + d.versionPropuesta : null" />
+      <app-chip-info label="MONTO OC" [valor]="d.montoOc | moneda:d.monedaSimbolo" />
+      <app-chip-info label="COBERTURA" [valor]="(d.coberturaPct ?? 0) + '%'" variant="pct" />
+      <app-chip-info label="ESTADO">
+        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">
+          {{ estadoChip(d.estadoVisual || d.estado).label }}
         </span>
-      </div>
-      <div class="oc-chip">
-        <span class="oc-chip__label">MONTO OC</span>
-        <span class="oc-chip__valor">{{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</span>
-      </div>
-      <div class="oc-chip">
-        <span class="oc-chip__label">COBERTURA</span>
-        <span class="oc-chip__valor oc-chip__valor--pct">{{ d.coberturaPct }}%</span>
-      </div>
-      <div class="oc-chip">
-        <span class="oc-chip__label">ESTADO</span>
-        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">{{ estadoChip(d.estadoVisual || d.estado).label }}</span>
-      </div>
+      </app-chip-info>
     </div>
 
     <!-- ── Tabs ──────────────────────────────────────────────────── -->
@@ -87,7 +72,7 @@
               <div class="oc-dato"><label>Cliente / RUC</label><span>{{ d.razonSocial }} / {{ d.ruc ?? '—' }}</span></div>
               <div class="oc-dato"><label>Fecha de emisión</label><span>{{ d.fechaOc | date:'dd/MM/yyyy' }}</span></div>
               <div class="oc-dato"><label>Fecha de recepción</label><span>{{ d.fechaRecepcion ? (d.fechaRecepcion | date:'dd/MM/yyyy') : '—' }}</span></div>
-              <div class="oc-dato"><label>Moneda / Monto</label><span>{{ d.moneda ?? '—' }} {{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</span></div>
+              <div class="oc-dato"><label>Moneda / Monto</label><span>{{ d.moneda ?? '—' }} {{ (d.montoOc | moneda:d.monedaSimbolo) }}</span></div>
               <div class="oc-dato"><label>Vigencia</label><span>{{ d.vigenciaHasta ? (d.vigenciaHasta | date:'dd/MM/yyyy') : '—' }}</span></div>
               <div class="oc-dato"><label>Responsable</label><span>{{ d.responsable ?? '—' }}</span></div>
               <div class="oc-dato oc-dato--full">
@@ -102,23 +87,7 @@
               <span class="material-symbols-outlined">link</span>
               Vinculaciones del Proceso
             </div>
-            <div class="oc-vinculos">
-              @for (v of det.vinculaciones; track v.tipo + '-' + (v.idEntidad ?? 0)) {
-                <div class="oc-vinculo" [class.oc-vinculo--pendiente]="!v.disponible">
-                  <span class="material-symbols-outlined oc-vinculo__icon">{{ iconoVinculo(v.tipo) }}</span>
-                  <div class="oc-vinculo__cuerpo">
-                    <span class="oc-vinculo__tipo">{{ etiquetaVinculo(v.tipo) }}</span>
-                    <strong>{{ v.codigo ?? '—' }}</strong>
-                  </div>
-                  @if (!v.disponible) {
-                    <span class="oc-vinculo__chip">PENDIENTE</span>
-                  } @else {
-                    <app-button variant="ghost" tamano="sm" icono="open_in_new" [soloIcon]="true"
-                                ariaLabel="Ver" title="Ver" />
-                  }
-                </div>
-              }
-            </div>
+            <app-vinculaciones [items]="det.vinculaciones" [columnas]="2" />
           </section>
         </div>
 
@@ -135,23 +104,23 @@
             <div class="oc-cobertura">
               <div class="oc-cob-row">
                 <span>Monto Propuesta</span>
-                <strong>{{ formatearMonto(d.montoPropuesta, d.monedaSimbolo) }}</strong>
+                <strong>{{ (d.montoPropuesta | moneda:d.monedaSimbolo) }}</strong>
               </div>
               <div class="oc-cob-row">
                 <span>Monto OC Recibida</span>
-                <strong>{{ formatearMonto(d.montoOc, d.monedaSimbolo) }}</strong>
+                <strong>{{ (d.montoOc | moneda:d.monedaSimbolo) }}</strong>
               </div>
               <div class="oc-cob-row oc-cob-row--saldo">
                 <span>Diferencia / Saldo</span>
                 <strong [class.saldo--neg]="d.saldo < 0" [class.saldo--ok]="d.saldo === 0">
-                  {{ formatearMonto(d.saldo, d.monedaSimbolo) }}
+                  {{ (d.saldo | moneda:d.monedaSimbolo) }}
                 </strong>
               </div>
               <div class="oc-barra">
                 <div [class]="coberturaBarraClase(d.coberturaCodigo)" [style.width.%]="(d.coberturaPct ?? 0) > 100 ? 100 : (d.coberturaPct ?? 0)"></div>
               </div>
               <div class="oc-barra-txt">
-                Validación: {{ d.coberturaPct ?? 0 }}% · {{ formatearMonto(d.montoOc, d.monedaSimbolo) }} / {{ formatearMonto(d.montoPropuesta, d.monedaSimbolo) }}
+                Validación: {{ d.coberturaPct ?? 0 }}% · {{ (d.montoOc | moneda:d.monedaSimbolo) }} / {{ (d.montoPropuesta | moneda:d.monedaSimbolo) }}
               </div>
             </div>
           </section>
