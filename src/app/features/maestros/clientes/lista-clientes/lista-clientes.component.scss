@@ -1,38 +1,4 @@
-.clientes-page {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px;
-  background: #F8FAFC;
-  min-height: 100%;
-}
-
-// ── Botón Nuevo ─────────────────────────────────────────────────────────────
-.btn-nuevo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #2563EB;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0px 1px 2px rgba(59, 130, 246, 0.2);
-  transition: background 0.15s;
-
-  &:hover { background: #1D4ED8; }
-
-  &--sm {
-    font-size: 12px;
-    padding: 6px 12px;
-    margin-top: 8px;
-  }
-
-  .material-symbols-outlined { font-size: 16px; }
-}
+// Nota: .maestro-page, .btn-nuevo, .btn-accion, .badge-mini (+ .pre-nota, .check-pre si aplica) viven en global 'styles.scss'.
 
 // ── Cliente info (celda) ────────────────────────────────────────────────────
 .cliente-info {

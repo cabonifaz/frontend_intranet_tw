@@ -1,112 +1,10 @@
-.ficha-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background: #F8FAFC;
-  min-height: 100%;
-}
+// Nota: .ficha-page, .ficha-form, .ficha-grid, .ficha-main, .ficha-sidebar,
+// .grid-cols-*, .badge-codigo, inputs base, .toggle-linea, .form-error viven
+// en global 'styles.scss'.
 
-.badge-codigo {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: #1E293B;
-  color: #E2E8F0;
-  border-radius: 8px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-}
-
-// Wrapper del form: apila el grid (main+sidebar) y el footer verticalmente.
-// Dejar el footer FUERA del grid permite que el sidebar sticky no lo tape.
-.ficha-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-// ── Grid ficha (main + sidebar) ────────────────────────────────────────
-.ficha-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 16px;
-  align-items: start;
-
-  // Modo Nuevo: sin sidebar → una sola columna
-  &--full {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.ficha-main {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.ficha-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 24px;
-  align-self: start;
-}
-
-.ficha-footer {
-  // Ya no es hijo del grid: queda al nivel del form, debajo del grid.
-}
-
-// ── Grid columnas dentro de secciones ─────────────────────────────────
-.grid-cols-2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.grid-cols-3 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-// ── Inputs, selects, textareas base ────────────────────────────────────
-input[type="text"],
-input[type="number"],
-input[type="url"],
-select,
-textarea {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  background: #FFFFFF;
-  font-size: 13px;
-  color: #0F172A;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  font-family: inherit;
-
-  &:focus {
-    outline: none;
-    border-color: #2563EB;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-  }
-
-  &::placeholder { color: #94A3B8; }
-  &[readonly]    { background: #F8FAFC; color: #475569; cursor: not-allowed; }
-}
-
-textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
-
-// ── Toggle inline con texto ───────────────────────────────────────────
+// Override local: el toggle de esta ficha añade un padding vertical propio y
+// un tamaño de texto específico para los span inline.
 .toggle-linea {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 6px 0;
 
   span { font-size: 13px; font-weight: 600; color: #0F172A; }
@@ -254,11 +152,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 }
 
 // ── Responsive ────────────────────────────────────────────────────────
+// .ficha-sidebar: sticky local, en el breakpoint 1100px la pasamos a static.
 @media (max-width: 1100px) {
-  .ficha-grid { grid-template-columns: 1fr; }
   .ficha-sidebar { position: static; }
-}
-
-@media (max-width: 700px) {
-  .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
 }

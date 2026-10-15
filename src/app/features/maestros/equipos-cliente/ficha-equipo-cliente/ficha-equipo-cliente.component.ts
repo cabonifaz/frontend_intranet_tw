@@ -7,7 +7,6 @@ import { debounceTime } from 'rxjs';
 import { EquiposClienteService } from '../../../../core/services/equipos-cliente.service';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { AreasClienteService } from '../../../../core/services/areas-cliente.service';
-import { SiguienteCodigoService } from '../../../../core/services/siguiente-codigo.service';
 import { FormatosVentanaService } from '../../../../core/services/formatos-ventana.service';
 import { SuministrosService } from '../../../../core/services/suministros.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
@@ -53,7 +52,6 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
   private readonly equiposSvc  = inject(EquiposClienteService);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly areasSvc    = inject(AreasClienteService);
-  private readonly siguienteCodSvc = inject(SiguienteCodigoService);
   private readonly formatoSvc  = inject(FormatosVentanaService);
   private readonly suministrosSvc = inject(SuministrosService);
   private readonly borradorSvc = inject(BorradorService);
@@ -177,14 +175,12 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     this.esNuevo() ? 'Nuevo Registro' : 'Editar Registro',
   ));
 
-  // Código visible en el header. En nuevo: trae el siguiente código del back.
-  // En editar: usa el codigoTw del detalle (que es el real asignado al guardar).
-  readonly codigoFichaPreview = signal('EQ-TW-…');
-  // Código de formato ISO/calidad para la ventana de Equipos del Cliente.
+  // Código visible en el header. En nuevo: EQ-{YEAR}-NUEVO.
+  // En editar: usa el codigoTw del detalle (código real asignado al guardar).
   readonly formatoCalidad = signal<string | null>(null);
   readonly codigoBadge = computed(() => {
-    if (this.esNuevo()) return this.codigoFichaPreview();
-    return this.codigoTw() || `EQ-TW-ID-${this.idEquipo}`;
+    if (this.esNuevo()) return `EQ-${new Date().getFullYear()}-NUEVO`;
+    return this.codigoTw() || `EQ-ID-${this.idEquipo}`;
   });
 
   async ngOnInit(): Promise<void> {
@@ -230,14 +226,6 @@ export class FichaEquipoClienteComponent implements OnInit, OnDestroy {
     const nuevo = !idParam || idParam === 'nuevo';
     this.esNuevo.set(nuevo);
     this.borradorKey = `equipos:${nuevo ? 'nuevo' : idParam}`;
-
-    // Siguiente código real del back (solo en modo nuevo). En editar se usa el
-    // codigoTw del detalle que llega más abajo.
-    if (nuevo) {
-      this.siguienteCodSvc.obtener('equipo_cliente')
-        .then(c => this.codigoFichaPreview.set(c))
-        .catch(() => this.codigoFichaPreview.set('EQ-TW-NUEVO'));
-    }
 
     // Formato de calidad ISO (opcional). Si viene con etiqueta la mostramos.
     this.formatoSvc.obtener('equipo_cliente_ficha')

@@ -1,4 +1,4 @@
-<div class="usuarios-page">
+<div class="maestro-page">
 
   <app-breadcrumb [items]="breadcrumb" />
 
@@ -67,37 +67,33 @@
     </app-filtros-bar>
   }
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" [mensaje]="tabActivo() === 'usuarios' ? 'Cargando usuarios...' : 'Cargando suplencias...'" />
-  } @else {
-
-    <!-- ═══ TAB USUARIOS ═══════════════════════════════════════════ -->
-    @if (tabActivo() === 'usuarios') {
-      @if (usuarios().length === 0) {
-        <app-estado-vacio icono="group_off" mensaje="No se encontraron usuarios con los filtros aplicados.">
-          <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
-            Registrar primer usuario
-          </button>
-        </app-estado-vacio>
-      } @else {
-        <app-tabla-maestro>
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Anexo</th>
-              <th>Último Acceso</th>
-              <th>Estado</th>
-              <th class="tabla__th--acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of usuarios(); track u.idUsuario) {
-              <tr (click)="irAFicha(u.idUsuario)">
+  <!-- ═══ TAB USUARIOS ═══════════════════════════════════════════ -->
+  @if (tabActivo() === 'usuarios') {
+    <app-tabla-paginada
+      [cargando]="cargando()"
+      [vacio]="usuarios().length === 0"
+      [error]="error()"
+      [total]="total()"
+      [pagina]="pagina()"
+      [porPagina]="porPagina"
+      textoCargando="Cargando usuarios..."
+      textoVacio="No se encontraron usuarios con los filtros aplicados."
+      textoItems="usuarios"
+      iconoVacio="group_off"
+      (paginar)="irAPagina($event)">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Anexo</th>
+          <th>Último Acceso</th>
+          <th>Estado</th>
+          <th class="tabla__th--acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.idUsuario) {
+          <tr class="tabla__fila" (click)="irAFicha(u.idUsuario)">
                 <td>
                   <div class="usuario-info">
                     <div class="usuario-info__avatar">{{ iniciales(u.nombre, u.apellido) }}</div>
@@ -141,42 +137,39 @@
                     </span>
                   </button>
                 </td>
-              </tr>
-            }
-          </tbody>
-        </app-tabla-maestro>
+          </tr>
+        }
+      </tbody>
+    </app-tabla-paginada>
+  }
 
-        <app-paginacion
-          [pagina]="pagina()"
-          [total]="total()"
-          [porPagina]="porPagina"
-          etiqueta="usuarios"
-          (cambioPagina)="irAPagina($event)"
-        />
-      }
-    }
-
-    <!-- ═══ TAB SUPLENTES ═══════════════════════════════════════════ -->
-    @if (tabActivo() === 'suplentes') {
-      @if (suplentes().length === 0) {
-        <app-estado-vacio icono="supervisor_account" mensaje="No hay asignaciones de suplentes registradas.">
-          <span class="hint-vacio">Puedes crear una asignación desde la ficha de cualquier usuario.</span>
-        </app-estado-vacio>
-      } @else {
-        <app-tabla-maestro>
-          <thead>
-            <tr>
-              <th>Titular (Comercial Principal)</th>
-              <th>Suplente Asignado</th>
-              <th>Fecha Inicio</th>
-              <th>Fecha Fin</th>
-              <th>Estado</th>
-              <th class="tabla__th--acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (s of suplentes(); track s.idAsignacion) {
-              <tr (click)="irAFichaTitular(s.idTitular)">
+  <!-- ═══ TAB SUPLENTES ═══════════════════════════════════════════ -->
+  @if (tabActivo() === 'suplentes') {
+    <app-tabla-paginada
+      [cargando]="cargando()"
+      [vacio]="suplentes().length === 0"
+      [error]="error()"
+      [total]="total()"
+      [pagina]="pagina()"
+      [porPagina]="porPagina"
+      textoCargando="Cargando suplencias..."
+      textoVacio="No hay asignaciones de suplentes registradas."
+      textoItems="asignaciones"
+      iconoVacio="supervisor_account"
+      (paginar)="irAPagina($event)">
+      <thead>
+        <tr>
+          <th>Titular (Comercial Principal)</th>
+          <th>Suplente Asignado</th>
+          <th>Fecha Inicio</th>
+          <th>Fecha Fin</th>
+          <th>Estado</th>
+          <th class="tabla__th--acciones">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of suplentes(); track s.idAsignacion) {
+          <tr class="tabla__fila" (click)="irAFichaTitular(s.idTitular)">
                 <td>
                   <div class="usuario-info">
                     <div class="usuario-info__avatar usuario-info__avatar--titular">
@@ -244,20 +237,10 @@
                     </span>
                   </button>
                 </td>
-              </tr>
-            }
-          </tbody>
-        </app-tabla-maestro>
-
-        <app-paginacion
-          [pagina]="pagina()"
-          [total]="total()"
-          [porPagina]="porPagina"
-          etiqueta="asignaciones"
-          (cambioPagina)="irAPagina($event)"
-        />
-      }
-    }
+          </tr>
+        }
+      </tbody>
+    </app-tabla-paginada>
   }
 
 </div>

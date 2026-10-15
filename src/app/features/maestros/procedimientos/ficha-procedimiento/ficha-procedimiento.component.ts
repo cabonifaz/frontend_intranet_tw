@@ -107,8 +107,9 @@ export class FichaProcedimientoComponent implements OnInit, OnDestroy {
   ));
 
   readonly codigoBadge = computed(() => {
-    if (this.esNuevo()) return 'AUTO · PC-NEW';
-    return `ID · ${this.idProcedimiento}`;
+    if (this.esNuevo()) return `PC-${new Date().getFullYear()}-NUEVO`;
+    const codigoReal = this.formulario.get('codigoTecnico')?.value as string;
+    return codigoReal || `PC-ID-${this.idProcedimiento}`;
   });
 
   async ngOnInit(): Promise<void> {

@@ -1,4 +1,4 @@
-<div class="suministros-page">
+<div class="maestro-page">
 
   <app-breadcrumb [items]="breadcrumb" />
 
@@ -37,37 +37,33 @@
     </select>
   </app-filtros-bar>
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" mensaje="Cargando suministros..." />
-  } @else {
-    @if (items().length === 0) {
-      <app-estado-vacio icono="inventory_2" mensaje="No hay suministros registrados con los filtros aplicados.">
-        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
-          <span class="material-symbols-outlined">add</span>
-          Crear primer suministro
-        </button>
-      </app-estado-vacio>
-    } @else {
-      <app-tabla-maestro>
-        <thead>
-          <tr>
-            <th class="th-clase">CLASE</th>
-            <th class="th-tipo">TIPO / SUBTIPO</th>
-            <th class="th-desc">DESCRIPCIÓN</th>
-            <th class="th-marca">MARCA Y MODELO</th>
-            <th class="th-proc">PROCEDENCIA</th>
-            <th class="th-propuestas">EN PROPUESTAS</th>
-            <th class="th-estado">ESTADO</th>
-            <th class="tabla__th--acciones th-acciones">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (s of items(); track s.idSuministro) {
-            <tr (click)="irAEditar(s.idSuministro)">
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="items().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina"
+    textoCargando="Cargando suministros..."
+    textoVacio="No hay suministros registrados con los filtros aplicados."
+    textoItems="suministros"
+    iconoVacio="inventory_2"
+    (paginar)="irAPagina($event)">
+    <thead>
+      <tr>
+        <th class="th-clase">CLASE</th>
+        <th class="th-tipo">TIPO / SUBTIPO</th>
+        <th class="th-desc">DESCRIPCIÓN</th>
+        <th class="th-marca">MARCA Y MODELO</th>
+        <th class="th-proc">PROCEDENCIA</th>
+        <th class="th-propuestas">EN PROPUESTAS</th>
+        <th class="th-estado">ESTADO</th>
+        <th class="tabla__th--acciones th-acciones">ACCIONES</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (s of items(); track s.idSuministro) {
+        <tr class="tabla__fila" (click)="irAEditar(s.idSuministro)">
               <td>
                 <span class="badge-clase">{{ s.claseLabel }}</span>
               </td>
@@ -117,19 +113,9 @@
                   </span>
                 </button>
               </td>
-            </tr>
-          }
-        </tbody>
-      </app-tabla-maestro>
-
-      <app-paginacion
-        [pagina]="pagina()"
-        [total]="total()"
-        [porPagina]="porPagina"
-        etiqueta="suministros"
-        (cambioPagina)="irAPagina($event)"
-      />
-    }
-  }
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
 </div>

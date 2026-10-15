@@ -129,8 +129,8 @@ export class FichaTextoBaseComponent implements OnInit, OnDestroy {
   });
 
   readonly codigoBadge = computed(() => {
-    if (this.esNuevo()) return 'AUTO · TX-TXT-BASE-NEW';
-    return this.formulario.get('codigoCorto')?.value || `ID-${this.idTextoBase}`;
+    if (this.esNuevo()) return `TB-${new Date().getFullYear()}-NUEVO`;
+    return this.formulario.get('codigoCorto')?.value || `TB-ID-${this.idTextoBase}`;
   });
 
   readonly categoriaLabelSel = computed(() => {

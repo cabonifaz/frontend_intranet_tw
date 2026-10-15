@@ -9,33 +9,9 @@
     <app-hero-header
       [titulo]="esNuevo() ? 'Nuevo Texto Base' : 'Editar Texto Base'"
       descripcion="Creación y parametrización de cláusulas estándar, textos rectores y condiciones operativas para el dossier técnico."
-      [badgeTexto]="esNuevo() ? 'Modo Creación' : 'Modo Edición'"
-      [badgeVariant]="esNuevo() ? 'ambar-dot' : 'verde-dot'"
+      [codigoFicha]="codigoBadge()"
       (volver)="cancelar()"
-    >
-      <app-button variant="ghost" icono="arrow_back" tamano="sm" (clic)="cancelar()">
-        Volver a Textos Base
-      </app-button>
-      <app-button
-        variant="secondary"
-        icono="drafts"
-        tamano="sm"
-        [disabled]="guardando() || guardandoBorrador()"
-        [cargando]="guardandoBorrador()"
-        (clic)="guardarBorrador()"
-      >
-        Guardar Borrador
-      </app-button>
-      <app-button
-        variant="primary"
-        icono="check"
-        [disabled]="formulario.invalid || guardando() || guardandoBorrador()"
-        [cargando]="guardando()"
-        (clic)="guardar()"
-      >
-        Guardar Texto Base
-      </app-button>
-    </app-hero-header>
+    />
 
     <div class="tb-grid" [formGroup]="formulario">
 

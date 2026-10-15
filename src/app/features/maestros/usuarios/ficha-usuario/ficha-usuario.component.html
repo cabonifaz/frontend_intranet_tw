@@ -10,19 +10,8 @@
       [titulo]="esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema'"
       [codigoFicha]="codigoFicha()"
       descripcion="Complete la información para dar de alta una cuenta institucional y configurar permisos de acceso corporativos."
-      [badgeTexto]="esNuevo() ? 'Modo Creación' : ''"
-      badgeVariant="verde-dot"
       (volver)="cancelar()"
-    >
-      <div class="tenant-block">
-        <span class="tenant-block__label">TENANT ID</span>
-        <span class="tenant-block__code">TW-PE-CORP-01</span>
-      </div>
-      <button type="button" class="protocolo-btn">
-        <span class="material-symbols-outlined">shield</span>
-        Protocolo ISO/IEC 17025
-      </button>
-    </app-hero-header>
+    />
 
     <div class="fu-grid" [formGroup]="formulario">
 

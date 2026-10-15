@@ -12,9 +12,7 @@ import { ClienteListaItem, SedeListaItem } from '../../../../core/models/maestro
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { PageHeaderComponent }  from '../../../../shared/ui/page-header/page-header.component';
 import { FiltrosBarComponent }  from '../../../../shared/ui/filtros-bar/filtros-bar.component';
-import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
-import { TablaMaestroComponent } from '../../../../shared/ui/tabla-maestro/tabla-maestro.component';
-import { PaginacionComponent }  from '../../../../shared/ui/paginacion/paginacion.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
 import { BadgeEstadoComponent } from '../../../../shared/ui/badge-estado/badge-estado.component';
 import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO_OPCIONES } from '../../../../core/constants/estados';
@@ -29,9 +27,7 @@ const POR_PAGINA = 10;
     BreadcrumbComponent,
     PageHeaderComponent,
     FiltrosBarComponent,
-    EstadoVacioComponent,
-    TablaMaestroComponent,
-    PaginacionComponent,
+    TablaPaginadaComponent,
     BadgeEstadoComponent,
     PermisoDirective
   ],

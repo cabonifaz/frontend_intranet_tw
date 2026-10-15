@@ -1,23 +1,29 @@
-.ficha-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background: #F8FAFC;
-  min-height: 100%;
+// Nota: .ficha-page, .ficha-form, .ficha-grid, .ficha-main, .ficha-sidebar,
+// .grid-cols-*, .badge-codigo, inputs base, .toggle-linea, .form-error viven
+// en global 'styles.scss'.
+
+// Override local: el sidebar de equipos-cliente usa 320px (más ancho que los
+// 300px por defecto) para alojar las fotos técnicas y la trazabilidad.
+.ficha-page .ficha-grid {
+  grid-template-columns: minmax(0, 1fr) 320px;
+
+  &--full { grid-template-columns: minmax(0, 1fr); }
 }
 
-.badge-codigo {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 12px;
-  background: #1E293B;
-  color: #E2E8F0;
-  border-radius: 8px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
+// Override local: estado disabled específico (el global solo cubre readonly).
+// Y los textarea de esta ficha arrancan compactos (72px) porque son notas cortas.
+.ficha-page {
+  input[type="text"],
+  input[type="number"],
+  input[type="url"],
+  select,
+  textarea {
+    &[disabled] { background: #F8FAFC; color: #64748B; cursor: not-allowed; }
+    // La ficha usa #64748B para readonly (más tenue que el #475569 global).
+    &[readonly] { color: #64748B; }
+  }
+
+  textarea { min-height: 72px; }
 }
 
 .badge-formato {
@@ -34,88 +40,6 @@
   font-weight: 600;
   letter-spacing: 0.4px;
 }
-
-// ── Grid ficha (main + sidebar) ─────────────────────────────────────
-// Wrapper del form: apila el grid (main+sidebar) y el footer verticalmente.
-// Dejar el footer FUERA del grid permite que el sidebar sticky no lo tape.
-.ficha-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.ficha-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
-  align-items: start;
-
-  &--full {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.ficha-main {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.ficha-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 24px;
-  align-self: start;
-}
-
-.ficha-footer {
-  // Ya no es hijo del grid: queda al nivel del form, debajo del grid.
-}
-
-// ── Grid columnas dentro de secciones ───────────────────────────────
-.grid-cols-2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.grid-cols-3 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-// ── Inputs, selects, textareas base ─────────────────────────────────
-input[type="text"],
-input[type="number"],
-input[type="url"],
-select,
-textarea {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  background: #FFFFFF;
-  font-size: 13px;
-  color: #0F172A;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  font-family: inherit;
-
-  &:focus {
-    outline: none;
-    border-color: #2563EB;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-  }
-
-  &::placeholder { color: #94A3B8; }
-  &[readonly],
-  &[disabled] { background: #F8FAFC; color: #64748B; cursor: not-allowed; }
-}
-
-textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
 
 // ── Campo readonly con chip AUTO ───────────────────────────────────
 .lectura {
@@ -496,14 +420,15 @@ textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
 }
 
 // ── Responsive ───────────────────────────────────────────────────
+// El global ya colapsa .ficha-grid y .grid-cols-* en breakpoints estándar.
+// Aquí añadimos solo lo específico: sidebar static y timeline vertical.
 @media (max-width: 1100px) {
-  .ficha-grid { grid-template-columns: 1fr; }
+  .ficha-page .ficha-grid { grid-template-columns: 1fr; }
   .ficha-sidebar { position: static; }
   .grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 700px) {
-  .grid-cols-2, .grid-cols-3 { grid-template-columns: 1fr; }
   .timeline { flex-direction: column; align-items: stretch; }
   .timeline__linea { display: none; }
 }

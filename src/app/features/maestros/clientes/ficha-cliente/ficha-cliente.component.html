@@ -10,7 +10,7 @@
       [titulo]="esNuevo() ? 'Nuevo Cliente' : 'Editar Cliente'"
       [descripcion]="esNuevo() ? 'Complete la información fiscal, sedes operativas, condiciones comerciales y contactos autorizados para servicios industriales.' : 'Actualice la información fiscal, sedes operativas, condiciones comerciales y contactos del cliente.'"
       [codigoFicha]="codigoFicha()"
-      [badgeTexto]="'Estado: ' + estadoCliente()"
+      [badgeTexto]="esNuevo() ? '' : estadoCliente()"
       badgeVariant="azul"
       (volver)="cancelar()"
     />

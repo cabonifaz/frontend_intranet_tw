@@ -1,4 +1,4 @@
-<div class="clientes-page">
+<div class="maestro-page">
 
   <app-breadcrumb [items]="breadcrumb" />
 
@@ -25,33 +25,30 @@
     </select>
   </app-filtros-bar>
 
-  @if (error()) {
-    <app-estado-vacio variante="error" [mensaje]="error()" />
-  }
-
-  @if (cargando()) {
-    <app-estado-vacio variante="cargando" mensaje="Cargando clientes..." />
-  } @else {
-    @if (clientes().length === 0) {
-      <app-estado-vacio icono="corporate_fare" mensaje="No se encontraron clientes.">
-        <button class="btn-nuevo btn-nuevo--sm" type="button" (click)="irANuevo()">
-          Registrar primer cliente
-        </button>
-      </app-estado-vacio>
-    } @else {
-      <app-tabla-maestro>
-        <thead>
-          <tr>
-            <th>Cliente</th>
-            <th>Tipo</th>
-            <th>Contacto Principal</th>
-            <th>Estado</th>
-            <th class="tabla__th--acciones">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (c of clientes(); track c.idCliente) {
-            <tr (click)="irAFicha(c.idCliente)">
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="clientes().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina"
+    textoCargando="Cargando clientes..."
+    textoVacio="No se encontraron clientes."
+    textoItems="clientes"
+    iconoVacio="corporate_fare"
+    (paginar)="irAPagina($event)">
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Tipo</th>
+        <th>Contacto Principal</th>
+        <th>Estado</th>
+        <th class="tabla__th--acciones">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of clientes(); track c.idCliente) {
+        <tr class="tabla__fila" (click)="irAFicha(c.idCliente)">
               <td>
                 <div class="cliente-info">
                   <div class="cliente-info__nombre">
@@ -104,19 +101,9 @@
                   </span>
                 </button>
               </td>
-            </tr>
-          }
-        </tbody>
-      </app-tabla-maestro>
-
-      <app-paginacion
-        [pagina]="pagina()"
-        [total]="total()"
-        [porPagina]="porPagina"
-        etiqueta="clientes"
-        (cambioPagina)="irAPagina($event)"
-      />
-    }
-  }
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
 </div>

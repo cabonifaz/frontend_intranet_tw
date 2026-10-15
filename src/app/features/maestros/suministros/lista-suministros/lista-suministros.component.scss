@@ -1,38 +1,4 @@
-.suministros-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background: #F8FAFC;
-  min-height: 100%;
-}
-
-// ── Botón "Nuevo" (homologado) ────────────────────────────────────────────
-.btn-nuevo {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #2563EB;
-  color: #FFFFFF;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0px 1px 2px rgba(59, 130, 246, 0.2);
-  transition: background 0.15s;
-
-  &:hover { background: #1D4ED8; }
-
-  &--sm {
-    font-size: 12px;
-    padding: 6px 12px;
-    margin-top: 8px;
-  }
-
-  .material-symbols-outlined { font-size: 16px; }
-}
+// Nota: .maestro-page, .btn-nuevo, .btn-accion, .badge-mini viven en global `styles.scss`.
 
 // ── Columnas tabla ────────────────────────────────────────────────────────
 .th-clase     { width: 90px; }
@@ -74,25 +40,6 @@
   white-space: nowrap;
 }
 
-// ── Badge mini S/N (En Propuestas) ────────────────────────────────────────
-.badge-mini {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  background: #F1F5F9;
-  color: #94A3B8;
-
-  &--si {
-    background: #DBEAFE;
-    color: #1D4ED8;
-  }
-}
-
 // ── Procedencia (texto plano, sin badge) ──────────────────────────────────
 .badge-proc {
   font-size: 12px;
@@ -100,28 +47,3 @@
   white-space: nowrap;
 }
 
-// ── Botones acción ────────────────────────────────────────────────────────
-.btn-accion {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: transparent;
-  color: #94A3B8;
-  transition: background 0.12s, color 0.12s;
-  margin-left: 4px;
-
-  .material-symbols-outlined { font-size: 16px; }
-
-  &:hover { background: #F1F5F9; color: #475569; }
-
-  &--editar:hover { background: #EFF6FF; color: #2563EB; }
-  &--activar { color: #10B981; }
-  &--activar:hover { background: #ECFDF5; }
-  &--desactivar { color: #F59E0B; }
-  &--desactivar:hover { background: #FFFBEB; }
-}
