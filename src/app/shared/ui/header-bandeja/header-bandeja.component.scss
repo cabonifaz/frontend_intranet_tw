@@ -1,0 +1,35 @@
+:host { display: block; }
+
+.hb {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+
+  &__izq { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  &__der { display: flex; align-items: center; gap: 10px; }
+
+  &__titulo {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0B1C30;
+    margin: 0;
+    letter-spacing: -0.48px;
+    line-height: 32px;
+  }
+
+  &__subtitulo {
+    font-size: 14px;
+    color: #6B7280;
+    margin: 0;
+    line-height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hb {
+    flex-direction: column;
+    align-items: stretch;
+    &__der { justify-content: flex-end; }
+  }
+}

@@ -1,0 +1,26 @@
+<div class="hb">
+  <div class="hb__izq">
+    @if (breadcrumb().length) {
+      <app-breadcrumb [items]="breadcrumb()" />
+    }
+    <h1 class="hb__titulo">{{ titulo() }}</h1>
+    @if (subtitulo()) {
+      <p class="hb__subtitulo">{{ subtitulo() }}</p>
+    }
+  </div>
+
+  <div class="hb__der">
+    <ng-content></ng-content>
+    @if (textoBoton()) {
+      @if (permisoBoton()) {
+        <app-button *twSiPermiso="permisoBoton()" variant="primary" [icono]="iconoBoton()" (clic)="onClic()">
+          {{ textoBoton() }}
+        </app-button>
+      } @else {
+        <app-button variant="primary" [icono]="iconoBoton()" (clic)="onClic()">
+          {{ textoBoton() }}
+        </app-button>
+      }
+    }
+  </div>
+</div>

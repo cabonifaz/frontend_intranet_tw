@@ -13,12 +13,13 @@ import {
   VersionDocumentoOrdenCompraDto,
   VinculacionOrdenCompraDto,
 } from '../../../../core/models/ordenes-compra.model';
+import { TimelineEventosComponent, EventoTimeline } from '../../../../shared/ui/timeline-eventos/timeline-eventos.component';
 
 type Tab = 'resumen' | 'aplicaciones' | 'documentos' | 'validaciones' | 'workflow' | 'historial';
 
 @Component({
   selector: 'app-modal-detalle-oc',
-  imports: [CommonModule, FormsModule, DatePipe, ButtonComponent, ModalComponent],
+  imports: [CommonModule, FormsModule, DatePipe, ButtonComponent, ModalComponent, TimelineEventosComponent],
   templateUrl: './modal-detalle-oc.component.html',
   styleUrl: './modal-detalle-oc.component.scss',
 })
@@ -174,6 +175,29 @@ export class ModalDetalleOcComponent {
       await this.svc.descargarAuditoriaXlsx(this.idOc(), this.datos()?.resumen.numeroOc ?? 'oc');
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar la auditoría.');
+    }
+  }
+
+  get timelineUi(): EventoTimeline[] {
+    const a = this.auditoria();
+    if (!a) return [];
+    return a.timeline.map(ev => ({
+      fecha: ev.fecha,
+      titulo: ev.titulo,
+      descripcion: ev.descripcion,
+      usuario: ev.usuario,
+      contexto: ev.area,
+      icono: this.iconoEvento(ev.codigo),
+      nivel: this.nivelDe(ev.nivel),
+    }));
+  }
+
+  private nivelDe(n: string): 'azul' | 'verde' | 'ambar' | 'rojo' {
+    switch (n) {
+      case 'exito':  return 'verde';
+      case 'alerta': return 'ambar';
+      case 'error':  return 'rojo';
+      default:       return 'azul';
     }
   }
 

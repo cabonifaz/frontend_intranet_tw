@@ -44,90 +44,14 @@
   @media (max-width: 480px)  { grid-template-columns: 1fr; }
 }
 
-// ── Filtros Bar ──────────────────────────────────────────────────────────────
-.filtros-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-
-  &__izq, &__der {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  &__der { margin-left: auto; }
-}
-
-// ── Tabla ────────────────────────────────────────────────────────────────────
-.tabla-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  overflow: hidden;
-
-  &__scroll { overflow-x: auto; }
-}
-
+// ── Celdas específicas de la bandeja (clases proyectadas) ────────────────────
 .tabla {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-
-  &__head { background: #EFF4FF; }
-
   &__propuesta { display: flex; align-items: center; gap: 8px; }
-
-  &__th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748B;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    border-bottom: 1px solid #E2E8F0;
-    white-space: nowrap;
-
-    &--derecha { text-align: right; }
-    &--centro  { text-align: center; }
-    &--sla     { width: 90px; }
-  }
 
   &__fila {
     cursor: pointer;
-    transition: background 0.1s;
-
     &:hover { background: #F8FAFC; }
-    + .tabla__fila .tabla__td { border-top: 1px solid #F1F5F9; }
   }
-
-  &__td {
-    padding: 14px 16px;
-    color: #0F172A;
-    vertical-align: middle;
-
-    &--vacio {
-      text-align: center;
-      padding: 48px;
-      color: #94A3B8;
-
-      .material-symbols-outlined {
-        display: block;
-        margin: 0 auto 8px;
-        font-size: 32px;
-      }
-    }
-
-    &--derecha { text-align: right; }
-    &--centro  { text-align: center; }
-  }
-
-  &__spinner { animation: girar 1s linear infinite; }
 
   &__propuesta-cell {
     display: flex;
@@ -242,33 +166,7 @@
 .sla--urgente     .sla__label { color: #DC2626; font-weight: 600; }
 .sla--advertencia .sla__label { color: #EA580C; }
 
-// ── Tabla error ──────────────────────────────────────────────────────────────
-.tabla-error {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  border-radius: 8px;
-  color: #B91C1C;
-  font-size: 13px;
-
-  .material-symbols-outlined { font-size: 18px; }
-}
-
-// ── Paginación ───────────────────────────────────────────────────────────────
-.paginacion {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  border-top: 1px solid #E2E8F0;
-  background: #FFFFFF;
-
-  &__info { font-size: 13px; color: #64748B; }
-  &__btns { display: inline-flex; gap: 4px; }
-}
+// Nota: tabla-error y paginación los provee app-tabla-paginada.
 
 // ── Info cards inferiores ────────────────────────────────────────────────────
 .info-cards {
@@ -307,11 +205,6 @@
   &--info  { .material-symbols-outlined { color: #2563EB; } }
   &--sla   { .material-symbols-outlined { color: #EA580C; } }
   &--audit { .material-symbols-outlined { color: #16A34A; } }
-}
-
-@keyframes girar {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
 }
 
 /* HU-13b — Chip "Revocación" en filas de la bandeja */

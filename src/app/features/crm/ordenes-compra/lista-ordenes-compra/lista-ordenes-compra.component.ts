@@ -10,10 +10,14 @@ import {
   KpisOrdenesCompraDto,
 } from '../../../../core/models/ordenes-compra.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { ModalDetalleOcComponent } from '../modal-detalle-oc/modal-detalle-oc.component';
 import { ModalRegistrarOcComponent } from '../modal-registrar-oc/modal-registrar-oc.component';
 import { ModalValidarOcComponent } from '../modal-validar-oc/modal-validar-oc.component';
@@ -48,8 +52,9 @@ const COBERTURAS: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-ordenes-compra',
   imports: [
-    FormsModule, DatePipe, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
-    FiltrosPopoverComponent, ModalDetalleOcComponent, ModalRegistrarOcComponent,
+    FormsModule, DatePipe, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
+    ModalDetalleOcComponent, ModalRegistrarOcComponent,
     ModalValidarOcComponent, ModalObservarOcComponent,
     ModalLiberarOcComponent,
     ModalDistribuirOcComponent, ModalOcComplementariaComponent,
@@ -77,11 +82,8 @@ export class ListaOrdenesCompraComponent implements OnInit {
   readonly estadosTabs = ESTADOS;
   readonly coberturas  = COBERTURAS;
 
-  readonly pagina       = signal(1);
-  readonly porPagina    = signal(10);
-  readonly totalPaginas = computed(() => Math.ceil(this.total() / this.porPagina()) || 1);
-  readonly inicio       = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
-  readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
+  readonly pagina    = signal(1);
+  readonly porPagina = signal(10);
 
   // Filtros
   estadoFiltro:        string = '';
@@ -156,21 +158,10 @@ export class ListaOrdenesCompraComponent implements OnInit {
 
   aplicarFiltros(): void { this.pagina.set(1); this.cargar(); }
 
-  irPagina(p: number): void {
-    if (p < 1 || p > this.totalPaginas()) return;
-    this.pagina.set(p);
-    this.cargar();
-  }
+  /** Exportar bandeja a Excel (placeholder — pendiente de endpoint en back). */
+  exportar(): void { /* TODO: integrar cuando el back soporte /ordenes-compra/export */ }
 
-  get paginas(): number[] {
-    const total = this.totalPaginas();
-    const actual = this.pagina();
-    const rango: number[] = [];
-    const inicio = Math.max(1, actual - 2);
-    const fin    = Math.min(total, actual + 2);
-    for (let i = inicio; i <= fin; i++) rango.push(i);
-    return rango;
-  }
+  irPagina(p: number): void { this.pagina.set(p); this.cargar(); }
 
   verDetalle(item: ItemBandejaOrdenCompraDto): void { this.idDetalleAbierto.set(item.idOc); }
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
@@ -202,12 +193,6 @@ export class ListaOrdenesCompraComponent implements OnInit {
   onConfirmadoCambio(): void { void this.cargar(); }
 
   // ─── Helpers UI ────────────────────────────────────────────────────────
-  formatearMonto(monto: number, simbolo?: string | null): string {
-    const s = simbolo ?? 'S/';
-    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${s} ${valor}`;
-  }
-
   estadoChip(estado: string): { clase: string; label: string } {
     const mapa: Record<string, { clase: string; label: string }> = {
       pendiente_validacion: { clase: 'badge--ambar', label: 'Pend. Validar' },

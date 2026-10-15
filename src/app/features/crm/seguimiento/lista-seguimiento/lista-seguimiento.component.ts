@@ -12,10 +12,15 @@ import {
   ParametrosSeguimiento,
 } from '../../../../core/models/seguimiento.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
+import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 import { ModalDetalleSeguimientoComponent } from '../modal-detalle-seguimiento/modal-detalle-seguimiento.component';
 import { ModalRegistrarSeguimientoComponent } from '../modal-registrar-seguimiento/modal-registrar-seguimiento.component';
 import { ModalReprogramarAccionComponent } from '../modal-reprogramar-accion/modal-reprogramar-accion.component';
@@ -40,7 +45,8 @@ const ESTADOS: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-seguimiento',
   imports: [
-    FormsModule, DatePipe, BreadcrumbComponent, KpiCardComponent, ButtonComponent, FiltrosPopoverComponent,
+    FormsModule, DatePipe, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
     ModalDetalleSeguimientoComponent, ModalRegistrarSeguimientoComponent, ModalReprogramarAccionComponent,
     ModalAceptacionSeguimientoComponent, ModalRechazoSeguimientoComponent, ModalCerrarSinVentaComponent,
     ModalSelectorCierreComponent, ModalDecidirPendienteComponent,
@@ -71,9 +77,6 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   readonly estadosTabs = ESTADOS;
   readonly pagina      = signal(1);
   readonly porPagina   = signal(10);
-  readonly totalPaginas = computed(() => Math.ceil(this.total() / this.porPagina()) || 1);
-  readonly inicio      = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
-  readonly fin         = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
   // Filtros
   idResponsableFiltro: number | '' = '';
@@ -145,21 +148,10 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
 
   aplicarFiltros(): void { this.pagina.set(1); this.cargar(); }
 
-  irPagina(p: number): void {
-    if (p < 1 || p > this.totalPaginas()) return;
-    this.pagina.set(p);
-    this.cargar();
-  }
+  /** Exportar bandeja a Excel (placeholder — pendiente de endpoint en back). */
+  exportar(): void { /* TODO: integrar cuando el back soporte /seguimiento/export */ }
 
-  get paginas(): number[] {
-    const total = this.totalPaginas();
-    const actual = this.pagina();
-    const rango: number[] = [];
-    const inicio = Math.max(1, actual - 2);
-    const fin    = Math.min(total, actual + 2);
-    for (let i = inicio; i <= fin; i++) rango.push(i);
-    return rango;
-  }
+  irPagina(p: number): void { this.pagina.set(p); this.cargar(); }
 
   verDetalle(item: ItemBandejaSeguimiento): void { this.idDetalleAbierto.set(item.idPropuesta); }
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
@@ -213,20 +205,6 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   }
 
   // Helpers UI
-  formatearMonto(monto: number, simbolo?: string | null): string {
-    const s = simbolo ?? 'S/';
-    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${s} ${valor}`;
-  }
-
-  iniciales(nombre: string | null | undefined): string {
-    if (!nombre) return '—';
-    const partes = nombre.trim().split(/\s+/);
-    const primera = partes[0]?.charAt(0) ?? '';
-    const ultima  = partes.length > 1 ? partes[partes.length - 1].charAt(0) : '';
-    return `${primera}${ultima}`.toUpperCase();
-  }
-
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
       en_seguimiento:  'badge--azul',

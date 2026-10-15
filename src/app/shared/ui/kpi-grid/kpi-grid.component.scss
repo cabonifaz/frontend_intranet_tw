@@ -1,0 +1,21 @@
+:host { display: block; }
+
+.kpi-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);  // fallback
+
+  &[data-cols="3"] { grid-template-columns: repeat(3, 1fr); }
+  &[data-cols="4"] { grid-template-columns: repeat(4, 1fr); }
+  &[data-cols="5"] { grid-template-columns: repeat(5, 1fr); }
+  &[data-cols="6"] { grid-template-columns: repeat(6, 1fr); }
+
+  @media (max-width: 1400px) {
+    &[data-cols="5"], &[data-cols="6"] { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 1280px) {
+    &[data-cols="4"] { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 900px)  { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px)  { grid-template-columns: 1fr; }
+}

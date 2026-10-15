@@ -13,6 +13,8 @@ import {
 } from '../../../../core/models/propuestas.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
+import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ModalElegirRqComponent } from '../modal-elegir-rq/modal-elegir-rq.component';
 import { ModalPropuestaExistenteComponent } from '../modal-propuesta-existente/modal-propuesta-existente.component';
@@ -23,17 +25,20 @@ import { ModalEnviarClienteComponent } from '../modal-enviar-cliente/modal-envia
 import { ModalEnviarVbComponent } from '../modal-enviar-vb/modal-enviar-vb.component';
 import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-anular-propuesta.component';
 import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
-import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 
 @Component({
   selector: 'app-lista-propuestas',
   imports: [
-    FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
+    FormsModule, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
     ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent, ModalSolicitarRevocacionComponent, ModalEnviarClienteComponent,
-    FiltrosPopoverComponent, DetalleRequerimientoComponent, SiPermisoDirective,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
+    DetalleRequerimientoComponent, SiPermisoDirective,
   ],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
@@ -62,9 +67,6 @@ export class ListaPropuestasComponent implements OnInit {
   readonly pagina    = signal(1);
   readonly porPagina = signal(10);
 
-  readonly totalPaginas = computed(() => Math.ceil(this.total() / this.porPagina()) || 1);
-  readonly inicio       = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
-  readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
   readonly estadoActivo    = signal<EstadoPropuesta | 'todas'>('todas');
   readonly modalRqAbierto  = signal(false);
@@ -174,7 +176,6 @@ export class ListaPropuestasComponent implements OnInit {
   }
 
   async irPagina(n: number): Promise<void> {
-    if (n < 1 || n > this.totalPaginas()) return;
     this.pagina.set(n);
     await this.cargar();
   }
@@ -393,15 +394,6 @@ export class ListaPropuestasComponent implements OnInit {
   }
 
   // ─── Helpers de presentación ──────────────────────────────────────────────
-  formatearMonto(monto: number, moneda: string): string {
-    const simbolo = moneda === 'USD' ? 'US$' : 'S/';
-    const valor   = new Intl.NumberFormat('es-PE', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(monto);
-    return `${simbolo} ${valor}`;
-  }
-
   formatearFecha(fecha: string | null | undefined): string {
     if (!fecha) return '—';
     return new Date(fecha).toLocaleDateString('es-PE', {
@@ -437,13 +429,4 @@ export class ListaPropuestasComponent implements OnInit {
     return `${Math.abs(d)}d`;
   }
 
-  get paginas(): number[] {
-    const total = this.totalPaginas();
-    const actual = this.pagina();
-    const rango: number[] = [];
-    const inicio = Math.max(1, actual - 2);
-    const fin    = Math.min(total, actual + 2);
-    for (let i = inicio; i <= fin; i++) rango.push(i);
-    return rango;
-  }
 }

@@ -335,36 +335,7 @@
             </app-button>
           </div>
 
-          @if (!a.timeline.length) {
-            <div class="hist-vacio">
-              <span class="material-symbols-outlined">inbox</span>
-              No hay eventos registrados.
-            </div>
-          } @else {
-            <div class="hist-timeline">
-              @for (ev of a.timeline; track trackEvento($index, ev)) {
-                <div class="hist-item">
-                  <div class="hist-item__linea">
-                    <span class="hist-item__dot {{ claseEvento(ev.nivel) }}">
-                      <span class="material-symbols-outlined">{{ iconoEvento(ev.codigo) }}</span>
-                    </span>
-                  </div>
-                  <div class="hist-item__cuerpo">
-                    <div class="hist-item__fila">
-                      <strong>{{ ev.titulo }}</strong>
-                      <span class="hist-item__fecha">{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
-                    </div>
-                    @if (ev.usuario) {
-                      <div class="hist-item__usuario">por {{ ev.usuario }}@if (ev.area) { · {{ ev.area }}}</div>
-                    }
-                    @if (ev.descripcion) {
-                      <div class="hist-item__detalle">{{ ev.descripcion }}</div>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          }
+          <app-timeline-eventos [eventos]="timelineUi" mensajeVacio="No hay eventos registrados." />
         </div>
       }
     }

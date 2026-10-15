@@ -12,10 +12,15 @@ import {
   ResolverVbRequest,
 } from '../../../../core/models/visto-bueno.model';
 import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
+import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 import { ModalDetallePropuestaComponent } from '../../propuestas/modal-detalle-propuesta/modal-detalle-propuesta.component';
 import { ModalCompararVersionesComponent } from '../modal-comparar-versiones/modal-comparar-versiones.component';
 import { ModalAprobarVbComponent } from '../modal-aprobar-vb/modal-aprobar-vb.component';
@@ -44,8 +49,9 @@ const SLA_OPCIONES: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-visto-bueno',
   imports: [
-    FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent,
-    FiltrosPopoverComponent, ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
+    FormsModule, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
+    ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
     ModalAprobarVbComponent, ModalRechazarVbComponent, ModalSolicitarCorreccionComponent,
     ModalResolverRevocacionComponent,
   ],
@@ -68,6 +74,18 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   readonly items = signal<ItemBandejaVb[]>([]);
   readonly total = signal(0);
 
+  /** Filtro client-side de busqueda (hasta que el back soporte el param busqueda). */
+  get itemsFiltrados(): ItemBandejaVb[] {
+    const q = this.busqueda.trim().toLowerCase();
+    if (!q) return this.items();
+    return this.items().filter(i =>
+      (i.numero         ?? '').toLowerCase().includes(q) ||
+      (i.razonSocial    ?? '').toLowerCase().includes(q) ||
+      (i.ruc            ?? '').toLowerCase().includes(q) ||
+      (i.numeroRq       ?? '').toLowerCase().includes(q),
+    );
+  }
+
   readonly comerciales = signal<OpcionFiltro[]>([]);
   readonly monedas     = signal<OpcionFiltro[]>([]);
   readonly politicas   = signal<PoliticasVb | null>(null);
@@ -77,9 +95,6 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
 
   readonly pagina    = signal(1);
   readonly porPagina = signal(10);
-  readonly totalPaginas = computed(() => Math.ceil(this.total() / this.porPagina()) || 1);
-  readonly inicio       = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
-  readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
   // Filtros
   idComercialFiltro: number | '' = '';
@@ -87,6 +102,7 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   idMonedaFiltro: number | '' = '';
   slaFiltro = '';
   diasFiltro = 30;
+  busqueda = '';
 
   filtrosActivos(): number {
     let n = 0;
@@ -104,8 +120,12 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
     this.idMonedaFiltro    = '';
     this.slaFiltro         = '';
     this.diasFiltro        = 30;
+    this.busqueda          = '';
     this.aplicarFiltros();
   }
+
+  /** Exportar bandeja a Excel (placeholder — pendiente de endpoint en back). */
+  exportar(): void { /* TODO: integrar cuando el back soporte /vb/export */ }
 
   readonly breadcrumb = breadcrumbCrm('Visto Bueno');
 
@@ -161,21 +181,7 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
     this.cargar();
   }
 
-  irPagina(p: number): void {
-    if (p < 1 || p > this.totalPaginas()) return;
-    this.pagina.set(p);
-    this.cargar();
-  }
-
-  get paginas(): number[] {
-    const total = this.totalPaginas();
-    const actual = this.pagina();
-    const rango: number[] = [];
-    const inicio = Math.max(1, actual - 2);
-    const fin    = Math.min(total, actual + 2);
-    for (let i = inicio; i <= fin; i++) rango.push(i);
-    return rango;
-  }
+  irPagina(p: number): void { this.pagina.set(p); this.cargar(); }
 
   verDetalle(item: ItemBandejaVb): void {
     // HU-13b: si la fila es una solicitud de revocación pendiente, abrir modal dedicado.
@@ -226,12 +232,6 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   }
 
   // Helpers UI
-  formatearMonto(monto: number, simbolo?: string | null): string {
-    const s = simbolo ?? 'S/';
-    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
-    return `${s} ${valor}`;
-  }
-
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
       pendiente:            'badge--naranja',
@@ -279,10 +279,4 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
     return 'badge-pct--rojo';
   }
 
-  iniciales(nombre: string): string {
-    const partes = nombre.trim().split(/\s+/);
-    const primera = partes[0]?.charAt(0) ?? '';
-    const ultima  = partes.length > 1 ? partes[partes.length - 1].charAt(0) : '';
-    return `${primera}${ultima}`.toUpperCase();
-  }
 }

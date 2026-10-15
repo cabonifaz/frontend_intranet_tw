@@ -5,16 +5,19 @@ import { CrmService } from '../../../../core/services/crm.service';
 import { KpisRequerimientos, RequerimientoListaItem, CatalogoItem } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
+import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
+import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { DetalleRequerimientoComponent } from '../detalle-requerimiento/detalle-requerimiento.component';
 import { AnularRequerimientoComponent } from '../anular-requerimiento/anular-requerimiento.component';
-import { FiltrosPopoverComponent } from '../../../../shared/ui/filtros-popover/filtros-popover.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
+import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
 import { ESTADO_RQ } from '../../../../core/constants/estados';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, KpiCardComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, FiltrosPopoverComponent, SiPermisoDirective],
+  imports: [FormsModule, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, BarraFiltrosBandejaComponent, TablaPaginadaComponent, SiPermisoDirective],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })
@@ -41,9 +44,6 @@ export class ListaRequerimientosComponent implements OnInit {
   readonly pagina    = signal(1);
   readonly porPagina = signal(10);
 
-  readonly totalPaginas = computed(() => Math.ceil(this.total() / this.porPagina()) || 1);
-  readonly inicio       = computed(() => (this.pagina() - 1) * this.porPagina() + 1);
-  readonly fin          = computed(() => Math.min(this.pagina() * this.porPagina(), this.total()));
 
   busqueda    = '';
   estadoFiltro = '';
@@ -98,7 +98,6 @@ export class ListaRequerimientosComponent implements OnInit {
   }
 
   async irPagina(n: number): Promise<void> {
-    if (n < 1 || n > this.totalPaginas()) return;
     this.pagina.set(n);
     await this.cargar();
   }
@@ -186,13 +185,4 @@ export class ListaRequerimientosComponent implements OnInit {
     });
   }
 
-  get paginas(): number[] {
-    const total = this.totalPaginas();
-    const actual = this.pagina();
-    const rango: number[] = [];
-    const inicio = Math.max(1, actual - 2);
-    const fin    = Math.min(total, actual + 2);
-    for (let i = inicio; i <= fin; i++) rango.push(i);
-    return rango;
-  }
 }

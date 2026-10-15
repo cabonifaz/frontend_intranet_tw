@@ -1,208 +1,162 @@
 <div class="pagina">
 
   <!-- ── Header ──────────────────────────────────────────────────────────── -->
-  <div class="pagina__header">
-    <div class="pagina__header-izq">
-      <app-breadcrumb [items]="breadcrumb" />
-      <h1 class="pagina__titulo">Órdenes de Compra</h1>
-      <p class="pagina__subtitulo">Control de OC recibidas, cobertura económica y habilitación del flujo operativo</p>
-    </div>
-    <div class="pagina__header-der">
-      <app-button variant="primary" icono="add" (clic)="nuevaOc()">Nueva Orden de Compra</app-button>
-    </div>
-  </div>
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="Órdenes de Compra"
+    subtitulo="Control de OC recibidas, cobertura económica y habilitación del flujo operativo"
+    textoBoton="Nueva Orden de Compra"
+    (clicBoton)="nuevaOc()" />
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
-  <div class="kpi-grid">
-    <app-kpi-card icono="shopping_cart"    etiqueta="OC VIGENTES"            [valor]="kpis().vigentes"           variante="azul" />
-    <app-kpi-card icono="pie_chart"        etiqueta="COBERTURA PARCIAL"      [valor]="kpis().coberturaParcial"   variante="ambar" />
-    <app-kpi-card icono="warning"          etiqueta="SALDO INSUFICIENTE"     [valor]="kpis().saldoInsuficiente"  variante="rojo" />
+  <app-kpi-grid [columnas]="6">
+    <app-kpi-card icono="shopping_cart"    etiqueta="OC VIGENTES"            [valor]="kpis().vigentes"              variante="azul" />
+    <app-kpi-card icono="pie_chart"        etiqueta="COBERTURA PARCIAL"      [valor]="kpis().coberturaParcial"      variante="ambar" />
+    <app-kpi-card icono="warning"          etiqueta="SALDO INSUFICIENTE"     [valor]="kpis().saldoInsuficiente"     variante="rojo" />
     <app-kpi-card icono="hourglass_bottom" etiqueta="PEND. VALIDACIÓN"       [valor]="kpis().pendientesValidacion"  variante="ambar" />
-    <app-kpi-card icono="check_circle"     etiqueta="LISTAS PARA PROG."      [valor]="kpis().listasProgramacion"     variante="verde" />
-    <app-kpi-card icono="error"            etiqueta="OBSERVADAS"             [valor]="kpis().observadas"         variante="rojo" />
-  </div>
+    <app-kpi-card icono="check_circle"     etiqueta="LISTAS PARA PROG."      [valor]="kpis().listasProgramacion"    variante="verde" />
+    <app-kpi-card icono="error"            etiqueta="OBSERVADAS"             [valor]="kpis().observadas"            variante="rojo" />
+  </app-kpi-grid>
 
   <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
-  <div class="filtros-bar">
-    <div class="filtros-bar__izq">
-      <app-filtros-popover [cantidadActivos]="filtrosActivos()" (limpiar)="limpiarFiltros()" (aplicar)="aplicarFiltros()">
-        <div class="filtros-seccion">Filtros</div>
+  <app-barra-filtros-bandeja
+    [cantidadActivos]="filtrosActivos()"
+    [(busqueda)]="busqueda"
+    placeholder="Buscar N° OC, cliente, RUC, RQ o propuesta..."
+    [conDescarga]="true"
+    (limpiar)="limpiarFiltros()"
+    (aplicar)="aplicarFiltros()"
+    (descargar)="exportar()">
+    <div class="filtros-seccion">Filtros</div>
 
-        <div class="col-full">
-          <label>ESTADO</label>
-          <select [(ngModel)]="estadoFiltro">
-            @for (e of estadosTabs; track e.codigo) {
-              <option [value]="e.codigo">{{ e.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="col-full">
-          <label>CLIENTE</label>
-          <select [(ngModel)]="idClienteFiltro">
-            <option [ngValue]="''">Todos</option>
-            @for (c of clientes(); track c.id) {
-              <option [ngValue]="c.id">{{ c.nombre }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="col-full">
-          <label>COBERTURA</label>
-          <select [(ngModel)]="coberturaFiltro">
-            @for (c of coberturas; track c.codigo) {
-              <option [ngValue]="c.codigo">{{ c.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="col-full">
-          <label>RESPONSABLE</label>
-          <select [(ngModel)]="idResponsableFiltro">
-            <option [ngValue]="''">Todos</option>
-            @for (r of responsables(); track r.id) {
-              <option [ngValue]="r.id">{{ r.nombre }}</option>
-            }
-          </select>
-        </div>
-
-        <div class="col-full">
-          <label>ARCHIVO</label>
-          <select [(ngModel)]="conArchivoFiltro">
-            <option value="">Todas</option>
-            <option value="si">Con archivo</option>
-            <option value="no">Sin archivo</option>
-          </select>
-        </div>
-      </app-filtros-popover>
+    <div class="col-full">
+      <label>ESTADO</label>
+      <select [(ngModel)]="estadoFiltro">
+        @for (e of estadosTabs; track e.codigo) {
+          <option [value]="e.codigo">{{ e.label }}</option>
+        }
+      </select>
     </div>
-    <div class="filtros-bar__der">
-      <div class="campo__con-icono filtros-bar__busqueda">
-        <span class="material-symbols-outlined campo__icono-input">search</span>
-        <input
-          class="campo__input campo__input--icono filtros-bar__input"
-          type="text"
-          placeholder="Buscar N° OC, cliente, RUC, RQ o propuesta..."
-          [(ngModel)]="busqueda"
-          (keyup.enter)="aplicarFiltros()"
-        />
-      </div>
-      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true"
-                  ariaLabel="Actualizar" title="Actualizar" (clic)="aplicarFiltros()" />
-    </div>
-  </div>
 
-  <!-- ── Error ───────────────────────────────────────────────────────────── -->
-  @if (error()) {
-    <div class="tabla-error">
-      <span class="material-symbols-outlined">error</span>
-      {{ error() }}
+    <div class="col-full">
+      <label>CLIENTE</label>
+      <select [(ngModel)]="idClienteFiltro">
+        <option [ngValue]="''">Todos</option>
+        @for (c of clientes(); track c.id) {
+          <option [ngValue]="c.id">{{ c.nombre }}</option>
+        }
+      </select>
     </div>
-  }
+
+    <div class="col-full">
+      <label>COBERTURA</label>
+      <select [(ngModel)]="coberturaFiltro">
+        @for (c of coberturas; track c.codigo) {
+          <option [ngValue]="c.codigo">{{ c.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-full">
+      <label>RESPONSABLE</label>
+      <select [(ngModel)]="idResponsableFiltro">
+        <option [ngValue]="''">Todos</option>
+        @for (r of responsables(); track r.id) {
+          <option [ngValue]="r.id">{{ r.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-full">
+      <label>ARCHIVO</label>
+      <select [(ngModel)]="conArchivoFiltro">
+        <option value="">Todas</option>
+        <option value="si">Con archivo</option>
+        <option value="no">Sin archivo</option>
+      </select>
+    </div>
+  </app-barra-filtros-bandeja>
 
   <!-- ── Tabla ───────────────────────────────────────────────────────────── -->
-  <div class="tabla-card">
-    <div class="tabla-card__scroll">
-      <table class="tabla">
-        <thead class="tabla__head">
-          <tr>
-            <th class="tabla__th">N.º OC</th>
-            <th class="tabla__th">FECHA OC</th>
-            <th class="tabla__th">CLIENTE / RUC</th>
-            <th class="tabla__th">RQ</th>
-            <th class="tabla__th">PROPUESTA</th>
-            <th class="tabla__th">MONEDA</th>
-            <th class="tabla__th tabla__th--derecha">MONTO OC</th>
-            <th class="tabla__th tabla__th--derecha">MONTO APLICADO</th>
-            <th class="tabla__th tabla__th--derecha">SALDO</th>
-            <th class="tabla__th">COBERTURA</th>
-            <th class="tabla__th">ESTADO</th>
-            <th class="tabla__th tabla__th--centro">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (cargando()) {
-            <tr><td colspan="12" class="tabla__td tabla__td--vacio">
-              <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
-              Cargando órdenes de compra...
-            </td></tr>
-          } @else if (items().length === 0) {
-            <tr><td colspan="12" class="tabla__td tabla__td--vacio">
-              <span class="material-symbols-outlined">inbox</span>
-              No hay órdenes de compra con los filtros aplicados.
-            </td></tr>
-          } @else {
-            @for (item of items(); track item.idOc) {
-              <tr class="tabla__fila" (click)="verDetalle(item)">
-                <td class="tabla__td">
-                  <span class="tabla__codigo">{{ item.numeroOc }}</span>
-                </td>
-                <td class="tabla__td">{{ item.fechaOc | date:'dd/MM/yyyy' }}</td>
-                <td class="tabla__td">
-                  <div class="tabla__cliente">
-                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
-                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
-                  </div>
-                </td>
-                <td class="tabla__td">{{ item.numeroRq ?? '—' }}</td>
-                <td class="tabla__td">
-                  @if (item.numeroPropuesta) {
-                    <span>{{ item.numeroPropuesta }}</span>
-                    @if (item.versionPropuesta) {
-                      <span class="tabla__version"> v{{ item.versionPropuesta }}</span>
-                    }
-                  } @else { — }
-                </td>
-                <td class="tabla__td">{{ item.moneda ?? '—' }}</td>
-                <td class="tabla__td tabla__td--derecha">
-                  <span class="tabla__monto">{{ formatearMonto(item.montoOc, item.monedaSimbolo) }}</span>
-                </td>
-                <td class="tabla__td tabla__td--derecha">
-                  {{ formatearMonto(item.montoAplicado, item.monedaSimbolo) }}
-                </td>
-                <td class="tabla__td tabla__td--derecha">
-                  <span class="tabla__saldo {{ saldoClase(item.saldo) }}">
-                    {{ formatearMonto(item.saldo, item.monedaSimbolo) }}
-                  </span>
-                </td>
-                <td class="tabla__td">
-                  <span [class]="coberturaChip(item.coberturaCodigo).clase">
-                    {{ coberturaChip(item.coberturaCodigo).label }}
-                  </span>
-                </td>
-                <td class="tabla__td">
-                  <span class="badge {{ estadoChip(item.estadoVisual || item.estado).clase }}">
-                    {{ estadoChip(item.estadoVisual || item.estado).label }}
-                  </span>
-                </td>
-                <td class="tabla__td tabla__td--centro">
-                  <div class="tabla__acciones" (click)="$event.stopPropagation()">
-                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                                ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
-                  </div>
-                </td>
-              </tr>
-            }
-          }
-        </tbody>
-      </table>
-    </div>
-
-    @if (!cargando() && total() > 0) {
-      <div class="paginacion">
-        <span class="paginacion__info">Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} órdenes de compra</span>
-        <div class="paginacion__btns">
-          <app-button variant="secondary" tamano="sm" icono="chevron_left" [soloIcon]="true" ariaLabel="Anterior"
-                      [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)" />
-          @for (p of paginas; track p) {
-            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm" (clic)="irPagina(p)">{{ p }}</app-button>
-          }
-          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true" ariaLabel="Siguiente"
-                      [disabled]="pagina() === totalPaginas()" (clic)="irPagina(pagina() + 1)" />
-        </div>
-      </div>
-    }
-  </div>
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="items().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina()"
+    textoCargando="Cargando órdenes de compra..."
+    textoVacio="No hay órdenes de compra con los filtros aplicados."
+    textoItems="órdenes de compra"
+    (paginar)="irPagina($event)">
+    <thead>
+      <tr>
+        <th>N.º OC</th>
+        <th>FECHA OC</th>
+        <th>CLIENTE / RUC</th>
+        <th>RQ</th>
+        <th>PROPUESTA</th>
+        <th>MONEDA</th>
+        <th class="tabla__th--derecha">MONTO OC</th>
+        <th class="tabla__th--derecha">MONTO APLICADO</th>
+        <th class="tabla__th--derecha">SALDO</th>
+        <th>COBERTURA</th>
+        <th>ESTADO</th>
+        <th class="tabla__th--centro">ACCIONES</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of items(); track item.idOc) {
+        <tr class="tabla__fila" (click)="verDetalle(item)">
+          <td><span class="tabla__codigo">{{ item.numeroOc }}</span></td>
+          <td>{{ item.fechaOc | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="tabla__cliente">
+              <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+              <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+            </div>
+          </td>
+          <td>{{ item.numeroRq ?? '—' }}</td>
+          <td>
+            @if (item.numeroPropuesta) {
+              <span>{{ item.numeroPropuesta }}</span>
+              @if (item.versionPropuesta) {
+                <span class="tabla__version"> v{{ item.versionPropuesta }}</span>
+              }
+            } @else { — }
+          </td>
+          <td>{{ item.moneda ?? '—' }}</td>
+          <td class="tabla__td--derecha">
+            <span class="tabla__monto">{{ item.montoOc | moneda:item.monedaSimbolo }}</span>
+          </td>
+          <td class="tabla__td--derecha">
+            {{ item.montoAplicado | moneda:item.monedaSimbolo }}
+          </td>
+          <td class="tabla__td--derecha">
+            <span class="tabla__saldo {{ saldoClase(item.saldo) }}">
+              {{ item.saldo | moneda:item.monedaSimbolo }}
+            </span>
+          </td>
+          <td>
+            <span [class]="coberturaChip(item.coberturaCodigo).clase">
+              {{ coberturaChip(item.coberturaCodigo).label }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {{ estadoChip(item.estadoVisual || item.estado).clase }}">
+              {{ estadoChip(item.estadoVisual || item.estado).label }}
+            </span>
+          </td>
+          <td class="tabla__td--centro">
+            <div class="tabla__acciones" (click)="$event.stopPropagation()">
+              <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                          ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 </div>
 
 <!-- ── Modal Detalle ─────────────────────────────────────────────────────── -->

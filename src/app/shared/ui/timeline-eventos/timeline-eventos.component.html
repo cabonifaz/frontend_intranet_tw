@@ -1,0 +1,32 @@
+@if (!eventos().length) {
+  <div class="tl-vacio">
+    <span class="material-symbols-outlined">{{ iconoVacio() }}</span>
+    {{ mensajeVacio() }}
+  </div>
+} @else {
+  <div class="tl">
+    @for (ev of eventos(); track trackEvento($index, ev)) {
+      <div class="tl__item">
+        <div class="tl__linea">
+          <span class="tl__dot {{ claseDe(ev) }}">
+            <span class="material-symbols-outlined">{{ iconoDe(ev) }}</span>
+          </span>
+        </div>
+        <div class="tl__cuerpo">
+          <div class="tl__fila">
+            <strong>{{ ev.titulo }}</strong>
+            <span class="tl__fecha">{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          @if (ev.usuario) {
+            <div class="tl__usuario">
+              por {{ ev.usuario }}@if (ev.contexto) { · {{ ev.contexto }} }
+            </div>
+          }
+          @if (ev.descripcion) {
+            <div class="tl__detalle">{{ ev.descripcion }}</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

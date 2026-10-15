@@ -1,0 +1,55 @@
+@if (error()) {
+  <div class="tabla-error">
+    <span class="material-symbols-outlined">error</span>
+    {{ error() }}
+  </div>
+}
+
+<div class="tabla-card">
+  <div class="tabla-card__scroll">
+    <table class="tabla">
+      <ng-content select="thead"></ng-content>
+
+      @if (cargando()) {
+        <tbody>
+          <tr>
+            <td class="tabla__td tabla__td--vacio" colspan="99">
+              <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
+              {{ textoCargando() }}
+            </td>
+          </tr>
+        </tbody>
+      } @else if (vacio()) {
+        <tbody>
+          <tr>
+            <td class="tabla__td tabla__td--vacio" colspan="99">
+              <span class="material-symbols-outlined">{{ iconoVacio() }}</span>
+              {{ textoVacio() }}
+            </td>
+          </tr>
+        </tbody>
+      } @else {
+        <ng-content select="tbody"></ng-content>
+      }
+    </table>
+  </div>
+
+  @if (conPaginacion() && !cargando() && total() > 0) {
+    <div class="paginacion">
+      <span class="paginacion__info">
+        Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} {{ textoItems() }}
+      </span>
+      <div class="paginacion__btns">
+        <app-button variant="secondary" tamano="sm" icono="chevron_left" [soloIcon]="true" ariaLabel="Anterior"
+                    [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)" />
+        @for (p of paginas(); track p) {
+          <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm" (clic)="irPagina(p)">
+            {{ p }}
+          </app-button>
+        }
+        <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true" ariaLabel="Siguiente"
+                    [disabled]="pagina() === totalPaginas()" (clic)="irPagina(pagina() + 1)" />
+      </div>
+    </div>
+  }
+</div>

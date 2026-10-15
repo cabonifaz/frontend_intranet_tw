@@ -1,218 +1,182 @@
 <div class="pagina">
 
   <!-- ── Header ──────────────────────────────────────────────────────────── -->
-  <div class="pagina__header">
-    <div class="pagina__header-izq">
-      <app-breadcrumb [items]="breadcrumb" />
-      <h1 class="pagina__titulo">CRM / Visto Bueno</h1>
-      <p class="pagina__subtitulo">Revisión, aprobación y control de propuestas comerciales</p>
-    </div>
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="CRM / Visto Bueno"
+    subtitulo="Revisión, aprobación y control de propuestas comerciales">
     <app-button variant="secondary" icono="download">Exportar</app-button>
-  </div>
+  </app-header-bandeja>
 
   <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
-  <div class="kpi-grid">
+  <app-kpi-grid [columnas]="5">
     <app-kpi-card icono="schedule"       etiqueta="PENDIENTES"       [valor]="kpis().pendientes"     variante="azul"  />
     <app-kpi-card icono="hourglass_top"  etiqueta="PRÓXIMO A VENCER" [valor]="kpis().proximosVencer" variante="ambar" />
     <app-kpi-card icono="warning"        etiqueta="VENCIDOS"         [valor]="kpis().vencidos"       variante="rojo"  />
     <app-kpi-card icono="check_circle"   etiqueta="APROBADAS HOY"    [valor]="kpis().aprobadasHoy"   variante="verde" />
     <app-kpi-card icono="assignment_return" etiqueta="DEVUELTAS"     [valor]="kpis().devueltas"      variante="azul"  />
-  </div>
+  </app-kpi-grid>
 
   <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
-  <div class="filtros-bar">
-    <div class="filtros-bar__izq">
-      <app-filtros-popover [cantidadActivos]="filtrosActivos()" (limpiar)="limpiarFiltros()" (aplicar)="aplicarFiltros()">
-        <div class="filtros-seccion">Clasificación</div>
+  <app-barra-filtros-bandeja
+    [cantidadActivos]="filtrosActivos()"
+    [(busqueda)]="busqueda"
+    placeholder="Buscar propuesta, cliente o RUC..."
+    [conDescarga]="true"
+    (limpiar)="limpiarFiltros()"
+    (aplicar)="aplicarFiltros()"
+    (descargar)="exportar()">
+    <div class="filtros-seccion">Clasificación</div>
 
-        <div class="col-full">
-          <label>COMERCIAL</label>
-          <select [(ngModel)]="idComercialFiltro">
-            <option [ngValue]="''">Todos los comerciales</option>
-            @for (c of comerciales(); track c.id) {
-              <option [ngValue]="c.id">{{ c.nombre }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>ESTADO</label>
-          <select [(ngModel)]="estadoFiltro">
-            @for (tab of estadosTabs; track tab.codigo) {
-              <option [value]="tab.codigo">{{ tab.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>MONEDA</label>
-          <select [(ngModel)]="idMonedaFiltro">
-            <option [ngValue]="''">Todas</option>
-            @for (m of monedas(); track m.id) {
-              <option [ngValue]="m.id">{{ m.nombre }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>SLA</label>
-          <select [(ngModel)]="slaFiltro">
-            @for (s of slaOpciones; track s.codigo) {
-              <option [value]="s.codigo">{{ s.label }}</option>
-            }
-          </select>
-        </div>
-
-        <div>
-          <label>ÚLTIMOS DÍAS</label>
-          <select [(ngModel)]="diasFiltro">
-            @for (d of diasOpciones; track d) {
-              <option [ngValue]="d">Últimos {{ d }} días</option>
-            }
-          </select>
-        </div>
-      </app-filtros-popover>
+    <div class="col-full">
+      <label>COMERCIAL</label>
+      <select [(ngModel)]="idComercialFiltro">
+        <option [ngValue]="''">Todos los comerciales</option>
+        @for (c of comerciales(); track c.id) {
+          <option [ngValue]="c.id">{{ c.nombre }}</option>
+        }
+      </select>
     </div>
-    <div class="filtros-bar__der">
-      <app-button variant="secondary" tamano="md" icono="refresh" [soloIcon]="true" ariaLabel="Actualizar" title="Actualizar" (clic)="aplicarFiltros()" />
-    </div>
-  </div>
 
-  <!-- ── Error ───────────────────────────────────────────────────────────── -->
-  @if (error()) {
-    <div class="tabla-error">
-      <span class="material-symbols-outlined">error</span>
-      {{ error() }}
+    <div>
+      <label>ESTADO</label>
+      <select [(ngModel)]="estadoFiltro">
+        @for (tab of estadosTabs; track tab.codigo) {
+          <option [value]="tab.codigo">{{ tab.label }}</option>
+        }
+      </select>
     </div>
-  }
+
+    <div>
+      <label>MONEDA</label>
+      <select [(ngModel)]="idMonedaFiltro">
+        <option [ngValue]="''">Todas</option>
+        @for (m of monedas(); track m.id) {
+          <option [ngValue]="m.id">{{ m.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label>SLA</label>
+      <select [(ngModel)]="slaFiltro">
+        @for (s of slaOpciones; track s.codigo) {
+          <option [value]="s.codigo">{{ s.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label>ÚLTIMOS DÍAS</label>
+      <select [(ngModel)]="diasFiltro">
+        @for (d of diasOpciones; track d) {
+          <option [ngValue]="d">Últimos {{ d }} días</option>
+        }
+      </select>
+    </div>
+  </app-barra-filtros-bandeja>
 
   <!-- ── Tabla ───────────────────────────────────────────────────────────── -->
-  <div class="tabla-card">
-    <div class="tabla-card__scroll">
-      <table class="tabla">
-        <thead class="tabla__head">
-          <tr>
-            <th class="tabla__th">PROPUESTA</th>
-            <th class="tabla__th">CLIENTE / RUC</th>
-            <th class="tabla__th tabla__th--derecha">MONTO</th>
-            <th class="tabla__th tabla__th--centro">DCTO.</th>
-            <th class="tabla__th">COMERCIAL</th>
-            <th class="tabla__th">APROBADOR</th>
-            <th class="tabla__th tabla__th--sla">SLA</th>
-            <th class="tabla__th">ESTADO</th>
-            <th class="tabla__th tabla__th--centro">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @if (cargando()) {
-            <tr>
-              <td colspan="9" class="tabla__td tabla__td--vacio">
-                <span class="material-symbols-outlined tabla__spinner">progress_activity</span>
-                Cargando visto bueno...
-              </td>
-            </tr>
-          } @else if (items().length === 0) {
-            <tr>
-              <td colspan="9" class="tabla__td tabla__td--vacio">
-                <span class="material-symbols-outlined">inbox</span>
-                No hay propuestas con los filtros aplicados.
-              </td>
-            </tr>
-          } @else {
-            @for (item of items(); track item.idVb) {
-              <tr class="tabla__fila" (click)="verDetalle(item)">
-                <td class="tabla__td">
-                  <div class="tabla__propuesta-cell">
-                    <div class="tabla__propuesta">
-                      <span class="tabla__codigo" [title]="item.referencia">{{ item.numero }}</span>
-                      <span class="tabla__version">v{{ item.version }}</span>
-                      @if (item.requiereAprobacionEspecial) {
-                        <span class="chip-especial" title="Requiere aprobación especial">★</span>
-                      }
-                      @if (esRevocacion(item)) {
-                        <span class="chip-revocacion" title="Solicitud de revocación">
-                          <span class="material-symbols-outlined">undo</span> Revocación
-                        </span>
-                      }
-                    </div>
-                    <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.numeroRq ?? '—' }}</span>
-                  </div>
-                </td>
-                <td class="tabla__td">
-                  <div class="tabla__cliente">
-                    <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
-                    <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
-                  </div>
-                </td>
-                <td class="tabla__td tabla__td--derecha">
-                  <span class="tabla__monto">{{ formatearMonto(item.total, item.monedaSimbolo) }}</span>
-                </td>
-                <td class="tabla__td tabla__td--centro">
-                  <span class="badge-pct {{ descuentoClase(item.descuentoPct) }}">
-                    {{ item.descuentoPct > 0 ? item.descuentoPct + '%' : '—' }}
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="itemsFiltrados.length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina()"
+    textoCargando="Cargando visto bueno..."
+    textoVacio="No hay propuestas con los filtros aplicados."
+    textoItems="propuestas"
+    (paginar)="irPagina($event)">
+    <thead>
+      <tr>
+        <th>PROPUESTA</th>
+        <th>CLIENTE / RUC</th>
+        <th class="tabla__th--derecha">MONTO</th>
+        <th class="tabla__th--centro">DCTO.</th>
+        <th>COMERCIAL</th>
+        <th>APROBADOR</th>
+        <th class="tabla__th--sla">SLA</th>
+        <th>ESTADO</th>
+        <th class="tabla__th--centro">ACCIONES</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of itemsFiltrados; track item.idVb) {
+        <tr class="tabla__fila" (click)="verDetalle(item)">
+          <td>
+            <div class="tabla__propuesta-cell">
+              <div class="tabla__propuesta">
+                <span class="tabla__codigo" [title]="item.referencia">{{ item.numero }}</span>
+                <span class="tabla__version">v{{ item.version }}</span>
+                @if (item.requiereAprobacionEspecial) {
+                  <span class="chip-especial" title="Requiere aprobación especial">★</span>
+                }
+                @if (esRevocacion(item)) {
+                  <span class="chip-revocacion" title="Solicitud de revocación">
+                    <span class="material-symbols-outlined">undo</span> Revocación
                   </span>
-                </td>
-                <td class="tabla__td">
-                  <div class="tabla__persona">
-                    <span class="tabla__avatar tabla__avatar--comercial">{{ iniciales(item.comercial) }}</span>
-                    <span class="tabla__persona-nombre">{{ item.comercial }}</span>
-                  </div>
-                </td>
-                <td class="tabla__td">
-                  @if (item.aprobador) {
-                    <div class="tabla__persona">
-                      <span class="tabla__avatar tabla__avatar--aprobador">{{ iniciales(item.aprobador) }}</span>
-                      <span class="tabla__persona-nombre">
-                        {{ item.aprobador }}
-                        @if (item.aprobadorEsSuplente) { <small>(suplente)</small> }
-                      </span>
-                    </div>
-                  } @else {
-                    <span class="dim">—</span>
-                  }
-                </td>
-                <td class="tabla__td">
-                  <div class="sla {{ slaClase(item) }}">
-                    <span class="sla__dot"></span>
-                    <span class="sla__label">{{ slaTexto(item) }}</span>
-                  </div>
-                </td>
-                <td class="tabla__td">
-                  <span class="badge {{ estadoClase(item.estadoVb) }}">{{ estadoLabel(item.estadoVb) }}</span>
-                </td>
-                <td class="tabla__td tabla__td--centro">
-                  <div class="tabla__acciones" (click)="$event.stopPropagation()">
-                    <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                                ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
-                    @if (item.estadoVb === 'pendiente' && item.puedeResolver) {
-                      <app-button variant="ghost" tamano="sm" icono="check_circle" [soloIcon]="true"
-                                  ariaLabel="Aprobar" title="Aprobar" (clic)="onAccionDetalle('aprobar', item)" />
-                    }
-                  </div>
-                </td>
-              </tr>
+                }
+              </div>
+              <span class="tabla__rq" [title]="'Requerimiento origen'">{{ item.numeroRq ?? '—' }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="tabla__cliente">
+              <span class="tabla__cliente-nombre">{{ item.razonSocial }}</span>
+              <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+            </div>
+          </td>
+          <td class="tabla__td--derecha">
+            <span class="tabla__monto">{{ item.total | moneda:item.monedaSimbolo }}</span>
+          </td>
+          <td class="tabla__td--centro">
+            <span class="badge-pct {{ descuentoClase(item.descuentoPct) }}">
+              {{ item.descuentoPct > 0 ? item.descuentoPct + '%' : '—' }}
+            </span>
+          </td>
+          <td>
+            <div class="tabla__persona">
+              <span class="tabla__avatar tabla__avatar--comercial">{{ item.comercial | iniciales }}</span>
+              <span class="tabla__persona-nombre">{{ item.comercial }}</span>
+            </div>
+          </td>
+          <td>
+            @if (item.aprobador) {
+              <div class="tabla__persona">
+                <span class="tabla__avatar tabla__avatar--aprobador">{{ item.aprobador | iniciales }}</span>
+                <span class="tabla__persona-nombre">
+                  {{ item.aprobador }}
+                  @if (item.aprobadorEsSuplente) { <small>(suplente)</small> }
+                </span>
+              </div>
+            } @else {
+              <span class="dim">—</span>
             }
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Paginación -->
-    @if (!cargando() && total() > 0) {
-      <div class="paginacion">
-        <span class="paginacion__info">Mostrando {{ inicio() }} - {{ fin() }} de {{ total() }} propuestas</span>
-        <div class="paginacion__btns">
-          <app-button variant="secondary" tamano="sm" icono="chevron_left"  [soloIcon]="true" ariaLabel="Anterior"
-                      [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)" />
-          @for (p of paginas; track p) {
-            <app-button [variant]="p === pagina() ? 'primary' : 'secondary'" tamano="sm" (clic)="irPagina(p)">{{ p }}</app-button>
-          }
-          <app-button variant="secondary" tamano="sm" icono="chevron_right" [soloIcon]="true" ariaLabel="Siguiente"
-                      [disabled]="pagina() === totalPaginas()" (clic)="irPagina(pagina() + 1)" />
-        </div>
-      </div>
-    }
-  </div>
+          </td>
+          <td>
+            <div class="sla {{ slaClase(item) }}">
+              <span class="sla__dot"></span>
+              <span class="sla__label">{{ slaTexto(item) }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge {{ estadoClase(item.estadoVb) }}">{{ estadoLabel(item.estadoVb) }}</span>
+          </td>
+          <td class="tabla__td--centro">
+            <div class="tabla__acciones" (click)="$event.stopPropagation()">
+              <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                          ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+              @if (item.estadoVb === 'pendiente' && item.puedeResolver) {
+                <app-button variant="ghost" tamano="sm" icono="check_circle" [soloIcon]="true"
+                            ariaLabel="Aprobar" title="Aprobar" (clic)="onAccionDetalle('aprobar', item)" />
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
 
   <!-- ── Tarjetas informativas inferiores ────────────────────────────────── -->
   <div class="info-cards">
