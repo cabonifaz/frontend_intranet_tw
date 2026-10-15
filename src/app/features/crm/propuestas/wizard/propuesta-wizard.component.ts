@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { PropuestaDraftService } from '../../../../core/services/propuesta-draft.service';
 import { PropuestasService } from '../../../../core/services/propuestas.service';
@@ -26,6 +27,7 @@ export class PropuestaWizardComponent implements OnInit {
   private readonly router        = inject(Router);
   private readonly propuestasSvc = inject(PropuestasService);
   private readonly toast         = inject(ToastService);
+  private readonly destroyRef    = inject(DestroyRef);
   readonly draftSvc              = inject(PropuestaDraftService);
 
   readonly pasos: PasoWizard[] = PASOS_WIZARD;
@@ -115,11 +117,13 @@ export class PropuestaWizardComponent implements OnInit {
     // Importante: comparar contra el ÚLTIMO segmento del path, no un includes,
     // porque `/propuestas/` contiene `/propuesta` como substring y marcaba
     // mal el paso activo cuando estabas en cualquier otra sección.
-    this.router.events.subscribe(() => {
-      const segLast = this.router.url.split('?')[0].split('/').pop() ?? '';
-      const paso = this.pasos.find(p => p.ruta === segLast);
-      if (paso) this.pasoActual.set(paso.id);
-    });
+    this.router.events
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const segLast = this.router.url.split('?')[0].split('/').pop() ?? '';
+        const paso = this.pasos.find(p => p.ruta === segLast);
+        if (paso) this.pasoActual.set(paso.id);
+      });
 
     // Si no hay segmento válido en el path, redirect a configuración
     if (!pasoInicial) {

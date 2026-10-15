@@ -1,4 +1,5 @@
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TextosBaseService } from '../../../../core/services/textos-base.service';
@@ -177,11 +178,13 @@ export class FichaTextoBaseComponent implements OnInit {
         this.propuestasAsociadas.set(t.propuestasAsociadas);
       } else {
         // Autogenerar código corto al cambiar categoría
-        this.formulario.get('tipoCategoria')?.valueChanges.subscribe(val => {
-          if (val && !this.formulario.get('codigoCorto')?.value) {
-            this.formulario.patchValue({ codigoCorto: this.textosSvc.generarCodigoCorto(val) });
-          }
-        });
+        this.formulario.get('tipoCategoria')?.valueChanges
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(val => {
+            if (val && !this.formulario.get('codigoCorto')?.value) {
+              this.formulario.patchValue({ codigoCorto: this.textosSvc.generarCodigoCorto(val) });
+            }
+          });
       }
 
       // Autoguardado + detección de borrador local (gestionado por composable).

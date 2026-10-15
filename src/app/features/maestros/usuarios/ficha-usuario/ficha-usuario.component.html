@@ -7,6 +7,7 @@
   } @else {
 
     <app-hero-header
+      icono="person"
       [titulo]="esNuevo() ? 'Nuevo Usuario del Sistema' : 'Editar Usuario del Sistema'"
       [codigoFicha]="codigoFicha()"
       descripcion="Complete la información para dar de alta una cuenta institucional y configurar permisos de acceso corporativos."
@@ -15,10 +16,10 @@
 
     <form class="ficha-form" [formGroup]="formulario">
 
-    <div class="fu-grid">
+    <div class="ficha-grid">
 
       <!-- ═══ MAIN ══════════════════════════════════════════════════ -->
-      <div class="fu-main">
+      <div class="ficha-main">
 
         @if (error()) {
           <div class="form-error">
@@ -557,7 +558,7 @@
       </div>
 
       <!-- ═══ SIDEBAR ══════════════════════════════════════════════ -->
-      <aside class="fu-sidebar">
+      <aside class="ficha-sidebar">
 
         <div class="card-perfil">
           <div class="card-perfil__head">

@@ -1,6 +1,10 @@
 <div class="hero">
   <div class="hero__izq">
-    @if (mostrarBack()) {
+    @if (icono()) {
+      <div class="hero__icono-box">
+        <span class="material-symbols-outlined">{{ icono() }}</span>
+      </div>
+    } @else if (mostrarBack()) {
       <button type="button" class="hero__back" (click)="onVolver()" title="Volver">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>

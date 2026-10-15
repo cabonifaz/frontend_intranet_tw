@@ -2,16 +2,18 @@
 
   <app-breadcrumb [items]="breadcrumb()" />
 
-  <app-page-header
+  <app-hero-header
     icono="inventory_2"
     [titulo]="esNuevo() ? 'Nuevo Registro de Catálogo Técnico / Comercial' : 'Editar Suministro'"
-    subtitulo="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios"
+    descripcion="Alta y parámetros de suministros, activos, instrumentos de calibración y servicios"
+    [codigoFicha]="codigoBadge()"
+    [mostrarBack]="false"
+    (volver)="cancelar()"
   >
-    <span class="badge-codigo">{{ codigoBadge() }}</span>
     @if (formatoCalidad()) {
       <span class="badge-formato" title="Código de formato ISO/calidad">{{ formatoCalidad() }}</span>
     }
-  </app-page-header>
+  </app-hero-header>
 
   @if (cargando()) {
     <app-estado-vacio variante="cargando" mensaje="Cargando suministro..." />

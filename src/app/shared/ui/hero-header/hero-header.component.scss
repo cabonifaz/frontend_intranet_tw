@@ -31,6 +31,23 @@
     .material-symbols-outlined { font-size: 18px; }
   }
 
+  // Cuadrado con icono (modo informativo, equivalente al de app-page-header).
+  // Se renderiza en vez de la flecha "atrás" cuando el input `icono` tiene valor.
+  &__icono-box {
+    width: 40px;
+    height: 40px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #2563EB;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 22px; }
+  }
+
   &__contenido {
     min-width: 0;
     flex: 1;

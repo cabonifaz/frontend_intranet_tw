@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
@@ -256,23 +257,29 @@ export class FichaUsuarioComponent implements OnInit {
     this.codigoFicha.set(nuevo ? `USR-${new Date().getFullYear()}-NUEVO` : '');
 
     // Validador dinámico de número de documento según tipo (DNI 8 dígitos, CE 9, Pasaporte alfanumérico 6-12)
-    this.formulario.get('tipoDocumento')?.valueChanges.subscribe(tipo => {
-      this.actualizarValidadorDocumento(tipo ?? 'DNI');
-    });
+    this.formulario.get('tipoDocumento')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(tipo => {
+        this.actualizarValidadorDocumento(tipo ?? 'DNI');
+      });
     this.actualizarValidadorDocumento(this.formulario.get('tipoDocumento')?.value ?? 'DNI');
 
     // Sincronizar signals con los controls del form para que los computed reaccionen
-    this.formulario.get('rolSistema')?.valueChanges.subscribe(v => {
-      this.rolSistemaActual.set(v ?? '');
-    });
-    this.formulario.get('area')?.valueChanges.subscribe(v => {
-      const nuevaArea = v ?? '';
-      // Al cambiar de área, resetear el cargo (puede no pertenecer a la nueva área)
-      if (nuevaArea !== this.areaActual()) {
-        this.formulario.get('cargo')?.setValue('', { emitEvent: false });
-      }
-      this.areaActual.set(nuevaArea);
-    });
+    this.formulario.get('rolSistema')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => {
+        this.rolSistemaActual.set(v ?? '');
+      });
+    this.formulario.get('area')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => {
+        const nuevaArea = v ?? '';
+        // Al cambiar de área, resetear el cargo (puede no pertenecer a la nueva área)
+        if (nuevaArea !== this.areaActual()) {
+          this.formulario.get('cargo')?.setValue('', { emitEvent: false });
+        }
+        this.areaActual.set(nuevaArea);
+      });
 
     try {
       // Catálogos de tabla_maestra en paralelo. Áreas se consumen vía AreasService

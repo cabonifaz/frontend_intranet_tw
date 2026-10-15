@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
 import { AutenticacionService } from '../../../../../core/services/autenticacion.service';
@@ -33,6 +34,7 @@ export class ConfiguracionComponent implements OnInit {
   readonly draftSvc = inject(PropuestaDraftService);
   private readonly fb       = inject(FormBuilder);
   private readonly authSvc  = inject(AutenticacionService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /** id del RQ cuando el usuario pide ver su origen (abre DetalleRequerimientoComponent como modal). */
   readonly idRqAbierto = signal<number | null>(null);
@@ -94,7 +96,9 @@ export class ConfiguracionComponent implements OnInit {
       notasGenerales:        d.notasGenerales,
     }, { emitEvent: false });
 
-    this.form.valueChanges.subscribe(v => {
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => {
       this.draftSvc.actualizar({
         tipoPropuesta:         v.tipoPropuesta as TipoPropuesta || '',
         responsableTecnico:    v.responsableTecnico ?? '',

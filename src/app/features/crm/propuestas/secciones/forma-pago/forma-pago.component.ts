@@ -1,4 +1,5 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PropuestaDraftService } from '../../../../../core/services/propuesta-draft.service';
 import { MaestrosService } from '../../../../../core/services/maestros.service';
@@ -18,6 +19,7 @@ export class FormaPagoComponent implements OnInit {
   readonly draftSvc = inject(PropuestaDraftService);
   private readonly fb        = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly condicionesPago = signal<{ codigo: string; nombre: string }[]>([]);
 
@@ -63,7 +65,9 @@ export class FormaPagoComponent implements OnInit {
       });
     }
 
-    this.form.valueChanges.subscribe(v => {
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => {
       this.draftSvc.actualizar({
         tipoMoneda:         v.tipoMoneda ?? 'USD',
         tipoCambio:         v.tipoCambio ?? 3.75,

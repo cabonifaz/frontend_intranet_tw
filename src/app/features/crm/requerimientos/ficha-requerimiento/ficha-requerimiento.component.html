@@ -9,33 +9,22 @@
     <!-- Page header: Nuevo vs Editar -->
     @if (esNuevo()) {
       <app-hero-header
+        icono="assignment"
         titulo="Nuevo Requerimiento"
         descripcion="Registrar una nueva necesidad comercial u operativa."
         [codigoFicha]="codigoFicha()"
         (volver)="cancelar()"
       />
     } @else {
-      <div class="ficha-rq__cabecera-edicion">
-        <div class="ficha-rq__cab-izq">
-          <div class="ficha-rq__numero-row">
-            <span class="ficha-rq__numero">{{ ficha()?.numero }}</span>
-            <span class="ficha-rq__estado-badge">{{ ficha()?.estadoLabel ?? ficha()?.estado }}</span>
-          </div>
-          <p class="ficha-rq__cab-meta">
-            Fecha necesidad: {{ ficha()?.fechaNecesidad | date:'dd/MM/yyyy' }}
-          </p>
-        </div>
-        <div class="ficha-rq__cab-der">
-          <div class="ficha-rq__cliente-summary">
-            <span class="ficha-rq__cs-nombre">{{ ficha()?.razonSocial }}</span>
-            <span class="ficha-rq__cs-ruc">RUC: {{ ficha()?.ruc }}</span>
-          </div>
-          <span class="ficha-rq__vip-badge">
-            <span class="material-symbols-outlined">star</span>
-            Cliente VIP
-          </span>
-        </div>
-      </div>
+      <app-hero-header
+        icono="assignment"
+        [titulo]="'Editar Requerimiento ' + (ficha()?.numero ?? '')"
+        [descripcion]="'Fecha necesidad: ' + ((ficha()?.fechaNecesidad | date:'dd/MM/yyyy') ?? '—') + ' · ' + (ficha()?.razonSocial ?? '')"
+        [codigoFicha]="codigoFicha()"
+        [badgeTexto]="ficha()?.estadoLabel ?? ficha()?.estado ?? ''"
+        badgeVariant="azul"
+        (volver)="cancelar()"
+      />
     }
 
     <!-- Body -->

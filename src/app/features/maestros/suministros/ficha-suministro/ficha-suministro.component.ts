@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -11,7 +12,7 @@ import {
   esServicio,
 } from '../../../../core/models/suministros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
-import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
 import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
@@ -30,7 +31,7 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     FormsModule,
     DatePipe,
     BreadcrumbComponent,
-    PageHeaderComponent,
+    HeroHeaderComponent,
     SeccionComponent,
     FormFooterComponent,
     EstadoVacioComponent,
@@ -205,18 +206,22 @@ export class FichaSuministroComponent implements OnInit {
     // Sincronizar claseActual con el FormControl para que el computed reaccione.
     // Al cambiar la clase, el filtro de Tipo puede dejar inválido el tipo elegido
     // → reseteamos el tipo para forzar re-selección dentro de la nueva clase.
-    this.formulario.get('clase')?.valueChanges.subscribe(v => {
-      const nuevaClase = v ?? '';
-      if (nuevaClase !== this.claseActual()) {
-        this.formulario.get('tipo')?.setValue('', { emitEvent: false });
-      }
-      this.claseActual.set(nuevaClase);
-      this.actualizarValidadoresPorClase(nuevaClase);
-      this.actualizarDescripcionAuto();
-    });
+    this.formulario.get('clase')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(v => {
+        const nuevaClase = v ?? '';
+        if (nuevaClase !== this.claseActual()) {
+          this.formulario.get('tipo')?.setValue('', { emitEvent: false });
+        }
+        this.claseActual.set(nuevaClase);
+        this.actualizarValidadoresPorClase(nuevaClase);
+        this.actualizarDescripcionAuto();
+      });
     // Descripción automática en vivo al cambiar cualquiera de los campos relevantes
     for (const campo of ['tipo', 'subtipo', 'marca', 'modelo']) {
-      this.formulario.get(campo)?.valueChanges.subscribe(() => this.actualizarDescripcionAuto());
+      this.formulario.get(campo)?.valueChanges
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => this.actualizarDescripcionAuto());
     }
 
     const idParam = this.route.snapshot.paramMap.get('id');

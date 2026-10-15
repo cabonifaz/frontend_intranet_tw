@@ -9,7 +9,7 @@ import {
   GuardarProcedimientoRequest,
 } from '../../../../core/models/procedimientos.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
-import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
 import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
@@ -27,7 +27,7 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     ReactiveFormsModule,
     DatePipe,
     BreadcrumbComponent,
-    PageHeaderComponent,
+    HeroHeaderComponent,
     SeccionComponent,
     FormFooterComponent,
     EstadoVacioComponent,

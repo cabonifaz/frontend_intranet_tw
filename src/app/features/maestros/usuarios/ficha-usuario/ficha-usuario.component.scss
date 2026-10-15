@@ -7,23 +7,9 @@
   min-height: 100%;
 }
 
-// ── Grid ────────────────────────────────────────────────────────────────────
-.fu-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 16px;
-  align-items: start;
-
-  @media (max-width: 1024px) { grid-template-columns: 1fr; }
-}
-
-.fu-main {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
+// Nota: el grid principal (.ficha-grid / .ficha-main / .ficha-sidebar) vive en
+// global 'styles.scss'. Antes había duplicados locales .fu-grid/.fu-main/.fu-sidebar
+// que ya se removieron para unificar con el resto de fichas.
 // Nota: .form-error vive en global 'styles.scss' (misma pinta, radius 8px en
 // vez de 10px local).
 
@@ -713,13 +699,7 @@
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ══ SIDEBAR — 3 cards ═══════════════════════════════════════════════════════
-.fu-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 20px;
-}
+// Nota: .ficha-sidebar vive en global 'styles.scss' con layout flex + sticky.
 
 .card-perfil {
   background: #FFFFFF;

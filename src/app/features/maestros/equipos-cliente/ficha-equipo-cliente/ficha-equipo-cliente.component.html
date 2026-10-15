@@ -2,16 +2,18 @@
 
   <app-breadcrumb [items]="breadcrumb()" />
 
-  <app-page-header
+  <app-hero-header
     icono="precision_manufacturing"
     [titulo]="esNuevo() ? 'Nuevo Registro de Equipo de Cliente' : 'Editar Equipo'"
-    subtitulo="Alta técnica, operativa y trazabilidad de instrumentos de pesaje industrial y metrología"
+    descripcion="Alta técnica, operativa y trazabilidad de instrumentos de pesaje industrial y metrología"
+    [codigoFicha]="codigoBadge()"
+    [mostrarBack]="false"
+    (volver)="cancelar()"
   >
-    <span class="badge-codigo">{{ codigoBadge() }}</span>
     @if (formatoCalidad()) {
       <span class="badge-formato" title="Código de formato ISO/calidad">{{ formatoCalidad() }}</span>
     }
-  </app-page-header>
+  </app-hero-header>
 
   @if (cargando()) {
     <app-estado-vacio variante="cargando" mensaje="Cargando equipo..." />

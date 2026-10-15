@@ -18,6 +18,10 @@ export class HeroHeaderComponent {
       renderiza como chip monoespaciado al lado del título, separado del badge
       de estado para no abarrotar el título. */
   readonly codigoFicha  = input<string>('');
+  /** Si se provee, muestra un cuadrado con icono (como app-page-header) en
+      lugar de la flecha "atrás". Útil para fichas de maestros donde el header
+      es más informativo que de navegación. */
+  readonly icono        = input<string>('');
 
   readonly volver = output<void>();
 

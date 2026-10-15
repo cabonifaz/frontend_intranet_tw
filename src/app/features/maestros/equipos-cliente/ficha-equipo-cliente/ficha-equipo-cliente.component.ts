@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,7 +17,7 @@ import {
 import { OpcionCatalogo } from '../../../../core/models/suministros.model';
 import { AreaCliente, ClienteListaItem, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
-import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
 import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
@@ -33,7 +34,7 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     ReactiveFormsModule,
     DatePipe,
     BreadcrumbComponent,
-    PageHeaderComponent,
+    HeroHeaderComponent,
     SeccionComponent,
     FormFooterComponent,
     EstadoVacioComponent,
@@ -197,7 +198,9 @@ export class FichaEquipoClienteComponent implements OnInit {
     // Reaccionar al cambio de Clasificación técnica: recarga la lista de suministros
     // filtrada por esa clase (equipo / instrumento / pesa). Y resetea el suministro
     // elegido si cambia la clase.
-    this.formulario.get('clasificacion')?.valueChanges.subscribe(async c => {
+    this.formulario.get('clasificacion')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async c => {
       const nueva = c ?? '';
       if (nueva !== this.clasificacionActual()) {
         this.formulario.get('idSuministro')?.setValue(null, { emitEvent: false });
@@ -209,7 +212,9 @@ export class FichaEquipoClienteComponent implements OnInit {
     });
 
     // Al cambiar de suministro seleccionado, sincronizar el label visible del input.
-    this.formulario.get('idSuministro')?.valueChanges.subscribe(idSum => {
+    this.formulario.get('idSuministro')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(idSum => {
       if (idSum == null || idSum === '' || Number(idSum) === 0) {
         this.suministroSeleccionadoLabel.set('');
         return;
@@ -286,7 +291,9 @@ export class FichaEquipoClienteComponent implements OnInit {
       }
 
       // Subscripción al cambio de cliente para refrescar sedes + áreas vinculadas.
-      this.formulario.get('idCliente')?.valueChanges.subscribe(async idCliente => {
+      this.formulario.get('idCliente')?.valueChanges
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(async idCliente => {
         if (idCliente && idCliente > 0) {
           await Promise.all([
             this.cargarSedesDelCliente(idCliente),

@@ -98,94 +98,10 @@ $blanco:     #FFFFFF;
   margin: 0;
 }
 
-// ── Cabecera edición ────────────────────────────────────────────────────────────
-
-.ficha-rq__cabecera-edicion {
-  margin: 12px 24px 0;
-  background: $blanco;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.ficha-rq__numero-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.ficha-rq__numero {
-  font-size: 20px;
-  font-weight: 700;
-  color: $texto-osc;
-}
-
-.ficha-rq__estado-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  background: #FFF7ED;
-  border: 1px solid #FED7AA;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #C2410C;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.ficha-rq__cab-meta {
-  font-size: 12px;
-  color: $gris-claro;
-  margin: 0;
-}
-
-.ficha-rq__cab-der {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.ficha-rq__cliente-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.ficha-rq__cs-nombre {
-  font-size: 14px;
-  font-weight: 600;
-  color: $texto-osc;
-}
-
-.ficha-rq__cs-ruc {
-  font-size: 12px;
-  color: $gris-texto;
-  font-family: monospace;
-}
-
-.ficha-rq__vip-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  background: $verde-bg;
-  border: 1px solid #A7F3D0;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #047857;
-  flex-shrink: 0;
-
-  .material-symbols-outlined { font-size: 14px; }
-}
+// Nota: la cabecera de edición (número + estado + cliente + VIP) se migró a
+// `app-hero-header`. Las reglas `.ficha-rq__cabecera-edicion/numero-row/numero/
+// estado-badge/cab-meta/cab-der/cliente-summary/cs-nombre/cs-ruc/vip-badge` se
+// eliminaron (~85 líneas) porque ya no se usan.
 
 // ── Body layout ─────────────────────────────────────────────────────────────────
 
