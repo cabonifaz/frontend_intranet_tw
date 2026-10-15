@@ -32,7 +32,9 @@ export class ModalAceptacionSeguimientoComponent {
   readonly archivos         = signal<File[]>([]);
 
   readonly puedeGuardar = computed(() => {
-    return this.idTipoAceptacion() !== null && !!this.fecha();
+    return this.idTipoAceptacion() !== null
+        && !!this.fecha()
+        && this.archivos().length > 0;
   });
 
   readonly subtitulo = computed(() => {

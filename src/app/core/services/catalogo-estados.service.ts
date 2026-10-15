@@ -55,7 +55,6 @@ export class CatalogoEstadosService {
       requiere_ajuste: { ...AMBAR, label: 'Requiere ajuste' },
       aceptada:        { ...VERDE, label: 'Aceptada' },
       rechazada:       { ...ROJO,  label: 'Rechazada' },
-      cerrado_sin_venta: { ...GRIS, label: 'Cerrado sin venta' },
     },
     rq: {
       pendiente_asignacion: { ...AMBAR, label: 'Pendiente asig.' },

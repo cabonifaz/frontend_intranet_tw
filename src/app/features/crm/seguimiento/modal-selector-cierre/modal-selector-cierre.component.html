@@ -31,16 +31,6 @@
       </button>
     }
 
-    @if (puedeCerrarSinVenta()) {
-      <button type="button" class="msc-opcion msc-opcion--sin-venta" (click)="elegir('cerrar_sin_venta')">
-        <span class="material-symbols-outlined msc-opcion__icono">remove_circle</span>
-        <div class="msc-opcion__texto">
-          <strong>Sin venta</strong>
-          <small>El cliente dejó de responder o se descartó la oportunidad por otros motivos.</small>
-        </div>
-        <span class="material-symbols-outlined msc-opcion__chevron">arrow_forward</span>
-      </button>
-    }
   </div>
 
   <div modalFooter class="msc-footer">

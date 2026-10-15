@@ -2,7 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 
-export type TipoCierreSeguimiento = 'aceptar' | 'rechazar' | 'cerrar_sin_venta';
+export type TipoCierreSeguimiento = 'aceptar' | 'rechazar';
 
 /**
  * HU-21 — Selector del tipo de cierre del seguimiento comercial.
@@ -21,7 +21,6 @@ export class ModalSelectorCierreComponent {
   readonly razonSocial = input<string>('');
   readonly puedeAceptar       = input<boolean>(true);
   readonly puedeRechazar      = input<boolean>(true);
-  readonly puedeCerrarSinVenta = input<boolean>(true);
 
   readonly cerrar       = output<void>();
   readonly seleccionado = output<TipoCierreSeguimiento>();

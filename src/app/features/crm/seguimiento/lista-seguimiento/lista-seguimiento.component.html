@@ -199,15 +199,7 @@
   />
 }
 
-@if (cerrarSinVentaCtx(); as ctx) {
-  <app-modal-cerrar-sin-venta
-    [idPropuesta]="ctx.idPropuesta"
-    (cerrar)="cerrarSinVentaCtx.set(null)"
-    (confirmado)="cerrarSinVentaCtx.set(null); onConfirmadoCambio()"
-  />
-}
-
-<!-- HU-21 Modal selector del tipo de cierre (aceptación / rechazo / sin venta) -->
+<!-- HU-21 Modal selector del tipo de cierre (aceptación / rechazo) -->
 @if (selectorCierreCtx(); as ctx) {
   <app-modal-selector-cierre
     [codigo]="ctx.numero"

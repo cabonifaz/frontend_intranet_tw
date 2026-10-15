@@ -146,7 +146,6 @@ export interface CabeceraDetalleSeguimiento {
   puedeRegistrarRechazo:     boolean;
   puedeReprogramar:          boolean;
   reprogramaciones:          number;
-  puedeCerrarSinVenta:       boolean;
   permiteReactivacion:       boolean;
 }
 
@@ -221,6 +220,7 @@ export interface ProximaAccionEntrada {
   idResponsable?:  number | null;
   idPrioridad?:    number | null;
   detalle?:        string | null;
+  minutosAntesNotificar?: number | null;  // Notificación anticipada: 5/10/15/20/30/60 min
 }
 
 export interface RegistrarSeguimientoRequest {
@@ -366,6 +366,7 @@ export interface ReprogramarAccionRequest {
   idResponsable?: number | null;
   idMotivo?:      number | null;
   detalle?:       string | null;
+  minutosAntesNotificar?: number | null;  // Notificación anticipada: 5/10/15/20/30/60 min
 }
 
 export interface AccionActualSeguimiento {
@@ -433,13 +434,6 @@ export interface RegistrarRechazoRequest {
   comentario?: string | null;
 }
 
-export interface CerrarSinVentaRequest {
-  idMotivo?:            number | null;
-  detalle?:             string | null;
-  permitirReactivacion: boolean;
-  confirmoCierre:       boolean;
-}
-
 export interface CabeceraCierreSeguimiento {
   idPropuesta:       number;
   numero:            string;
@@ -467,7 +461,6 @@ export interface PreparacionCierreSeguimiento {
   cabecera:         CabeceraCierreSeguimiento;
   tiposAceptacion:  OpcionSeguimiento[];
   motivosRechazo:   OpcionSeguimiento[];
-  motivosSinVenta:  OpcionSeguimiento[];
   contactos:        ContactoRegistroSeguimiento[];
 }
 

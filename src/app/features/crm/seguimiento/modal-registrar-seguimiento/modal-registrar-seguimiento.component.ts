@@ -76,6 +76,7 @@ export class ModalRegistrarSeguimientoComponent {
   readonly idPrioridadProxima = signal<number | null>(null);
   readonly idResponsableProxima = signal<number | null>(null);
   readonly detalleProxima    = signal('');
+  readonly minutosAntesNotificar = signal<number>(15);
 
   // Adjuntos
   readonly archivos = signal<File[]>([]);
@@ -192,6 +193,7 @@ export class ModalRegistrarSeguimientoComponent {
       idResponsable: this.idResponsableProxima(),
       idPrioridad:   this.idPrioridadProxima(),
       detalle:       this.detalleProxima() || null,
+      minutosAntesNotificar: this.minutosAntesNotificar(),
     };
   }
 

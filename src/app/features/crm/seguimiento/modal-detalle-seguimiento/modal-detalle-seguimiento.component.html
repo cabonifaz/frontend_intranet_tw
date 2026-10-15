@@ -230,7 +230,7 @@
     @if (datos(); as d) {
       <div class="mds__footer-der">
         <!-- HU-21 — Un solo botón de cierre; abre el selector con las 3 opciones (aceptación/rechazo/sin venta). -->
-        @if (d.cabecera.puedeRegistrarAceptacion || d.cabecera.puedeRegistrarRechazo || d.cabecera.puedeCerrarSinVenta) {
+        @if (d.cabecera.puedeRegistrarAceptacion || d.cabecera.puedeRegistrarRechazo) {
           <app-button *twSiPermiso="'propuesta_seguimiento_cerrar'"
                       variant="secondary" icono="stop_circle" (clic)="emitirAccion('cerrar_seguimiento')">
             Cerrar Seguimiento

@@ -12,7 +12,7 @@ import { TabsComponent, Tab as TabDef } from '../../../../shared/ui/tabs/tabs.co
 import { CatalogoEstadosService } from '../../../../core/services/catalogo-estados.service';
 
 type Tab = 'resumen' | 'timeline' | 'contactos' | 'proximas_acciones' | 'documentos';
-type AccionDetalle = 'registrar' | 'ejecutar_pendiente' | 'reprogramar' | 'cerrar_seguimiento' | 'aceptar' | 'rechazar' | 'cerrar_sin_venta';
+type AccionDetalle = 'registrar' | 'ejecutar_pendiente' | 'reprogramar' | 'cerrar_seguimiento' | 'aceptar' | 'rechazar';
 
 @Component({
   selector: 'app-modal-detalle-seguimiento',
@@ -103,7 +103,6 @@ export class ModalDetalleSeguimientoComponent {
       seguimiento:        'contact_phone',
       cierre_aceptacion:  'thumb_up',
       cierre_rechazo:     'thumb_down',
-      cierre_sin_venta:   'remove_circle',
       accion_reprogramada: 'schedule_send',
       orden_compra:       'receipt_long',
     };
@@ -125,7 +124,7 @@ export class ModalDetalleSeguimientoComponent {
   private nivelDe(tipo: string): 'azul' | 'verde' | 'ambar' | 'rojo' {
     if (tipo === 'vb_aprobado' || tipo === 'cierre_aceptacion') return 'verde';
     if (tipo === 'vb_devuelto' || tipo === 'accion_reprogramada') return 'ambar';
-    if (tipo === 'vb_rechazado' || tipo === 'vb_cancelado' || tipo === 'cierre_rechazo' || tipo === 'cierre_sin_venta') return 'rojo';
+    if (tipo === 'vb_rechazado' || tipo === 'vb_cancelado' || tipo === 'cierre_rechazo') return 'rojo';
     return 'azul';
   }
 }

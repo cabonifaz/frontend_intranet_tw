@@ -48,6 +48,17 @@
           <input type="datetime-local" [ngModel]="fechaNueva()" (ngModelChange)="fechaNueva.set($event)" />
         </div>
         <div class="campo">
+          <label>NOTIFICAR ANTES DE *</label>
+          <select [ngModel]="minutosAntesNotificar()" (ngModelChange)="minutosAntesNotificar.set($event)">
+            <option [ngValue]="5">5 minutos antes</option>
+            <option [ngValue]="10">10 minutos antes</option>
+            <option [ngValue]="15">15 minutos antes</option>
+            <option [ngValue]="20">20 minutos antes</option>
+            <option [ngValue]="30">30 minutos antes</option>
+            <option [ngValue]="60">1 hora antes</option>
+          </select>
+        </div>
+        <div class="campo">
           <label>PRIORIDAD</label>
           <select [ngModel]="idPrioridad()" (ngModelChange)="idPrioridad.set($event)">
             <option [ngValue]="null">—</option>

@@ -5,7 +5,6 @@ import { environment } from '../../../environments/environment';
 import { RespuestaApi } from '../models/autenticacion.model';
 import {
   BandejaSeguimiento,
-  CerrarSinVentaRequest,
   CorreoSeguimientoRequest,
   DetalleSeguimiento,
   FiltrosBandejaSeguimiento,
@@ -161,11 +160,4 @@ export class SeguimientoService {
     return r.datos;
   }
 
-  async cerrarSinVenta(idPropuesta: number, dto: CerrarSinVentaRequest): Promise<ResultadoCierreSeguimiento> {
-    const r = await firstValueFrom(
-      this.http.post<RespuestaApi<ResultadoCierreSeguimiento>>(`${this.base}/${idPropuesta}/cerrar-sin-venta`, dto)
-    );
-    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo cerrar sin venta.');
-    return r.datos;
-  }
 }

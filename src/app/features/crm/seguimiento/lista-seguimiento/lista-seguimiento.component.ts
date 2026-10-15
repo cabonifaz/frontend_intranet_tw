@@ -25,7 +25,6 @@ import { ModalRegistrarSeguimientoComponent } from '../modal-registrar-seguimien
 import { ModalReprogramarAccionComponent } from '../modal-reprogramar-accion/modal-reprogramar-accion.component';
 import { ModalAceptacionSeguimientoComponent } from '../modal-aceptacion-seguimiento/modal-aceptacion-seguimiento.component';
 import { ModalRechazoSeguimientoComponent } from '../modal-rechazo-seguimiento/modal-rechazo-seguimiento.component';
-import { ModalCerrarSinVentaComponent } from '../modal-cerrar-sin-venta/modal-cerrar-sin-venta.component';
 import { ModalSelectorCierreComponent } from '../modal-selector-cierre/modal-selector-cierre.component';
 import { ModalDecidirPendienteComponent, DecisionPendiente } from '../modal-decidir-pendiente/modal-decidir-pendiente.component';
 
@@ -47,7 +46,7 @@ const ESTADOS: { codigo: string; label: string }[] = [
     FormsModule, DatePipe, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
     ModalDetalleSeguimientoComponent, ModalRegistrarSeguimientoComponent, ModalReprogramarAccionComponent,
-    ModalAceptacionSeguimientoComponent, ModalRechazoSeguimientoComponent, ModalCerrarSinVentaComponent,
+    ModalAceptacionSeguimientoComponent, ModalRechazoSeguimientoComponent,
     ModalSelectorCierreComponent, ModalDecidirPendienteComponent,
   ],
   templateUrl: './lista-seguimiento.component.html',
@@ -95,7 +94,6 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   readonly reprogramarCtx      = signal<ItemBandejaSeguimiento | null>(null);
   readonly aceptacionCtx       = signal<ItemBandejaSeguimiento | null>(null);
   readonly rechazoCtx          = signal<ItemBandejaSeguimiento | null>(null);
-  readonly cerrarSinVentaCtx   = signal<ItemBandejaSeguimiento | null>(null);
   readonly selectorCierreCtx   = signal<ItemBandejaSeguimiento | null>(null);
 
   async ngOnInit(): Promise<void> {
@@ -156,7 +154,7 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
 
   onAccionDetalle(
-    evt: 'registrar' | 'ejecutar_pendiente' | 'reprogramar' | 'cerrar_seguimiento' | 'aceptar' | 'rechazar' | 'cerrar_sin_venta',
+    evt: 'registrar' | 'ejecutar_pendiente' | 'reprogramar' | 'cerrar_seguimiento' | 'aceptar' | 'rechazar',
     item?: ItemBandejaSeguimiento,
   ): void {
     const propId = this.idDetalleAbierto();
@@ -170,7 +168,6 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
       case 'cerrar_seguimiento': this.selectorCierreCtx.set(target); break;
       case 'aceptar':            this.aceptacionCtx.set(target); break;
       case 'rechazar':           this.rechazoCtx.set(target); break;
-      case 'cerrar_sin_venta':   this.cerrarSinVentaCtx.set(target); break;
     }
   }
 
@@ -194,13 +191,12 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
 
   cerrarSelectorCierre(): void { this.selectorCierreCtx.set(null); }
 
-  onCierreSeleccionado(tipo: 'aceptar' | 'rechazar' | 'cerrar_sin_venta'): void {
+  onCierreSeleccionado(tipo: 'aceptar' | 'rechazar'): void {
     const target = this.selectorCierreCtx();
     if (!target) return;
     this.selectorCierreCtx.set(null);
-    if      (tipo === 'aceptar')          this.aceptacionCtx.set(target);
-    else if (tipo === 'rechazar')         this.rechazoCtx.set(target);
-    else if (tipo === 'cerrar_sin_venta') this.cerrarSinVentaCtx.set(target);
+    if      (tipo === 'aceptar')  this.aceptacionCtx.set(target);
+    else if (tipo === 'rechazar') this.rechazoCtx.set(target);
   }
 
   // Helpers UI

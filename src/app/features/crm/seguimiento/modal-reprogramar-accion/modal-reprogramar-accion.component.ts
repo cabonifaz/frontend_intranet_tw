@@ -31,6 +31,7 @@ export class ModalReprogramarAccionComponent {
   readonly idResponsable = signal<number | null>(null);
   readonly idMotivo      = signal<number | null>(null);
   readonly detalle       = signal<string>('');
+  readonly minutosAntesNotificar = signal<number>(15);
 
   readonly puedeGuardar = computed(() => {
     return !!this.fechaNueva() && this.idMotivo() !== null;
@@ -77,6 +78,7 @@ export class ModalReprogramarAccionComponent {
         idResponsable: this.idResponsable(),
         idMotivo:      this.idMotivo(),
         detalle:       this.detalle() || null,
+        minutosAntesNotificar: this.minutosAntesNotificar(),
       });
       this.toast.exito('Próxima acción reprogramada correctamente.');
       this.confirmado.emit();

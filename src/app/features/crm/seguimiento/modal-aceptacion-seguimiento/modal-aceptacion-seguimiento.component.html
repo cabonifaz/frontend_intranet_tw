@@ -61,9 +61,11 @@
 
     <!-- Evidencia -->
     <div class="evidencia-box">
-      <label>EVIDENCIA DE ACEPTACIÓN <small>(opcional, máx. 5)</small></label>
+      <label>EVIDENCIA DE ACEPTACIÓN * <small>(obligatorio, máx. 5)</small></label>
       <input type="file" multiple (change)="onArchivosSeleccionados($event)" />
-      @if (archivos().length > 0) {
+      @if (archivos().length === 0) {
+        <small class="evidencia-aviso">Debes adjuntar al menos un archivo para registrar la aceptación.</small>
+      } @else {
         <ul class="evidencia-list">
           @for (a of archivos(); track $index) {
             <li>
