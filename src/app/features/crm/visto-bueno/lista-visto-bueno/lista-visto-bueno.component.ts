@@ -11,7 +11,6 @@ import {
   PoliticasVb,
   ResolverVbRequest,
 } from '../../../../core/models/visto-bueno.model';
-import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
@@ -49,7 +48,7 @@ const SLA_OPCIONES: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-visto-bueno',
   imports: [
-    FormsModule, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    FormsModule, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
     ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
     ModalAprobarVbComponent, ModalRechazarVbComponent, ModalSolicitarCorreccionComponent,

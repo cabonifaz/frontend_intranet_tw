@@ -5,7 +5,6 @@ import { SuministrosService } from '../../../../../core/services/suministros.ser
 import { LineaItemPropuesta } from '../../../../../core/models/propuesta-detalle.model';
 import { SeccionComponent } from '../../../../../shared/ui/seccion/seccion.component';
 import { DoblePanelComponent } from '../../../../../shared/ui/doble-panel/doble-panel.component';
-import { ButtonComponent } from '../../../../../shared/ui/button/button.component';
 import { ModalDescuentoGlobalComponent } from '../../modal-descuento-global/modal-descuento-global.component';
 
 interface SumCatalogo {
@@ -19,7 +18,7 @@ interface SumCatalogo {
 
 @Component({
   selector: 'app-seccion-opcionales',
-  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ButtonComponent, ModalDescuentoGlobalComponent],
+  imports: [FormsModule, SeccionComponent, DoblePanelComponent, ModalDescuentoGlobalComponent],
   styles: `:host { display: block; }`,
   templateUrl: './opcionales.component.html',
   styleUrl: '../propuesta/propuesta.component.scss',

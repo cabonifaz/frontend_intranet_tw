@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CrmService } from '../../../../core/services/crm.service';
 import { KpisRequerimientos, RequerimientoListaItem, CatalogoItem } from '../../../../core/models/crm.model';
-import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
 import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
@@ -17,7 +17,7 @@ import { SiPermisoDirective } from '../../../../core/directives/si-permiso.direc
 
 @Component({
   selector: 'app-lista-requerimientos',
-  imports: [FormsModule, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, BarraFiltrosBandejaComponent, TablaPaginadaComponent, SiPermisoDirective],
+  imports: [FormsModule, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent, DetalleRequerimientoComponent, AnularRequerimientoComponent, BarraFiltrosBandejaComponent, TablaPaginadaComponent, SiPermisoDirective],
   templateUrl: './lista-requerimientos.component.html',
   styleUrl: './lista-requerimientos.component.scss',
 })

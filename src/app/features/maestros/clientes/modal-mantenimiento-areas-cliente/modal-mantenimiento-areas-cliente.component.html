@@ -23,7 +23,7 @@
           maxlength="150"
         />
         <app-button
-          variante="primario"
+          variant="primary"
           icono="add"
           [disabled]="!nombreNuevo().trim() || guardando()"
           [cargando]="guardando()"
@@ -102,7 +102,7 @@
   </div>
 
   <div modalFooter class="mac-footer">
-    <app-button variante="primario" icono="check" (clic)="cerrarYNotificar()">
+    <app-button variant="primary" icono="check" (clic)="cerrarYNotificar()">
       Listo
     </app-button>
   </div>

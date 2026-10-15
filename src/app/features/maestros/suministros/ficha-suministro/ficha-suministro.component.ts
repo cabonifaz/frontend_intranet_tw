@@ -18,7 +18,6 @@ import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
 import { ToggleComponent } from '../../../../shared/ui/toggle/toggle.component';
-import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ModalNuevoItemCatalogoComponent } from '../../../../shared/ui/modal-nuevo-item-catalogo/modal-nuevo-item-catalogo.component';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -38,7 +37,6 @@ import { breadcrumbMaestros } from '../../../../core/constants/breadcrumbs';
     ButtonComponent,
     CampoComponent,
     ToggleComponent,
-    ModalComponent,
     ModalBorradorComponent,
     ModalNuevoItemCatalogoComponent,
   ],

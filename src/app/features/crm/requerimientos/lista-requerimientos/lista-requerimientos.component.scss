@@ -57,26 +57,7 @@ $blanco:          #FFFFFF;
   line-height: 20px;
 }
 
-.btn-nuevo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  background: $azul-primario;
-  color: $blanco;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2), 0 4px 6px -4px rgba(37, 99, 235, 0.2);
-  transition: background 0.15s;
-
-  &:hover { background: darken($azul-primario, 8%); }
-
-  .material-symbols-outlined { font-size: 18px; }
-}
+// Nota: .btn-nuevo vive en global styles.scss.
 
 // ── KPI Grid ─────────────────────────────────────────────────────────────────
 .kpi-grid {

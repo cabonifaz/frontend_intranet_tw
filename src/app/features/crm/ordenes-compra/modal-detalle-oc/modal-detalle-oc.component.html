@@ -312,14 +312,13 @@
 
   <!-- ── Footer ────────────────────────────────────────────────── -->
   @if (datos(); as det) {
-    @let d = det.resumen;
     <div modalFooter class="oc-footer">
       <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
 
       <div class="oc-footer__sep"></div>
 
-      @if (d.idPropuesta) {
-        <app-button variant="secondary" icono="open_in_new" (clic)="abrirPropuesta(d.idPropuesta)">
+      @if (det.resumen.idPropuesta) {
+        <app-button variant="secondary" icono="open_in_new" (clic)="abrirPropuesta(det.resumen.idPropuesta)">
           Abrir Propuesta
         </app-button>
       }

@@ -9,7 +9,6 @@ import {
   ItemBandejaOrdenCompraDto,
   KpisOrdenesCompraDto,
 } from '../../../../core/models/ordenes-compra.model';
-import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
@@ -52,7 +51,7 @@ const COBERTURAS: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-ordenes-compra',
   imports: [
-    FormsModule, DatePipe, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    FormsModule, DatePipe, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
     ModalDetalleOcComponent, ModalRegistrarOcComponent,
     ModalValidarOcComponent, ModalObservarOcComponent,

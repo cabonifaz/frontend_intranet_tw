@@ -11,7 +11,6 @@ import {
   OpcionFiltro,
   ParametrosSeguimiento,
 } from '../../../../core/models/seguimiento.model';
-import { BreadcrumbComponent } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
@@ -45,7 +44,7 @@ const ESTADOS: { codigo: string; label: string }[] = [
 @Component({
   selector: 'app-lista-seguimiento',
   imports: [
-    FormsModule, DatePipe, BreadcrumbComponent, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
+    FormsModule, DatePipe, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
     ModalDetalleSeguimientoComponent, ModalRegistrarSeguimientoComponent, ModalReprogramarAccionComponent,
     ModalAceptacionSeguimientoComponent, ModalRechazoSeguimientoComponent, ModalCerrarSinVentaComponent,

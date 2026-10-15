@@ -14,7 +14,6 @@ import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
 import { FormFooterComponent } from '../../../../shared/ui/form-footer/form-footer.component';
-import { ModalComponent }      from '../../../../shared/ui/modal/modal.component';
 import { ToggleComponent }     from '../../../../shared/ui/toggle/toggle.component';
 import { BadgeComponent }      from '../../../../shared/ui/badge/badge.component';
 import { BadgeEstadoComponent } from '../../../../shared/ui/badge-estado/badge-estado.component';
@@ -47,7 +46,6 @@ import { PermisoDirective } from '../../../../shared/directives/permiso.directiv
     HeroHeaderComponent,
     SeccionComponent,
     FormFooterComponent,
-    ModalComponent,
     ToggleComponent,
     BadgeComponent,
     BadgeEstadoComponent,
