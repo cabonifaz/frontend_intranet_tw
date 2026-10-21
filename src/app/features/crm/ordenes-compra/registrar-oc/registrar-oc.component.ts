@@ -137,11 +137,21 @@ export class RegistrarOcComponent {
     (this.comparacion()?.campos ?? []).filter(c => c.severidad === 'advertencia'),
   );
 
+  /** True si la asignación supera 100% (monto asignado a propuestas > monto total OC). */
+  readonly sobreasignado = computed(() => {
+    const m = this.datos().montoTotal ?? 0;
+    return m > 0 && this.totalAsignado() > m;
+  });
+
+  /** Diferencia entre asignado y monto total (positivo = exceso, negativo = falta). */
+  readonly diferenciaAsignacion = computed(() => this.totalAsignado() - (this.datos().montoTotal ?? 0));
+
   readonly formularioValido = computed(() => {
     const d = this.datos();
     const basico = (d.numeroOc?.trim().length ?? 0) > 0
       && !!d.fechaEmision && d.idMoneda != null
-      && (d.montoTotal ?? 0) > 0 && this.vinculadas().length > 0;
+      && (d.montoTotal ?? 0) > 0 && this.vinculadas().length > 0
+      && !this.sobreasignado();
     if (this.modo() === 'crear') return basico && !!this.archivo();
     return basico;
   });

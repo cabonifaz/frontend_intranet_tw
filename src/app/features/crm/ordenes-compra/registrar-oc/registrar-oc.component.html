@@ -57,15 +57,34 @@
                 <span>ASIGNADO</span>
                 <strong>{{ formatearMonto(totalAsignado(), monedaSimbolo()) }}</strong>
               </div>
-              <span class="asignacion-chip" [class.asignacion-chip--ok]="asignadoPct() === 100">
-                @if (asignadoPct() === 100) { <span class="material-symbols-outlined">check</span> Asignación 100% completa }
-                @else { Asignación {{ asignadoPct() }}% }
+              <span class="asignacion-chip"
+                    [class.asignacion-chip--ok]="asignadoPct() === 100 && !sobreasignado()"
+                    [class.asignacion-chip--error]="sobreasignado()">
+                @if (sobreasignado()) {
+                  <span class="material-symbols-outlined">error</span> Asignación {{ asignadoPct() }}% (excede)
+                } @else if (asignadoPct() === 100) {
+                  <span class="material-symbols-outlined">check</span> Asignación 100% completa
+                } @else {
+                  Asignación {{ asignadoPct() }}%
+                }
               </span>
             </div>
             <div class="asignacion-resumen__barra">
-              <div class="asignacion-resumen__fill" [style.width.%]="asignadoPct()"
-                   [class.asignacion-resumen__fill--completa]="asignadoPct() === 100"></div>
+              <div class="asignacion-resumen__fill"
+                   [style.width.%]="asignadoPct() > 100 ? 100 : asignadoPct()"
+                   [class.asignacion-resumen__fill--completa]="asignadoPct() === 100 && !sobreasignado()"
+                   [class.asignacion-resumen__fill--error]="sobreasignado()"></div>
             </div>
+
+            @if (sobreasignado()) {
+              <div class="asignacion-alerta">
+                <span class="material-symbols-outlined">warning</span>
+                <div>
+                  <strong>El monto asignado a las propuestas excede el monto total de la OC</strong>
+                  <small>Diferencia: {{ formatearMonto(diferenciaAsignacion(), monedaSimbolo()) }}. Ajusta el <strong>Monto total</strong> en la Sección 3 o reduce el <strong>Monto asignado</strong> a las propuestas vinculadas.</small>
+                </div>
+              </div>
+            }
           </div>
 
           <!-- Tabla de propuestas vinculadas -->
