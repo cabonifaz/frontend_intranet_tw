@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { catchError, firstValueFrom, throwError } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   CambiarContrasenaRequest,
@@ -79,21 +79,15 @@ export class AutenticacionService {
   }
 
   async iniciarSesion(entrada: IniciarSesionEntrada, recordarme: boolean): Promise<void> {
+    // El tokenInterceptor ya convierte errores del back (400/500) en Error
+    // con el mensaje de negocio real, así que no hace falta un catchError aquí.
     const respuesta = USAR_MOCK
       ? await this.mockIniciarSesion(entrada)
       : await firstValueFrom(
-          this.http
-            .post<RespuestaApi<IniciarSesionSalida>>(
-              `${environment.apiUrl}/api/autenticacion/iniciar-sesion`,
-              entrada
-            )
-            .pipe(
-              catchError((err: HttpErrorResponse) => {
-                const mensaje =
-                  err.error?.mensaje ?? 'Error al conectar con el servidor.';
-                return throwError(() => new Error(mensaje));
-              })
-            )
+          this.http.post<RespuestaApi<IniciarSesionSalida>>(
+            `${environment.apiUrl}/api/autenticacion/iniciar-sesion`,
+            entrada,
+          )
         );
 
     if (!respuesta.datos) {
@@ -124,15 +118,11 @@ export class AutenticacionService {
    * limpia el flag forzarCambioContrasena del signal y del storage.
    */
   async cambiarContrasena(dto: CambiarContrasenaRequest): Promise<void> {
+    // tokenInterceptor convierte errores del back en Error con mensaje de negocio.
     const r = await firstValueFrom(
       this.http.post<RespuestaApi<null>>(
         `${environment.apiUrl}/api/autenticacion/cambiar-contrasena`,
         dto,
-      ).pipe(
-        catchError((err: HttpErrorResponse) => {
-          const mensaje = err.error?.mensaje ?? 'Error al cambiar la contraseña.';
-          return throwError(() => new Error(mensaje));
-        }),
       ),
     );
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);

@@ -207,6 +207,22 @@ export class ModalDetalleOcComponent {
   editar(): void { this.accion.emit('editar'); }
   anular(): void { this.accion.emit('anular'); }
 
+  /** Reemplazar OC autogenerada por la OC real del cliente → navega al flujo "nueva" con ?reemplazar=X */
+  reemplazarAuto(): void {
+    const c = this.cabecera();
+    if (!c?.esAutogenerada) return;
+    const propOrigen = this.propuestas()[0];
+    if (!propOrigen) {
+      this.toast.error('No se encontró la propuesta de origen.');
+      return;
+    }
+    this.cerrar.emit();
+    void this.router.navigate(
+      ['/crm/ordenes-compra/nueva', propOrigen.idPropuesta],
+      { queryParams: { reemplazar: c.idOc } },
+    );
+  }
+
   /** Navega a la propuesta vinculada (la primera o la seleccionada). */
   abrirPropuesta(): void {
     const prop = this.propuestaActual() ?? this.propuestas()[0];
