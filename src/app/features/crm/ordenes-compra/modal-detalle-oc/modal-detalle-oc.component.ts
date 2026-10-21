@@ -65,15 +65,38 @@ export class ModalDetalleOcComponent {
     return props.find(p => p.idPropuesta === id) ?? props[0];
   });
 
+  readonly subtituloModal = computed<string | null>(() => {
+    const c = this.cabecera();
+    if (!c) return null;
+    const partes: string[] = [];
+    if (c.razonSocial)   partes.push(c.razonSocial);
+    if (c.fechaRegistro) partes.push(`Registrada el ${this.formatearFechaCorta(c.fechaRegistro)}`);
+    if (c.registradoPor) partes.push(`por ${c.registradoPor}`);
+    return partes.length > 0 ? partes.join(' · ') : null;
+  });
+
+  private formatearFechaCorta(iso: string): string {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+  }
+
   readonly estadoChip = computed(() => {
     const estado = this.cabecera()?.estadoVisual ?? this.cabecera()?.estado ?? '';
     const map: Record<string, { clase: string; label: string }> = {
-      recibida:         { clase: 'badge--ambar', label: 'Recibida' },
-      validada:         { clase: 'badge--verde', label: 'Validada' },
-      validada_parcial: { clase: 'badge--verde', label: 'Validada parcial' },
-      observada:        { clase: 'badge--rojo',  label: 'Observada' },
-      anulada:          { clase: 'badge--gris',  label: 'Anulada' },
-      reemplazada:      { clase: 'badge--gris',  label: 'Reemplazada' },
+      autogenerada:         { clase: 'badge--morado', label: 'Autogenerada' },
+      validada:             { clase: 'badge--verde',  label: 'Validada' },
+      validada_parcial:     { clase: 'badge--verde',  label: 'Validada parcial' },
+      observada:            { clase: 'badge--ambar',  label: 'Observada' },
+      pendiente_reemplazo:  { clase: 'badge--rojo',   label: 'Pendiente Reemplazo' },
+      anulada:              { clase: 'badge--gris',   label: 'Anulada' },
+      // Fallbacks temporales mientras el back no actualice los nombres
+      recibida:             { clase: 'badge--ambar',  label: 'Recibida' },
+      reemplazada:          { clase: 'badge--gris',   label: 'Reemplazada' },
     };
     return map[estado] ?? { clase: 'badge--gris', label: estado };
   });
@@ -206,6 +229,24 @@ export class ModalDetalleOcComponent {
 
   editar(): void { this.accion.emit('editar'); }
   anular(): void { this.accion.emit('anular'); }
+
+  /**
+   * "Reemplazar documento" — mismo flujo que reemplazarAuto() pero para OCs observadas / con críticas.
+   * Navega a la ficha de registro con ?reemplazar=X para subir el nuevo PDF y re-validar con IA.
+   */
+  irAReemplazarDocumento(): void {
+    const c = this.cabecera();
+    if (!c) return;
+    const propOrigen = this.propuestas()[0];
+    if (!propOrigen) {
+      this.toast.error('No se encontró la propuesta de origen.');
+      return;
+    }
+    this.cerrar.emit();
+    void this.router.navigate(['/crm/ordenes-compra/nueva', propOrigen.idPropuesta], {
+      queryParams: { reemplazar: c.idOc },
+    });
+  }
 
   /** Reemplazar OC autogenerada por la OC real del cliente → navega al flujo "nueva" con ?reemplazar=X */
   reemplazarAuto(): void {

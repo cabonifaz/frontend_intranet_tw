@@ -1,0 +1,123 @@
+// ─── Controles (buscador + contador) ────────────────────────────────────
+.sp-controls {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sp-busqueda {
+  flex: 1;
+  position: relative;
+
+  &__icono {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 18px;
+  }
+
+  &__input {
+    width: 100%; box-sizing: border-box;
+    padding: 9px 12px 9px 36px;
+    border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 13px;
+    &:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+  }
+}
+
+.sp-count {
+  font-size: 12px; color: #64748b; font-weight: 600; white-space: nowrap;
+}
+
+// ─── Tabla ──────────────────────────────────────────────────────────────
+.sp-tabla-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sp-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+
+  thead th {
+    background: #f8fafc;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  thead th.sp-th--num { text-align: right; }
+  thead th.sp-th--der { text-align: right; }
+
+  tbody tr { transition: background 0.1s; }
+  tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #475569;
+  }
+  td.sp-td--num { text-align: right; white-space: nowrap; color: #0f172a; }
+  td.sp-td--der { text-align: right; }
+  td.sp-td--vacio {
+    text-align: center; padding: 32px; color: #94a3b8; font-style: italic;
+    .material-symbols-outlined { font-size: 20px; margin-right: 6px; vertical-align: middle; color: #cbd5e1; }
+  }
+}
+
+.sp-fila {
+  cursor: pointer;
+  &:hover { background: #f8fafc; }
+  &--seleccionada { background: #eff6ff !important; }
+}
+
+.sp-chip-ver {
+  display: inline-block; margin-left: 6px;
+  padding: 2px 8px;
+  background: #ede9fe; color: #6b21a8;
+  border-radius: 10px;
+  font-size: 10.5px; font-weight: 700;
+}
+
+.sp-btn-sel {
+  all: unset; cursor: pointer; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 5px 12px;
+  background: #ffffff; color: #2563eb;
+  border: 1px solid #bfdbfe; border-radius: 8px;
+  font-size: 11.5px; font-weight: 600;
+  transition: all 0.15s;
+
+  &:hover { background: #eff6ff; }
+  &--activo { background: #2563eb; color: #fff; border-color: #2563eb;
+    &:hover { background: #1d4ed8; }
+  }
+}
+
+// ─── Paginación ─────────────────────────────────────────────────────────
+.sp-paginacion {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px;
+  font-size: 12px; color: #64748b;
+}
+
+.sp-pag-btns { display: flex; gap: 6px; }
+
+// ─── Footer del modal ───────────────────────────────────────────────────
+.modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px;
+  padding: 14px 22px !important;
+  border-top: 1px solid #e2e8f0;
+  background: #fafbfc;
+
+  &__der {
+    display: flex; align-items: center; gap: 12px;
+  }
+}
+
+.sp-seleccionado-label {
+  font-size: 12.5px; color: #475569;
+  strong { color: #0f172a; }
+}

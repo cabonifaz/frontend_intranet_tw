@@ -7,6 +7,7 @@ import { SeccionComponent } from '../../../../shared/ui/seccion/seccion.componen
 import { PageHeaderComponent } from '../../../../shared/ui/page-header/page-header.component';
 import { EstadoVacioComponent } from '../../../../shared/ui/estado-vacio/estado-vacio.component';
 import { ModalVerComparacionOcComponent } from '../modal-ver-comparacion-oc/modal-ver-comparacion-oc.component';
+import { SeleccionarPropuestaVincularComponent } from '../seleccionar-propuesta-vincular/seleccionar-propuesta-vincular.component';
 import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { OrdenesCompraService } from '../../../../core/services/ordenes-compra.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -52,6 +53,7 @@ interface PropuestaVinculadaLocal {
     CommonModule, FormsModule,
     ButtonComponent, SeccionComponent, PageHeaderComponent, EstadoVacioComponent,
     ModalVerComparacionOcComponent,
+    SeleccionarPropuestaVincularComponent,
     MonedaPipe,
   ],
   templateUrl: './registrar-oc.component.html',
@@ -69,6 +71,7 @@ export class RegistrarOcComponent {
   /** idOc de la OC autogenerada de respaldo (creada al llegar a la ficha). Si registramos OC real, esta se reemplaza. */
   readonly idOcReemplaza     = signal<number | null>(null);
   readonly modalComparacionAbierto = signal(false);
+  readonly modalSeleccionPropuestaAbierto = signal(false);
 
   readonly cargando    = signal(true);
   readonly guardando   = signal(false);
@@ -108,6 +111,11 @@ export class RegistrarOcComponent {
   readonly saldoOc = computed(() => (this.datos().montoTotal ?? 0) - this.totalAsignado());
   readonly monedaSimbolo = computed(() => this.monedas().find(m => m.id === this.datos().idMoneda)?.simbolo ?? '');
   readonly nombreMoneda = computed(() => this.monedas().find(m => m.id === this.datos().idMoneda)?.nombre ?? '—');
+  /** Heurística: la OC a reemplazar es autogenerada si su número empieza con "OC-AUTO". */
+  readonly ocAReemplazarEsAutogenerada = computed(() => {
+    const num = this.preparacion()?.ocAReemplazar?.numeroOc ?? '';
+    return /^OC-?AUTO/i.test(num);
+  });
   readonly nombreCondicionPago = computed(() => this.condicionesPago().find(c => c.id === this.datos().idCondicionPago)?.nombre ?? '—');
   readonly resumenValidacion = computed(() => this.comparacion()?.resumen ?? null);
   readonly asignadoPct = computed(() => {
@@ -146,6 +154,55 @@ export class RegistrarOcComponent {
 
   /** Diferencia entre asignado y monto total (positivo = exceso, negativo = falta). */
   readonly diferenciaAsignacion = computed(() => this.totalAsignado() - (this.datos().montoTotal ?? 0));
+
+  /**
+   * Única acción posible al pie, calculada según resultado IA + checkbox facturaIgualOc.
+   * - Críticas → siempre "correccion_cliente" (bloqueante, el cliente debe reemitir).
+   * - Estricta + advertencias → "correccion_cliente" (al facturar debe coincidir todo).
+   * - Flexible + advertencias → "observar" (datos clave OK, resto puede diferir).
+   * - Sin diferencias → "validar".
+   */
+  readonly accionPrincipal = computed<Decision | null>(() => {
+    const r = this.resumenValidacion();
+    if (!r) return null;
+    const estricta = this.datos().facturaIgualOc;
+    if (r.criticas > 0)                     return 'correccion_cliente';
+    if (estricta && r.advertencias > 0)     return 'correccion_cliente';
+    if (!estricta && r.advertencias > 0)    return 'observar';
+    return 'validar';
+  });
+
+  /** Texto, icono y variante del botón principal según la acción decidida. */
+  readonly botonPrincipal = computed(() => {
+    const a = this.accionPrincipal();
+    switch (a) {
+      case 'validar':
+        return { texto: 'Registrar OC',                 icono: 'check',  variant: 'primary' as const };
+      case 'observar':
+        return { texto: 'Registrar con observaciones',  icono: 'flag',   variant: 'warning' as const };
+      case 'correccion_cliente':
+        return { texto: 'Solicitar corrección al cliente', icono: 'mail', variant: 'danger-ghost' as const };
+      default:
+        return null;
+    }
+  });
+
+  /** Mensaje contextual junto al botón explicando por qué sale esa acción. */
+  readonly explicacionAccion = computed<string | null>(() => {
+    const r = this.resumenValidacion();
+    if (!r) return null;
+    const estricta = this.datos().facturaIgualOc;
+    if (r.criticas > 0) {
+      return 'Hay diferencias críticas: el cliente debe emitir una OC corregida antes de registrar.';
+    }
+    if (estricta && r.advertencias > 0) {
+      return 'Marcaste que la factura debe coincidir con la OC, pero hay diferencias. Pide al cliente que corrija.';
+    }
+    if (!estricta && r.advertencias > 0) {
+      return 'Diferencias menores aceptables (modo flexible). Se registrará con observación.';
+    }
+    return 'Todos los datos coinciden con la propuesta. Lista para registrar.';
+  });
 
   readonly formularioValido = computed(() => {
     const d = this.datos();
@@ -214,7 +271,7 @@ export class RegistrarOcComponent {
         this.vinculadas.set([{
           idPropuesta: p.propuesta.idPropuesta, numero: p.propuesta.numero, version: p.propuesta.version,
           total: p.propuesta.total, saldo: p.propuesta.saldo, idMoneda: p.propuesta.idMoneda,
-          monedaSimbolo: p.propuesta.monedaSimbolo, montoAsignado: p.propuesta.saldo, esOrigen: true,
+          monedaSimbolo: p.propuesta.monedaSimbolo, montoAsignado: 0, esOrigen: true,
           contacto: p.propuesta.contacto, numeroRq: p.propuesta.numeroRq, servicios: p.propuesta.items,
         }]);
       }
@@ -267,6 +324,15 @@ export class RegistrarOcComponent {
       if (r.advertencias.length > 0) this.toast.error(`Advertencias IA: ${r.advertencias.join(' · ')}`);
       else this.toast.exito(`PDF leído por ${r.motor}${r.confianza ? ' (' + Math.round(r.confianza * 100) + '%)' : ''}.`);
 
+      // Auto-asignación: si hay UNA sola propuesta vinculada, asignarle el monto total extraído.
+      // Si hay varias, el comercial debe distribuir manualmente antes de validar.
+      const montoTotal = this.datos().montoTotal ?? 0;
+      if (this.vinculadas().length === 1 && montoTotal > 0) {
+        const idOrigen = this.vinculadas()[0].idPropuesta;
+        this.vinculadas.update(list => list.map(v =>
+          v.idPropuesta === idOrigen ? { ...v, montoAsignado: montoTotal } : v));
+      }
+
       // Validación automática contra la(s) propuesta(s) vinculada(s) — sin esperar click del usuario.
       await this.validarAhora();
     } catch (e: unknown) {
@@ -291,20 +357,24 @@ export class RegistrarOcComponent {
 
   // ─── Multi-propuesta ───────────────────────────────────────────────────
 
-  agregarPropuesta(idx: string): void {
-    const n = Number(idx);
-    const p = this.otrasPropuestas()[n];
-    if (!p) return;
+  abrirSeleccionPropuesta(): void { this.modalSeleccionPropuestaAbierto.set(true); }
+  cerrarSeleccionPropuesta(): void { this.modalSeleccionPropuestaAbierto.set(false); }
+
+  /** Callback cuando se confirma la selección en el modal. */
+  onPropuestaSeleccionada(p: PropuestaDisponibleOcDto): void {
+    this.modalSeleccionPropuestaAbierto.set(false);
     if (this.vinculadas().some(v => v.idPropuesta === p.idPropuesta)) {
       this.toast.error('Esta propuesta ya está vinculada.'); return;
     }
     this.vinculadas.update(list => [...list, {
       idPropuesta: p.idPropuesta, numero: p.numero, version: p.version,
       total: p.total, saldo: p.saldo, idMoneda: p.idMoneda,
-      monedaSimbolo: p.monedaSimbolo, montoAsignado: p.saldo, esOrigen: false,
+      monedaSimbolo: p.monedaSimbolo, montoAsignado: 0, esOrigen: false,
       contacto: p.contacto, numeroRq: p.numeroRq,
     }]);
     this.otrasPropuestas.update(list => list.filter(x => x.idPropuesta !== p.idPropuesta));
+    // Si ya hay PDF extraído, re-disparar validación IA contra todas las propuestas vinculadas.
+    if (this.extraccionExitosa()) void this.validarAhora();
   }
 
   quitarPropuesta(idPropuesta: number): void {
@@ -316,6 +386,8 @@ export class RegistrarOcComponent {
       total: v.total, saldo: v.saldo, idMoneda: v.idMoneda,
       monedaSimbolo: v.monedaSimbolo, tieneOc: false,
     } as PropuestaDisponibleOcDto]);
+    // Si ya hay PDF extraído, re-disparar validación IA tras desvincular.
+    if (this.extraccionExitosa()) void this.validarAhora();
   }
 
   actualizarMontoAsignado(idPropuesta: number, monto: number): void {
@@ -331,7 +403,8 @@ export class RegistrarOcComponent {
       const r = await this.svc.comparar({
         idOc: this.modo() === 'editar' ? this.idOcEditar() : null,
         idPropuesta: this.modo() === 'crear' ? this.vinculadas().find(v => v.esOrigen)?.idPropuesta ?? null : null,
-        idOcReemplaza: null,
+        // Pasamos la OC autogenerada de respaldo para que el back la ignore al validar cobertura.
+        idOcReemplaza: this.idOcReemplaza(),
         datos: this.datos(),
         vinculaciones: this.vinculadas().map(v => ({ idPropuesta: v.idPropuesta, montoAsignado: v.montoAsignado })),
       }, true);

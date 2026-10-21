@@ -1,9 +1,29 @@
 <app-modal
   [titulo]="'Detalle de Orden de Compra  /  ' + (cabecera()?.numeroOc ?? '')"
+  [subtitulo]="subtituloModal()"
   icono="receipt_long"
   iconoColor="azul"
   ancho="xl"
   (cerrar)="onCerrar()">
+
+  @if (cabecera(); as c) {
+    <span modalHeaderBadges class="oc-header-badges">
+      <span class="badge {{ estadoChip().clase }}">● {{ estadoChip().label | uppercase }}</span>
+      @if (c.esAutogenerada) {
+        <span class="chip-autogenerada">
+          <span class="material-symbols-outlined">bolt</span> Autogenerada
+        </span>
+        @if (c.pendienteReemplazo) {
+          <span class="chip-pendiente-reemplazo">Pendiente de reemplazo</span>
+        }
+      }
+      @if (c.numeroExpediente) {
+        <span class="chip-expediente">
+          <span class="material-symbols-outlined">folder</span> {{ c.numeroExpediente }}
+        </span>
+      }
+    </span>
+  }
 
   @if (cargando()) {
     <div class="oc-cargando">
@@ -11,35 +31,6 @@
       Cargando detalle de la OC...
     </div>
   } @else if (cabecera(); as c) {
-
-    <!-- ── Encabezado: razón social + chips + metadata ──────── -->
-    <div class="oc-encabezado">
-      <div class="oc-encabezado__principal">
-        <strong class="oc-encabezado__cliente">{{ c.razonSocial }}</strong>
-        <span class="badge {{ estadoChip().clase }}">● {{ estadoChip().label | uppercase }}</span>
-        @if (c.esAutogenerada) {
-          <span class="chip-autogenerada">
-            <span class="material-symbols-outlined">bolt</span> Autogenerada
-          </span>
-          @if (c.pendienteReemplazo) {
-            <span class="chip-pendiente-reemplazo">Pendiente de reemplazo</span>
-          }
-        }
-        @if (c.numeroExpediente) {
-          <span class="chip-expediente">
-            <span class="material-symbols-outlined">folder</span> {{ c.numeroExpediente }}
-          </span>
-        }
-      </div>
-      <div class="oc-encabezado__meta">
-        @if (c.fechaRegistro) {
-          <span><span class="material-symbols-outlined">schedule</span> Registrada el {{ c.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}</span>
-        }
-        @if (c.registradoPor) {
-          <span><span class="material-symbols-outlined">person</span> {{ c.registradoPor }}</span>
-        }
-      </div>
-    </div>
 
     <!-- ── Aviso OC autogenerada ───────────────────────────── -->
     @if (c.esAutogenerada && c.pendienteReemplazo) {
@@ -408,10 +399,7 @@
           <button class="chip-filtro chip-filtro--azul" [class.chip-filtro--activo]="filtroTimeline() === 'comercial'" (click)="filtroTimeline.set('comercial')">
             Comercial
           </button>
-          <button class="chip-filtro chip-filtro--gris" [class.chip-filtro--activo]="filtroTimeline() === 'documental'" (click)="filtroTimeline.set('documental')">
-            Documental
-          </button>
-          <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarAuditoria()">Exportar XLSX</app-button>
+          <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarAuditoria()">Exportar</app-button>
         </div>
 
         <app-seccion icono="timeline" titulo="Línea de Tiempo y Auditoría de la Orden"
@@ -445,8 +433,8 @@
         <div class="doc-acciones">
           <app-button variant="ghost" icono="download" (clic)="descargarPdf()">Descargar Original</app-button>
           <app-button variant="ghost" icono="fullscreen" (clic)="verPdf()">Abrir en Pantalla Completa</app-button>
-          @if (c.puedeReemplazarPdf) {
-            <app-button variant="secondary" icono="swap_horiz" (clic)="editar()">Reemplazar Documento</app-button>
+          @if (c.puedeReemplazarPdf && c.estado === 'pendiente_reemplazo') {
+            <app-button variant="secondary" icono="swap_horiz" (clic)="irAReemplazarDocumento()">Reemplazar Documento</app-button>
           }
         </div>
 
@@ -480,8 +468,8 @@
       @if (c.puedeAnular) {
         <app-button variant="danger-ghost" icono="block" (clic)="anular()">Anular OC</app-button>
       }
-      @if (c.puedeEditar) {
-        <app-button variant="primary" icono="edit" (clic)="editar()">Editar OC</app-button>
+      @if (c.puedeReemplazarPdf && c.estado === 'pendiente_reemplazo') {
+        <app-button variant="secondary" icono="swap_horiz" (clic)="irAReemplazarDocumento()">Reemplazar Documento</app-button>
       }
       @if (c.puedeAgregarPropuesta) {
         <app-button variant="primary" icono="add" (clic)="editar()">+ Agregar Propuesta</app-button>

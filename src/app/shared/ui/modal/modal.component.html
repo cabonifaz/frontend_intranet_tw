@@ -8,7 +8,10 @@
           </div>
         }
         <div class="modal__textos">
-          <h2 class="modal__titulo">{{ titulo() }}</h2>
+          <div class="modal__titulo-fila">
+            <h2 class="modal__titulo">{{ titulo() }}</h2>
+            <ng-content select="[modalHeaderBadges]"></ng-content>
+          </div>
           @if (subtitulo(); as sub) {
             <p class="modal__subtitulo">{{ sub }}</p>
           }

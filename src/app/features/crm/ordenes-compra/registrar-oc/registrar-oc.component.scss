@@ -1,3 +1,5 @@
+:host { display: block; }
+
 .pagina {
   padding: 24px;
   background: #f8fafc;
@@ -6,7 +8,8 @@
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
-  overflow-x: hidden;
+  // Sin overflow aquí: el scroll horizontal se gestiona dentro de cada tabla.
+  // Cualquier overflow en .pagina rompe el position:sticky del sidebar.
 }
 
 .cargando, .error {
@@ -21,7 +24,7 @@
 .spin { animation: rot 1s linear infinite; }
 @keyframes rot { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-// ─── Aviso de OC autogenerada de respaldo ────────────────────
+// ─── Aviso de OC a reemplazar (autogenerada o corregida) ─────
 .aviso-respaldo {
   display: flex; gap: 12px; align-items: flex-start;
   padding: 12px 16px;
@@ -31,6 +34,14 @@
   &__texto { display: flex; flex-direction: column; gap: 2px;
     strong { font-size: 13px; color: #1e40af; }
     small  { font-size: 11.5px; color: #475569; line-height: 1.45; }
+    em { font-style: italic; color: #334155; }
+  }
+
+  // Variante para "corrección" (reemplazo de OC observada/crítica)
+  &--correccion {
+    background: #fffbeb; border-color: #fde68a;
+    .material-symbols-outlined { color: #d97706; }
+    .aviso-respaldo__texto strong { color: #92400e; }
   }
 }
 
@@ -40,13 +51,18 @@
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 16px;
   min-width: 0;
+  align-items: start; // ← evita que el sidebar se estire a la altura de la columna principal
 
   @media (max-width: 1100px) { grid-template-columns: minmax(0, 1fr); }
 }
 
 .columna-principal, .columna-sidebar { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
-.columna-sidebar { position: sticky; top: 16px; align-self: flex-start; }
+.columna-sidebar {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
 
 // ─── 1. Encabezado cliente (sección 1) ───────────────────────
 .cliente-encabezado {
@@ -145,25 +161,22 @@
   &--ambar  { background: #fef3c7; color: #92400e; }
 }
 
-.agregar-propuesta {
+// Botón "Vincular Propuesta Adicional" (abre el modal de selección)
+.agregar-propuesta-btn {
   margin-top: 12px;
-  padding: 12px; border: 1px dashed #93c5fd; border-radius: 10px;
-  background: #eff6ff;
-  display: flex; flex-direction: column; gap: 6px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px;
+  background: #eff6ff; border: 1px dashed #93c5fd; border-radius: 10px;
 
-  &__label { font-size: 13px; color: #1e40af; font-weight: 700; }
-  select {
-    width: 100%; padding: 8px 12px;
-    border: 1px solid #bfdbfe; border-radius: 8px;
-    background: #ffffff; color: #0f172a;
-    font-size: 12.5px;
-    cursor: pointer;
-    &:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-  }
+  small { font-size: 11.5px; color: #1e40af; font-weight: 500; }
+}
 
+.agregar-propuesta {
   &--vacio {
-    flex-direction: row; align-items: center;
-    background: #f8fafc; border-color: #e2e8f0;
+    margin-top: 12px;
+    padding: 12px; border: 1px dashed #e2e8f0; border-radius: 10px;
+    background: #f8fafc;
+    display: flex; flex-direction: row; align-items: center; gap: 8px;
     .material-symbols-outlined { font-size: 18px; color: #94a3b8; }
     small { font-size: 11.5px; color: #64748b; }
   }
@@ -222,14 +235,30 @@
   background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
 
   &--full { grid-column: 1 / -1; background: #eff6ff; border-color: #bfdbfe; }
+  &--editable {
+    .dato-item__label .material-symbols-outlined { color: #2563eb; }
+  }
 
   &__label {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.3px;
     .material-symbols-outlined { font-size: 13px; color: #7c3aed; }
   }
+  &__req {
+    margin-left: 4px;
+    font-size: 10px; color: #2563eb; font-weight: 600; letter-spacing: 0;
+  }
   &__valor {
     font-size: 14px; font-weight: 600; color: #0f172a;
+  }
+  &__input {
+    width: fit-content; min-width: 160px;
+    padding: 6px 10px;
+    background: #ffffff;
+    border: 1px solid #bfdbfe; border-radius: 8px;
+    font-size: 13px; color: #0f172a; font-weight: 600;
+    font-family: inherit;
+    &:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
   }
 }
 
@@ -471,15 +500,17 @@ textarea {
 }
 
 .btn-ver-detalle {
-  all: unset; cursor: pointer;
+  all: unset; cursor: pointer; box-sizing: border-box;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%;
-  padding: 8px 12px;
-  background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;
-  font-size: 12px; color: #2563eb; font-weight: 600;
+  padding: 9px 12px;
+  background: #2563eb; border: 1px solid #2563eb; border-radius: 8px;
+  font-size: 12px; color: #ffffff; font-weight: 600;
   transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
   .material-symbols-outlined { font-size: 16px; }
-  &:hover { background: #eff6ff; border-color: #2563eb; }
+  &:hover { background: #1d4ed8; border-color: #1d4ed8; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25); }
+  &:active { background: #1e40af; }
 }
 
 .validacion-detalle {
@@ -496,12 +527,13 @@ textarea {
   &--adv strong { color: #92400e; }
 }
 
-// ─── Footer de página ────────────────────────────────────────
+// ─── Footer de página (al final del contenido, no sticky) ────
 .footer-pagina {
   display: flex; gap: 8px; align-items: center;
   padding: 14px 18px;
-  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;
-  position: sticky; bottom: 0; z-index: 10;
+  background: #ffffff;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+  flex-shrink: 0;
 
   &__sep { flex: 1; }
 }
@@ -511,11 +543,20 @@ textarea {
   padding: 8px 12px;
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
   font-size: 12px; color: #1e40af;
-  .material-symbols-outlined { font-size: 16px; }
+  max-width: 480px; line-height: 1.4;
+  .material-symbols-outlined { font-size: 16px; flex-shrink: 0; }
 
   &--error {
     background: #fef2f2; border-color: #fca5a5; color: #991b1b;
     .material-symbols-outlined { color: #dc2626; }
+  }
+  &--warning {
+    background: #fffbeb; border-color: #fde68a; color: #92400e;
+    .material-symbols-outlined { color: #d97706; }
+  }
+  &--ok {
+    background: #f0fdf4; border-color: #86efac; color: #166534;
+    .material-symbols-outlined { color: #16a34a; }
   }
 }
 

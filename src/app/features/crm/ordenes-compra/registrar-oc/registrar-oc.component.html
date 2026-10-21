@@ -17,14 +17,24 @@
     </div>
   } @else {
 
-    @if (idOcReemplaza()) {
-      <div class="aviso-respaldo">
-        <span class="material-symbols-outlined">bolt</span>
-        <div class="aviso-respaldo__texto">
-          <strong>OC provisional de respaldo creada</strong>
-          <small>Se creó una OC autogenerada temporal (ID #{{ idOcReemplaza() }}) para que la operación no quede bloqueada. Al registrar la OC real del cliente aquí, la provisional será reemplazada automáticamente. Si abandonas esta ficha sin guardar, la OC provisional quedará como respaldo.</small>
+    @if (idOcReemplaza() && preparacion()?.ocAReemplazar; as oc) {
+      @if (ocAReemplazarEsAutogenerada()) {
+        <div class="aviso-respaldo">
+          <span class="material-symbols-outlined">bolt</span>
+          <div class="aviso-respaldo__texto">
+            <strong>OC provisional de respaldo creada</strong>
+            <small>Se creó una OC autogenerada temporal ({{ oc.numeroOc }}) para que la operación no quede bloqueada. Al registrar la OC real del cliente aquí, la provisional será reemplazada automáticamente. Si abandonas esta ficha sin guardar, la OC provisional quedará como respaldo.</small>
+          </div>
         </div>
-      </div>
+      } @else {
+        <div class="aviso-respaldo aviso-respaldo--correccion">
+          <span class="material-symbols-outlined">swap_horiz</span>
+          <div class="aviso-respaldo__texto">
+            <strong>Reemplazando OC {{ oc.numeroOc }}</strong>
+            <small>Esta OC estaba en estado observada/crítica. Al subir el nuevo PDF (OC corregida enviada por el cliente), la IA re-validará automáticamente contra la propuesta y la OC anterior quedará como <em>reemplazada</em> en el histórico. Si abandonas esta ficha sin guardar, la OC anterior se mantiene como está.</small>
+          </div>
+        </div>
+      }
     }
 
     <div class="layout">
@@ -131,14 +141,11 @@
           </div>
 
           @if (otrasPropuestas().length > 0) {
-            <div class="agregar-propuesta">
-              <label class="agregar-propuesta__label">+ Vincular Propuesta Adicional</label>
-              <select (change)="agregarPropuesta($any($event.target).value); $any($event.target).value = ''">
-                <option value="">Seleccionar propuesta aceptada del mismo cliente...</option>
-                @for (p of otrasPropuestas(); track p.idPropuesta; let i = $index) {
-                  <option [value]="i">{{ p.numero }} v{{ p.version }} · Saldo {{ formatearMonto(p.saldo, p.monedaSimbolo) }}</option>
-                }
-              </select>
+            <div class="agregar-propuesta-btn">
+              <app-button variant="secondary" icono="add" (clic)="abrirSeleccionPropuesta()">
+                Vincular Propuesta Adicional
+              </app-button>
+              <small>{{ otrasPropuestas().length }} propuesta(s) aceptada(s) del mismo cliente disponible(s)</small>
             </div>
           } @else if (vinculadas().length === 1) {
             <div class="agregar-propuesta agregar-propuesta--vacio">
@@ -251,9 +258,14 @@
                   } @else { — }
                 </strong>
               </div>
-              <div class="dato-item dato-item--full">
-                <span class="dato-item__label"><span class="material-symbols-outlined">event</span> Fecha de recepción</span>
-                <strong class="dato-item__valor">{{ datos().fechaRecepcion ? (datos().fechaRecepcion | date:'dd/MM/yyyy') : '—' }}</strong>
+              <div class="dato-item dato-item--full dato-item--editable">
+                <span class="dato-item__label">
+                  <span class="material-symbols-outlined">event</span> Fecha de recepción
+                  <span class="dato-item__req">(editable)</span>
+                </span>
+                <input type="date" class="dato-item__input"
+                       [ngModel]="datos().fechaRecepcion"
+                       (ngModelChange)="actualizarCampo('fechaRecepcion', $event)" />
               </div>
             </div>
           }
@@ -475,32 +487,25 @@
       <app-button variant="ghost" icono="arrow_back" (clic)="cancelar()">Cancelar</app-button>
       <div class="footer-pagina__sep"></div>
 
-      @if (resumenValidacion()!; as r) {
-        @if (r.puedeSolicitarCorreccion) {
-          <app-button variant="danger-ghost" icono="mail"
-                      [disabled]="guardando()" (clic)="guardar('correccion_cliente')">
-            Solicitar corrección al cliente
-          </app-button>
+      @if (botonPrincipal(); as b) {
+        @if (explicacionAccion(); as msg) {
+          <span class="footer-hint"
+                [class.footer-hint--error]="accionPrincipal() === 'correccion_cliente'"
+                [class.footer-hint--warning]="accionPrincipal() === 'observar'"
+                [class.footer-hint--ok]="accionPrincipal() === 'validar'">
+            <span class="material-symbols-outlined">
+              {{ accionPrincipal() === 'validar' ? 'check_circle'
+                 : accionPrincipal() === 'observar' ? 'flag' : 'warning' }}
+            </span>
+            {{ msg }}
+          </span>
         }
-        @if (r.puedeNuevaVersion) {
-          <app-button variant="secondary" icono="auto_fix"
-                      [disabled]="guardando()" (clic)="guardar('nueva_version')">
-            Generar nueva versión
-          </app-button>
-        }
-        @if (r.puedeObservar) {
-          <app-button variant="warning" icono="flag"
-                      [disabled]="guardando()" (clic)="guardar('observar')">
-            Guardar con observaciones
-          </app-button>
-        }
-        @if (r.puedeValidar) {
-          <app-button variant="primary" icono="check"
-                      [disabled]="!formularioValido() || guardando()"
-                      [cargando]="guardando()" (clic)="guardar('validar')">
-            Guardar y validar
-          </app-button>
-        }
+        <app-button [variant]="b.variant" [icono]="b.icono"
+                    [disabled]="!formularioValido() || guardando()"
+                    [cargando]="guardando()"
+                    (clic)="guardar(accionPrincipal()!)">
+          {{ b.texto }}
+        </app-button>
       } @else if (!nombreArchivo()) {
         <span class="footer-hint">
           <span class="material-symbols-outlined">info</span>
@@ -525,6 +530,15 @@
     <app-modal-ver-comparacion-oc
       [comparacion]="cmp"
       [numeroOcTemp]="datos().numeroOc ?? 'Nueva OC'"
+      [monedaSimbolo]="monedaSimbolo()"
       (cerrar)="cerrarDetalleComparacion()" />
+  }
+
+  <!-- Modal seleccionar propuesta adicional a vincular -->
+  @if (modalSeleccionPropuestaAbierto()) {
+    <app-seleccionar-propuesta-vincular
+      [propuestas]="otrasPropuestas()"
+      (confirmado)="onPropuestaSeleccionada($event)"
+      (cancelado)="cerrarSeleccionPropuesta()" />
   }
 </div>

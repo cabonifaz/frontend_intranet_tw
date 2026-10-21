@@ -63,6 +63,13 @@
 
   &__textos { min-width: 0; }
 
+  &__titulo-fila {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
   &__titulo {
     font-size: 15px;
     font-weight: 700;

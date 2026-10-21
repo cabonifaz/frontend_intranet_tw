@@ -2,6 +2,7 @@ import { Component, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { SeccionComponent } from '../../../../shared/ui/seccion/seccion.component';
 import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { ComparacionOrdenCompraDto } from '../../../../core/models/ordenes-compra.model';
 
@@ -15,13 +16,14 @@ type FiltroSeveridad = 'todas' | 'discrepancias' | 'coincidentes';
  */
 @Component({
   selector: 'app-modal-ver-comparacion-oc',
-  imports: [CommonModule, ModalComponent, ButtonComponent, MonedaPipe],
+  imports: [CommonModule, ModalComponent, ButtonComponent, SeccionComponent, MonedaPipe],
   templateUrl: './modal-ver-comparacion-oc.component.html',
   styleUrl: './modal-ver-comparacion-oc.component.scss',
 })
 export class ModalVerComparacionOcComponent {
   readonly comparacion = input.required<ComparacionOrdenCompraDto>();
   readonly numeroOcTemp = input<string>('Nueva OC');
+  readonly monedaSimbolo = input<string>('');
   readonly cerrar = output<void>();
 
   readonly tab = signal<Tab>('campos');
@@ -80,4 +82,55 @@ export class ModalVerComparacionOcComponent {
   labelSeveridad(sev: string): string {
     return ({ ok: 'Coincidencia', advertencia: 'Diferencia menor', critico: 'Observación crítica', sin_dato: 'Sin dato' } as Record<string, string>)[sev] ?? sev;
   }
+
+  // ─── Helpers para desglose por concepto ──────────────────────────────────
+
+  /** Mapea el estado de concepto a la misma clase de severidad que la tabla de comparación. */
+  dotEstadoConcepto(estado: string): string {
+    return ({
+      coincide:         'sev--ok',
+      monto_distinto:   'sev--adv',
+      falta_en_oc:      'sev--crit',
+      adicional_en_oc:  'sev--neutro',
+    } as Record<string, string>)[estado] ?? 'sev--neutro';
+  }
+
+  iconoEstadoConcepto(estado: string): string {
+    switch (estado) {
+      case 'coincide':        return 'check_circle';
+      case 'monto_distinto':  return 'warning';
+      case 'falta_en_oc':     return 'error';
+      case 'adicional_en_oc': return 'info';
+      default:                return 'help';
+    }
+  }
+
+  labelEstadoConcepto(estado: string): string {
+    return ({
+      coincide:         'Coincide',
+      monto_distinto:   'Monto distinto',
+      falta_en_oc:      'Falta en OC',
+      adicional_en_oc:  'Adicional en OC',
+    } as Record<string, string>)[estado] ?? estado;
+  }
+
+  diferenciaConcepto(montoOc: number | null | undefined, montoPropuesta: number | null | undefined): number | null {
+    if (montoOc == null || montoPropuesta == null) return null;
+    return montoOc - montoPropuesta;
+  }
+
+  formatearMonto(monto: number | null | undefined): string {
+    if (monto == null) return '—';
+    const s = this.monedaSimbolo();
+    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(monto);
+    return `${s} ${valor}`.trim();
+  }
+
+  // ─── Dictamen (desde la primera evaluación IA) ───────────────────────────
+
+  readonly dictamenPrimario = computed(() => {
+    const ev = this.evaluaciones()[0];
+    if (!ev?.dictamen) return null;
+    return { texto: ev.dictamen, confianza: ev.confianza, motor: ev.motor };
+  });
 }

@@ -1,0 +1,102 @@
+<app-modal
+  titulo="Seleccionar Propuesta Adicional"
+  subtitulo="Busque y seleccione otra propuesta aceptada del mismo cliente para vincularla a esta OC."
+  icono="receipt_long"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="cancelar()">
+
+  <!-- Buscador -->
+  <div class="sp-controls">
+    <div class="sp-busqueda">
+      <span class="material-symbols-outlined sp-busqueda__icono">search</span>
+      <input
+        class="sp-busqueda__input"
+        type="text"
+        placeholder="Buscar por N° propuesta, contacto o requerimiento..."
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event); pagina.set(1)" />
+    </div>
+    <span class="sp-count">{{ propuestasFiltradas().length }} propuesta(s) disponible(s)</span>
+  </div>
+
+  <!-- Tabla -->
+  <div class="sp-tabla-wrap">
+    <table class="sp-tabla">
+      <thead>
+        <tr>
+          <th>N° PROPUESTA</th>
+          <th>CONTACTO</th>
+          <th>REQUERIMIENTO</th>
+          <th class="sp-th--num">MONTO TOTAL</th>
+          <th class="sp-th--num">SALDO POR CUBRIR</th>
+          <th>MONEDA</th>
+          <th class="sp-th--der">ACCIÓN</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (propuestasFiltradas().length === 0) {
+          <tr>
+            <td colspan="7" class="sp-td--vacio">
+              <span class="material-symbols-outlined">search_off</span>
+              No hay propuestas disponibles para vincular.
+            </td>
+          </tr>
+        } @else {
+          @for (p of propuestasPagina(); track p.idPropuesta) {
+            <tr class="sp-fila"
+                [class.sp-fila--seleccionada]="seleccionado()?.idPropuesta === p.idPropuesta"
+                (click)="seleccionar(p)">
+              <td>
+                <strong>{{ p.numero }}</strong>
+                <span class="sp-chip-ver">v{{ p.version }}</span>
+              </td>
+              <td>{{ p.contacto ?? '—' }}</td>
+              <td>{{ p.numeroRq ?? '—' }}</td>
+              <td class="sp-td--num">{{ formatearMonto(p.total, p.monedaSimbolo) }}</td>
+              <td class="sp-td--num"><strong>{{ formatearMonto(p.saldo, p.monedaSimbolo) }}</strong></td>
+              <td>{{ p.monedaSimbolo ?? p.moneda ?? '—' }}</td>
+              <td class="sp-td--der">
+                <button class="sp-btn-sel"
+                        [class.sp-btn-sel--activo]="seleccionado()?.idPropuesta === p.idPropuesta"
+                        type="button"
+                        (click)="$event.stopPropagation(); seleccionar(p)">
+                  Seleccionar
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  @if (propuestasFiltradas().length > porPagina) {
+    <div class="sp-paginacion">
+      <span class="sp-pag-info">
+        Mostrando {{ inicio }} – {{ fin }} de {{ propuestasFiltradas().length }}
+      </span>
+      <div class="sp-pag-btns">
+        <app-button variant="ghost" tamano="sm" [disabled]="pagina() === 1" (clic)="irPagina(pagina() - 1)">Anterior</app-button>
+        <app-button variant="ghost" tamano="sm" [disabled]="pagina() >= totalPaginas()" (clic)="irPagina(pagina() + 1)">Siguiente</app-button>
+      </div>
+    </div>
+  }
+
+  <div modalFooter class="modal-footer">
+    <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+    <div class="modal-footer__der">
+      @if (seleccionado(); as s) {
+        <span class="sp-seleccionado-label">
+          Seleccionado: <strong>{{ s.numero }} v{{ s.version }}</strong>
+        </span>
+      }
+      <app-button variant="primary" icono="check"
+                  [disabled]="!seleccionado()"
+                  (clic)="confirmar()">
+        Confirmar Vinculación
+      </app-button>
+    </div>
+  </div>
+</app-modal>

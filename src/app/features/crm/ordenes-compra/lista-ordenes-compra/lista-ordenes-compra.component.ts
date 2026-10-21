@@ -23,14 +23,13 @@ import { ModalElegirPropuestaOcComponent } from '../modal-elegir-propuesta-oc/mo
 import { ModalAnularOcComponent } from '../modal-anular-oc/modal-anular-oc.component';
 
 const ESTADOS: { codigo: string; label: string }[] = [
-  { codigo: '',                 label: 'Todas' },
-  { codigo: 'recibida',         label: 'Recibidas' },
-  { codigo: 'validada',         label: 'Validadas' },
-  { codigo: 'validada_parcial', label: 'Validadas (parciales)' },
-  { codigo: 'observada',        label: 'Observadas' },
-  { codigo: 'autogeneradas',    label: 'Autogeneradas' },
-  { codigo: 'sin_asignar',      label: 'Sin asignar' },
-  { codigo: 'anulada',          label: 'Anuladas' },
+  { codigo: '',                     label: 'Todas' },
+  { codigo: 'autogenerada',         label: 'Autogeneradas' },
+  { codigo: 'validada',             label: 'Validadas' },
+  { codigo: 'validada_parcial',     label: 'Validadas (parciales)' },
+  { codigo: 'observada',            label: 'Observadas' },
+  { codigo: 'pendiente_reemplazo',  label: 'Pendiente Reemplazo' },
+  { codigo: 'anulada',              label: 'Anuladas' },
 ];
 
 const TARJETAS_VACIAS: TarjetasOrdenesCompraDto = {
@@ -173,12 +172,15 @@ export class ListaOrdenesCompraComponent implements OnInit {
 
   estadoChip(estado: string): { clase: string; label: string } {
     const mapa: Record<string, { clase: string; label: string }> = {
-      recibida:         { clase: 'badge--ambar', label: 'Recibida' },
-      validada:         { clase: 'badge--verde', label: 'Validada' },
-      validada_parcial: { clase: 'badge--verde', label: 'Validada (parcial)' },
-      observada:        { clase: 'badge--rojo',  label: 'Observada' },
-      anulada:          { clase: 'badge--gris',  label: 'Anulada' },
-      reemplazada:      { clase: 'badge--gris',  label: 'Reemplazada' },
+      autogenerada:         { clase: 'badge--morado', label: 'Autogenerada' },
+      validada:             { clase: 'badge--verde',  label: 'Validada' },
+      validada_parcial:     { clase: 'badge--verde',  label: 'Validada (parcial)' },
+      observada:            { clase: 'badge--ambar',  label: 'Observada' },
+      pendiente_reemplazo:  { clase: 'badge--rojo',   label: 'Pendiente Reemplazo' },
+      anulada:              { clase: 'badge--gris',   label: 'Anulada' },
+      // Fallbacks temporales mientras el back no actualice los nombres
+      recibida:             { clase: 'badge--ambar',  label: 'Recibida' },
+      reemplazada:          { clase: 'badge--gris',   label: 'Reemplazada' },
     };
     return mapa[estado] ?? { clase: 'badge--gris', label: estado };
   }

@@ -6,31 +6,54 @@
   ancho="xl"
   (cerrar)="onCerrar()">
 
-  <!-- Banner superior: resultado + filtros a la derecha -->
-  <div class="validacion-banner" [class.validacion-banner--atencion]="resumen().criticas > 0 || resumen().advertencias > 0">
-    <div class="validacion-banner__izq">
-      <div class="validacion-banner__icono">
-        <span class="material-symbols-outlined">auto_awesome</span>
-      </div>
-      <div class="validacion-banner__texto">
-        <strong>Validación Asistida por Total Weight AI Engine · {{ conteoDiscrepancias() }} diferencia(s) {{ conteoDiscrepancias() === 1 ? 'encontrada' : 'encontradas' }}</strong>
-        @if (resumen().criticas > 0 || resumen().advertencias > 0) {
-          <span class="validacion-banner__alerta"><span class="material-symbols-outlined">warning</span> Requiere Atención</span>
+  <!-- Banner superior: resumen compacto de la validación IA -->
+  <div class="validacion-banner"
+       [class.validacion-banner--advertencia]="resumen().advertencias > 0 && resumen().criticas === 0"
+       [class.validacion-banner--critico]="resumen().criticas > 0">
+    <div class="validacion-banner__icono">
+      <span class="material-symbols-outlined">auto_awesome</span>
+    </div>
+    <div class="validacion-banner__texto">
+      <div class="validacion-banner__titulo-linea">
+        <strong>Validación Asistida por Total Weight AI Engine</strong>
+        @if (resumen().criticas > 0) {
+          <span class="validacion-banner__alerta validacion-banner__alerta--crit">
+            <span class="material-symbols-outlined">block</span>
+            {{ resumen().criticas }} crítica(s)
+          </span>
+        } @else if (resumen().advertencias > 0) {
+          <span class="validacion-banner__alerta validacion-banner__alerta--adv">
+            <span class="material-symbols-outlined">warning</span>
+            {{ resumen().advertencias }} advertencia(s)
+          </span>
+        } @else {
+          <span class="validacion-banner__alerta validacion-banner__alerta--ok">
+            <span class="material-symbols-outlined">check_circle</span>
+            Sin diferencias
+          </span>
         }
-        <small>La IA comparó los datos extraídos de la OC física contra las propuestas vinculadas. {{ resumen().sugerencia }}</small>
       </div>
+      <small>{{ resumen().sugerencia }}</small>
     </div>
-    <div class="validacion-banner__filtros">
-      <button class="chip-filtro" [class.chip-filtro--activo]="filtro() === 'todas'" (click)="filtro.set('todas')">
-        Todas las comprobaciones ({{ conteoTodas() }})
-      </button>
-      <button class="chip-filtro chip-filtro--adv" [class.chip-filtro--activo]="filtro() === 'discrepancias'" (click)="filtro.set('discrepancias')">
-        Discrepancias ({{ conteoDiscrepancias() }})
-      </button>
-      <button class="chip-filtro chip-filtro--ok" [class.chip-filtro--activo]="filtro() === 'coincidentes'" (click)="filtro.set('coincidentes')">
-        Coincidentes ({{ conteoCoincidentes() }})
-      </button>
-    </div>
+  </div>
+
+  <!-- Barra de filtros (tabs) -->
+  <div class="filtros-barra">
+    <button class="chip-filtro"
+            [class.chip-filtro--activo]="filtro() === 'todas'"
+            (click)="filtro.set('todas')">
+      Todas ({{ conteoTodas() }})
+    </button>
+    <button class="chip-filtro chip-filtro--adv"
+            [class.chip-filtro--activo]="filtro() === 'discrepancias'"
+            (click)="filtro.set('discrepancias')">
+      Discrepancias ({{ conteoDiscrepancias() }})
+    </button>
+    <button class="chip-filtro chip-filtro--ok"
+            [class.chip-filtro--activo]="filtro() === 'coincidentes'"
+            (click)="filtro.set('coincidentes')">
+      Coincidentes ({{ conteoCoincidentes() }})
+    </button>
   </div>
 
   <!-- Pills de propuestas (si hay varias) -->
@@ -48,39 +71,97 @@
     </div>
   }
 
-  <!-- Tabla única de comparación (como el prototipo) -->
-  <table class="tabla-comparacion">
-    <thead>
-      <tr>
-        <th>CONCEPTO / CAMPO</th>
-        <th>VALOR EN OC (PDF EXTRAÍDO)</th>
-        <th>VALOR EN PROPUESTA(S)</th>
-        <th>ESTADO / EVALUACIÓN IA</th>
-        <th>ACCIÓN RECOMENDADA</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (campo of campos(); track campo.campo + '-' + campo.orden + '-' + campo.idPropuesta) {
+  <!-- ── Comparación de campos (datos cabecera de la OC vs propuesta) ───── -->
+  <app-seccion icono="compare_arrows" titulo="Comparación de Campos"
+               subtitulo="Datos del PDF extraído por IA contrastados con la propuesta aceptada.">
+    <table class="tabla-comparacion">
+      <thead>
         <tr>
-          <td class="celda-concepto">
-            <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
-            <strong>{{ campo.etiqueta }}</strong>
-          </td>
-          <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
-          <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
-          <td>
-            <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
-              <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
-              {{ labelSeveridad(campo.severidad) }}
-            </span>
-          </td>
-          <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+          <th>CONCEPTO / CAMPO</th>
+          <th>VALOR EN OC (PDF EXTRAÍDO)</th>
+          <th>VALOR EN PROPUESTA(S)</th>
+          <th>ESTADO / EVALUACIÓN IA</th>
+          <th>ACCIÓN RECOMENDADA</th>
         </tr>
-      } @empty {
-        <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (campo of campos(); track campo.campo + '-' + campo.orden + '-' + campo.idPropuesta) {
+          <tr>
+            <td class="celda-concepto">
+              <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
+              <strong>{{ campo.etiqueta }}</strong>
+            </td>
+            <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
+            <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
+            <td>
+              <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
+                <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
+                {{ labelSeveridad(campo.severidad) }}
+              </span>
+            </td>
+            <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+
+  <!-- ── Desglose por Concepto / Servicio Metrológico ───────────────────── -->
+  @if (conceptos().length > 0) {
+    <app-seccion icono="receipt_long" titulo="Desglose por Concepto / Servicio Metrológico"
+                 [subtitulo]="conceptos().length + ' concepto(s) evaluado(s) por la IA.'">
+      <table class="tabla-comparacion">
+        <thead>
+          <tr>
+            <th>CONCEPTO</th>
+            <th class="tabla-comparacion__num">VALOR EN OC</th>
+            <th class="tabla-comparacion__num">VALOR EN PROPUESTA</th>
+            <th class="tabla-comparacion__num">DIFERENCIA</th>
+            <th>ESTADO / EVALUACIÓN IA</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of conceptos(); track c.descripcion + '-' + c.idPropuesta) {
+            <tr>
+              <td class="celda-concepto">
+                <span class="dot {{ dotEstadoConcepto(c.estado) }}"></span>
+                <strong>{{ c.descripcion }}</strong>
+              </td>
+              <td class="celda-valor tabla-comparacion__num">{{ formatearMonto(c.montoOc) }}</td>
+              <td class="celda-valor tabla-comparacion__num">{{ formatearMonto(c.montoPropuesta) }}</td>
+              <td class="tabla-comparacion__num">
+                @if (c.estado === 'monto_distinto' && diferenciaConcepto(c.montoOc, c.montoPropuesta); as dif) {
+                  <span class="celda-dif"
+                        [class.celda-dif--pos]="dif > 0"
+                        [class.celda-dif--neg]="dif < 0">
+                    {{ dif > 0 ? '+' : '' }}{{ formatearMonto(dif) }}
+                  </span>
+                } @else {
+                  <span class="celda-valor">—</span>
+                }
+              </td>
+              <td>
+                <span class="chip-sev {{ dotEstadoConcepto(c.estado) }}">
+                  <span class="material-symbols-outlined">{{ iconoEstadoConcepto(c.estado) }}</span>
+                  {{ labelEstadoConcepto(c.estado) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </app-seccion>
+  }
+
+  <!-- ── Dictamen Inteligente del Motor Metrológico ─────────────────────── -->
+  @if (dictamenPrimario(); as d) {
+    <app-seccion icono="auto_awesome" titulo="Dictamen Inteligente del Motor Metrológico"
+                 [subtitulo]="d.confianza != null ? ('Confianza ' + (d.confianza * 100).toFixed(1) + '% · Motor: ' + (d.motor ?? '—')) : (d.motor ?? '')">
+      <p class="dictamen-texto">{{ d.texto }}</p>
+    </app-seccion>
+  }
 
   <!-- Footer con motor + confianza + fecha + re-analizar -->
   <div class="validacion-footer">

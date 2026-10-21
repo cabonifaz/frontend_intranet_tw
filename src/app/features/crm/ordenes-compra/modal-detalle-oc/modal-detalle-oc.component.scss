@@ -1,3 +1,7 @@
+// Asegura que app-seccion ocupe ancho completo y haya espaciado entre secciones.
+app-seccion { display: block; }
+app-seccion + app-seccion { margin-top: 14px; }
+
 // ─── Loading ────────────────────────────────────────────────────────────
 .oc-cargando {
   display: flex;
@@ -12,24 +16,12 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-// ─── Encabezado (cliente + chips + metadata) ────────────────────────────
-.oc-encabezado {
-  display: flex; flex-direction: column; gap: 6px;
-  padding-bottom: 12px; margin-bottom: 14px;
-  border-bottom: 1px solid #e2e8f0;
-
-  &__principal {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-  }
-  &__cliente { font-size: 14px; color: #0f172a; font-weight: 700; }
-
-  &__meta {
-    display: flex; flex-wrap: wrap; gap: 14px;
-    font-size: 11.5px; color: #64748b;
-    span { display: inline-flex; align-items: center; gap: 4px;
-      .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
-    }
-  }
+// ─── Badges del header (slot modalHeaderBadges) ─────────────────────────
+.oc-header-badges {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 // (legacy - mantener por compatibilidad hasta migrar todos los usos)
@@ -519,7 +511,9 @@
 
 // ─── Tab Timeline ───────────────────────────────────────────────────────
 .timeline-filtros {
-  display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;
+  display: flex; gap: 6px;
+  margin-top: 12px; margin-bottom: 14px;
+  flex-wrap: wrap; align-items: center;
 
   input[type="text"] {
     flex: 1; min-width: 200px;
