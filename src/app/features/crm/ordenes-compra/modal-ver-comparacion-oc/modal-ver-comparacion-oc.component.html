@@ -1,0 +1,104 @@
+<app-modal
+  titulo="Detalle de Validación IA"
+  [subtitulo]="numeroOcTemp() + ' vs ' + propuestas().length + ' propuesta(s)'"
+  icono="auto_awesome"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  <!-- Banner superior: resultado + filtros a la derecha -->
+  <div class="validacion-banner" [class.validacion-banner--atencion]="resumen().criticas > 0 || resumen().advertencias > 0">
+    <div class="validacion-banner__izq">
+      <div class="validacion-banner__icono">
+        <span class="material-symbols-outlined">auto_awesome</span>
+      </div>
+      <div class="validacion-banner__texto">
+        <strong>Validación Asistida por Total Weight AI Engine · {{ conteoDiscrepancias() }} diferencia(s) {{ conteoDiscrepancias() === 1 ? 'encontrada' : 'encontradas' }}</strong>
+        @if (resumen().criticas > 0 || resumen().advertencias > 0) {
+          <span class="validacion-banner__alerta"><span class="material-symbols-outlined">warning</span> Requiere Atención</span>
+        }
+        <small>La IA comparó los datos extraídos de la OC física contra las propuestas vinculadas. {{ resumen().sugerencia }}</small>
+      </div>
+    </div>
+    <div class="validacion-banner__filtros">
+      <button class="chip-filtro" [class.chip-filtro--activo]="filtro() === 'todas'" (click)="filtro.set('todas')">
+        Todas las comprobaciones ({{ conteoTodas() }})
+      </button>
+      <button class="chip-filtro chip-filtro--adv" [class.chip-filtro--activo]="filtro() === 'discrepancias'" (click)="filtro.set('discrepancias')">
+        Discrepancias ({{ conteoDiscrepancias() }})
+      </button>
+      <button class="chip-filtro chip-filtro--ok" [class.chip-filtro--activo]="filtro() === 'coincidentes'" (click)="filtro.set('coincidentes')">
+        Coincidentes ({{ conteoCoincidentes() }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Pills de propuestas (si hay varias) -->
+  @if (propuestas().length > 1) {
+    <div class="pills-propuestas">
+      <button class="pill" [class.pill--activa]="idPropuestaFiltro() === null"
+              (click)="idPropuestaFiltro.set(null)">Todas</button>
+      @for (p of propuestas(); track p.idPropuesta) {
+        <button class="pill"
+                [class.pill--activa]="idPropuestaFiltro() === p.idPropuesta"
+                (click)="idPropuestaFiltro.set(p.idPropuesta)">
+          {{ p.numero }} ({{ p.coincidencias }}/{{ p.totalCampos }})
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Tabla única de comparación (como el prototipo) -->
+  <table class="tabla-comparacion">
+    <thead>
+      <tr>
+        <th>CONCEPTO / CAMPO</th>
+        <th>VALOR EN OC (PDF EXTRAÍDO)</th>
+        <th>VALOR EN PROPUESTA(S)</th>
+        <th>ESTADO / EVALUACIÓN IA</th>
+        <th>ACCIÓN RECOMENDADA</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (campo of campos(); track campo.campo + '-' + campo.orden + '-' + campo.idPropuesta) {
+        <tr>
+          <td class="celda-concepto">
+            <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
+            <strong>{{ campo.etiqueta }}</strong>
+          </td>
+          <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
+          <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
+          <td>
+            <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
+              <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
+              {{ labelSeveridad(campo.severidad) }}
+            </span>
+          </td>
+          <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
+      }
+    </tbody>
+  </table>
+
+  <!-- Footer con motor + confianza + fecha + re-analizar -->
+  <div class="validacion-footer">
+    <span class="validacion-footer__item">
+      <span class="material-symbols-outlined">memory</span>
+      Motor: {{ evaluaciones()[0]?.motor ?? 'Total Weight OCR & Semantic Matcher v4.2' }}
+    </span>
+    @if (evaluaciones()[0]?.confianza != null) {
+      <span class="validacion-footer__item">
+        · Confianza {{ (evaluaciones()[0]!.confianza! * 100).toFixed(1) }}%
+      </span>
+    }
+    <span class="validacion-footer__item">
+      · Auditoría {{ now | date:'dd/MM/yyyy HH:mm' }}
+    </span>
+  </div>
+
+  <div modalFooter class="footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+  </div>
+</app-modal>

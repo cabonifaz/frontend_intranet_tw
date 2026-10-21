@@ -1,0 +1,541 @@
+<div class="pagina">
+  <app-page-header
+    icono="receipt_long"
+    titulo="Registrar Orden de Compra"
+    subtitulo="Carga la OC enviada por el cliente, vincúlala a una o más propuestas aceptadas y valida con IA." />
+
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando ficha...
+    </div>
+  } @else if (error()) {
+    <div class="error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+      <app-button variant="ghost" (clic)="cancelar()">Volver</app-button>
+    </div>
+  } @else {
+
+    @if (idOcReemplaza()) {
+      <div class="aviso-respaldo">
+        <span class="material-symbols-outlined">bolt</span>
+        <div class="aviso-respaldo__texto">
+          <strong>OC provisional de respaldo creada</strong>
+          <small>Se creó una OC autogenerada temporal (ID #{{ idOcReemplaza() }}) para que la operación no quede bloqueada. Al registrar la OC real del cliente aquí, la provisional será reemplazada automáticamente. Si abandonas esta ficha sin guardar, la OC provisional quedará como respaldo.</small>
+        </div>
+      </div>
+    }
+
+    <div class="layout">
+      <!-- ═══ COLUMNA PRINCIPAL ═══════════════════════════════ -->
+      <div class="columna-principal">
+
+        <!-- ── 1. Propuestas Vinculadas ──────────────────────── -->
+        <app-seccion numero="1" titulo="Propuestas Vinculadas"
+                     subtitulo="Esta OC puede cubrir una o más propuestas aceptadas del mismo cliente">
+
+          <!-- Nombre del cliente arriba -->
+          @if (preparacion()?.propuesta; as po) {
+            <div class="cliente-encabezado">
+              <div>
+                <strong>{{ po.razonSocial }}</strong>
+                <small>RUC {{ po.ruc ?? '—' }}</small>
+              </div>
+              <span class="chip chip--verde">● PROPUESTA ACEPTADA</span>
+            </div>
+          }
+
+          <!-- Resumen de asignación con barra de progreso -->
+          <div class="asignacion-resumen">
+            <div class="asignacion-resumen__linea">
+              <div class="asignacion-resumen__item">
+                <span>MONTO TOTAL OC</span>
+                <strong>{{ formatearMonto(datos().montoTotal, monedaSimbolo()) }}</strong>
+              </div>
+              <div class="asignacion-resumen__item">
+                <span>ASIGNADO</span>
+                <strong>{{ formatearMonto(totalAsignado(), monedaSimbolo()) }}</strong>
+              </div>
+              <span class="asignacion-chip" [class.asignacion-chip--ok]="asignadoPct() === 100">
+                @if (asignadoPct() === 100) { <span class="material-symbols-outlined">check</span> Asignación 100% completa }
+                @else { Asignación {{ asignadoPct() }}% }
+              </span>
+            </div>
+            <div class="asignacion-resumen__barra">
+              <div class="asignacion-resumen__fill" [style.width.%]="asignadoPct()"
+                   [class.asignacion-resumen__fill--completa]="asignadoPct() === 100"></div>
+            </div>
+          </div>
+
+          <!-- Tabla de propuestas vinculadas -->
+          <div class="tabla-propuestas-wrap">
+          <table class="tabla-propuestas">
+            <thead>
+              <tr>
+                <th>N° PROPUESTA</th>
+                <th>CONTACTO</th>
+                <th>REQUERIMIENTO</th>
+                <th class="tabla-propuestas__num">MONTO ASIGNADO</th>
+                <th class="tabla-propuestas__num">SERVICIOS</th>
+                <th>MONEDA</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of vinculadas(); track v.idPropuesta) {
+                <tr>
+                  <td>
+                    <strong>{{ v.numero }}</strong>
+                    <span class="chip-ver">v{{ v.version }}</span>
+                    @if (v.esOrigen) { <span class="chip chip--azul">ORIGEN</span> }
+                  </td>
+                  <td>{{ v.contacto ?? '—' }}</td>
+                  <td>{{ v.numeroRq ?? '—' }}</td>
+                  <td class="tabla-propuestas__num">
+                    <input type="number" min="0" step="0.01"
+                           [ngModel]="v.montoAsignado"
+                           (ngModelChange)="actualizarMontoAsignado(v.idPropuesta, $event)" />
+                  </td>
+                  <td class="tabla-propuestas__num">{{ v.servicios ?? '—' }}</td>
+                  <td>{{ v.monedaSimbolo ?? '—' }}</td>
+                  <td>
+                    @if (!v.esOrigen) {
+                      <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
+                                  ariaLabel="Desvincular" (clic)="quitarPropuesta(v.idPropuesta)" />
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          </div>
+
+          @if (otrasPropuestas().length > 0) {
+            <div class="agregar-propuesta">
+              <label class="agregar-propuesta__label">+ Vincular Propuesta Adicional</label>
+              <select (change)="agregarPropuesta($any($event.target).value); $any($event.target).value = ''">
+                <option value="">Seleccionar propuesta aceptada del mismo cliente...</option>
+                @for (p of otrasPropuestas(); track p.idPropuesta; let i = $index) {
+                  <option [value]="i">{{ p.numero }} v{{ p.version }} · Saldo {{ formatearMonto(p.saldo, p.monedaSimbolo) }}</option>
+                }
+              </select>
+            </div>
+          } @else if (vinculadas().length === 1) {
+            <div class="agregar-propuesta agregar-propuesta--vacio">
+              <span class="material-symbols-outlined">info</span>
+              <small>No hay otras propuestas aceptadas del mismo cliente para vincular a esta OC.</small>
+            </div>
+          }
+        </app-seccion>
+
+        <!-- ── 2. Cargar PDF ─────────────────────────────────── -->
+        <app-seccion numero="2" titulo="Cargar PDF de la Orden de Compra"
+                     subtitulo="Al subir el PDF, la IA leerá automáticamente los datos clave">
+          @if (!nombreArchivo()) {
+            <label class="drop"
+                   [class.drop--active]="dragActive()"
+                   (dragover)="onDragOver($event)"
+                   (dragleave)="onDragLeave($event)"
+                   (drop)="onDrop($event)">
+              <span class="material-symbols-outlined drop__icon">cloud_upload</span>
+              <strong>Arrastra el PDF aquí</strong>
+              <small>o haz clic para seleccionar · PDF máx. 10 MB</small>
+              <input type="file" accept=".pdf" (change)="onArchivoSeleccionado($event)" hidden />
+              @if (extraccionIaDisponible()) {
+                <span class="drop__ia">
+                  <span class="material-symbols-outlined">auto_awesome</span>
+                  IA Gemini leerá el PDF automáticamente
+                </span>
+              }
+            </label>
+          } @else {
+            <div class="pdf-card">
+              <span class="material-symbols-outlined pdf-card__icon">picture_as_pdf</span>
+              <div class="pdf-card__meta">
+                <strong>{{ nombreArchivo() }}</strong>
+                @if (extrayendoIa()) {
+                  <span class="pdf-card__estado">
+                    <span class="material-symbols-outlined spin">auto_awesome</span>
+                    Leyendo con IA...
+                  </span>
+                } @else if (extraccionExitosa()) {
+                  <span class="pdf-card__estado pdf-card__estado--ok">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    Documento verificado por OCR e IA
+                  </span>
+                } @else if (extraccionFallo(); as msg) {
+                  <span class="pdf-card__estado pdf-card__estado--err">
+                    <span class="material-symbols-outlined">error</span>
+                    IA no pudo leer el PDF — llena los campos a mano
+                  </span>
+                } @else if (!extraccionIaDisponible()) {
+                  <span class="pdf-card__estado">
+                    <span class="material-symbols-outlined">info</span>
+                    PDF cargado · IA no disponible (llena los campos a mano)
+                  </span>
+                } @else {
+                  <span class="pdf-card__estado pdf-card__estado--ok">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    PDF cargado
+                  </span>
+                }
+              </div>
+              @if (modo() === 'crear') {
+                <app-button variant="ghost" tamano="sm" icono="swap_horiz" (clic)="quitarArchivo()">Reemplazar documento</app-button>
+              }
+            </div>
+          }
+        </app-seccion>
+
+        <!-- ── 3. Datos extraídos de la IA ────────────────────── -->
+        <app-seccion numero="3" titulo="Datos extraídos del PDF"
+                     subtitulo="Los campos los llena automáticamente la IA al subir el PDF. Si algún dato está mal, puedes corregirlo (quedará marcado como ✋ corregido manualmente).">
+
+          @if (!nombreArchivo()) {
+            <div class="aviso-pdf">
+              <span class="material-symbols-outlined">upload_file</span>
+              <small>Sube el PDF de la OC en la Sección 2 para que la IA llene estos campos automáticamente.</small>
+            </div>
+          } @else if (extrayendoIa()) {
+            <div class="aviso-pdf aviso-pdf--leyendo">
+              <span class="material-symbols-outlined spin">auto_awesome</span>
+              <small>La IA está leyendo el PDF... los campos se llenarán en segundos.</small>
+            </div>
+          } @else if (extraccionExitosa()) {
+            <div class="aviso-pdf aviso-pdf--ok">
+              <span class="material-symbols-outlined">check_circle</span>
+              <small>Datos extraídos por IA. Puedes editar cualquier campo si está mal — quedará marcado como corregido.</small>
+            </div>
+          }
+
+          <div class="form-grid" [class.form-grid--bloqueado]="!nombreArchivo() || extrayendoIa()">
+            <!-- Fila 1 -->
+            <div class="campo">
+              <label>N° OC *
+                @if (esCampoIa('numero_oc')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('numero_oc')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <input type="text" [ngModel]="datos().numeroOc"
+                     (ngModelChange)="actualizarCampo('numeroOc', $event, 'numero_oc')"
+                     placeholder="OC-ANT-99201" />
+            </div>
+            <div class="campo">
+              <label>Fecha emisión *
+                @if (esCampoIa('fecha_emision')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('fecha_emision')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <input type="date" [ngModel]="datos().fechaEmision"
+                     (ngModelChange)="actualizarCampo('fechaEmision', $event, 'fecha_emision')" />
+            </div>
+            <div class="campo">
+              <label>Monto total *
+                @if (esCampoIa('monto_total')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('monto_total')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <input type="number" min="0" step="0.01"
+                     [ngModel]="datos().montoTotal"
+                     (ngModelChange)="actualizarCampo('montoTotal', $event, 'monto_total')"
+                     placeholder="0.00" />
+            </div>
+
+            <!-- Fila 2 -->
+            <div class="campo">
+              <label>Moneda *
+                @if (esCampoIa('id_moneda')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('id_moneda')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <select [ngModel]="datos().idMoneda"
+                      (ngModelChange)="actualizarCampo('idMoneda', $event, 'id_moneda')">
+                <option [ngValue]="null">—</option>
+                @for (m of monedas(); track m.id) {
+                  <option [ngValue]="m.id">{{ m.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label>Condición de pago
+                @if (esCampoIa('id_condicion_pago')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('id_condicion_pago')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <select [ngModel]="datos().idCondicionPago"
+                      (ngModelChange)="actualizarCampo('idCondicionPago', $event, 'id_condicion_pago')">
+                <option [ngValue]="null">—</option>
+                @for (c of condicionesPago(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="campo">
+              <label>Impuesto de Ley (IGV)
+                @if (esCampoIa('igv_pct')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                @if (esCampoCorregido('igv_pct')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
+              </label>
+              <div class="igv-combo">
+                <label class="igv-combo__check">
+                  <input type="checkbox"
+                         [checked]="datos().igvIncluido === true"
+                         (change)="actualizarCampo('igvIncluido', $any($event.target).checked, 'igv_incluido')" />
+                  <span>Incluido</span>
+                </label>
+                <input type="number" class="igv-combo__pct" min="0" max="100" step="0.01"
+                       [ngModel]="datos().igvPct"
+                       (ngModelChange)="actualizarCampo('igvPct', $event, 'igv_pct')"
+                       placeholder="18" />
+                <span class="igv-combo__suffix">%</span>
+              </div>
+            </div>
+
+            <!-- Fila 3 (full width) - La fecha de recepción SÍ es editable (no la lee la IA, es cuándo llega el PDF) -->
+            <div class="campo campo--full campo--destacado">
+              <label>Fecha de Recepción <span class="campo__req">(requerido)</span></label>
+              <input type="date" [ngModel]="datos().fechaRecepcion"
+                     (ngModelChange)="actualizarCampo('fechaRecepcion', $event)" />
+            </div>
+          </div>
+        </app-seccion>
+
+        <!-- ── 4. Conceptos detectados en el PDF ─────────────── -->
+        <app-seccion numero="4" titulo="Conceptos detectados en el PDF"
+                     subtitulo="Ítems leídos de la OC. Comparados con los conceptos de la propuesta al validar con IA.">
+          @if (conceptos().length === 0) {
+            <app-estado-vacio icono="receipt"
+                              mensaje="Aún no se han detectado conceptos. Sube un PDF para que la IA los extraiga." />
+          } @else {
+            <table class="tabla-conceptos">
+              <thead>
+                <tr>
+                  <th>CONCEPTO / DESCRIPCIÓN</th>
+                  <th class="tabla-conceptos__num">CANT.</th>
+                  <th class="tabla-conceptos__num">P. UNITARIO</th>
+                  <th class="tabla-conceptos__num">SUBTOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of conceptos(); track c.descripcion; let i = $index) {
+                  <tr>
+                    <td>{{ c.descripcion }}</td>
+                    <td class="tabla-conceptos__num">{{ c.cantidad ?? '—' }}</td>
+                    <td class="tabla-conceptos__num">{{ formatearMonto(c.precioUnitario, monedaSimbolo()) }}</td>
+                    <td class="tabla-conceptos__num">{{ formatearMonto(c.subtotal, monedaSimbolo()) }}</td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="tabla-conceptos__total">Subtotal detectado</td>
+                  <td class="tabla-conceptos__num tabla-conceptos__total">{{ formatearMonto(subtotalConceptos(), monedaSimbolo()) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          }
+        </app-seccion>
+
+        <!-- ── 5. Configuración de Facturación ──────────────────── -->
+        <app-seccion numero="5" titulo="Configuración de Facturación">
+          <label class="check-facturacion">
+            <input type="checkbox"
+                   [checked]="datos().facturaIgualOc"
+                   (change)="actualizarCampo('facturaIgualOc', $any($event.target).checked)" />
+            <div>
+              <strong>La factura tendrá exactamente lo mismo especificado en la Orden de Compra</strong>
+              <small>Si distintos conceptos o montos entre la OC y la propuesta seleccionada, el motor generará una nueva versión comercial antes de habilitar la emisión de factura.</small>
+            </div>
+          </label>
+        </app-seccion>
+
+        <!-- ── 6. Observaciones ─────────────────────────────── -->
+        <app-seccion numero="6" titulo="Observaciones (opcional)">
+          <textarea rows="3" [ngModel]="datos().observaciones"
+                    (ngModelChange)="actualizarCampo('observaciones', $event)"
+                    placeholder="Notas internas sobre esta OC..."></textarea>
+        </app-seccion>
+      </div>
+
+      <!-- ═══ SIDEBAR DERECHO ═══════════════════════════════ -->
+      <aside class="columna-sidebar">
+        <!-- Card: PROPUESTAS RELACIONADAS -->
+        <div class="card-sidebar">
+          <div class="card-sidebar__cabecera">
+            <strong class="card-sidebar__titulo">PROPUESTAS RELACIONADAS</strong>
+            <small>{{ vinculadas().length }} vinculada(s)</small>
+          </div>
+          <div class="card-sidebar__lineas">
+            @for (v of vinculadas(); track v.idPropuesta) {
+              <div class="relacionada">
+                <span>{{ v.numero }} v{{ v.version }}</span>
+                <strong>{{ formatearMonto(v.montoAsignado, v.monedaSimbolo) }}</strong>
+              </div>
+            }
+          </div>
+          <div class="card-sidebar__total">
+            <span>TOTAL ASIGNADO</span>
+            <strong>{{ formatearMonto(totalAsignado(), monedaSimbolo()) }}</strong>
+          </div>
+        </div>
+
+        <!-- Card: VALIDACIÓN IA (automática) -->
+        <div class="card-sidebar card-sidebar--validacion"
+             [class]="severidadValidacion() ? 'card-sidebar--' + severidadValidacion() : ''">
+          <div class="card-sidebar__cabecera">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <strong class="card-sidebar__titulo">VALIDACIÓN IA</strong>
+            @if (comparando()) {
+              <small class="validando-mini"><span class="material-symbols-outlined spin">progress_activity</span> Validando...</small>
+            } @else if (resumenValidacion()) {
+              <small class="validando-mini"><span class="material-symbols-outlined">check_circle</span> Validado</small>
+            }
+          </div>
+
+          @if (!nombreArchivo()) {
+            <p class="card-sidebar__texto">
+              Al subir el PDF, la IA extraerá los datos y los comparará automáticamente contra la(s) propuesta(s) vinculada(s).
+            </p>
+          } @else if (comparando() || extrayendoIa()) {
+            <p class="card-sidebar__texto">
+              Procesando... La IA está comparando los datos extraídos contra las propuestas vinculadas.
+            </p>
+          } @else if (!resumenValidacion()) {
+            <p class="card-sidebar__texto">
+              Esperando resultado de la validación...
+            </p>
+          } @else if (resumenValidacion()!; as r) {
+            <div class="validacion-kpis">
+              <div class="val-kpi val-kpi--crit"><strong>{{ r.criticas }}</strong><span>Críticas</span></div>
+              <div class="val-kpi val-kpi--adv"><strong>{{ r.advertencias }}</strong><span>Advertencias</span></div>
+            </div>
+
+            @if (camposCriticos().length > 0) {
+              <div class="validacion-detalle">
+                <strong><span class="material-symbols-outlined">block</span> Bloqueantes</strong>
+                <ul>
+                  @for (c of camposCriticos(); track c.campo + c.orden) {
+                    <li>
+                      <strong>{{ c.etiqueta }}:</strong>
+                      <span>{{ c.mensaje ?? 'Diferencia crítica' }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (camposAdvertencia().length > 0) {
+              <div class="validacion-detalle validacion-detalle--adv">
+                <strong><span class="material-symbols-outlined">warning</span> Advertencias</strong>
+                <ul>
+                  @for (c of camposAdvertencia(); track c.campo + c.orden) {
+                    <li>
+                      <strong>{{ c.etiqueta }}:</strong>
+                      <span>{{ c.mensaje ?? 'Diferencia menor' }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <p class="card-sidebar__sugerencia"><span class="material-symbols-outlined">lightbulb</span> {{ r.sugerencia }}</p>
+
+            <button class="btn-ver-detalle" (click)="abrirDetalleComparacion()">
+              <span class="material-symbols-outlined">visibility</span>
+              Ver detalle completo de validación
+            </button>
+          }
+        </div>
+
+        <!-- Card: Datos del Cliente -->
+        @if (preparacion()?.propuesta; as po) {
+          <div class="card-sidebar">
+            <div class="card-sidebar__cabecera">
+              <span class="material-symbols-outlined">business</span>
+              <strong class="card-sidebar__titulo">DATOS DEL CLIENTE</strong>
+            </div>
+            <div class="card-sidebar__linea-mini">
+              <span>Cliente</span>
+              <strong>{{ po.razonSocial }}</strong>
+            </div>
+            <div class="card-sidebar__linea-mini">
+              <span>RUC</span>
+              <strong>{{ po.ruc ?? '—' }}</strong>
+            </div>
+            <div class="card-sidebar__linea-mini">
+              <span>N° Propuesta</span>
+              <strong>{{ po.numero }} v{{ po.version }}</strong>
+            </div>
+            <div class="card-sidebar__linea-mini">
+              <span>Monto propuesta</span>
+              <strong>{{ formatearMonto(po.total, po.monedaSimbolo) }}</strong>
+            </div>
+            <div class="card-sidebar__linea-mini">
+              <span>Saldo por cubrir</span>
+              <strong>{{ formatearMonto(po.saldo, po.monedaSimbolo) }}</strong>
+            </div>
+            @if (po.condicionPago) {
+              <div class="card-sidebar__linea-mini">
+                <span>Forma de pago</span>
+                <strong>{{ po.condicionPago }}</strong>
+              </div>
+            }
+            @if (po.fechaAceptacion) {
+              <div class="card-sidebar__linea-mini">
+                <span>Fecha aceptación</span>
+                <strong>{{ po.fechaAceptacion | date:'dd/MM/yyyy' }}</strong>
+              </div>
+            }
+            <div class="card-sidebar__linea-mini">
+              <span>Ítems</span>
+              <strong>{{ po.items }}</strong>
+            </div>
+          </div>
+        }
+      </aside>
+    </div>
+
+    <!-- ═══ Footer ═══════════════════════════════════════════ -->
+    <div class="footer-pagina">
+      <app-button variant="ghost" icono="arrow_back" (clic)="cancelar()">Cancelar</app-button>
+      <div class="footer-pagina__sep"></div>
+
+      @if (resumenValidacion()!; as r) {
+        @if (r.puedeSolicitarCorreccion) {
+          <app-button variant="danger-ghost" icono="mail"
+                      [disabled]="guardando()" (clic)="guardar('correccion_cliente')">
+            Solicitar corrección al cliente
+          </app-button>
+        }
+        @if (r.puedeNuevaVersion) {
+          <app-button variant="secondary" icono="auto_fix"
+                      [disabled]="guardando()" (clic)="guardar('nueva_version')">
+            Generar nueva versión
+          </app-button>
+        }
+        @if (r.puedeObservar) {
+          <app-button variant="warning" icono="flag"
+                      [disabled]="guardando()" (clic)="guardar('observar')">
+            Guardar con observaciones
+          </app-button>
+        }
+        @if (r.puedeValidar) {
+          <app-button variant="primary" icono="check"
+                      [disabled]="!formularioValido() || guardando()"
+                      [cargando]="guardando()" (clic)="guardar('validar')">
+            Guardar y validar
+          </app-button>
+        }
+      } @else {
+        <app-button variant="primary" icono="save"
+                    [disabled]="!formularioValido() || guardando()"
+                    [cargando]="guardando()" (clic)="guardar('validar')">
+          {{ modo() === 'editar' ? 'Guardar cambios' : 'Registrar OC' }}
+        </app-button>
+      }
+    </div>
+  }
+
+  <!-- Modal detalle validación IA -->
+  @if (modalComparacionAbierto() && comparacion(); as cmp) {
+    <app-modal-ver-comparacion-oc
+      [comparacion]="cmp"
+      [numeroOcTemp]="datos().numeroOc ?? 'Nueva OC'"
+      (cerrar)="cerrarDetalleComparacion()" />
+  }
+</div>

@@ -1,61 +1,191 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { Router } from '@angular/router';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
+import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { TabsComponent, Tab } from '../../../../shared/ui/tabs/tabs.component';
+import { SeccionComponent } from '../../../../shared/ui/seccion/seccion.component';
+import { TimelineEventosComponent, EventoTimeline } from '../../../../shared/ui/timeline-eventos/timeline-eventos.component';
 import { ToastService } from '../../../../core/services/toast.service';
+import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
+import { SafeUrlPipe } from '../../../../shared/pipes/safe-url.pipe';
 import { OrdenesCompraService } from '../../../../core/services/ordenes-compra.service';
 import {
-  AuditoriaOrdenCompraDto,
   DetalleOrdenCompraDto,
-  DocumentosOrdenCompraDto,
-  EventoTimelineAuditoriaDto,
-  VersionDocumentoOrdenCompraDto,
-  VinculacionOrdenCompraDto,
+  PropuestaVinculadaOcDto,
+  TimelineOrdenCompraDto,
+  ValidacionOrdenCompraDto,
 } from '../../../../core/models/ordenes-compra.model';
-import { TimelineEventosComponent, EventoTimeline } from '../../../../shared/ui/timeline-eventos/timeline-eventos.component';
-import { ChipInfoComponent } from '../../../../shared/ui/chip-info/chip-info.component';
-import { VinculacionesComponent } from '../../../../shared/ui/vinculaciones/vinculaciones.component';
-import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 
-type Tab = 'resumen' | 'aplicaciones' | 'documentos' | 'validaciones' | 'workflow' | 'historial';
+type TabInterno = 'resumen' | 'propuestas' | 'validacion' | 'timeline' | 'documento';
+type FiltroValidacion = 'todas' | 'discrepancias' | 'coincidentes';
+type FiltroTimeline   = 'todos' | 'validacion_ia' | 'comercial' | 'documental';
 
 @Component({
   selector: 'app-modal-detalle-oc',
-  imports: [CommonModule, FormsModule, DatePipe, ButtonComponent, ModalComponent, TimelineEventosComponent, ChipInfoComponent, VinculacionesComponent, MonedaPipe],
+  imports: [
+    CommonModule, FormsModule, ModalComponent, ButtonComponent,
+    TabsComponent, SeccionComponent, TimelineEventosComponent,
+    MonedaPipe, SafeUrlPipe,
+  ],
   templateUrl: './modal-detalle-oc.component.html',
   styleUrl: './modal-detalle-oc.component.scss',
 })
 export class ModalDetalleOcComponent {
-  private readonly svc   = inject(OrdenesCompraService);
-  private readonly toast = inject(ToastService);
+  readonly svc            = inject(OrdenesCompraService);
+  private readonly toast  = inject(ToastService);
+  private readonly router = inject(Router);
 
   readonly idOc   = input.required<number>();
   readonly cerrar = output<void>();
-  readonly accion = output<'editar' | 'validar' | 'observar' | 'liberar' | 'distribuir' | 'complementaria'>();
+  readonly accion = output<'editar' | 'anular'>();
 
-  readonly cargando = signal(true);
-  readonly error    = signal('');
-  readonly datos    = signal<DetalleOrdenCompraDto | null>(null);
-  readonly tab      = signal<Tab>('resumen');
+  readonly cargando          = signal(true);
+  readonly cargandoTimeline  = signal(false);
+  readonly cargandoValidacion = signal(false);
+  readonly detalle           = signal<DetalleOrdenCompraDto | null>(null);
+  readonly timeline          = signal<TimelineOrdenCompraDto | null>(null);
+  readonly validacion        = signal<ValidacionOrdenCompraDto | null>(null);
+  readonly tab               = signal<TabInterno>('resumen');
 
-  // Tab Documentos
-  readonly docs            = signal<DocumentosOrdenCompraDto | null>(null);
-  readonly cargandoDocs    = signal(false);
-  readonly reemplazando    = signal(false);
-  readonly guardandoDoc    = signal(false);
-  nuevoArchivo: File | null = null;
-  nuevoNombre = '';
-  motivoReemplazo = '';
+  readonly idPropuestaSeleccionada = signal<number | null>(null);
+  readonly filtroValidacion = signal<FiltroValidacion>('todas');
+  readonly filtroTimeline   = signal<FiltroTimeline>('todos');
+  readonly busquedaTimeline = signal<string>('');
 
-  // Tab Historial
-  readonly auditoria       = signal<AuditoriaOrdenCompraDto | null>(null);
-  readonly cargandoAudit   = signal(false);
+  readonly cabecera    = computed(() => this.detalle()?.cabecera ?? null);
+  readonly propuestas  = computed(() => this.detalle()?.propuestas ?? []);
+  readonly diferencias = computed(() => this.detalle()?.diferencias ?? []);
 
-  readonly checklistOk = computed(() => {
-    const d = this.datos();
-    return d ? d.checklist.every(c => c.cumple) : false;
+  readonly propuestaActual = computed<PropuestaVinculadaOcDto | null>(() => {
+    const props = this.propuestas();
+    const id = this.idPropuestaSeleccionada();
+    if (props.length === 0) return null;
+    return props.find(p => p.idPropuesta === id) ?? props[0];
   });
+
+  readonly estadoChip = computed(() => {
+    const estado = this.cabecera()?.estadoVisual ?? this.cabecera()?.estado ?? '';
+    const map: Record<string, { clase: string; label: string }> = {
+      recibida:         { clase: 'badge--ambar', label: 'Recibida' },
+      validada:         { clase: 'badge--verde', label: 'Validada' },
+      validada_parcial: { clase: 'badge--verde', label: 'Validada parcial' },
+      observada:        { clase: 'badge--rojo',  label: 'Observada' },
+      anulada:          { clase: 'badge--gris',  label: 'Anulada' },
+      reemplazada:      { clase: 'badge--gris',  label: 'Reemplazada' },
+    };
+    return map[estado] ?? { clase: 'badge--gris', label: estado };
+  });
+
+  /** Devuelve el total de alertas (críticas + advertencias). Útil para el badge del tab. */
+  readonly totalAlertas = computed(() => {
+    const c = this.cabecera();
+    if (!c) return 0;
+    return (c.alertasIa ?? 0);
+  });
+
+  /** % de asignación (0-100). */
+  readonly asignadoPct = computed(() => {
+    const c = this.cabecera();
+    if (!c) return 0;
+    return Math.round((c.asignadoPct ?? 0));
+  });
+
+  /** Campos renderizables de la OC con sus etiquetas. */
+  readonly camposInfo = computed(() => {
+    const c = this.cabecera();
+    if (!c) return [] as { codigo: string; etiqueta: string; valor: string; origen: 'ia' | 'manual' | 'ninguno' }[];
+    const manual = new Set(c.camposManuales.map(m => m.campo));
+    const iaDict = c.camposIa ?? {};
+    const campos: { codigo: string; etiqueta: string; valor: string }[] = [
+      { codigo: 'numero_oc',         etiqueta: 'N° Orden de Compra', valor: c.numeroOc },
+      { codigo: 'fecha_emision',     etiqueta: 'Fecha Emisión',       valor: c.fechaOc ?? '—' },
+      { codigo: 'fecha_recepcion',   etiqueta: 'Fecha Recepción',     valor: c.fechaRecepcion ?? '—' },
+      { codigo: 'id_moneda',         etiqueta: 'Moneda',              valor: c.moneda ?? c.monedaSimbolo ?? '—' },
+      { codigo: 'id_condicion_pago', etiqueta: 'Forma de Pago',       valor: c.condicionPago ?? c.formaPago ?? '—' },
+      { codigo: 'igv_pct',           etiqueta: 'Impuesto de Ley (IGV)', valor: c.igvIncluido === true ? `Incluido (${c.igvPct ?? 18}%)` : (c.igvPct != null ? `${c.igvPct}%` : '—') },
+    ];
+    return campos.map(f => {
+      const vieneDeIa = f.codigo in iaDict;
+      const corregido = manual.has(f.codigo);
+      const origen: 'ia' | 'manual' | 'ninguno' = corregido ? 'manual' : (vieneDeIa ? 'ia' : 'ninguno');
+      return { ...f, origen };
+    });
+  });
+
+  /** Diferencias filtradas por severidad para el tab Validación IA. */
+  readonly diferenciasFiltradas = computed(() => {
+    const difs = this.diferencias();
+    const filtro = this.filtroValidacion();
+    if (filtro === 'todas')         return difs;
+    if (filtro === 'coincidentes')  return difs.filter(d => d.severidad === 'ok');
+    return difs.filter(d => d.severidad !== 'ok');
+  });
+
+  readonly conteoTodas         = computed(() => this.diferencias().length);
+  readonly conteoDiscrepancias = computed(() => this.diferencias().filter(d => d.severidad !== 'ok').length);
+  readonly conteoCoincidentes  = computed(() => this.diferencias().filter(d => d.severidad === 'ok').length);
+
+  /** Eventos filtrados del timeline por categoría + búsqueda. */
+  readonly eventosFiltrados = computed(() => {
+    const eventos = this.timeline()?.eventos ?? [];
+    const cat = this.filtroTimeline();
+    const q   = this.busquedaTimeline().trim().toLowerCase();
+    return eventos.filter(e => {
+      const matchCat = cat === 'todos' || e.categoria === cat;
+      const matchQ   = !q || e.titulo.toLowerCase().includes(q)
+                       || (e.descripcion ?? '').toLowerCase().includes(q)
+                       || (e.usuario    ?? '').toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+  });
+
+  readonly conteoTimeline = computed(() => {
+    const eventos = this.timeline()?.eventos ?? [];
+    return {
+      todos:         eventos.length,
+      validacion_ia: eventos.filter(e => e.categoria === 'validacion_ia').length,
+      comercial:     eventos.filter(e => e.categoria === 'comercial').length,
+      documental:    eventos.filter(e => e.categoria === 'documental').length,
+    };
+  });
+
+  readonly esValidadaParcial = computed(() => (this.cabecera()?.estadoVisual ?? this.cabecera()?.estado) === 'validada_parcial');
+
+  /** Tabs del detalle: resumen · propuestas · validación · timeline · documento. */
+  readonly tabsArr = computed<Tab[]>(() => {
+    const c = this.cabecera();
+    const n = c?.propuestasVinculadas ?? 0;
+    const alertas = this.totalAlertas();
+    return [
+      { codigo: 'resumen',    label: 'Resumen' },
+      { codigo: 'propuestas', label: n > 0 ? `Propuestas Vinculadas (${n})` : 'Propuestas Vinculadas' },
+      { codigo: 'validacion', label: alertas > 0 ? `Validación IA (${alertas} alertas)` : 'Validación IA', alerta: alertas > 0 },
+      { codigo: 'timeline',   label: 'Timeline' },
+      { codigo: 'documento',  label: 'Documento' },
+    ];
+  });
+
+  /** Eventos del timeline mapeados al formato de `app-timeline-eventos`. */
+  readonly eventosTimeline = computed<EventoTimeline[]>(() =>
+    this.eventosFiltrados().map(e => ({
+      fecha:       e.fecha,
+      titulo:      e.titulo,
+      descripcion: e.descripcion,
+      usuario:     e.usuario ?? (e.automaticoIa ? 'Sistema IA Automático' : null),
+      contexto:    e.area,
+      icono:       this.iconoEvento(e.categoria),
+      nivel:       this.nivelTimeline(e.nivel),
+    })),
+  );
+
+  private nivelTimeline(nivel: string): 'azul' | 'verde' | 'ambar' | 'rojo' {
+    const map: Record<string, 'azul' | 'verde' | 'ambar' | 'rojo'> = {
+      exito:   'verde', info: 'azul', alerta: 'ambar', critico: 'rojo', neutro: 'azul',
+    };
+    return map[nivel] ?? 'azul';
+  }
 
   constructor() {
     effect(() => {
@@ -64,238 +194,119 @@ export class ModalDetalleOcComponent {
     });
   }
 
+  onCerrar(): void { this.cerrar.emit(); }
+
+  async cambiarTab(t: string): Promise<void> {
+    this.tab.set(t as TabInterno);
+    if (t === 'timeline' && !this.timeline())     await this.cargarTimeline();
+    if (t === 'validacion' && !this.validacion()) await this.cargarValidacion();
+  }
+
+  seleccionarPropuesta(idPropuesta: number): void { this.idPropuestaSeleccionada.set(idPropuesta); }
+
+  editar(): void { this.accion.emit('editar'); }
+  anular(): void { this.accion.emit('anular'); }
+
+  /** Navega a la propuesta vinculada (la primera o la seleccionada). */
+  abrirPropuesta(): void {
+    const prop = this.propuestaActual() ?? this.propuestas()[0];
+    if (!prop) return;
+    this.cerrar.emit();
+    void this.router.navigate(['/crm/propuestas'], { queryParams: { verDetalle: prop.idPropuesta } });
+  }
+
+  /** Navega a la ficha del cliente (maestro). */
+  abrirFichaCliente(idCliente: number): void {
+    if (!idCliente) return;
+    this.cerrar.emit();
+    void this.router.navigate(['/maestros/clientes', idCliente]);
+  }
+
+  async verPdf(): Promise<void> {
+    try { await this.svc.abrirPdfEnPestana(this.idOc()); }
+    catch (e: unknown) { this.toast.error(e instanceof Error ? e.message : 'No se pudo abrir el PDF.'); }
+  }
+
+  async descargarPdf(): Promise<void> {
+    const c = this.cabecera();
+    if (!c) return;
+    try { await this.svc.descargarPdf(this.idOc(), c.nombreArchivoPdf ?? `OC_${c.numeroOc}.pdf`); }
+    catch (e: unknown) { this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar el PDF.'); }
+  }
+
+  async descargarAuditoria(): Promise<void> {
+    const c = this.cabecera();
+    if (!c) return;
+    try { await this.svc.descargarTimelineXlsx(this.idOc(), c.numeroOc); }
+    catch (e: unknown) { this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar la auditoría.'); }
+  }
+
+  async revalidar(): Promise<void> {
+    try {
+      await this.svc.revalidar(this.idOc(), this.idPropuestaSeleccionada());
+      this.toast.exito('Revalidación ejecutada.');
+      await this.cargar(this.idOc());
+      if (this.tab() === 'validacion') await this.cargarValidacion();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo revalidar.');
+    }
+  }
+
   private async cargar(id: number): Promise<void> {
     this.cargando.set(true);
-    this.error.set('');
-    this.datos.set(null);
-    this.docs.set(null);
-    this.auditoria.set(null);
-    this.cancelarReemplazo();
-    this.tab.set('resumen');
     try {
       const d = await this.svc.obtenerDetalle(id);
-      this.datos.set(d);
+      this.detalle.set(d);
+      this.tab.set('resumen');
+      this.timeline.set(null);
+      this.validacion.set(null);
+      if (d.propuestas.length > 0) {
+        this.idPropuestaSeleccionada.set(d.propuestas[0].idPropuesta);
+      }
     } catch (e: unknown) {
-      this.error.set(e instanceof Error ? e.message : 'Error al cargar el detalle de la OC.');
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el detalle.');
     } finally {
       this.cargando.set(false);
     }
   }
 
-  async cambiarTab(t: Tab): Promise<void> {
-    this.tab.set(t);
-    if (t === 'documentos' && !this.docs()) await this.cargarDocumentos();
-    if (t === 'historial'  && !this.auditoria()) await this.cargarAuditoria();
-  }
-  onCerrar(): void { this.cerrar.emit(); }
-
-  editar(): void   { this.accion.emit('editar'); }
-  validar(): void  { this.accion.emit('validar'); }
-  observar(): void { this.accion.emit('observar'); }
-  liberarParaProgramacion(): void { this.accion.emit('liberar'); }
-  distribuir(): void            { this.accion.emit('distribuir'); }
-  registrarComplementaria(): void { this.accion.emit('complementaria'); }
-
-  // ─── Tab Documentos ──────────────────────────────────────────
-  private async cargarDocumentos(): Promise<void> {
-    this.cargandoDocs.set(true);
+  private async cargarTimeline(): Promise<void> {
+    this.cargandoTimeline.set(true);
     try {
-      this.docs.set(await this.svc.obtenerDocumentos(this.idOc()));
+      const t = await this.svc.obtenerTimeline(this.idOc());
+      this.timeline.set(t);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'Error al cargar documentos.');
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el timeline.');
     } finally {
-      this.cargandoDocs.set(false);
+      this.cargandoTimeline.set(false);
     }
   }
 
-  abrirReemplazo(): void { this.reemplazando.set(true); }
-  cancelarReemplazo(): void {
-    this.reemplazando.set(false);
-    this.nuevoArchivo = null;
-    this.nuevoNombre = '';
-    this.motivoReemplazo = '';
-  }
-
-  onArchivoSeleccionado(ev: Event): void {
-    const file = (ev.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    if (!/\.pdf$/i.test(file.name)) {
-      this.toast.error('Solo se admite PDF.');
-      return;
-    }
-    this.nuevoArchivo = file;
-    this.nuevoNombre = file.name;
-  }
-
-  async guardarNuevaVersion(): Promise<void> {
-    if (!this.nuevoArchivo || !this.motivoReemplazo.trim()) {
-      this.toast.error('Adjunta el archivo e indica el motivo del reemplazo.');
-      return;
-    }
-    this.guardandoDoc.set(true);
+  private async cargarValidacion(): Promise<void> {
+    this.cargandoValidacion.set(true);
     try {
-      await this.svc.reemplazarDocumento(this.idOc(), this.motivoReemplazo.trim(), this.nuevoArchivo);
-      this.toast.exito('Nueva versión registrada.');
-      await this.cargarDocumentos();
-      this.cancelarReemplazo();
+      const v = await this.svc.obtenerValidacion(this.idOc(), this.idPropuestaSeleccionada());
+      this.validacion.set(v);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo subir la nueva versión.');
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la validación IA.');
     } finally {
-      this.guardandoDoc.set(false);
+      this.cargandoValidacion.set(false);
     }
   }
 
-  async verVersion(v: VersionDocumentoOrdenCompraDto): Promise<void> {
-    try {
-      await this.svc.abrirPdfEnPestana(this.idOc(), v.idDocumento);
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo abrir el PDF.');
-    }
+  colorEvento(nivel: string): string {
+    return ({ exito: 'verde', alerta: 'ambar', critico: 'rojo', info: 'azul', neutro: 'gris' } as Record<string, string>)[nivel] ?? 'gris';
   }
 
-  async descargarVersion(v: VersionDocumentoOrdenCompraDto): Promise<void> {
-    try {
-      await this.svc.descargarPdf(this.idOc(), v.nombreArchivo, v.idDocumento);
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar el PDF.');
-    }
+  iconoEvento(categoria: string): string {
+    return ({ validacion_ia: 'auto_awesome', comercial: 'badge', documental: 'description' } as Record<string, string>)[categoria] ?? 'event';
   }
 
-  // ─── Tab Historial ───────────────────────────────────────────
-  private async cargarAuditoria(): Promise<void> {
-    this.cargandoAudit.set(true);
-    try {
-      this.auditoria.set(await this.svc.obtenerAuditoria(this.idOc()));
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'Error al cargar la auditoría.');
-    } finally {
-      this.cargandoAudit.set(false);
-    }
+  claseSeveridad(sev: string): string {
+    return ({ ok: 'sev--ok', advertencia: 'sev--adv', critico: 'sev--crit', sin_dato: 'sev--neutro' } as Record<string, string>)[sev] ?? 'sev--neutro';
   }
 
-  async descargarXlsx(): Promise<void> {
-    try {
-      await this.svc.descargarAuditoriaXlsx(this.idOc(), this.datos()?.resumen.numeroOc ?? 'oc');
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar la auditoría.');
-    }
-  }
-
-  get timelineUi(): EventoTimeline[] {
-    const a = this.auditoria();
-    if (!a) return [];
-    return a.timeline.map(ev => ({
-      fecha: ev.fecha,
-      titulo: ev.titulo,
-      descripcion: ev.descripcion,
-      usuario: ev.usuario,
-      contexto: ev.area,
-      icono: this.iconoEvento(ev.codigo),
-      nivel: this.nivelDe(ev.nivel),
-    }));
-  }
-
-  private nivelDe(n: string): 'azul' | 'verde' | 'ambar' | 'rojo' {
-    switch (n) {
-      case 'exito':  return 'verde';
-      case 'alerta': return 'ambar';
-      case 'error':  return 'rojo';
-      default:       return 'azul';
-    }
-  }
-
-  iconoEvento(codigo: string): string {
-    if (codigo.includes('creada') || codigo.includes('registro')) return 'add_circle';
-    if (codigo.includes('editada') || codigo.includes('edicion')) return 'edit';
-    if (codigo.includes('documento') || codigo.includes('pdf'))   return 'autorenew';
-    if (codigo.includes('observada') || codigo.includes('observ')) return 'flag';
-    if (codigo.includes('validada') || codigo.includes('valid'))  return 'verified';
-    if (codigo.includes('liberada') || codigo.includes('liber'))  return 'rocket_launch';
-    if (codigo.includes('anulada'))                                return 'cancel';
-    if (codigo.includes('complementaria'))                         return 'add_to_queue';
-    if (codigo.includes('distribu'))                               return 'account_tree';
-    return 'history';
-  }
-
-  claseEvento(nivel: string): string {
-    switch (nivel) {
-      case 'exito':      return 'ev--verde';
-      case 'alerta':     return 'ev--ambar';
-      case 'documento':  return 'ev--azul';
-      case 'neutro':     return 'ev--azul';
-      case 'info':
-      default:           return 'ev--azul';
-    }
-  }
-
-  trackEvento = (_: number, e: EventoTimelineAuditoriaDto) => `${e.fecha}-${e.codigo}`;
-  abrirPropuesta(id: number | null | undefined): void {
-    if (!id) return;
-    this.toast.info(`Abrir propuesta ${id} — pendiente de navegación.`);
-  }
-  abrirExpediente(id: number | null | undefined): void {
-    if (!id) return;
-    this.toast.info(`Abrir expediente ${id} — Módulo 7.`);
-  }
-
-
-  estadoChip(estado: string): { clase: string; label: string } {
-    const mapa: Record<string, { clase: string; label: string }> = {
-      pendiente_validacion: { clase: 'chip-estado chip-estado--ambar', label: 'Pend. Validar' },
-      validada:             { clase: 'chip-estado chip-estado--verde', label: 'Validada' },
-      validada_parcial:     { clase: 'chip-estado chip-estado--verde', label: 'Validada (parcial)' },
-      vigente:              { clase: 'chip-estado chip-estado--verde', label: 'Validada' },
-      liberada:             { clase: 'chip-estado chip-estado--azul',  label: 'Liberada' },
-      observada:            { clase: 'chip-estado chip-estado--rojo',  label: 'Observada' },
-      bloqueada:            { clase: 'chip-estado chip-estado--rojo',  label: 'Bloqueada' },
-      vencida:              { clase: 'chip-estado chip-estado--rojo',  label: 'Vencida' },
-      anulada:              { clase: 'chip-estado chip-estado--gris',  label: 'Anulada' },
-    };
-    return mapa[estado] ?? { clase: 'chip-estado chip-estado--gris', label: estado };
-  }
-
-  coberturaChip(codigo: string): { clase: string; label: string } {
-    const mapa: Record<string, { clase: string; label: string }> = {
-      completa:         { clase: 'cob-chip cob-chip--ok',  label: 'Completa' },
-      con_saldo:        { clase: 'cob-chip cob-chip--mid', label: 'Parcial' },
-      insuficiente:     { clase: 'cob-chip cob-chip--bad', label: 'Insuficiente' },
-      moneda_diferente: { clase: 'cob-chip cob-chip--mid', label: 'Moneda ≠' },
-      pendiente:        { clase: 'cob-chip cob-chip--mid', label: 'Pendiente' },
-    };
-    return mapa[codigo] ?? { clase: 'cob-chip cob-chip--mid', label: codigo };
-  }
-
-  coberturaBarraClase(codigo: string): string {
-    const map: Record<string, string> = {
-      completa:     'barra-fill--completa',
-      con_saldo:    'barra-fill--parcial',
-      insuficiente: 'barra-fill--insuficiente',
-    };
-    return `barra-fill ${map[codigo] ?? 'barra-fill--parcial'}`;
-  }
-
-  private get estadoEfectivo(): string {
-    const r = this.datos()?.resumen;
-    return (r?.estadoVisual || r?.estado || '').toLowerCase();
-  }
-  private get yaLiberada(): boolean { return !!this.datos()?.resumen.fechaLiberacion; }
-
-  get puedeValidar(): boolean { return this.estadoEfectivo === 'pendiente_validacion'; }
-  get puedeObservar(): boolean { return this.estadoEfectivo === 'pendiente_validacion'; }
-  get puedeLiberar(): boolean {
-    const e = this.estadoEfectivo;
-    return !this.yaLiberada && (e === 'validada' || e === 'validada_parcial' || e === 'vigente');
-  }
-  get puedeDistribuir(): boolean {
-    const r = this.datos()?.resumen;
-    if (!r || r.saldo <= 0) return false;
-    const e = this.estadoEfectivo;
-    return e === 'validada' || e === 'validada_parcial' || e === 'vigente' || e === 'liberada';
-  }
-  get puedeComplementaria(): boolean {
-    const r = this.datos()?.resumen;
-    if (!r || r.coberturaCodigo === 'completa') return false;
-    const e = this.estadoEfectivo;
-    return e === 'validada' || e === 'validada_parcial' || e === 'vigente' || e === 'liberada';
+  labelSeveridad(sev: string): string {
+    return ({ ok: 'Coincidencia', advertencia: 'Diferencia menor', critico: 'Observación crítica', sin_dato: 'Sin dato' } as Record<string, string>)[sev] ?? sev;
   }
 }

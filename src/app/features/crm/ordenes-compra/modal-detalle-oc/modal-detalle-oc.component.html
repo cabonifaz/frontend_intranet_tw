@@ -1,337 +1,490 @@
 <app-modal
-  titulo="Detalle de Orden de Compra"
-  icono="description"
+  [titulo]="'Detalle de Orden de Compra  /  ' + (cabecera()?.numeroOc ?? '')"
+  icono="receipt_long"
   iconoColor="azul"
   ancho="xl"
   (cerrar)="onCerrar()">
 
-  <!-- Estado de carga / error -->
   @if (cargando()) {
     <div class="oc-cargando">
-      <span class="material-symbols-outlined oc-spinner">progress_activity</span>
-      Cargando orden de compra...
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando detalle de la OC...
     </div>
-  } @else if (error()) {
-    <div class="oc-error">
-      <span class="material-symbols-outlined">error</span>
-      {{ error() }}
-    </div>
-  } @else if (datos(); as det) {
-    @let d = det.resumen;
+  } @else if (cabecera(); as c) {
 
-    <!-- ── Barra superior: nº OC + estado + editar ───────────────── -->
-    <div class="oc-head">
-      <div class="oc-head__izq">
-        <div class="oc-head__ref">
-          <span class="oc-head__label">Referencia:</span>
-          <strong>{{ d.numeroOc }}</strong>
-        </div>
-        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">{{ estadoChip(d.estadoVisual || d.estado).label }}</span>
+    <!-- ── Encabezado: razón social + chips + metadata ──────── -->
+    <div class="oc-encabezado">
+      <div class="oc-encabezado__principal">
+        <strong class="oc-encabezado__cliente">{{ c.razonSocial }}</strong>
+        <span class="badge {{ estadoChip().clase }}">● {{ estadoChip().label | uppercase }}</span>
+        @if (c.esAutogenerada) {
+          <span class="chip-autogenerada">
+            <span class="material-symbols-outlined">bolt</span> Autogenerada
+          </span>
+          @if (c.pendienteReemplazo) {
+            <span class="chip-pendiente-reemplazo">Pendiente de reemplazo</span>
+          }
+        }
+        @if (c.numeroExpediente) {
+          <span class="chip-expediente">
+            <span class="material-symbols-outlined">folder</span> {{ c.numeroExpediente }}
+          </span>
+        }
       </div>
-      <app-button variant="secondary" tamano="sm" icono="edit" (clic)="editar()">Editar</app-button>
+      <div class="oc-encabezado__meta">
+        @if (c.fechaRegistro) {
+          <span><span class="material-symbols-outlined">schedule</span> Registrada el {{ c.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}</span>
+        }
+        @if (c.registradoPor) {
+          <span><span class="material-symbols-outlined">person</span> {{ c.registradoPor }}</span>
+        }
+      </div>
     </div>
 
-    <!-- ── Chips informativos ────────────────────────────────────── -->
-    <div class="oc-chips">
-      <app-chip-info label="CLIENTE" [valor]="d.razonSocial" />
-      <app-chip-info label="RQ" [valor]="d.numeroRq ?? '—'" />
-      <app-chip-info label="PROPUESTA"
-                     [valor]="d.numeroPropuesta ?? '—'"
-                     [sub]="d.versionPropuesta ? 'v' + d.versionPropuesta : null" />
-      <app-chip-info label="MONTO OC" [valor]="d.montoOc | moneda:d.monedaSimbolo" />
-      <app-chip-info label="COBERTURA" [valor]="(d.coberturaPct ?? 0) + '%'" variant="pct" />
-      <app-chip-info label="ESTADO">
-        <span [class]="estadoChip(d.estadoVisual || d.estado).clase">
-          {{ estadoChip(d.estadoVisual || d.estado).label }}
-        </span>
-      </app-chip-info>
+    <!-- ── Aviso OC autogenerada ───────────────────────────── -->
+    @if (c.esAutogenerada && c.pendienteReemplazo) {
+      <div class="aviso-autogenerada">
+        <span class="material-symbols-outlined">schedule</span>
+        <div class="aviso-autogenerada__texto">
+          <strong>Esta es una OC provisional</strong>
+          <small>Fue generada automáticamente al aceptar la propuesta para no bloquear la ejecución del servicio. Debe ser reemplazada por la OC real cuando el cliente la envíe, antes de proceder con la facturación.</small>
+        </div>
+        @if (c.puedeReemplazarAuto) {
+          <app-button variant="primary" icono="sync" (clic)="editar()">Reemplazar por OC del cliente</app-button>
+        }
+      </div>
+    }
+
+    <!-- ── 5 Mini KPIs compactos (patrón modal detalle) ───── -->
+    <div class="kpis-fila">
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap"><span class="material-symbols-outlined">payments</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">MONTO OC</div>
+          <div class="kpi-valor">{{ c.montoOc | moneda:c.monedaSimbolo }}</div>
+          <div class="kpi-sub">{{ c.moneda ?? '' }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap kpi-icono-wrap--azul"><span class="material-symbols-outlined">description</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">PROPUESTAS</div>
+          <div class="kpi-valor">{{ c.propuestasVinculadas }}</div>
+          <div class="kpi-sub">{{ c.propuestasVinculadas === 1 ? 'vinculada' : 'vinculadas' }}</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap kpi-icono-wrap--verde"><span class="material-symbols-outlined">check_circle</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">ASIGNADO</div>
+          <div class="kpi-valor">{{ c.montoAsignado | moneda:c.monedaSimbolo }}</div>
+          <div class="kpi-sub">{{ asignadoPct() }}% asignación</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icono-wrap" [class.kpi-icono-wrap--rojo]="c.saldoOc > 0" [class.kpi-icono-wrap--verde]="c.saldoOc === 0">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+        </div>
+        <div class="kpi-texto">
+          <div class="kpi-label">SALDO OC</div>
+          <div class="kpi-valor" [class.kpi-valor--rojo]="c.saldoOc > 0">{{ c.saldoOc | moneda:c.monedaSimbolo }}</div>
+          <div class="kpi-sub">{{ c.saldoOc === 0 ? 'sin remanente' : 'por asignar' }}</div>
+        </div>
+      </div>
+      <div class="kpi-card"
+           [class.kpi-card--ambar]="c.esAutogenerada || totalAlertas() > 0"
+           [class.kpi-card--verde]="!c.esAutogenerada && totalAlertas() === 0">
+        <div class="kpi-icono-wrap kpi-icono-wrap--morado"><span class="material-symbols-outlined">auto_awesome</span></div>
+        <div class="kpi-texto">
+          <div class="kpi-label">VALIDACIÓN IA</div>
+          @if (c.esAutogenerada) {
+            <div class="kpi-valor">Sin validar</div>
+            <div class="kpi-sub">Requiere OC oficial</div>
+          } @else if (totalAlertas() === 0) {
+            <div class="kpi-valor"><span class="material-symbols-outlined">check</span> OK</div>
+            <div class="kpi-sub">sin diferencias</div>
+          } @else {
+            <div class="kpi-valor">{{ totalAlertas() }} alertas</div>
+            <div class="kpi-sub">revisar diferencias</div>
+          }
+        </div>
+      </div>
     </div>
 
-    <!-- ── Tabs ──────────────────────────────────────────────────── -->
-    <div class="oc-tabs">
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'resumen'" (click)="cambiarTab('resumen')">Resumen</button>
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'aplicaciones'" (click)="cambiarTab('aplicaciones')">Aplicaciones</button>
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'documentos'" (click)="cambiarTab('documentos')">Documentos</button>
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'validaciones'" (click)="cambiarTab('validaciones')">Validaciones</button>
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'workflow'" (click)="cambiarTab('workflow')">Workflow</button>
-      <button class="oc-tab" [class.oc-tab--activo]="tab() === 'historial'" (click)="cambiarTab('historial')">Historial</button>
-    </div>
+    <!-- ── Tabs ─────────────────────────────────────────────── -->
+    <app-tabs [tabs]="tabsArr()" [activo]="tab()" (cambio)="cambiarTab($event)" />
 
-    <!-- ── Contenido tab RESUMEN ─────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
+    <!-- ── TAB RESUMEN ──────────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
     @if (tab() === 'resumen') {
-      <div class="oc-grid">
-        <!-- Columna izquierda: Datos generales + Vinculaciones -->
-        <div class="oc-col">
-          <section class="oc-card">
-            <div class="oc-card__title">
-              <span class="material-symbols-outlined">info</span>
-              Datos Generales
-            </div>
-            <div class="oc-datos">
-              <div class="oc-dato"><label>N.º OC</label><span>{{ d.numeroOc }}</span></div>
-              <div class="oc-dato"><label>Cliente / RUC</label><span>{{ d.razonSocial }} / {{ d.ruc ?? '—' }}</span></div>
-              <div class="oc-dato"><label>Fecha de emisión</label><span>{{ d.fechaOc | date:'dd/MM/yyyy' }}</span></div>
-              <div class="oc-dato"><label>Fecha de recepción</label><span>{{ d.fechaRecepcion ? (d.fechaRecepcion | date:'dd/MM/yyyy') : '—' }}</span></div>
-              <div class="oc-dato"><label>Moneda / Monto</label><span>{{ d.moneda ?? '—' }} {{ (d.montoOc | moneda:d.monedaSimbolo) }}</span></div>
-              <div class="oc-dato"><label>Vigencia</label><span>{{ d.vigenciaHasta ? (d.vigenciaHasta | date:'dd/MM/yyyy') : '—' }}</span></div>
-              <div class="oc-dato"><label>Responsable</label><span>{{ d.responsable ?? '—' }}</span></div>
-              <div class="oc-dato oc-dato--full">
-                <label>Referencia de servicio</label>
-                <span>{{ d.referenciaServicio ?? '—' }}</span>
-              </div>
-            </div>
-          </section>
-
-          <section class="oc-card">
-            <div class="oc-card__title">
-              <span class="material-symbols-outlined">link</span>
-              Vinculaciones del Proceso
-            </div>
-            <app-vinculaciones [items]="det.vinculaciones" [columnas]="2" />
-          </section>
-        </div>
-
-        <!-- Columna derecha: Cobertura + Checklist -->
-        <div class="oc-col">
-          <section class="oc-card">
-            <div class="oc-card__title">
-              <span class="material-symbols-outlined">payments</span>
-              Cobertura Económica
-              <span [class]="coberturaChip(d.coberturaCodigo).clase + ' oc-card__chip'">
-                {{ coberturaChip(d.coberturaCodigo).label }}
-              </span>
-            </div>
-            <div class="oc-cobertura">
-              <div class="oc-cob-row">
-                <span>Monto Propuesta</span>
-                <strong>{{ (d.montoPropuesta | moneda:d.monedaSimbolo) }}</strong>
-              </div>
-              <div class="oc-cob-row">
-                <span>Monto OC Recibida</span>
-                <strong>{{ (d.montoOc | moneda:d.monedaSimbolo) }}</strong>
-              </div>
-              <div class="oc-cob-row oc-cob-row--saldo">
-                <span>Diferencia / Saldo</span>
-                <strong [class.saldo--neg]="d.saldo < 0" [class.saldo--ok]="d.saldo === 0">
-                  {{ (d.saldo | moneda:d.monedaSimbolo) }}
-                </strong>
-              </div>
-              <div class="oc-barra">
-                <div [class]="coberturaBarraClase(d.coberturaCodigo)" [style.width.%]="(d.coberturaPct ?? 0) > 100 ? 100 : (d.coberturaPct ?? 0)"></div>
-              </div>
-              <div class="oc-barra-txt">
-                Validación: {{ d.coberturaPct ?? 0 }}% · {{ (d.montoOc | moneda:d.monedaSimbolo) }} / {{ (d.montoPropuesta | moneda:d.monedaSimbolo) }}
-              </div>
-            </div>
-          </section>
-
-          <section class="oc-card">
-            <div class="oc-card__title">
-              <span class="material-symbols-outlined">rule</span>
-              Checklist de Validación
-            </div>
-            <ul class="oc-checklist">
-              @for (c of det.checklist; track c.codigo) {
-                <li [class.oc-check--ok]="c.cumple" [class.oc-check--bad]="!c.cumple">
-                  <span class="material-symbols-outlined">{{ c.cumple ? 'check_circle' : 'cancel' }}</span>
-                  <span>{{ c.descripcion }}</span>
-                </li>
-              }
-            </ul>
-          </section>
-        </div>
-      </div>
-    }
-
-    <!-- ── Contenido otros tabs (placeholders) ──────────────────── -->
-    @if (tab() === 'aplicaciones') {
-      <div class="oc-placeholder">
-        <span class="material-symbols-outlined">receipt_long</span>
-        <h4>Aplicaciones y Distribución</h4>
-        <p>Distribuye el monto de la OC entre propuestas del cliente, o registra una OC complementaria para cubrir la diferencia.</p>
-        <div style="display:flex;gap:8px;justify-content:center;">
-          @if (puedeDistribuir) {
-            <app-button variant="primary" icono="account_tree" (clic)="distribuir()">Distribuir monto</app-button>
-          }
-          @if (puedeComplementaria) {
-            <app-button variant="secondary" icono="add_to_queue" (clic)="registrarComplementaria()">OC Complementaria</app-button>
-          }
-        </div>
-      </div>
-    }
-    @if (tab() === 'documentos') {
-      @if (cargandoDocs()) {
-        <div class="oc-cargando">
-          <span class="material-symbols-outlined oc-spinner">progress_activity</span>
-          Cargando documentos...
-        </div>
-      } @else if (docs(); as doc) {
-        <div class="docs-wrap">
-          @if (doc.actual; as v) {
-            <div class="docs-head">
-              <div class="docs-head__title">
-                <span class="material-symbols-outlined">description</span>
-                Documento Actual
-              </div>
-              <span class="docs-chip">ÚLTIMA VERSIÓN</span>
-            </div>
-
-            <div class="docs-actual">
-              <span class="material-symbols-outlined docs-actual__icon">picture_as_pdf</span>
-              <div class="docs-actual__meta">
-                <strong>{{ v.nombreArchivo }}</strong>
-                <small>{{ ((v.tamanoBytes ?? 0) / 1024 / 1024) | number:'1.1-2' }} MB · Subido por {{ v.subidoPor }} el {{ v.fechaCarga | date:'dd/MM/yyyy' }}</small>
-              </div>
-              <div class="docs-actual__acciones">
-                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                            ariaLabel="Ver" title="Ver" (clic)="verVersion(v)" />
-                <app-button variant="ghost" tamano="sm" icono="download" [soloIcon]="true"
-                            ariaLabel="Descargar" title="Descargar" (clic)="descargarVersion(v)" />
-                @if (doc.puedeReemplazar && !reemplazando()) {
-                  <app-button variant="secondary" tamano="sm" icono="autorenew"
-                              (clic)="abrirReemplazo()">Reemplazar</app-button>
-                }
-              </div>
-            </div>
-          }
-
-          @if (reemplazando()) {
-            <div class="docs-form">
-              <h4 class="docs-form__title">Subir nueva versión</h4>
-              <div class="docs-form__field">
-                <label>Motivo del reemplazo *</label>
-                <input type="text" [(ngModel)]="motivoReemplazo"
-                       placeholder="Ej: documento corregido, firma faltante, etc." />
-              </div>
-              <div class="docs-form__field">
-                <label>Nuevo archivo *</label>
-                <div class="docs-upload">
-                  @if (nuevoNombre) {
-                    <div class="docs-upload__file">
-                      <span class="material-symbols-outlined">picture_as_pdf</span>
-                      <strong>{{ nuevoNombre }}</strong>
-                      <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
-                                  ariaLabel="Quitar" (clic)="nuevoArchivo = null; nuevoNombre = ''" />
-                    </div>
-                  } @else {
-                    <label class="docs-upload__drop">
-                      <span class="material-symbols-outlined">cloud_upload</span>
-                      <span>Seleccionar archivo</span>
-                      <input type="file" accept=".pdf" (change)="onArchivoSeleccionado($event)" hidden />
-                    </label>
-                  }
+      @if (c.tienePdf || !c.esAutogenerada) {
+        <app-seccion icono="description" titulo="Información del documento"
+                     [badgeTexto]="c.camposIa && (c.camposIa | json) !== '{}' ? 'Datos extraídos por IA' : ''"
+                     badgeVariant="azul">
+          <div class="campos-grid">
+            @for (campo of camposInfo(); track campo.codigo) {
+              <div class="campo-info">
+                <span class="campo-info__label">{{ campo.etiqueta }}</span>
+                <div class="campo-info__valor-wrap">
+                  <strong class="campo-info__valor">{{ campo.valor }}</strong>
+                  @if (campo.origen === 'ia')     { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
+                  @if (campo.origen === 'manual') { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
                 </div>
               </div>
-              <div class="docs-form__actions">
-                <app-button variant="ghost" tamano="sm" (clic)="cancelarReemplazo()">Cancelar</app-button>
-                <app-button variant="primary" tamano="sm" icono="save" [cargando]="guardandoDoc()"
-                            [disabled]="!nuevoArchivo || !motivoReemplazo.trim()"
-                            (clic)="guardarNuevaVersion()">Guardar nueva versión</app-button>
-              </div>
-            </div>
+            }
+          </div>
+        </app-seccion>
+      } @else {
+        <div class="pdf-vacio">
+          <span class="material-symbols-outlined">description</span>
+          <h4>Sin documento cargado</h4>
+          <p>El cliente aún no ha enviado la Orden de Compra oficial. Esta OC es una provisional creada automáticamente al aceptar la propuesta.</p>
+          @if (c.puedeReemplazarAuto) {
+            <app-button variant="primary" icono="sync" (clic)="editar()">Reemplazar por OC del cliente</app-button>
           }
+        </div>
+      }
 
-          <h4 class="docs-sub-titulo">Historial de Versiones</h4>
-          <div class="docs-tabla-card">
-            <table class="docs-tabla">
-              <thead>
-                <tr>
-                  <th>VERSIÓN</th>
-                  <th>ARCHIVO</th>
-                  <th>FECHA / USUARIO</th>
-                  <th>MOTIVO</th>
-                  <th class="docs-tabla__th--right">ACCIÓN</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (v of doc.versiones; track v.idDocumento ?? v.version) {
-                  <tr>
-                    <td class="docs-tabla__ver">
-                      v{{ v.version }}
-                      @if (v.esActual) { <span class="docs-tabla__actual">ACTUAL</span> }
-                    </td>
-                    <td>
-                      <span class="docs-tabla__file">
-                        <span class="material-symbols-outlined">picture_as_pdf</span>
-                        {{ v.nombreArchivo }}
-                      </span>
-                    </td>
-                    <td class="docs-tabla__fecha">
-                      <strong>{{ v.fechaCarga | date:'dd/MM/yyyy' }}</strong>
-                      <small>{{ v.subidoPor }}</small>
-                    </td>
-                    <td>{{ v.motivo ?? '—' }}</td>
-                    <td class="docs-tabla__td--right">
-                      <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                                  ariaLabel="Ver" (clic)="verVersion(v)" />
-                      <app-button variant="ghost" tamano="sm" icono="download" [soloIcon]="true"
-                                  ariaLabel="Descargar" (clic)="descargarVersion(v)" />
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+      <app-seccion icono="business" titulo="Datos del Cliente">
+        <button headerActions class="btn-ver-cliente" (click)="abrirFichaCliente(c.idCliente)">
+          Ver ficha del cliente
+          <span class="material-symbols-outlined">open_in_new</span>
+        </button>
+        <div class="campos-grid campos-grid--dos">
+          <div class="campo-info">
+            <span class="campo-info__label">Razón Social</span>
+            <strong class="campo-info__valor">{{ c.razonSocialOc ?? c.razonSocial }}</strong>
+          </div>
+          <div class="campo-info">
+            <span class="campo-info__label">RUC Vinculado</span>
+            <strong class="campo-info__valor">{{ c.rucClienteOc ?? c.ruc ?? '—' }}</strong>
+          </div>
+        </div>
+      </app-seccion>
+
+      <label class="factura-check">
+        <input type="checkbox" [checked]="c.facturaIgualOc" disabled />
+        <div class="factura-check__texto">
+          <strong>La factura tendrá exactamente lo mismo especificado en la Orden de Compra</strong>
+          <small>Si distintos conceptos o montos entre la OC y la propuesta seleccionada, el motor generará automáticamente una nueva versión comercial antes de habilitar la emisión de factura.</small>
+        </div>
+      </label>
+
+      @if (c.observaciones) {
+        <app-seccion icono="chat_bubble" titulo="Observaciones registradas">
+          <blockquote class="observaciones">"{{ c.observaciones }}"</blockquote>
+        </app-seccion>
+      }
+    }
+
+    <!-- ─────────────────────────────────────────────────────── -->
+    <!-- ── TAB PROPUESTAS VINCULADAS ────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
+    @if (tab() === 'propuestas') {
+      <!-- Resumen de cobertura -->
+      <div class="cobertura">
+        <div class="cobertura__header">
+          <strong>Resumen de cobertura y asignación</strong>
+          <span class="cobertura__chip" [class.cobertura__chip--completa]="asignadoPct() === 100">
+            @if (asignadoPct() === 100) { <span class="material-symbols-outlined">check</span> Asignación 100% completada }
+            @else { Asignación {{ asignadoPct() }}% }
+          </span>
+        </div>
+        <small class="cobertura__nota">{{ c.propuestasVinculadas }} propuesta(s) {{ c.propuestasVinculadas === 1 ? 'asociada' : 'asociadas' }} a esta Orden de Compra que {{ c.propuestasVinculadas === 1 ? 'cubre' : 'cubren' }} del monto total ({{ c.montoOc | moneda:c.monedaSimbolo }})</small>
+        <div class="cobertura__barra">
+          @for (p of propuestas(); track p.idPropuesta) {
+            <div class="cobertura__segmento" [style.flex]="p.pctOc"
+                 [title]="p.numero + ' — ' + p.pctOc + '%'"></div>
+          }
+          @if (c.saldoOc > 0) {
+            <div class="cobertura__segmento cobertura__segmento--pendiente"
+                 [style.flex]="100 - asignadoPct()"></div>
+          }
+        </div>
+        <div class="cobertura__leyenda">
+          @for (p of propuestas(); track p.idPropuesta) {
+            <span class="leyenda-item">
+              <span class="leyenda-item__dot"></span>
+              {{ p.numero }}: {{ p.montoAsignado | moneda:c.monedaSimbolo }} ({{ p.pctOc }}%)
+            </span>
+          }
+          <span class="leyenda-total">
+            Total Asignado: {{ c.montoAsignado | moneda:c.monedaSimbolo }} / {{ c.montoOc | moneda:c.monedaSimbolo }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Cards de propuestas -->
+      @for (p of propuestas(); track p.idPropuesta) {
+        <div class="card-propuesta">
+          <div class="card-propuesta__header">
+            <div class="card-propuesta__titulo">
+              <strong class="card-propuesta__codigo">{{ p.numero }} v{{ p.version }}</strong>
+              <span class="chip chip--verde">{{ p.aceptada ? 'ACEPTADA' : p.estadoPropuesta }}</span>
+              <span class="card-propuesta__pct">{{ p.pctOc }}% de la OC ({{ p.montoAsignado | moneda:c.monedaSimbolo }})</span>
+            </div>
+            <button class="btn-link">Ver detalle de propuesta</button>
+          </div>
+
+          <div class="card-propuesta__grid">
+            <div class="card-propuesta__col">
+              <span class="col-label">Contacto</span>
+              <strong>{{ p.contacto ?? '—' }}</strong>
+              @if (p.cargoContacto) { <small>({{ p.cargoContacto }})</small> }
+            </div>
+            <div class="card-propuesta__col">
+              <span class="col-label">Requerimiento asociado</span>
+              <strong>{{ p.numeroRq ?? '—' }}</strong>
+              @if (c.razonSocial) { <small>{{ c.razonSocial }}</small> }
+            </div>
+            <div class="card-propuesta__col">
+              <span class="col-label">Servicios incluidos</span>
+              <strong>{{ p.servicios }} servicio(s)</strong>
+              @if (p.serviciosDetalle) { <small>{{ p.serviciosDetalle }}</small> }
+            </div>
+          </div>
+
+          <div class="card-propuesta__grid card-propuesta__grid--estados">
+            <div class="card-propuesta__col">
+              <span class="col-label">Estado de validación IA</span>
+              @if (p.estadoValidacion === 'validada') {
+                <strong class="estado-ia estado-ia--verde">
+                  <span class="material-symbols-outlined">check_circle</span> Conciliada sin diferencias
+                </strong>
+              } @else if (p.estadoValidacion === 'observada') {
+                <strong class="estado-ia estado-ia--ambar">
+                  <span class="material-symbols-outlined">warning</span>
+                  {{ p.advertencias ?? 0 }} observaciones menores resueltas
+                </strong>
+              } @else {
+                <strong class="estado-ia estado-ia--gris">
+                  <span class="material-symbols-outlined">pending</span> Pendiente validación
+                </strong>
+              }
+            </div>
+            <div class="card-propuesta__col">
+              <span class="col-label">Facturación</span>
+              @if (p.facturacionHabilitada) {
+                <strong class="estado-ia estado-ia--verde">
+                  <span class="material-symbols-outlined">check_circle</span> Lista para emisión de factura (Habilitada)
+                </strong>
+              } @else {
+                <strong class="estado-ia estado-ia--gris">
+                  <span class="material-symbols-outlined">pending</span> Pendiente de validación
+                </strong>
+              }
+            </div>
+          </div>
+
+          <div class="card-propuesta__footer">
+            <app-button variant="ghost" tamano="sm" icono="link_off">Desvincular propuesta</app-button>
+            <app-button variant="ghost" tamano="sm" icono="open_in_new">Abrir Propuesta</app-button>
           </div>
         </div>
       }
     }
-    @if (tab() === 'validaciones') {
-      <div class="oc-placeholder">
-        <span class="material-symbols-outlined">verified</span>
-        <h4>Validaciones</h4>
-        <p>Trazabilidad de validaciones y observaciones registradas (HU-26).</p>
-      </div>
-    }
-    @if (tab() === 'workflow') {
-      <div class="oc-placeholder">
-        <span class="material-symbols-outlined">account_tree</span>
-        <h4>Workflow</h4>
-        <p>Vista de flujo: recepción → validación → liberación → operaciones.</p>
-      </div>
-    }
-    @if (tab() === 'historial') {
-      @if (cargandoAudit()) {
-        <div class="oc-cargando">
-          <span class="material-symbols-outlined oc-spinner">progress_activity</span>
-          Cargando historial...
-        </div>
-      } @else if (auditoria(); as a) {
-        <div class="hist-wrap">
-          <div class="hist-head">
-            <h4>Timeline de Eventos</h4>
-            <app-button variant="primary" tamano="sm" icono="download" (clic)="descargarXlsx()">
-              Descargar XLSX
-            </app-button>
-          </div>
 
-          <app-timeline-eventos [eventos]="timelineUi" mensajeVacio="No hay eventos registrados." />
+    <!-- ─────────────────────────────────────────────────────── -->
+    <!-- ── TAB VALIDACIÓN IA ────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
+    @if (tab() === 'validacion') {
+      @if (cargandoValidacion()) {
+        <div class="oc-cargando">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando validación IA...
+        </div>
+      } @else if (c.esAutogenerada) {
+        <div class="pdf-vacio">
+          <span class="material-symbols-outlined">auto_awesome</span>
+          <h4>OC autogenerada sin documento</h4>
+          <p>La validación IA se ejecutará cuando se reemplace esta OC provisional con la OC oficial del cliente.</p>
+        </div>
+      } @else {
+        <!-- Banner de resumen -->
+        <div class="validacion-banner" [class.validacion-banner--atencion]="totalAlertas() > 0">
+          <div class="validacion-banner__icono">
+            <span class="material-symbols-outlined">auto_awesome</span>
+          </div>
+          <div class="validacion-banner__texto">
+            <strong>Validación Asistida por Total Weight AI Engine · {{ conteoDiscrepancias() }} diferencia(s) {{ conteoDiscrepancias() === 1 ? 'encontrada' : 'encontradas' }}</strong>
+            @if (totalAlertas() > 0) {
+              <span class="validacion-banner__alerta"><span class="material-symbols-outlined">warning</span> Requiere Atención</span>
+            }
+            <small>La IA comparó los datos extraídos de la OC física contra las propuestas vinculadas. Las diferencias no bloquean operativamente la orden pero requieren confirmación comercial antes de la facturación.</small>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="validacion-filtros">
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroValidacion() === 'todas'" (click)="filtroValidacion.set('todas')">
+            Todas las comprobaciones ({{ conteoTodas() }})
+          </button>
+          <button class="chip-filtro chip-filtro--adv" [class.chip-filtro--activo]="filtroValidacion() === 'discrepancias'" (click)="filtroValidacion.set('discrepancias')">
+            Discrepancias ({{ conteoDiscrepancias() }})
+          </button>
+          <button class="chip-filtro chip-filtro--ok" [class.chip-filtro--activo]="filtroValidacion() === 'coincidentes'" (click)="filtroValidacion.set('coincidentes')">
+            Coincidentes ({{ conteoCoincidentes() }})
+          </button>
+        </div>
+
+        <!-- Tabla de diferencias -->
+        <table class="tabla-validacion">
+          <thead>
+            <tr>
+              <th>Concepto / Campo</th>
+              <th>Valor en OC (PDF Extraído)</th>
+              <th>Valor en Propuesta(s)</th>
+              <th>Estado / Evaluación IA</th>
+              <th>Acción Recomendada</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dif of diferenciasFiltradas(); track dif.campo + '-' + dif.orden) {
+              <tr>
+                <td>
+                  <div class="celda-concepto">
+                    <span class="celda-concepto__dot {{ claseSeveridad(dif.severidad) }}"></span>
+                    <strong>{{ dif.etiqueta }}</strong>
+                  </div>
+                </td>
+                <td class="celda-valor">{{ dif.valorOc ?? '—' }}</td>
+                <td class="celda-valor">{{ dif.valorPropuesta ?? '—' }}</td>
+                <td>
+                  <span class="chip-sev {{ claseSeveridad(dif.severidad) }}">
+                    @if (dif.severidad === 'ok')          { <span class="material-symbols-outlined">check_circle</span> }
+                    @else if (dif.severidad === 'advertencia') { <span class="material-symbols-outlined">warning</span> }
+                    @else                                 { <span class="material-symbols-outlined">error</span> }
+                    {{ labelSeveridad(dif.severidad) }}
+                  </span>
+                </td>
+                <td class="celda-accion">{{ dif.mensaje ?? dif.accion ?? '—' }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Footer de validación IA -->
+        @if (validacion()?.cabecera; as v) {
+          <div class="validacion-footer">
+            <span>
+              <span class="material-symbols-outlined">memory</span>
+              Motor: {{ v.motor ?? 'Total Weight OCR & Semantic Matcher' }}
+              @if (v.confianza != null) { · Confianza {{ (v.confianza * 100).toFixed(1) }}% }
+            </span>
+            @if (v.fechaValidacion) {
+              <span>Auditoría: {{ v.fechaValidacion | date:'dd/MM/yyyy HH:mm' }}</span>
+            }
+            @if (c.puedeRevalidar) {
+              <app-button variant="ghost" tamano="sm" icono="refresh" (clic)="revalidar()">Re-analizar documento con IA</app-button>
+            }
+          </div>
+        }
+      }
+    }
+
+    <!-- ─────────────────────────────────────────────────────── -->
+    <!-- ── TAB TIMELINE ─────────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
+    @if (tab() === 'timeline') {
+      @if (cargandoTimeline()) {
+        <div class="oc-cargando">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando timeline...
+        </div>
+      } @else if (timeline(); as t) {
+        <!-- Búsqueda y filtros -->
+        <div class="timeline-filtros">
+          <input type="text" placeholder="Buscar evento, usuario o detalle..."
+                 [ngModel]="busquedaTimeline()" (ngModelChange)="busquedaTimeline.set($event)" />
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroTimeline() === 'todos'" (click)="filtroTimeline.set('todos')">
+            Todos los eventos ({{ conteoTimeline().todos }})
+          </button>
+          <button class="chip-filtro chip-filtro--ambar" [class.chip-filtro--activo]="filtroTimeline() === 'validacion_ia'" (click)="filtroTimeline.set('validacion_ia')">
+            Validación IA
+          </button>
+          <button class="chip-filtro chip-filtro--azul" [class.chip-filtro--activo]="filtroTimeline() === 'comercial'" (click)="filtroTimeline.set('comercial')">
+            Comercial
+          </button>
+          <button class="chip-filtro chip-filtro--gris" [class.chip-filtro--activo]="filtroTimeline() === 'documental'" (click)="filtroTimeline.set('documental')">
+            Documental
+          </button>
+          <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarAuditoria()">Exportar XLSX</app-button>
+        </div>
+
+        <app-seccion icono="timeline" titulo="Línea de Tiempo y Auditoría de la Orden"
+                     subtitulo="Trazabilidad integral de interacciones humanas y procesos automatizados de IA">
+          <app-timeline-eventos [eventos]="eventosTimeline()" mensajeVacio="No hay eventos para este filtro." />
+        </app-seccion>
+      }
+    }
+
+    <!-- ─────────────────────────────────────────────────────── -->
+    <!-- ── TAB DOCUMENTO ────────────────────────────────────── -->
+    <!-- ─────────────────────────────────────────────────────── -->
+    @if (tab() === 'documento') {
+      @if (c.tienePdf) {
+        <!-- Header del documento -->
+        <div class="doc-header">
+          <span class="material-symbols-outlined doc-header__icon">picture_as_pdf</span>
+          <div class="doc-header__meta">
+            <strong>{{ c.nombreArchivoPdf || ('OC_' + c.numeroOc + '.pdf') }}</strong>
+            <div class="doc-header__chips">
+              <span class="chip chip--verde"><span class="material-symbols-outlined">check</span> Documento Verificado por OCR e IA</span>
+              @if (c.tamanoPdfBytes) {
+                <span class="doc-header__size">{{ (c.tamanoPdfBytes / 1024 / 1024).toFixed(1) }} MB</span>
+              }
+              <span class="doc-header__size">Formato PDF Digital Oficial con Firma Electrónica</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones acciones -->
+        <div class="doc-acciones">
+          <app-button variant="ghost" icono="download" (clic)="descargarPdf()">Descargar Original</app-button>
+          <app-button variant="ghost" icono="fullscreen" (clic)="verPdf()">Abrir en Pantalla Completa</app-button>
+          @if (c.puedeReemplazarPdf) {
+            <app-button variant="secondary" icono="swap_horiz" (clic)="editar()">Reemplazar Documento</app-button>
+          }
+        </div>
+
+        <!-- Preview del PDF -->
+        <div class="doc-preview">
+          <iframe [src]="svc.obtenerUrlPdf(idOc()) | safeUrl" title="PDF OC"></iframe>
+        </div>
+      } @else {
+        <div class="pdf-vacio">
+          <span class="material-symbols-outlined">upload_file</span>
+          <h4>Sin documento adjunto</h4>
+          <p>Esta OC es autogenerada. Reemplázala con el PDF real del cliente cuando llegue.</p>
+          @if (c.puedeReemplazarAuto) {
+            <app-button variant="primary" icono="sync" (clic)="editar()">Reemplazar por OC del cliente</app-button>
+          }
         </div>
       }
     }
   }
 
-  <!-- ── Footer ────────────────────────────────────────────────── -->
-  @if (datos(); as det) {
-    <div modalFooter class="oc-footer">
-      <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
-
-      <div class="oc-footer__sep"></div>
-
-      @if (det.resumen.idPropuesta) {
-        <app-button variant="secondary" icono="open_in_new" (clic)="abrirPropuesta(det.resumen.idPropuesta)">
-          Abrir Propuesta
-        </app-button>
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  @if (cabecera(); as c) {
+    <div modalFooter class="footer">
+      @if (c.tienePdf) {
+        <app-button variant="ghost" icono="picture_as_pdf" (clic)="verPdf()">Vista Previa PDF</app-button>
       }
-
-      @if (puedeValidar) {
-        <app-button variant="secondary" icono="flag" (clic)="observar()">Observar</app-button>
-        <app-button variant="primary" icono="check" (clic)="validar()">Validar OC</app-button>
+      @if (propuestas().length > 0) {
+        <app-button variant="ghost" icono="open_in_new" (clic)="abrirPropuesta()">Abrir Propuesta</app-button>
       }
-
-      @if (puedeLiberar) {
-        <app-button variant="primary" icono="rocket_launch" (clic)="liberarParaProgramacion()">
-          Liberar para Programación
-        </app-button>
+      <div class="footer__sep"></div>
+      @if (c.puedeAnular) {
+        <app-button variant="danger-ghost" icono="block" (clic)="anular()">Anular OC</app-button>
+      }
+      @if (c.puedeEditar) {
+        <app-button variant="primary" icono="edit" (clic)="editar()">Editar OC</app-button>
+      }
+      @if (c.puedeAgregarPropuesta) {
+        <app-button variant="primary" icono="add" (clic)="editar()">+ Agregar Propuesta</app-button>
       }
     </div>
   }

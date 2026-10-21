@@ -187,7 +187,18 @@
   <app-modal-aceptacion-seguimiento
     [idPropuesta]="ctx.idPropuesta"
     (cerrar)="aceptacionCtx.set(null)"
-    (confirmado)="aceptacionCtx.set(null); onConfirmadoCambio()"
+    (confirmado)="onAceptacionConfirmada($event)"
+  />
+}
+
+<!-- HU-27 — Modal post-aceptación: ¿cliente envió OC o autogeneramos? -->
+@if (clienteEnvioOcCtx(); as ctx) {
+  <app-modal-cliente-envio-oc
+    [numeroPropuesta]="ctx.numero"
+    [razonSocial]="ctx.razonSocial"
+    (cerrar)="cerrarClienteEnvioOc()"
+    (registrarOc)="onElegirRegistrarOc()"
+    (autogenerar)="onElegirAutogenerar()"
   />
 }
 

@@ -1,0 +1,105 @@
+<app-modal
+  titulo="Anular Orden de Compra"
+  [subtitulo]="numeroOc() + (impacto()?.razonSocial ? ' / ' + impacto()!.razonSocial : '')"
+  icono="block"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando impacto...
+    </div>
+  } @else if (impacto(); as imp) {
+    <!-- Bloque de impacto crítico (solo si hay OS en ejecución) -->
+    @if (tieneImpactoCritico()) {
+      <div class="impacto-critico">
+        <div class="impacto-critico__header">
+          <span class="material-symbols-outlined">warning</span>
+          <strong>IMPACTO CRÍTICO DETECTADO</strong>
+        </div>
+        <p class="impacto-critico__texto">
+          Esta OC está vinculada a <strong>{{ imp.propuestasVinculadas }} propuesta(s)</strong>
+          y tiene <strong>{{ imp.osEnEjecucion }} Orden(es) de Servicio en ejecución</strong>.
+          La anulación descontará su cobertura económica y recalculará los saldos pendientes.
+          Esta acción es irreversible.
+        </p>
+      </div>
+    }
+
+    <!-- Resumen en 3 cards -->
+    <div class="anular-resumen">
+      <div class="resumen-card resumen-card--monto">
+        <span class="resumen-card__label">MONTO A ANULAR</span>
+        <span class="resumen-card__valor">
+          {{ imp.montoOc | moneda:imp.monedaSimbolo }}
+        </span>
+      </div>
+      <div class="resumen-card resumen-card--propuestas">
+        <span class="resumen-card__label">PROPUESTAS AFECTADAS</span>
+        <span class="resumen-card__valor">
+          {{ imp.propuestasVinculadas }} propuesta{{ imp.propuestasVinculadas === 1 ? '' : 's' }}
+        </span>
+      </div>
+      <div class="resumen-card resumen-card--os" [class.resumen-card--neutral]="imp.osEnEjecucion === 0">
+        <span class="resumen-card__label">OS EN EJECUCIÓN</span>
+        <span class="resumen-card__valor">
+          @if (imp.osEnEjecucion > 0) {
+            {{ imp.osEnEjecucion }} en curso
+            <span class="material-symbols-outlined">warning</span>
+          } @else {
+            Ninguna
+          }
+        </span>
+      </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="anular-grid">
+      <div class="campo">
+        <label>MOTIVO DE ANULACIÓN *</label>
+        <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+          <option [ngValue]="null">Seleccione un motivo...</option>
+          @for (m of motivos(); track m.id) {
+            <option [ngValue]="m.id">{{ m.nombre }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="campo">
+      <div class="campo__cabecera">
+        <label>JUSTIFICACIÓN / COMENTARIO DETALLADO *</label>
+        <span class="contador" [class.contador--ok]="longitudJust() >= 20">
+          {{ longitudJust() }}/20 mínimo
+        </span>
+      </div>
+      <textarea
+        rows="4"
+        maxlength="500"
+        placeholder="Describe en detalle por qué se está anulando esta OC, qué comunicación hubo con el cliente, y cuál es el impacto esperado en la propuesta vinculada..."
+        [ngModel]="justificacion()"
+        (ngModelChange)="justificacion.set($event)">
+      </textarea>
+    </div>
+
+    @if (tieneImpactoCritico()) {
+      <label class="check-impacto">
+        <input type="checkbox" [checked]="confirmoImpacto()"
+               (change)="confirmoImpacto.set($any($event.target).checked)" />
+        <span>Confirmo que entiendo el impacto crítico sobre las OS en ejecución y que esta acción es <strong>irreversible</strong>.</span>
+      </label>
+    }
+  }
+
+  <div modalFooter class="footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="danger" icono="block"
+                [disabled]="!puedeConfirmar() || enviando()"
+                [cargando]="enviando()"
+                (clic)="confirmar()">
+      Confirmar Anulación
+    </app-button>
+  </div>
+</app-modal>

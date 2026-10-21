@@ -19,7 +19,7 @@ export class ModalAceptacionSeguimientoComponent {
 
   readonly idPropuesta = input.required<number>();
   readonly cerrar      = output<void>();
-  readonly confirmado  = output<void>();
+  readonly confirmado  = output<{ idPropuesta: number; numero: string; razonSocial: string }>();
 
   readonly cargandoDatos = signal(true);
   readonly datos         = signal<PreparacionCierreSeguimiento | null>(null);
@@ -101,7 +101,12 @@ export class ModalAceptacionSeguimientoComponent {
         }
       }
       this.toast.exito('Aceptación registrada correctamente.');
-      this.confirmado.emit();
+      const d = this.datos();
+      this.confirmado.emit({
+        idPropuesta: this.idPropuesta(),
+        numero:      d?.cabecera.numero ?? '',
+        razonSocial: d?.cabecera.razonSocial ?? '',
+      });
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo registrar la aceptación.');
     } finally {

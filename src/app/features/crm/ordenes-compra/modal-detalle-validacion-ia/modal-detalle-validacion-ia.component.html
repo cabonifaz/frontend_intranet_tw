@@ -1,0 +1,199 @@
+<app-modal
+  titulo="Detalle de Validación IA"
+  [subtitulo]="subtitulo()"
+  icono="auto_awesome"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando validación IA...
+    </div>
+  } @else if (cabecera(); as c) {
+    <!-- ── Mini KPIs ────────────────────────────────────────────── -->
+    <div class="kpis-mini">
+      <div class="kpi kpi--ok">
+        <span class="kpi__valor">{{ c.coincidencias ?? 0 }}</span>
+        <span class="kpi__label">COINCIDENCIAS</span>
+      </div>
+      <div class="kpi kpi--adv">
+        <span class="kpi__valor">{{ c.advertencias ?? 0 }}</span>
+        <span class="kpi__label">ADVERTENCIAS</span>
+      </div>
+      <div class="kpi kpi--crit">
+        <span class="kpi__valor">{{ c.criticas ?? 0 }}</span>
+        <span class="kpi__label">CRÍTICAS</span>
+      </div>
+      <div class="kpi kpi--validaciones">
+        <span class="kpi__valor">{{ c.validacionesCorridas }}</span>
+        <span class="kpi__label">VALIDACIONES</span>
+      </div>
+    </div>
+
+    <!-- Pills de propuestas (si hay varias) -->
+    @if (pills().length > 1) {
+      <div class="pills-propuestas">
+        @for (p of pills(); track p.idPropuesta) {
+          <button class="pill"
+                  [class.pill--activa]="idPropuestaActual() === p.idPropuesta"
+                  (click)="seleccionarPill(p.idPropuesta)">
+            <span class="pill__codigo">{{ p.numero }} v{{ p.version }}</span>
+            @if (p.resultadoIa) {
+              <span class="pill__chip pill__chip--{{ p.resultadoIa }}">{{ p.resultadoIa }}</span>
+            }
+          </button>
+        }
+      </div>
+    }
+
+    <!-- ── Tabs ─────────────────────────────────────────────────── -->
+    <div class="tabs">
+      <button class="tab" [class.tab--activo]="tab() === 'comparacion'" (click)="cambiarTab('comparacion')">
+        <span class="material-symbols-outlined">compare</span>
+        Comparación
+      </button>
+      <button class="tab" [class.tab--activo]="tab() === 'historial'" (click)="cambiarTab('historial')">
+        <span class="material-symbols-outlined">history</span>
+        Historial
+      </button>
+      <button class="tab" [class.tab--activo]="tab() === 'insights'" (click)="cambiarTab('insights')">
+        <span class="material-symbols-outlined">lightbulb</span>
+        Insights IA
+      </button>
+    </div>
+
+    <!-- ── Tab Comparación ───────────────────────────────────────── -->
+    @if (tab() === 'comparacion') {
+      <div class="comparacion-cards">
+        <div class="card-origen card-origen--oc">
+          <span class="card-origen__label">ORDEN DE COMPRA</span>
+          <strong>{{ numeroOc() }}</strong>
+        </div>
+        <div class="card-origen card-origen--prop">
+          <span class="card-origen__label">PROPUESTA ACEPTADA</span>
+          <strong>{{ c.numeroPropuesta }} v{{ c.versionPropuesta }}</strong>
+        </div>
+      </div>
+
+      <table class="tabla-comparacion">
+        <thead>
+          <tr>
+            <th>CAMPO</th>
+            <th>VALOR EN OC</th>
+            <th>VALOR EN PROPUESTA</th>
+            <th class="col-estado">ESTADO</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (campo of campos(); track campo.campo + '-' + campo.orden) {
+            <tr>
+              <td class="col-campo">{{ campo.etiqueta }}</td>
+              <td class="col-valor">{{ campo.valorOc ?? '—' }}</td>
+              <td class="col-valor">{{ campo.valorPropuesta ?? '—' }}</td>
+              <td class="col-estado">
+                <span class="chip-severidad {{ claseSeveridad(campo.severidad) }}">
+                  <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
+                  {{ campo.mensaje ?? campo.severidad }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="4" class="col-vacio">Sin diferencias para mostrar.</td></tr>
+          }
+        </tbody>
+      </table>
+
+      @if (conceptos().length > 0) {
+        <h4 class="seccion-titulo">Conceptos / Ítems</h4>
+        <table class="tabla-comparacion">
+          <thead>
+            <tr>
+              <th>DESCRIPCIÓN</th>
+              <th class="col-estado">MONTO OC</th>
+              <th class="col-estado">MONTO PROPUESTA</th>
+              <th class="col-estado">ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cp of conceptos(); track cp.descripcion) {
+              <tr>
+                <td class="col-campo">{{ cp.descripcion }}</td>
+                <td class="col-estado">{{ cp.montoOc ?? '—' }}</td>
+                <td class="col-estado">{{ cp.montoPropuesta ?? '—' }}</td>
+                <td class="col-estado">
+                  <span class="chip-concepto chip-concepto--{{ cp.estado }}">{{ cp.estado }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+    <!-- ── Tab Historial ─────────────────────────────────────────── -->
+    @if (tab() === 'historial') {
+      <div class="historial">
+        @for (h of historial(); track h.fecha) {
+          <div class="corrida">
+            <div class="corrida__header">
+              <span class="corrida__fecha">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="corrida__usuario">{{ h.usuario ?? '—' }}</span>
+            </div>
+            <p class="corrida__resumen"><strong>{{ h.titulo }}</strong> {{ h.descripcion ? ' — ' + h.descripcion : '' }}</p>
+            <div class="corrida__kpis">
+              @if ((h.coincidencias ?? 0) > 0) { <span class="chip chip--ok"><span class="material-symbols-outlined">check</span> {{ h.coincidencias }} OK</span> }
+              @if ((h.advertencias ?? 0) > 0) { <span class="chip chip--adv"><span class="material-symbols-outlined">warning</span> {{ h.advertencias }} Adv</span> }
+              @if ((h.criticas ?? 0) > 0)    { <span class="chip chip--crit"><span class="material-symbols-outlined">error</span> {{ h.criticas }} Críticas</span> }
+            </div>
+          </div>
+        } @empty {
+          <p class="estado-vacio-txt">Sin historial de validaciones.</p>
+        }
+      </div>
+    }
+
+    <!-- ── Tab Insights IA ───────────────────────────────────────── -->
+    @if (tab() === 'insights') {
+      <div class="insights-header">
+        <span class="material-symbols-outlined">lightbulb</span>
+        <p>Explicaciones generadas por Gemini para interpretar las diferencias detectadas y sugerir acciones.</p>
+      </div>
+
+      @if (insights().length === 0) {
+        <div class="estado-vacio">
+          <span class="material-symbols-outlined">task_alt</span>
+          <h4>Sin insights que mostrar</h4>
+          <p>No hay diferencias relevantes para generar insights.</p>
+        </div>
+      } @else {
+        <div class="insights-list">
+          @for (ins of insights(); track ins.titulo) {
+            <div class="insight-card">
+              <h4 class="insight-card__titulo">{{ ins.titulo }}</h4>
+              <p class="insight-card__explicacion">{{ ins.explicacion }}</p>
+              @if (ins.accion) {
+                <div class="insight-card__accion">
+                  <span class="label-recomendado">{{ ins.recomendado ? 'RECOMENDADO:' : 'ACCIÓN:' }}</span>
+                  <span class="valor-recomendado">{{ ins.accion }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+
+  <div modalFooter class="footer">
+    <app-button variant="ghost" icono="refresh"
+                [disabled]="revalidando()"
+                [cargando]="revalidando()"
+                (clic)="revalidar()">
+      Re-validar ahora
+    </app-button>
+    <div class="footer__sep"></div>
+    <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+  </div>
+</app-modal>

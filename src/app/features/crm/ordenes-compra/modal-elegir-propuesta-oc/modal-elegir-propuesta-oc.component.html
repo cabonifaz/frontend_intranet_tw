@@ -1,0 +1,40 @@
+<app-modal
+  titulo="Elegir Propuesta"
+  subtitulo="Selecciona la propuesta aceptada a la que vincularás la OC"
+  icono="receipt_long"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando propuestas aceptadas...
+    </div>
+  } @else if (propuestas().length === 0) {
+    <div class="vacio">
+      <span class="material-symbols-outlined">inbox</span>
+      <h4>No hay propuestas aceptadas disponibles</h4>
+      <p>Primero cierra una propuesta con aceptación en el módulo <strong>Seguimiento</strong>.</p>
+    </div>
+  } @else {
+    <p class="ayuda">Solo se listan propuestas aceptadas por el cliente que aún tienen saldo por cubrir.</p>
+    <div class="lista">
+      @for (p of propuestas(); track p.idPropuesta) {
+        <button class="item" (click)="seleccionar(p)">
+          <div class="item__info">
+            <strong>{{ p.numero }} v{{ p.version }}</strong>
+            <span>{{ p.razonSocial }}</span>
+            <small>{{ p.numeroRq ?? '—' }} · Aceptada {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</small>
+          </div>
+          <div class="item__montos">
+            <span class="item__label">Saldo por cubrir</span>
+            <strong>{{ formatearMonto(p.saldo, p.monedaSimbolo) }}</strong>
+            <small>de {{ formatearMonto(p.total, p.monedaSimbolo) }}</small>
+          </div>
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      }
+    </div>
+  }
+</app-modal>

@@ -1,8 +1,11 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SeguimientoService } from '../../../../core/services/seguimiento.service';
+import { OrdenesCompraService } from '../../../../core/services/ordenes-compra.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ModalClienteEnvioOcComponent } from '../../ordenes-compra/modal-cliente-envio-oc/modal-cliente-envio-oc.component';
 import {
   BandejaSeguimiento,
   FiltrosBandejaSeguimiento,
@@ -48,6 +51,7 @@ const ESTADOS: { codigo: string; label: string }[] = [
     ModalDetalleSeguimientoComponent, ModalRegistrarSeguimientoComponent, ModalReprogramarAccionComponent,
     ModalAceptacionSeguimientoComponent, ModalRechazoSeguimientoComponent,
     ModalSelectorCierreComponent, ModalDecidirPendienteComponent,
+    ModalClienteEnvioOcComponent,
   ],
   templateUrl: './lista-seguimiento.component.html',
   styleUrl: './lista-seguimiento.component.scss',
@@ -56,7 +60,9 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   private static readonly POLLING_MS = 60_000;
 
   private readonly svc      = inject(SeguimientoService);
+  private readonly ocSvc    = inject(OrdenesCompraService);
   private readonly toastSvc = inject(ToastService);
+  private readonly router   = inject(Router);
   private pollingId: ReturnType<typeof setInterval> | null = null;
 
   readonly cargando = signal(true);
@@ -95,6 +101,8 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
   readonly aceptacionCtx       = signal<ItemBandejaSeguimiento | null>(null);
   readonly rechazoCtx          = signal<ItemBandejaSeguimiento | null>(null);
   readonly selectorCierreCtx   = signal<ItemBandejaSeguimiento | null>(null);
+  /** HU-27 — Después de aceptar, pregunta si el cliente ya envió la OC o autogeneramos. */
+  readonly clienteEnvioOcCtx   = signal<{ idPropuesta: number; numero: string; razonSocial: string } | null>(null);
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -240,4 +248,46 @@ export class ListaSeguimientoComponent implements OnInit, OnDestroy {
 
   // Callbacks de modales de cierre
   onConfirmadoCambio(): void { this.cargar(); }
+
+  /** HU-27 — Después de aceptar, abrir modal post-aceptación. */
+  onAceptacionConfirmada(ev: { idPropuesta: number; numero: string; razonSocial: string }): void {
+    this.aceptacionCtx.set(null);
+    this.onConfirmadoCambio();
+    this.clienteEnvioOcCtx.set(ev);
+  }
+
+  cerrarClienteEnvioOc(): void { this.clienteEnvioOcCtx.set(null); }
+
+  /** Opción 1: El cliente YA envió la OC → crear OC autogenerada como respaldo + navegar a la ficha de registrar OC real.
+   *  Si el usuario abandona la ficha sin registrar, la OC autogenerada queda como fallback automático. */
+  async onElegirRegistrarOc(): Promise<void> {
+    const ctx = this.clienteEnvioOcCtx();
+    if (!ctx) return;
+    this.clienteEnvioOcCtx.set(null);
+    try {
+      const oc = await this.ocSvc.autogenerarOc(ctx.idPropuesta);
+      void this.router.navigate(['/crm/ordenes-compra/nueva', ctx.idPropuesta], {
+        queryParams: { reemplazar: oc.idOc },
+      });
+    } catch (e: unknown) {
+      // Si falla el autogenerar, aún así navegamos a la ficha sin respaldo
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo crear la OC provisional de respaldo.');
+      void this.router.navigate(['/crm/ordenes-compra/nueva', ctx.idPropuesta]);
+    }
+  }
+
+  /** Opción 2: El cliente aún no envió → autogenerar OC provisional. */
+  async onElegirAutogenerar(): Promise<void> {
+    const ctx = this.clienteEnvioOcCtx();
+    if (!ctx) return;
+    // Cerrar modal YA para prevenir doble click.
+    this.clienteEnvioOcCtx.set(null);
+    try {
+      const oc = await this.ocSvc.autogenerarOc(ctx.idPropuesta);
+      this.toastSvc.exito(`OC provisional ${oc.numeroOc} generada. Reemplázala cuando llegue la OC real del cliente.`);
+      this.onConfirmadoCambio();
+    } catch (e: unknown) {
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo autogenerar la OC.');
+    }
+  }
 }

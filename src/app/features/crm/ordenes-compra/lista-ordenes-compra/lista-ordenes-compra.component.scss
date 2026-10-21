@@ -87,3 +87,53 @@
 }
 
 // Nota: tabla-error, paginación y keyframes los provee app-tabla-paginada.
+
+// ─── Chips de celda N° OC ────────────────────────────────────────────────
+.oc-cell-codigo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip-autogenerada {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  .material-symbols-outlined {
+    font-size: 12px;
+  }
+}
+
+.chip-mas-propuestas {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  margin-left: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: default;
+
+  &:hover {
+    background: #e2e8f0;
+    color: #334155;
+  }
+}
+
+.tabla__acciones {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}

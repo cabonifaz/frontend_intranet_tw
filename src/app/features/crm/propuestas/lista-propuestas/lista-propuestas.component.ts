@@ -403,13 +403,19 @@ export class ListaPropuestasComponent implements OnInit {
 
   estadoClase(estado: string): string {
     const mapa: Record<string, string> = {
-      borrador:     'badge--gris',
-      pendiente_vb: 'badge--naranja',
-      enviado:      'badge--azul',
-      aprobado:     'badge--verde',
-      rechazado:    'badge--rojo',
-      anulado:      'badge--rojo',
-      vencido:      'badge--rojo',
+      borrador:             'badge--gris',
+      pendiente_vb:         'badge--naranja',
+      por_vb:               'badge--naranja',
+      enviado:              'badge--azul',
+      aprobado:             'badge--verde',
+      aceptada:             'badge--verde',
+      aceptado:             'badge--verde',
+      rechazado:            'badge--rojo',
+      rechazada:            'badge--rojo',
+      anulado:              'badge--rojo',
+      vencido:              'badge--rojo',
+      pendiente_revocacion: 'badge--naranja',
+      revocada:             'badge--rojo',
     };
     return mapa[estado] ?? 'badge--gris';
   }

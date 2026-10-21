@@ -1,0 +1,169 @@
+// ─── Bloque Impacto Crítico ─────────────────────────────────────────────
+.impacto-critico {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #991b1b;
+    margin-bottom: 6px;
+
+    .material-symbols-outlined { font-size: 20px; }
+    strong { font-size: 13px; letter-spacing: 0.4px; }
+  }
+
+  &__texto {
+    color: #7f1d1d;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
+  }
+}
+
+// ─── 3 Cards de Resumen ──────────────────────────────────────────────────
+.anular-resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.resumen-card {
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #64748b;
+  }
+
+  &__valor {
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .material-symbols-outlined { font-size: 20px; }
+  }
+
+  &--monto {
+    background: #fef2f2;
+    .resumen-card__label { color: #991b1b; }
+    .resumen-card__valor { color: #dc2626; }
+  }
+
+  &--propuestas {
+    background: #fef3c7;
+    .resumen-card__label { color: #92400e; }
+    .resumen-card__valor { color: #b45309; }
+  }
+
+  &--os {
+    background: #fef2f2;
+    .resumen-card__label { color: #991b1b; }
+    .resumen-card__valor { color: #dc2626; }
+  }
+
+  &--neutral {
+    background: #f1f5f9;
+    .resumen-card__label { color: #475569; }
+    .resumen-card__valor { color: #334155; }
+  }
+}
+
+// ─── Formulario ──────────────────────────────────────────────────────────
+.anular-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  &__cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: #475569;
+  }
+
+  select, input, textarea {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 9px 11px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fff;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    font-family: inherit;
+  }
+}
+
+.contador {
+  font-size: 11px;
+  color: #dc2626;
+  font-weight: 600;
+
+  &--ok { color: #16a34a; }
+}
+
+.check-impacto {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #7f1d1d;
+  line-height: 1.5;
+  margin-top: 4px;
+
+  input[type="checkbox"] {
+    margin-top: 2px;
+    accent-color: #dc2626;
+    cursor: pointer;
+  }
+
+  strong { color: #991b1b; }
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

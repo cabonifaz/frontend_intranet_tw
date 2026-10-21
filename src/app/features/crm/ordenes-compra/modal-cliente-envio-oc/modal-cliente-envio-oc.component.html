@@ -1,0 +1,43 @@
+<app-modal
+  titulo="Registrar Orden de Compra"
+  [subtitulo]="numeroPropuesta() + ' / ' + razonSocial()"
+  icono="description"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <p class="pregunta">La propuesta fue aceptada. ¿El cliente ya envió la Orden de Compra?</p>
+
+  <div class="opciones">
+    <button class="opcion" (click)="elegirRegistrar()">
+      <div class="opcion__icono opcion__icono--si">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <div class="opcion__texto">
+        <strong>Sí, registrar OC del cliente</strong>
+        <p>Cargar el PDF de la OC enviada por el cliente, extraer datos con IA y validar contra la propuesta aceptada.</p>
+      </div>
+      <span class="material-symbols-outlined opcion__chevron">chevron_right</span>
+    </button>
+
+    <button class="opcion" (click)="elegirAutogenerar()">
+      <div class="opcion__icono opcion__icono--autogenerar">
+        <span class="material-symbols-outlined">bolt</span>
+      </div>
+      <div class="opcion__texto">
+        <strong>No, autogenerar OC provisional</strong>
+        <p>Crear una OC-AUTO temporal para no bloquear la operación. Podrás reemplazarla cuando llegue la OC real del cliente.</p>
+      </div>
+      <span class="material-symbols-outlined opcion__chevron">chevron_right</span>
+    </button>
+  </div>
+
+  <div class="nota-informativa">
+    <span class="material-symbols-outlined">info</span>
+    <p>La OC autogenerada permite ejecutar el servicio pero debe ser reemplazada por la OC real del cliente antes de la facturación.</p>
+  </div>
+
+  <div modalFooter class="footer">
+    <button class="btn-cancelar" (click)="onCerrar()">Cancelar</button>
+  </div>
+</app-modal>

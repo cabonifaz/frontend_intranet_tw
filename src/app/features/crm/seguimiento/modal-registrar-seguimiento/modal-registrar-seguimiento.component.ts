@@ -91,8 +91,11 @@ export class ModalRegistrarSeguimientoComponent {
   /** Oculta la sección "Programar próxima acción" cuando el user eligió mantener la pendiente. */
   readonly ocultaProgramar = computed(() => this.comportamientoPendiente() === 'mantener');
 
-  /** Al Ejecutar ahora, el tipo queda bloqueado: no puede cambiarlo. */
-  readonly tipoBloqueado = computed(() => this.comportamientoPendiente() === 'ejecutar');
+  /** Al Ejecutar ahora, el tipo queda bloqueado SI se autorellenó un canal.
+   *  Si el código es PRIMER_SEGUIMIENTO (sin canal específico), el usuario elige libremente. */
+  readonly tipoBloqueado = computed(() =>
+    this.comportamientoPendiente() === 'ejecutar' && this.idCanal() != null,
+  );
 
   /** El canal seleccionado es LLAMADA — mostramos campo Duración dinámico. */
   readonly esCanalLlamada = computed(() => {
@@ -151,8 +154,10 @@ export class ModalRegistrarSeguimientoComponent {
           this.variante.set('correo');
         } else {
           this.variante.set('general');
+          // PRIMER_SEGUIMIENTO siempre arranca con una llamada telefónica (regla de negocio).
+          const codigoCanal = codigo === 'PRIMER_SEGUIMIENTO' ? 'LLAMADA' : codigo;
           // Busca el canal cuyo código coincide (LLAMADA, WHATSAPP, REUNION, VISITA, REENVIO_AJUSTES, OTRO...)
-          const canal = d.tiposSeguimiento.find(t => t.codigo === codigo);
+          const canal = d.tiposSeguimiento.find(t => t.codigo === codigoCanal);
           if (canal) this.idCanal.set(canal.id);
         }
       }

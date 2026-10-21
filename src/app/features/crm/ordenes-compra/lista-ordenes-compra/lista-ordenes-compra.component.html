@@ -4,25 +4,25 @@
   <app-header-bandeja
     [breadcrumb]="breadcrumb"
     titulo="Órdenes de Compra"
-    subtitulo="Control de OC recibidas, cobertura económica y habilitación del flujo operativo"
-    textoBoton="Nueva Orden de Compra"
+    subtitulo="Registro, validación y seguimiento de órdenes de compra recibidas por propuestas aceptadas"
+    textoBoton="Nueva OC"
     (clicBoton)="nuevaOc()" />
 
-  <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
+  <!-- ── KPI Cards (alineado al prototipo HU-22) ─────────────────────────── -->
   <app-kpi-grid [columnas]="6">
-    <app-kpi-card icono="shopping_cart"    etiqueta="OC VIGENTES"            [valor]="kpis().vigentes"              variante="azul" />
-    <app-kpi-card icono="pie_chart"        etiqueta="COBERTURA PARCIAL"      [valor]="kpis().coberturaParcial"      variante="ambar" />
-    <app-kpi-card icono="warning"          etiqueta="SALDO INSUFICIENTE"     [valor]="kpis().saldoInsuficiente"     variante="rojo" />
-    <app-kpi-card icono="hourglass_bottom" etiqueta="PEND. VALIDACIÓN"       [valor]="kpis().pendientesValidacion"  variante="ambar" />
-    <app-kpi-card icono="check_circle"     etiqueta="LISTAS PARA PROG."      [valor]="kpis().listasProgramacion"    variante="verde" />
-    <app-kpi-card icono="error"            etiqueta="OBSERVADAS"             [valor]="kpis().observadas"            variante="rojo" />
+    <app-kpi-card icono="shopping_cart"    etiqueta="OCS RECIBIDAS"    [valor]="kpis().recibidas"     variante="azul" />
+    <app-kpi-card icono="check_circle"     etiqueta="VALIDADAS"        [valor]="kpis().validadas"     variante="verde" />
+    <app-kpi-card icono="warning"          etiqueta="PARCIAL / OBS."   [valor]="kpis().parciales"     variante="ambar" />
+    <app-kpi-card icono="bolt"             etiqueta="AUTOGENERADAS"    [valor]="kpis().autogeneradas" variante="azul" />
+    <app-kpi-card icono="error"            etiqueta="SIN ACCIÓN"       [valor]="kpis().sinAccion"     variante="rojo" />
+    <app-kpi-card icono="block"            etiqueta="ANULADAS"         [valor]="kpis().anuladas"      variante="morado" />
   </app-kpi-grid>
 
   <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
   <app-barra-filtros-bandeja
     [cantidadActivos]="filtrosActivos()"
     [(busqueda)]="busqueda"
-    placeholder="Buscar N° OC, cliente, RUC, RQ o propuesta..."
+    placeholder="Buscar N° OC, cliente, RUC o propuesta..."
     [conDescarga]="true"
     (limpiar)="limpiarFiltros()"
     (aplicar)="aplicarFiltros()"
@@ -49,30 +49,12 @@
     </div>
 
     <div class="col-full">
-      <label>COBERTURA</label>
-      <select [(ngModel)]="coberturaFiltro">
-        @for (c of coberturas; track c.codigo) {
-          <option [ngValue]="c.codigo">{{ c.label }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="col-full">
       <label>RESPONSABLE</label>
       <select [(ngModel)]="idResponsableFiltro">
         <option [ngValue]="''">Todos</option>
         @for (r of responsables(); track r.id) {
           <option [ngValue]="r.id">{{ r.nombre }}</option>
         }
-      </select>
-    </div>
-
-    <div class="col-full">
-      <label>ARCHIVO</label>
-      <select [(ngModel)]="conArchivoFiltro">
-        <option value="">Todas</option>
-        <option value="si">Con archivo</option>
-        <option value="no">Sin archivo</option>
       </select>
     </div>
   </app-barra-filtros-bandeja>
@@ -98,7 +80,6 @@
         <th class="tabla__th--derecha">MONTO OC</th>
         <th class="tabla__th--derecha">MONTO APLICADO</th>
         <th class="tabla__th--derecha">SALDO</th>
-        <th>COBERTURA</th>
         <th>ESTADO</th>
         <th class="tabla__th--centro">ACCIONES</th>
       </tr>
@@ -108,11 +89,25 @@
         <tr class="tabla__fila" (click)="verDetalle(item)">
           <td>
             <div class="tabla__propuesta-cell">
-              <span class="tabla__codigo">{{ item.numeroOc }}</span>
+              <div class="oc-cell-codigo">
+                <span class="tabla__codigo">{{ item.numeroOc }}</span>
+                @if (item.esAutogenerada) {
+                  <span class="chip-autogenerada" title="OC autogenerada pendiente de reemplazo">
+                    <span class="material-symbols-outlined">bolt</span>
+                    Autogenerada
+                  </span>
+                }
+              </div>
               <span class="tabla__rq">{{ item.numeroRq ?? '—' }}</span>
               @if (item.numeroPropuesta) {
                 <span class="tabla__rq">
-                  {{ item.numeroPropuesta }}@if (item.versionPropuesta) { v{{ item.versionPropuesta }} }
+                  {{ item.numeroPropuesta }} v{{ item.versionPropuesta }}
+                  @if (item.propuestasAdicionales > 0) {
+                    <span class="chip-mas-propuestas"
+                          [title]="'Propuestas vinculadas: ' + item.propuestasVinculadas">
+                      +{{ item.propuestasAdicionales }} más
+                    </span>
+                  }
                 </span>
               }
             </div>
@@ -129,17 +124,10 @@
             <span class="tabla__monto">{{ item.montoOc | moneda:item.monedaSimbolo }}</span>
           </td>
           <td class="tabla__td--derecha">
-            {{ item.montoAplicado | moneda:item.monedaSimbolo }}
+            {{ item.montoAsignado | moneda:item.monedaSimbolo }}
           </td>
           <td class="tabla__td--derecha">
-            <span class="tabla__saldo {{ saldoClase(item.saldo) }}">
-              {{ item.saldo | moneda:item.monedaSimbolo }}
-            </span>
-          </td>
-          <td>
-            <span [class]="coberturaChip(item.coberturaCodigo).clase">
-              {{ coberturaChip(item.coberturaCodigo).label }}
-            </span>
+            {{ item.saldoOc | moneda:item.monedaSimbolo }}
           </td>
           <td>
             <span class="badge {{ estadoChip(item.estadoVisual || item.estado).clase }}">
@@ -150,6 +138,10 @@
             <div class="tabla__acciones" (click)="$event.stopPropagation()">
               <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                           ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+              @if (item.puedeAnular) {
+                <app-button variant="ghost" tamano="sm" icono="block" [soloIcon]="true"
+                            ariaLabel="Anular OC" title="Anular OC" (clic)="abrirAnular(item, $event)" />
+              }
             </div>
           </td>
         </tr>
@@ -167,71 +159,20 @@
   />
 }
 
-<!-- ── Modal Registrar (HU-22/24 alta) ─────────────────────────────────── -->
-@if (registrarAbierto()) {
-  <app-modal-registrar-oc
-    modo="crear"
-    (cerrar)="registrarAbierto.set(false)"
-    (confirmado)="registrarAbierto.set(false); onConfirmadoCambio()"
+<!-- ── Modal "Elegir propuesta" para + Nueva OC ──────────────────────── -->
+@if (elegirAbierto()) {
+  <app-modal-elegir-propuesta-oc
+    (cerrar)="elegirAbierto.set(false)"
+    (elegida)="onPropuestaElegida($event)"
   />
 }
 
-<!-- ── Modal Editar (HU-24) ─────────────────────────────────────────────── -->
-@if (editarCtx(); as it) {
-  <app-modal-registrar-oc
-    modo="editar"
-    [idOcEditar]="it.idOc"
-    [idPropuestaPreseleccionada]="it.idPropuesta ?? null"
-    (cerrar)="editarCtx.set(null)"
-    (confirmado)="editarCtx.set(null); onConfirmadoCambio()"
-  />
-}
-
-<!-- ── Modal Validar (HU-26) ────────────────────────────────────────────── -->
-@if (validarCtx(); as it) {
-  <app-modal-validar-oc
-    [idOc]="it.idOc"
-    (cerrar)="validarCtx.set(null)"
-    (confirmado)="validarCtx.set(null); onConfirmadoCambio()"
-    (solicitarObservar)="solicitarObservarDesdeValidar(it)"
-  />
-}
-
-<!-- ── Modal Observar (HU-26) ───────────────────────────────────────────── -->
-@if (observarCtx(); as it) {
-  <app-modal-observar-oc
+<!-- ── Modal Anular OC (HU-28) ─────────────────────────────────────────── -->
+@if (anularCtx(); as it) {
+  <app-modal-anular-oc
     [idOc]="it.idOc"
     [numeroOc]="it.numeroOc"
-    (cerrar)="observarCtx.set(null)"
-    (confirmado)="observarCtx.set(null); onConfirmadoCambio()"
+    (cerrar)="anularCtx.set(null)"
+    (confirmado)="anularCtx.set(null); onConfirmadoCambio()"
   />
-}
-
-<!-- ── Modal Liberar (HU-28) ────────────────────────────────────────────── -->
-@if (liberarCtx(); as it) {
-  <app-modal-liberar-oc
-    [idOc]="it.idOc"
-    (cerrar)="liberarCtx.set(null)"
-    (confirmado)="liberarCtx.set(null); onConfirmadoCambio()"
-  />
-}
-
-<!-- ── Modal Distribuir (HU-27) ─────────────────────────────────────────── -->
-@if (distribuirCtx(); as it) {
-  <app-modal-distribuir-oc
-    [idOc]="it.idOc"
-    (cerrar)="distribuirCtx.set(null)"
-    (confirmado)="distribuirCtx.set(null); onConfirmadoCambio()"
-  />
-}
-
-<!-- ── Modal OC Complementaria (HU-27) ──────────────────────────────────── -->
-@if (complementariaCtx(); as it) {
-  @if (it.idPropuesta) {
-    <app-modal-oc-complementaria
-      [idPropuesta]="it.idPropuesta"
-      (cerrar)="complementariaCtx.set(null)"
-      (confirmado)="complementariaCtx.set(null); onConfirmadoCambio()"
-    />
-  }
 }

@@ -231,6 +231,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/ordenes-compra/nueva/:idPropuesta',
+        loadComponent: () =>
+          import('./features/crm/ordenes-compra/registrar-oc/registrar-oc.component').then(
+            m => m.RegistrarOcComponent
+          ),
+      },
+      {
+        path: 'crm/ordenes-compra/:idOc/editar',
+        loadComponent: () =>
+          import('./features/crm/ordenes-compra/registrar-oc/registrar-oc.component').then(
+            m => m.RegistrarOcComponent
+          ),
+      },
+      {
         path: 'crm/propuestas/nueva',
         canActivate: [permisoRutaGuard('propuesta_guardar')],
         loadComponent: () =>
