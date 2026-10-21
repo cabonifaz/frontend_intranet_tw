@@ -150,7 +150,7 @@
 
         <!-- ── 2. Cargar PDF ─────────────────────────────────── -->
         <app-seccion numero="2" titulo="Cargar PDF de la Orden de Compra"
-                     subtitulo="Al subir el PDF, la IA leerá automáticamente los datos clave">
+                     subtitulo="La IA leerá el PDF y extraerá los datos. El PDF es la fuente de verdad: no se registran OCs sin él.">
           @if (!nombreArchivo()) {
             <label class="drop"
                    [class.drop--active]="dragActive()"
@@ -186,17 +186,7 @@
                 } @else if (extraccionFallo(); as msg) {
                   <span class="pdf-card__estado pdf-card__estado--err">
                     <span class="material-symbols-outlined">error</span>
-                    IA no pudo leer el PDF — llena los campos a mano
-                  </span>
-                } @else if (!extraccionIaDisponible()) {
-                  <span class="pdf-card__estado">
-                    <span class="material-symbols-outlined">info</span>
-                    PDF cargado · IA no disponible (llena los campos a mano)
-                  </span>
-                } @else {
-                  <span class="pdf-card__estado pdf-card__estado--ok">
-                    <span class="material-symbols-outlined">check_circle</span>
-                    PDF cargado
+                    IA no pudo leer el PDF — reemplázalo o reintenta más tarde
                   </span>
                 }
               </div>
@@ -207,111 +197,66 @@
           }
         </app-seccion>
 
-        <!-- ── 3. Datos extraídos de la IA ────────────────────── -->
+        <!-- ── 3. Datos extraídos de la IA (solo lectura) ────── -->
         <app-seccion numero="3" titulo="Datos extraídos del PDF"
-                     subtitulo="Los campos los llena automáticamente la IA al subir el PDF. Si algún dato está mal, puedes corregirlo (quedará marcado como ✋ corregido manualmente).">
+                     subtitulo="Datos leídos por la IA desde el PDF. Son solo lectura: la OC es lo que dice el documento del cliente.">
 
           @if (!nombreArchivo()) {
             <div class="aviso-pdf">
               <span class="material-symbols-outlined">upload_file</span>
-              <small>Sube el PDF de la OC en la Sección 2 para que la IA llene estos campos automáticamente.</small>
+              <small>Sube el PDF de la OC en la Sección 2 para que la IA extraiga los datos.</small>
             </div>
           } @else if (extrayendoIa()) {
             <div class="aviso-pdf aviso-pdf--leyendo">
               <span class="material-symbols-outlined spin">auto_awesome</span>
-              <small>La IA está leyendo el PDF... los campos se llenarán en segundos.</small>
+              <small>La IA está leyendo el PDF... los datos aparecerán en segundos.</small>
+            </div>
+          } @else if (extraccionFallo(); as msg) {
+            <div class="aviso-pdf aviso-pdf--error">
+              <span class="material-symbols-outlined">error</span>
+              <small><strong>La IA no pudo leer el PDF:</strong> {{ msg }}. Reemplaza el PDF por uno más legible o reintenta más tarde.</small>
             </div>
           } @else if (extraccionExitosa()) {
             <div class="aviso-pdf aviso-pdf--ok">
               <span class="material-symbols-outlined">check_circle</span>
-              <small>Datos extraídos por IA. Puedes editar cualquier campo si está mal — quedará marcado como corregido.</small>
-            </div>
-          }
-
-          <div class="form-grid" [class.form-grid--bloqueado]="!nombreArchivo() || extrayendoIa()">
-            <!-- Fila 1 -->
-            <div class="campo">
-              <label>N° OC *
-                @if (esCampoIa('numero_oc')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('numero_oc')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <input type="text" [ngModel]="datos().numeroOc"
-                     (ngModelChange)="actualizarCampo('numeroOc', $event, 'numero_oc')"
-                     placeholder="OC-ANT-99201" />
-            </div>
-            <div class="campo">
-              <label>Fecha emisión *
-                @if (esCampoIa('fecha_emision')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('fecha_emision')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <input type="date" [ngModel]="datos().fechaEmision"
-                     (ngModelChange)="actualizarCampo('fechaEmision', $event, 'fecha_emision')" />
-            </div>
-            <div class="campo">
-              <label>Monto total *
-                @if (esCampoIa('monto_total')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('monto_total')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <input type="number" min="0" step="0.01"
-                     [ngModel]="datos().montoTotal"
-                     (ngModelChange)="actualizarCampo('montoTotal', $event, 'monto_total')"
-                     placeholder="0.00" />
+              <small>Datos extraídos por IA desde el PDF. La validación corre automáticamente contra la propuesta aceptada.</small>
             </div>
 
-            <!-- Fila 2 -->
-            <div class="campo">
-              <label>Moneda *
-                @if (esCampoIa('id_moneda')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('id_moneda')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <select [ngModel]="datos().idMoneda"
-                      (ngModelChange)="actualizarCampo('idMoneda', $event, 'id_moneda')">
-                <option [ngValue]="null">—</option>
-                @for (m of monedas(); track m.id) {
-                  <option [ngValue]="m.id">{{ m.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div class="campo">
-              <label>Condición de pago
-                @if (esCampoIa('id_condicion_pago')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('id_condicion_pago')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <select [ngModel]="datos().idCondicionPago"
-                      (ngModelChange)="actualizarCampo('idCondicionPago', $event, 'id_condicion_pago')">
-                <option [ngValue]="null">—</option>
-                @for (c of condicionesPago(); track c.id) {
-                  <option [ngValue]="c.id">{{ c.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div class="campo">
-              <label>Impuesto de Ley (IGV)
-                @if (esCampoIa('igv_pct')) { <span class="material-symbols-outlined icon-ia" title="Extraído por IA">auto_awesome</span> }
-                @if (esCampoCorregido('igv_pct')) { <span class="material-symbols-outlined icon-manual" title="Corregido manualmente">edit</span> }
-              </label>
-              <div class="igv-combo">
-                <label class="igv-combo__check">
-                  <input type="checkbox"
-                         [checked]="datos().igvIncluido === true"
-                         (change)="actualizarCampo('igvIncluido', $any($event.target).checked, 'igv_incluido')" />
-                  <span>Incluido</span>
-                </label>
-                <input type="number" class="igv-combo__pct" min="0" max="100" step="0.01"
-                       [ngModel]="datos().igvPct"
-                       (ngModelChange)="actualizarCampo('igvPct', $event, 'igv_pct')"
-                       placeholder="18" />
-                <span class="igv-combo__suffix">%</span>
+            <div class="datos-grid">
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> N° OC</span>
+                <strong class="dato-item__valor">{{ datos().numeroOc ?? '—' }}</strong>
+              </div>
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> Fecha emisión</span>
+                <strong class="dato-item__valor">{{ datos().fechaEmision ? (datos().fechaEmision | date:'dd/MM/yyyy') : '—' }}</strong>
+              </div>
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> Monto total</span>
+                <strong class="dato-item__valor">{{ formatearMonto(datos().montoTotal, monedaSimbolo()) }}</strong>
+              </div>
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> Moneda</span>
+                <strong class="dato-item__valor">{{ nombreMoneda() }}</strong>
+              </div>
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> Condición de pago</span>
+                <strong class="dato-item__valor">{{ nombreCondicionPago() }}</strong>
+              </div>
+              <div class="dato-item">
+                <span class="dato-item__label"><span class="material-symbols-outlined">auto_awesome</span> IGV</span>
+                <strong class="dato-item__valor">
+                  @if (datos().igvPct != null) {
+                    {{ datos().igvPct }}% ({{ datos().igvIncluido ? 'incluido' : 'no incluido' }})
+                  } @else { — }
+                </strong>
+              </div>
+              <div class="dato-item dato-item--full">
+                <span class="dato-item__label"><span class="material-symbols-outlined">event</span> Fecha de recepción</span>
+                <strong class="dato-item__valor">{{ datos().fechaRecepcion ? (datos().fechaRecepcion | date:'dd/MM/yyyy') : '—' }}</strong>
               </div>
             </div>
-
-            <!-- Fila 3 (full width) - La fecha de recepción SÍ es editable (no la lee la IA, es cuándo llega el PDF) -->
-            <div class="campo campo--full campo--destacado">
-              <label>Fecha de Recepción <span class="campo__req">(requerido)</span></label>
-              <input type="date" [ngModel]="datos().fechaRecepcion"
-                     (ngModelChange)="actualizarCampo('fechaRecepcion', $event)" />
-            </div>
-          </div>
+          }
         </app-seccion>
 
         <!-- ── 4. Conceptos detectados en el PDF ─────────────── -->
@@ -351,14 +296,19 @@
         </app-seccion>
 
         <!-- ── 5. Configuración de Facturación ──────────────────── -->
-        <app-seccion numero="5" titulo="Configuración de Facturación">
+        <app-seccion numero="5" titulo="Configuración de Facturación"
+                     subtitulo="Define qué tan estricta será la validación de la OC contra la propuesta aceptada.">
           <label class="check-facturacion">
             <input type="checkbox"
                    [checked]="datos().facturaIgualOc"
                    (change)="actualizarCampo('facturaIgualOc', $any($event.target).checked)" />
             <div>
               <strong>La factura tendrá exactamente lo mismo especificado en la Orden de Compra</strong>
-              <small>Si distintos conceptos o montos entre la OC y la propuesta seleccionada, el motor generará una nueva versión comercial antes de habilitar la emisión de factura.</small>
+              @if (datos().facturaIgualOc) {
+                <small><strong>Validación estricta activada:</strong> la IA validará que TODOS los datos de la OC coincidan al 100% con la propuesta aceptada (empresa, RUC, moneda, conceptos, cantidades, montos). Cualquier diferencia será marcada como crítica y bloqueará la facturación.</small>
+              } @else {
+                <small><strong>Validación flexible activada:</strong> la IA solo validará los datos clave (empresa, RUC, moneda). Las diferencias en conceptos y montos entre la OC y la propuesta NO serán críticas. Útil cuando el cliente ajusta ligeramente la OC respecto a la cotización.</small>
+              }
             </div>
           </label>
         </app-seccion>
@@ -459,6 +409,17 @@
               Ver detalle completo de validación
             </button>
           }
+
+          <!-- Si Gemini falló: mostrar mensaje claro y bloquear registro -->
+          @if (extraccionFallo(); as msg) {
+            <div class="card-sidebar__alerta-error">
+              <span class="material-symbols-outlined">error</span>
+              <div>
+                <strong>IA no disponible</strong>
+                <small>{{ msg }}. No se puede registrar la OC sin que la IA lea el PDF (el PDF es la fuente de verdad). Reemplaza el PDF o reintenta más tarde. La OC provisional sigue como respaldo.</small>
+              </div>
+            </div>
+          }
         </div>
 
         <!-- Card: Datos del Cliente -->
@@ -540,12 +501,21 @@
             Guardar y validar
           </app-button>
         }
-      } @else {
-        <app-button variant="primary" icono="save"
-                    [disabled]="!formularioValido() || guardando()"
-                    [cargando]="guardando()" (clic)="guardar('validar')">
-          {{ modo() === 'editar' ? 'Guardar cambios' : 'Registrar OC' }}
-        </app-button>
+      } @else if (!nombreArchivo()) {
+        <span class="footer-hint">
+          <span class="material-symbols-outlined">info</span>
+          Sube el PDF en la Sección 2 para registrar la OC.
+        </span>
+      } @else if (extrayendoIa() || comparando()) {
+        <span class="footer-hint">
+          <span class="material-symbols-outlined">hourglass_top</span>
+          {{ extrayendoIa() ? 'La IA está leyendo el PDF...' : 'Validando contra la propuesta...' }}
+        </span>
+      } @else if (extraccionFallo()) {
+        <span class="footer-hint footer-hint--error">
+          <span class="material-symbols-outlined">error</span>
+          La IA no pudo leer el PDF. Reemplázalo o reintenta más tarde para poder registrar la OC.
+        </span>
       }
     </div>
   }

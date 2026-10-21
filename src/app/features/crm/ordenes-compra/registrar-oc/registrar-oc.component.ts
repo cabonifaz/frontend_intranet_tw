@@ -12,7 +12,6 @@ import { OrdenesCompraService } from '../../../../core/services/ordenes-compra.s
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import {
-  CampoCorregidoDto,
   ComparacionOrdenCompraDto,
   CondicionPagoDto,
   DatosOrdenCompraDto,
@@ -108,6 +107,8 @@ export class RegistrarOcComponent {
   readonly totalAsignado = computed(() => this.vinculadas().reduce((s, p) => s + (p.montoAsignado || 0), 0));
   readonly saldoOc = computed(() => (this.datos().montoTotal ?? 0) - this.totalAsignado());
   readonly monedaSimbolo = computed(() => this.monedas().find(m => m.id === this.datos().idMoneda)?.simbolo ?? '');
+  readonly nombreMoneda = computed(() => this.monedas().find(m => m.id === this.datos().idMoneda)?.nombre ?? '—');
+  readonly nombreCondicionPago = computed(() => this.condicionesPago().find(c => c.id === this.datos().idCondicionPago)?.nombre ?? '—');
   readonly resumenValidacion = computed(() => this.comparacion()?.resumen ?? null);
   readonly asignadoPct = computed(() => {
     const m = this.datos().montoTotal ?? 0;
@@ -152,7 +153,10 @@ export class RegistrarOcComponent {
       && !!d.fechaEmision && d.idMoneda != null
       && (d.montoTotal ?? 0) > 0 && this.vinculadas().length > 0
       && !this.sobreasignado();
-    if (this.modo() === 'crear') return basico && !!this.archivo();
+    if (this.modo() === 'crear') {
+      // En modo crear: PDF obligatorio Y extracción IA exitosa (fuente de verdad = PDF, no comercial)
+      return basico && !!this.archivo() && this.extraccionExitosa();
+    }
     return basico;
   });
 
@@ -277,37 +281,12 @@ export class RegistrarOcComponent {
   quitarArchivo(): void { this.archivo.set(null); this.nombreArchivo.set(''); }
 
   // ─── Edición de campos ─────────────────────────────────────────────────
-  // Los campos se llenan automáticamente por IA al subir el PDF.
-  // Después de la extracción, el usuario puede corregir (quedan marcados como ✋ manual).
+  // Los datos de la OC son solo lectura: los llena la IA desde el PDF (fuente de verdad).
+  // Solo son editables los campos de contexto (facturaIgualOc, observaciones) y la asignación
+  // entre propuestas vinculadas en multi-propuesta.
 
-  esCampoIa(campo: string): boolean {
-    const originales = this.camposIaOriginales();
-    if (!(campo in originales)) return false;
-    return !this.datos().camposManuales.find(m => m.campo === campo);
-  }
-
-  esCampoCorregido(campo: string): boolean {
-    return !!this.datos().camposManuales.find(m => m.campo === campo);
-  }
-
-  marcarCorregido(campo: string, valorNuevo: string | null): void {
-    const originales = this.camposIaOriginales();
-    if (!(campo in originales)) return;
-    const valorIa = originales[campo];
-    if (valorIa === valorNuevo) return;
-    this.datos.update(d => {
-      const idx = d.camposManuales.findIndex(m => m.campo === campo);
-      const correccion: CampoCorregidoDto = { campo, valorIa, valorNuevo };
-      const camposManuales = idx >= 0
-        ? d.camposManuales.map((m, i) => i === idx ? correccion : m)
-        : [...d.camposManuales, correccion];
-      return { ...d, camposManuales };
-    });
-  }
-
-  actualizarCampo<K extends keyof DatosOrdenCompraDto>(campo: K, valor: DatosOrdenCompraDto[K], codigoIa?: string): void {
+  actualizarCampo<K extends keyof DatosOrdenCompraDto>(campo: K, valor: DatosOrdenCompraDto[K]): void {
     this.datos.update(d => ({ ...d, [campo]: valor }));
-    if (codigoIa) this.marcarCorregido(codigoIa, valor as unknown as string | null);
   }
 
   // ─── Multi-propuesta ───────────────────────────────────────────────────
