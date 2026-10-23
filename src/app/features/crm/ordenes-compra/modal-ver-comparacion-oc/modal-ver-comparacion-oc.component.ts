@@ -45,12 +45,195 @@ export class ModalVerComparacionOcComponent {
     return base.filter(c => c.severidad === 'ok');
   });
 
+  /**
+   * Tabla única agregada: cada campo del back aparece UNA sola vez, combinando las N filas por propuesta.
+   * Reglas por tipo de campo:
+   *   - numero_propuesta / forma_pago → OR-match: ok si al menos una propuesta coincide (la OC solo apunta a una).
+   *   - monto → suma: valor en propuestas = suma de los asignados (ya está en formato texto, lo mostramos como lista).
+   *   - resto → dedup si iguales, sino lista "PROP-A: X · PROP-B: Y" con la peor severidad.
+   * Sólo se activa cuando hay multi-propuesta y no hay pill de propuesta elegida.
+   */
+  readonly camposResumen = computed(() => {
+    const campos = this.todosCampos();
+    if (campos.length === 0) return [] as ReturnType<typeof this.todosCampos>;
+
+    // Agrupar por campo preservando el orden del back (min(orden)).
+    const grupos = new Map<string, typeof campos>();
+    for (const c of campos) {
+      const arr = grupos.get(c.campo) ?? [];
+      arr.push(c);
+      grupos.set(c.campo, arr);
+    }
+
+    const ordenMin = (lista: typeof campos) => Math.min(...lista.map(x => x.orden));
+    const nombresOrdenados = [...grupos.keys()].sort((a, b) => ordenMin(grupos.get(a)!) - ordenMin(grupos.get(b)!));
+
+    const resultado: ReturnType<typeof this.todosCampos> = [];
+    for (const nombre of nombresOrdenados) {
+      const filas = grupos.get(nombre)!;
+      resultado.push(this.agregarCampo(nombre, filas));
+    }
+    return this.aplicarFiltroSeveridad(resultado);
+  });
+
+  /** Toma N filas (una por propuesta) de un mismo campo y devuelve UNA fila agregada. */
+  private agregarCampo(nombre: string, filas: ReturnType<typeof this.todosCampos>) {
+    const primera = filas[0];
+    if (filas.length === 1) return primera;
+
+    const peor = this.peorSeveridad(filas.map(f => f.severidad));
+    const algunaOk = filas.some(f => f.severidad === 'ok');
+
+    // N° Propuesta: la OC apunta a UNA, coincide si matchea con cualquiera.
+    // Mostramos solo los nombres de las propuestas (el valor en propuesta YA ES el nombre, redundante), una por línea.
+    if (nombre === 'numero_propuesta') {
+      const okRow = filas.find(f => f.severidad === 'ok');
+      return {
+        ...primera,
+        valorPropuesta: filas.map(f => this.nombrePropuesta(f.idPropuesta)).join('\n'),
+        severidad: algunaOk ? 'ok' : peor,
+        mensaje: okRow?.mensaje ?? primera.mensaje,
+        accion:  okRow?.accion  ?? primera.accion,
+      };
+    }
+
+    // Forma de pago: la OC trae UNA condición, coincide si matchea con cualquiera.
+    // Lo mostramos con salto de línea por propuesta (una línea c/u).
+    if (nombre === 'forma_pago') {
+      const okRow = filas.find(f => f.severidad === 'ok');
+      return {
+        ...primera,
+        valorPropuesta: filas.map(f => `${this.nombrePropuesta(f.idPropuesta)}: ${f.valorPropuesta ?? '—'}`).join('\n'),
+        severidad: algunaOk ? 'ok' : peor,
+        mensaje: okRow?.mensaje ?? primera.mensaje,
+        accion:  okRow?.accion  ?? primera.accion,
+      };
+    }
+
+    // Monto: suma la asignación de OC y la suma de las propuestas, muestra totales únicos.
+    if (nombre === 'monto') {
+      const sumaOc    = filas.reduce((s, f) => s + this.extraerMonto(f.valorOc), 0);
+      const sumaProps = filas.reduce((s, f) => s + this.extraerMonto(f.valorPropuesta), 0);
+      const simbolo   = this.monedaSimbolo() || '';
+      return {
+        ...primera,
+        valorOc:        this.formatearMontoNumero(sumaOc),
+        valorPropuesta: this.formatearMontoNumero(sumaProps),
+        severidad: Math.abs(sumaOc - sumaProps) < 0.01 ? 'ok' : peor,
+        mensaje: filas.find(f => f.severidad === peor)?.mensaje
+                 ?? `Suma de ${filas.length} propuestas: ${simbolo} ${sumaProps.toFixed(2)}.`,
+        accion:  filas.find(f => f.severidad === peor)?.accion ?? primera.accion,
+      };
+    }
+
+    // Conceptos: sumatoria de ítems detectados/esperados.
+    if (nombre === 'conceptos') {
+      const sumaDetectados = filas.reduce((s, f) => s + this.extraerPrimerEntero(f.valorOc), 0);
+      const sumaEsperados  = filas.reduce((s, f) => s + this.extraerPrimerEntero(f.valorPropuesta), 0);
+      return {
+        ...primera,
+        valorOc:        `${sumaDetectados} item(s) detectado(s)`,
+        valorPropuesta: `${sumaEsperados} item(s) esperado(s)`,
+        severidad: sumaDetectados === sumaEsperados ? 'ok' : peor,
+        mensaje: filas.find(f => f.severidad === peor)?.mensaje ?? primera.mensaje,
+        accion:  filas.find(f => f.severidad === peor)?.accion  ?? primera.accion,
+      };
+    }
+
+    // Dedup si todas iguales (cliente, moneda, igv).
+    const todasIguales = filas.every(f =>
+      f.valorPropuesta === primera.valorPropuesta &&
+      f.severidad === primera.severidad &&
+      (f.mensaje ?? '') === (primera.mensaje ?? '') &&
+      (f.accion ?? '') === (primera.accion ?? ''),
+    );
+    if (todasIguales) return primera;
+
+    // Varían (ej. fecha_emision con vigencias distintas): una línea por propuesta.
+    return {
+      ...primera,
+      valorPropuesta: filas.map(f => `${this.nombrePropuesta(f.idPropuesta)}: ${f.valorPropuesta ?? '—'}`).join('\n'),
+      severidad: peor,
+      mensaje: filas.find(f => f.severidad === peor)?.mensaje ?? primera.mensaje,
+      accion:  filas.find(f => f.severidad === peor)?.accion  ?? primera.accion,
+    };
+  }
+
+  /** Extrae el primer número decimal de un texto formateado tipo "$ 5,955.30". Devuelve 0 si no encuentra. */
+  private extraerMonto(txt: string | null | undefined): number {
+    if (!txt) return 0;
+    const m = txt.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
+  }
+
+  /** Extrae el primer entero de un texto. Devuelve 0 si no encuentra. */
+  private extraerPrimerEntero(txt: string | null | undefined): number {
+    if (!txt) return 0;
+    const m = txt.match(/\d+/);
+    return m ? parseInt(m[0], 10) : 0;
+  }
+
+  /** Formatea un número con el símbolo monetario del modal. */
+  private formatearMontoNumero(n: number): string {
+    const s = this.monedaSimbolo() || '';
+    const valor = new Intl.NumberFormat('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    return `${s} ${valor}`.trim();
+  }
+
+  private peorSeveridad(severidades: string[]): string {
+    const rank: Record<string, number> = { ok: 0, sin_dato: 1, advertencia: 2, critico: 3 };
+    return severidades.reduce((peor, s) => (rank[s] ?? 0) > (rank[peor] ?? 0) ? s : peor, 'ok');
+  }
+
+  private aplicarFiltroSeveridad<T extends { severidad: string }>(lista: T[]): T[] {
+    const f = this.filtro();
+    if (f === 'todas') return lista;
+    if (f === 'discrepancias') return lista.filter(c => c.severidad !== 'ok');
+    return lista.filter(c => c.severidad === 'ok');
+  }
+
+  /** Nombre visible de una propuesta por id (para el valorPropuesta agregado). */
+  nombrePropuesta(idPropuesta: number): string {
+    const p = this.propuestas().find(x => x.idPropuesta === idPropuesta);
+    return p ? `${p.numero}` : `#${idPropuesta}`;
+  }
+
+  /** Formatea un número devolviendo la lista de propuestas por sus nombres (para el pool consolidado). */
+  nombresPropuestas(ids: number[]): string {
+    return ids.map(id => this.nombrePropuesta(id)).join(' · ');
+  }
+
+  dotEstadoConsolidado(sev: string): string {
+    return ({ ok: 'sev--ok', advertencia: 'sev--adv', critico: 'sev--crit' } as Record<string, string>)[sev] ?? 'sev--neutro';
+  }
+
+  iconoEstadoConsolidado(sev: string): string {
+    switch (sev) {
+      case 'ok':          return 'check_circle';
+      case 'advertencia': return 'warning';
+      case 'critico':     return 'error';
+      default:            return 'help';
+    }
+  }
+
+  labelEstadoConsolidado(sev: string): string {
+    return ({ ok: 'En OC', advertencia: 'Divergencia', critico: 'Crítico' } as Record<string, string>)[sev] ?? sev;
+  }
+
   readonly conceptos = computed(() => {
     const idP = this.idPropuestaFiltro();
     const base = this.evaluaciones();
     const seleccion = idP ? base.filter(e => e.idPropuesta === idP) : base;
     return seleccion.flatMap(e => e.conceptos.map(c => ({ ...c, idPropuesta: e.idPropuesta })));
   });
+
+  /** Pool consolidado (ticket C): se usa en modo agregado para no duplicar ítems entre propuestas. */
+  readonly itemsConsolidados = computed(() => this.comparacion().itemsConsolidados ?? []);
+
+  /** True si debemos mostrar el pool consolidado en vez del desglose por propuesta. */
+  readonly usarPoolConsolidado = computed(() =>
+    this.propuestas().length > 1 && !this.idPropuestaFiltro() && this.itemsConsolidados().length > 0,
+  );
 
   readonly insights = computed(() => {
     const idP = this.idPropuestaFiltro();

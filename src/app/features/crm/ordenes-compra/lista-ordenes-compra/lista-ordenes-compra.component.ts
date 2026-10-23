@@ -34,7 +34,7 @@ const ESTADOS: { codigo: string; label: string }[] = [
 
 const TARJETAS_VACIAS: TarjetasOrdenesCompraDto = {
   total: 0, registradasMes: 0, validadas: 0, validadasParcial: 0, observadas: 0,
-  parcialUObservadas: 0, autogeneradasPendientes: 0, sinAsignar: 0, anuladas: 0,
+  parcialUObservadas: 0, autogeneradasPendientes: 0, pendientesReemplazo: 0, sinAsignar: 0, anuladas: 0,
 };
 
 @Component({
@@ -67,9 +67,10 @@ export class ListaOrdenesCompraComponent implements OnInit {
   readonly porPagina = signal(10);
 
   // Filtros
-  estadoFiltro:        string = '';
-  idClienteFiltro:     number | '' = '';
-  idResponsableFiltro: number | '' = '';
+  estadoFiltro:         string = '';
+  idClienteFiltro:      number | '' = '';
+  idResponsableFiltro:  number | '' = '';
+  incluirReemplazadas = false;
   busqueda = '';
 
   readonly breadcrumb = breadcrumbCrm('Órdenes de Compra');
@@ -79,16 +80,15 @@ export class ListaOrdenesCompraComponent implements OnInit {
   readonly elegirAbierto     = signal(false);
   readonly anularCtx         = signal<ItemBandejaOrdenCompraDto | null>(null);
 
-  /** KPIs del prototipo (6): mapeados desde las 9 tarjetas que devuelve el back. */
+  /** KPIs accionables: validadas, parcial/obs, autogeneradas, pend. reemplazo, anuladas. */
   readonly kpis = computed(() => {
     const t = this.tarjetas();
     return {
-      recibidas:     t.total,
-      validadas:     t.validadas,
-      parciales:     t.parcialUObservadas,
-      autogeneradas: t.autogeneradasPendientes,
-      sinAccion:     t.sinAsignar,
-      anuladas:      t.anuladas,
+      validadas:            t.validadas,
+      parciales:            t.parcialUObservadas,
+      autogeneradas:        t.autogeneradasPendientes,
+      pendientesReemplazo:  t.pendientesReemplazo,
+      anuladas:             t.anuladas,
     };
   });
 
@@ -101,6 +101,7 @@ export class ListaOrdenesCompraComponent implements OnInit {
     if (this.estadoFiltro        !== '') n++;
     if (this.idClienteFiltro     !== '') n++;
     if (this.idResponsableFiltro !== '') n++;
+    if (this.incluirReemplazadas)        n++;
     return n;
   }
 
@@ -108,6 +109,7 @@ export class ListaOrdenesCompraComponent implements OnInit {
     this.estadoFiltro = '';
     this.idClienteFiltro = '';
     this.idResponsableFiltro = '';
+    this.incluirReemplazadas = false;
     this.busqueda = '';
     this.aplicarFiltros();
   }
@@ -117,12 +119,13 @@ export class ListaOrdenesCompraComponent implements OnInit {
     this.error.set('');
     try {
       const filtros: FiltrosBandejaOrdenesCompraDto = {
-        estado:        this.estadoFiltro || undefined,
-        idCliente:     this.idClienteFiltro === '' ? undefined : this.idClienteFiltro,
-        idResponsable: this.idResponsableFiltro === '' ? undefined : this.idResponsableFiltro,
-        busqueda:      this.busqueda || undefined,
-        pagina:        this.pagina(),
-        porPagina:     this.porPagina(),
+        estado:              this.estadoFiltro || undefined,
+        incluirReemplazadas: this.incluirReemplazadas || undefined,
+        idCliente:           this.idClienteFiltro === '' ? undefined : this.idClienteFiltro,
+        idResponsable:       this.idResponsableFiltro === '' ? undefined : this.idResponsableFiltro,
+        busqueda:            this.busqueda || undefined,
+        pagina:              this.pagina(),
+        porPagina:           this.porPagina(),
       };
       const b: BandejaOrdenesCompraDto = await this.svc.obtenerBandeja(filtros);
       this.tarjetas.set(b.tarjetas);
@@ -174,14 +177,23 @@ export class ListaOrdenesCompraComponent implements OnInit {
     const mapa: Record<string, { clase: string; label: string }> = {
       autogenerada:         { clase: 'badge--morado', label: 'Autogenerada' },
       validada:             { clase: 'badge--verde',  label: 'Validada' },
-      validada_parcial:     { clase: 'badge--verde',  label: 'Validada (parcial)' },
+      validada_parcial:     { clase: 'badge--verde',  label: 'Parcial' },
       observada:            { clase: 'badge--ambar',  label: 'Observada' },
-      pendiente_reemplazo:  { clase: 'badge--rojo',   label: 'Pendiente Reemplazo' },
+      pendiente_reemplazo:  { clase: 'badge--rojo',   label: 'Pend. Reempl.' },
       anulada:              { clase: 'badge--gris',   label: 'Anulada' },
-      // Fallbacks temporales mientras el back no actualice los nombres
-      recibida:             { clase: 'badge--ambar',  label: 'Recibida' },
-      reemplazada:          { clase: 'badge--gris',   label: 'Reemplazada' },
     };
     return mapa[estado] ?? { clase: 'badge--gris', label: estado };
+  }
+
+  /** Navega a la ficha de registro con ?reemplazar=X para registrar la OC real del cliente. */
+  registrarReemplazo(item: ItemBandejaOrdenCompraDto, ev: Event): void {
+    ev.stopPropagation();
+    if (!item.idPropuesta) {
+      this.toastSvc.error('No se encontró la propuesta de origen.');
+      return;
+    }
+    void this.router.navigate(['/crm/ordenes-compra/nueva', item.idPropuesta], {
+      queryParams: { reemplazar: item.idOc },
+    });
   }
 }

@@ -8,14 +8,13 @@
     textoBoton="Nueva OC"
     (clicBoton)="nuevaOc()" />
 
-  <!-- ── KPI Cards (alineado al prototipo HU-22) ─────────────────────────── -->
-  <app-kpi-grid [columnas]="6">
-    <app-kpi-card icono="shopping_cart"    etiqueta="OCS RECIBIDAS"    [valor]="kpis().recibidas"     variante="azul" />
-    <app-kpi-card icono="check_circle"     etiqueta="VALIDADAS"        [valor]="kpis().validadas"     variante="verde" />
-    <app-kpi-card icono="warning"          etiqueta="PARCIAL / OBS."   [valor]="kpis().parciales"     variante="ambar" />
-    <app-kpi-card icono="bolt"             etiqueta="AUTOGENERADAS"    [valor]="kpis().autogeneradas" variante="azul" />
-    <app-kpi-card icono="error"            etiqueta="SIN ACCIÓN"       [valor]="kpis().sinAccion"     variante="rojo" />
-    <app-kpi-card icono="block"            etiqueta="ANULADAS"         [valor]="kpis().anuladas"      variante="morado" />
+  <!-- ── KPI Cards (5 estados accionables de la OC) ──────────────────────── -->
+  <app-kpi-grid [columnas]="5">
+    <app-kpi-card icono="check_circle"     etiqueta="VALIDADAS"        [valor]="kpis().validadas"            variante="verde" />
+    <app-kpi-card icono="warning"          etiqueta="PARCIAL / OBS."   [valor]="kpis().parciales"            variante="ambar" />
+    <app-kpi-card icono="bolt"             etiqueta="AUTOGENERADAS"    [valor]="kpis().autogeneradas"        variante="azul" />
+    <app-kpi-card icono="swap_horiz"       etiqueta="PEND. REEMPLAZO"  [valor]="kpis().pendientesReemplazo"  variante="rojo" />
+    <app-kpi-card icono="block"            etiqueta="ANULADAS"         [valor]="kpis().anuladas"             variante="morado" />
   </app-kpi-grid>
 
   <!-- ── Filtros Bar ─────────────────────────────────────────────────────── -->
@@ -56,6 +55,13 @@
           <option [ngValue]="r.id">{{ r.nombre }}</option>
         }
       </select>
+    </div>
+
+    <div class="col-full">
+      <label class="checkbox-auditoria">
+        <input type="checkbox" [(ngModel)]="incluirReemplazadas" />
+        <span>Incluir OC reemplazadas <small>(auditoría)</small></span>
+      </label>
     </div>
   </app-barra-filtros-bandeja>
 
@@ -130,14 +136,26 @@
             {{ item.saldoOc | moneda:item.monedaSimbolo }}
           </td>
           <td>
-            <span class="badge {{ estadoChip(item.estadoVisual || item.estado).clase }}">
-              {{ estadoChip(item.estadoVisual || item.estado).label }}
-            </span>
+            <div class="tabla__estado-cell">
+              <span class="badge {{ estadoChip(item.estadoVisual || item.estado).clase }}">
+                {{ estadoChip(item.estadoVisual || item.estado).label }}
+              </span>
+              @if (item.reemplazadaPor && item.numeroOcReemplazo) {
+                <small class="tabla__reemplazo" [title]="'Reemplazada por ' + item.numeroOcReemplazo">
+                  → {{ item.numeroOcReemplazo }}
+                </small>
+              }
+            </div>
           </td>
           <td class="tabla__td--centro">
             <div class="tabla__acciones" (click)="$event.stopPropagation()">
               <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
                           ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+              @if (item.puedeReemplazar) {
+                <app-button variant="ghost" tamano="sm" icono="sync" [soloIcon]="true"
+                            ariaLabel="Registrar OC del cliente" title="Registrar OC del cliente"
+                            (clic)="registrarReemplazo(item, $event)" />
+              }
               @if (item.puedeAnular) {
                 <app-button variant="ghost" tamano="sm" icono="block" [soloIcon]="true"
                             ariaLabel="Anular OC" title="Anular OC" (clic)="abrirAnular(item, $event)" />

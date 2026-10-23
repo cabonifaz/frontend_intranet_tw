@@ -1,0 +1,307 @@
+<app-modal
+  titulo="Historial de Auditoría del Expediente"
+  [subtitulo]="numeroExpediente() + (data()?.razonSocial ? ' · ' + data()!.razonSocial : '') + (data()?.responsable ? ' · Responsable: ' + data()!.responsable : '')"
+  icono="history"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="aud__cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando auditoría...
+    </div>
+  } @else if (data(); as d) {
+    <div class="aud">
+
+      <!-- Toolbar: filtros + total -->
+      <div class="aud__toolbar">
+        <div class="aud__busqueda">
+          <span class="material-symbols-outlined">search</span>
+          <input
+            type="text"
+            placeholder="Buscar por texto, usuario o entidad..."
+            [ngModel]="busqueda()"
+            (ngModelChange)="busqueda.set($event)"
+            (keyup.enter)="aplicarFiltros()" />
+        </div>
+
+        <div class="aud__filtro">
+          <input type="date" [ngModel]="desde()" (ngModelChange)="desde.set($event); aplicarFiltros()" title="Desde" />
+          <span class="aud__filtro-sep">–</span>
+          <input type="date" [ngModel]="hasta()" (ngModelChange)="hasta.set($event); aplicarFiltros()" title="Hasta" />
+        </div>
+
+        <div class="aud__filtro">
+          <select [ngModel]="idUsuario()" (ngModelChange)="idUsuario.set($event); aplicarFiltros()">
+            <option [ngValue]="null">Usuario: Todos</option>
+            @for (u of d.usuarios; track u.idUsuario) {
+              <option [ngValue]="u.idUsuario">{{ u.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="aud__filtro">
+          <select [ngModel]="etapa()" (ngModelChange)="etapa.set($event); aplicarFiltros()">
+            <option value="">Etapa: Todas</option>
+            @for (et of d.etapas; track et.codigo) {
+              <option [value]="et.codigo">{{ et.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="aud__filtro">
+          <select [ngModel]="tipoEvento()" (ngModelChange)="tipoEvento.set($event); aplicarFiltros()">
+            <option value="">Tipo: Todos</option>
+            @for (te of d.tiposEvento; track te.codigo) {
+              <option [value]="te.codigo">{{ te.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <span class="aud__total">
+          <span class="material-symbols-outlined">event_note</span>
+          {{ totalEventos() }} eventos
+        </span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="aud__tabs">
+        <button class="aud__tab" [class.aud__tab--activo]="tabActivo() === 'timeline'" (click)="cambiarTab('timeline')">
+          <span class="material-symbols-outlined">timeline</span>
+          Timeline <span class="aud__tab-badge">{{ cantidadTab('timeline') || totalEventos() }}</span>
+        </button>
+        <button class="aud__tab" [class.aud__tab--activo]="tabActivo() === 'reasignaciones'" (click)="cambiarTab('reasignaciones')">
+          <span class="material-symbols-outlined">swap_horiz</span>
+          Reasignaciones <span class="aud__tab-badge">{{ cantidadTab('reasignaciones') || d.reasignaciones.length }}</span>
+        </button>
+        <button class="aud__tab" [class.aud__tab--activo]="tabActivo() === 'bloqueos'" (click)="cambiarTab('bloqueos')">
+          <span class="material-symbols-outlined">block</span>
+          Bloqueos <span class="aud__tab-badge">{{ cantidadTab('bloqueos') || d.bloqueos.length }}</span>
+        </button>
+        <button class="aud__tab" [class.aud__tab--activo]="tabActivo() === 'alertas_sla'" (click)="cambiarTab('alertas_sla')">
+          <span class="material-symbols-outlined">warning</span>
+          Alertas SLA <span class="aud__tab-badge">{{ cantidadTab('alertas_sla') || d.alertasSla.length }}</span>
+        </button>
+      </div>
+
+      <!-- Contenido por tab -->
+      @switch (tabActivo()) {
+        @case ('timeline') {
+          @if (d.timeline.length === 0) {
+            <div class="aud__vacio">
+              <span class="material-symbols-outlined">task_alt</span>
+              <strong>Sin eventos</strong>
+              <small>No se encontraron eventos con los filtros aplicados.</small>
+            </div>
+          } @else {
+            <div class="aud__timeline">
+              @for (ev of d.timeline; track $index) {
+                <div class="ev">
+                  <div class="ev__col-fecha">
+                    <strong>{{ formatearFechaHora(ev.fecha).fecha }}</strong>
+                    <small>{{ formatearFechaHora(ev.fecha).hora }}</small>
+                  </div>
+                  <span class="ev__badge ev__badge--{{ colorEvento(ev) }}">
+                    <span class="material-symbols-outlined">{{ iconoEvento(ev) }}</span>
+                  </span>
+                  <div class="ev__body">
+                    <div class="ev__head">
+                      @if (ev.usuario) {
+                        <span class="ev__usuario">
+                          <span class="ev__usuario-avatar">{{ iniciales(ev.usuario) }}</span>
+                          {{ ev.usuario }}
+                        </span>
+                      }
+                      @if (ev.etapaNombre || ev.etapa) {
+                        <span class="chip-etapa chip-etapa--{{ chipEtapa(ev.etapa) }}">
+                          {{ ev.etapaNombre ?? ev.etapa }}
+                        </span>
+                      }
+                    </div>
+                    <strong class="ev__titulo">{{ ev.titulo ?? ev.accion ?? '—' }}</strong>
+                    @if (ev.descripcion) {
+                      <p class="ev__desc">{{ ev.descripcion }}</p>
+                    }
+                    @if (ev.referencia) {
+                      <small class="ev__ref">{{ ev.referencia }}</small>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        @case ('reasignaciones') {
+          @if (d.reasignaciones.length === 0) {
+            <div class="aud__vacio">
+              <span class="material-symbols-outlined">swap_horiz</span>
+              <strong>Sin reasignaciones</strong>
+              <small>No hay reasignaciones registradas para este expediente.</small>
+            </div>
+          } @else {
+            <div class="aud__timeline">
+              @for (r of d.reasignaciones; track $index) {
+                <div class="ev">
+                  <div class="ev__col-fecha">
+                    <strong>{{ formatearFechaHora(r.fecha).fecha }}</strong>
+                    <small>{{ formatearFechaHora(r.fecha).hora }}</small>
+                  </div>
+                  <span class="ev__badge ev__badge--ambar">
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                  </span>
+                  <div class="ev__body">
+                    <div class="ev__head">
+                      @if (r.ejecutadoPor) {
+                        <span class="ev__usuario">
+                          <span class="ev__usuario-avatar">{{ iniciales(r.ejecutadoPor) }}</span>
+                          {{ r.ejecutadoPor }}
+                        </span>
+                      }
+                      <span class="chip-etapa chip-etapa--ambar">Reasignación</span>
+                      @if (r.alcance) { <span class="chip-etapa chip-etapa--neutro">{{ r.alcance }}</span> }
+                    </div>
+                    <strong class="ev__titulo">
+                      {{ r.entidades ?? 'Reasignación' }}: {{ r.de ?? '—' }} → {{ r.a ?? '—' }}
+                    </strong>
+                    @if (r.motivo) { <p class="ev__desc"><strong>Motivo:</strong> {{ r.motivo }}</p> }
+                    @if (r.comentario) { <small class="ev__ref">"{{ r.comentario }}"</small> }
+                    @if (r.gestionSla || r.decisionSla) {
+                      <small class="ev__ref">SLA: {{ r.decisionSla ?? r.gestionSla }}</small>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        @case ('bloqueos') {
+          @if (d.bloqueos.length === 0) {
+            <div class="aud__vacio">
+              <span class="material-symbols-outlined">block</span>
+              <strong>Sin bloqueos</strong>
+              <small>No hay bloqueos registrados.</small>
+            </div>
+          } @else {
+            <div class="aud__timeline">
+              @for (b of d.bloqueos; track b.clave) {
+                <div class="ev">
+                  <div class="ev__col-fecha">
+                    <strong>{{ formatearFechaHora(b.fecha).fecha }}</strong>
+                    <small>{{ formatearFechaHora(b.fecha).hora }}</small>
+                  </div>
+                  <span class="ev__badge ev__badge--rojo">
+                    <span class="material-symbols-outlined">block</span>
+                  </span>
+                  <div class="ev__body">
+                    <div class="ev__head">
+                      @if (b.usuario) {
+                        <span class="ev__usuario">
+                          <span class="ev__usuario-avatar">{{ iniciales(b.usuario) }}</span>
+                          {{ b.usuario }}
+                        </span>
+                      }
+                      <span class="chip-etapa chip-etapa--rojo">
+                        {{ b.tipoNombre ?? b.tipo ?? 'Bloqueo' }}
+                      </span>
+                      @if (b.activo) { <span class="chip-etapa chip-etapa--ambar">Activo</span> }
+                      @else { <span class="chip-etapa chip-etapa--verde">Resuelto</span> }
+                    </div>
+                    <strong class="ev__titulo">
+                      Bloqueo en {{ b.etapaNombre ?? b.etapa ?? '—' }}
+                      @if (b.entidad) { — {{ b.entidad }} }
+                    </strong>
+                    @if (b.motivo) { <p class="ev__desc">{{ b.motivo }}</p> }
+                    @if (b.impacto) { <small class="ev__ref">Impacto: {{ b.impacto }}</small> }
+                    @if (b.resolucion) {
+                      <small class="ev__ref">Resolución: {{ b.resolucion }} ({{ formatearFechaHora(b.fechaResolucion).fecha }})</small>
+                    }
+                    @if (b.duracionHoras != null) {
+                      <small class="ev__ref">Duración: {{ b.duracionHoras }} h</small>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        @case ('alertas_sla') {
+          @if (d.alertasSla.length === 0) {
+            <div class="aud__vacio">
+              <span class="material-symbols-outlined">verified</span>
+              <strong>Sin alertas de SLA</strong>
+              <small>El expediente no ha generado alertas de SLA.</small>
+            </div>
+          } @else {
+            <div class="aud__timeline">
+              @for (a of d.alertasSla; track $index) {
+                <div class="ev">
+                  <div class="ev__col-fecha">
+                    <strong>{{ formatearFechaHora(a.fecha).fecha }}</strong>
+                    <small>{{ formatearFechaHora(a.fecha).hora }}</small>
+                  </div>
+                  <span class="ev__badge ev__badge--{{ nivelAlerta(a.nivel) }}">
+                    <span class="material-symbols-outlined">warning</span>
+                  </span>
+                  <div class="ev__body">
+                    <div class="ev__head">
+                      @if (a.responsable) {
+                        <span class="ev__usuario">
+                          <span class="ev__usuario-avatar">{{ iniciales(a.responsable) }}</span>
+                          {{ a.responsable }}
+                        </span>
+                      }
+                      <span class="chip-etapa chip-etapa--{{ chipEtapa(a.etapa) }}">
+                        {{ a.etapaNombre ?? a.etapa }}
+                      </span>
+                      <span class="chip-etapa chip-etapa--{{ nivelAlerta(a.nivel) }}">
+                        {{ a.nivel | titlecase }}
+                      </span>
+                    </div>
+                    <strong class="ev__titulo">
+                      Alerta SLA — {{ a.etapaNombre ?? a.etapa }}
+                    </strong>
+                    <p class="ev__desc">
+                      SLA {{ a.slaHoras ?? '—' }}h · Reales {{ a.horasReales ?? '—' }}h
+                      @if (a.desvioHoras != null) { · Desvío {{ a.desvioHoras }}h }
+                    </p>
+                    @if (a.accionTomada) { <small class="ev__ref">Acción: {{ a.accionTomada }}</small> }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        }
+      }
+    </div>
+  }
+
+  <div modalFooter class="aud__footer">
+    <small class="aud__nota">
+      <span class="material-symbols-outlined">lock</span>
+      Registro inmutable · Trazabilidad regulatoria
+    </small>
+    <div class="aud__footer-acciones">
+      <app-button
+        variant="ghost"
+        icono="picture_as_pdf"
+        [cargando]="exportando()"
+        [disabled]="exportando() || cargando()"
+        (clic)="exportar('pdf')">
+        Exportar PDF
+      </app-button>
+      <app-button
+        variant="secondary"
+        icono="download"
+        [cargando]="exportando()"
+        [disabled]="exportando() || cargando()"
+        (clic)="exportar('xlsx')">
+        Exportar XLSX
+      </app-button>
+      <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+    </div>
+  </div>
+</app-modal>

@@ -1,0 +1,108 @@
+:host { display: block; }
+
+.pagina {
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 100%;
+  display: flex; flex-direction: column; gap: 16px;
+  box-sizing: border-box;
+}
+
+// (La barra de filtros usa app-barra-filtros-bandeja — estilos globales.)
+
+// (La tabla y la paginación usan app-tabla-paginada — estilos globales.)
+
+.link-rq, .link-prop {
+  color: #2563eb; font-weight: 700;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+.cliente { display: block; color: #0f172a; font-weight: 600; font-size: 12.5px; }
+.ruc     { display: block; color: #64748b; font-size: 11px; font-family: 'SF Mono', monospace; }
+
+.dash { color: #cbd5e1; }
+
+.badge-ocs {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #dcfce7; color: #166534;
+  border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-sin-oc {
+  color: #94a3b8; font-weight: 600;
+}
+
+// ─── Chip tipo propuesta ──────────────────────────────────────────────────
+.chip-tipo {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+
+  &--calibracion    { background: #ede9fe; color: #6b21a8; }
+  &--suministros    { background: #fef3c7; color: #92400e; }
+  &--metrologia     { background: #e0e7ff; color: #3730a3; }
+  &--mantenimiento  { background: #ccfbf1; color: #115e59; }
+  &--soporte_tecnico { background: #d1fae5; color: #065f46; }
+  &--neutral        { background: #f1f5f9; color: #475569; }
+}
+
+// ─── Chip etapa ───────────────────────────────────────────────────────────
+.chip-etapa {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+  background: #f1f5f9; color: #475569;
+
+  &--rq           { background: #dbeafe; color: #1e40af; }
+  &--propuesta    { background: #e0e7ff; color: #3730a3; }
+  &--vb           { background: #fef3c7; color: #92400e; }
+  &--seguimiento  { background: #fef9c3; color: #854d0e; }
+  &--oc           { background: #ddd6fe; color: #5b21b6; }
+  &--os           { background: #fde68a; color: #78350f; }
+  &--programacion { background: #bae6fd; color: #075985; }
+  &--ssoma        { background: #fecaca; color: #991b1b; }
+  &--ejecucion    { background: #bbf7d0; color: #166534; }
+  &--cierre       { background: #e2e8f0; color: #334155; }
+}
+
+// ─── Responsable (avatar + nombre + chip SLA) ────────────────────────────
+.resp-cell { align-items: flex-start; }
+.resp-cell__stack {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+}
+
+// ─── SLA (chip pastel con dot) ───────────────────────────────────────────
+.sla {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600;
+}
+
+.sla--chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.sla__dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+
+.sla__label { line-height: 1; }
+
+.sla--ok {
+  background: #dcfce7; color: #166534;
+  .sla__dot { background: #16a34a; }
+}
+.sla--urgente {
+  background: #fef3c7; color: #92400e;
+  .sla__dot { background: #d97706; }
+}
+.sla--vencido {
+  background: #fee2e2; color: #991b1b;
+  .sla__dot { background: #dc2626; }
+}
+

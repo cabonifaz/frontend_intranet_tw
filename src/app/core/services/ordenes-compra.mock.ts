@@ -52,6 +52,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
     observadas: 4,
     parcialUObservadas: 7,
     autogeneradasPendientes: 2,
+    pendientesReemplazo: 1,
     sinAsignar: 1,
     anuladas: 2,
   },
@@ -72,7 +73,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'validada', estadoVisual: 'validada',
       resultadoIa: 'ok', alertasIa: 0,
       idResponsable: 5, responsable: 'Jazir Chambergo',
-      tienePdf: true, urlPdf: null, puedeAnular: true,
+      tienePdf: true, urlPdf: null, puedeAnular: true, puedeReemplazar: false,
     },
     {
       idOc: 1002, numeroOc: 'OC-SMC-45122', esAutogenerada: false,
@@ -86,7 +87,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'validada_parcial', estadoVisual: 'validada_parcial',
       resultadoIa: 'advertencia', alertasIa: 2,
       idResponsable: 5, responsable: 'Jazir Chambergo',
-      tienePdf: true, urlPdf: null, puedeAnular: true,
+      tienePdf: true, urlPdf: null, puedeAnular: true, puedeReemplazar: false,
     },
     {
       idOc: 1003, numeroOc: 'OC-CER-77301', esAutogenerada: false,
@@ -100,7 +101,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'observada', estadoVisual: 'observada',
       resultadoIa: 'critico', alertasIa: 3,
       idResponsable: 6, responsable: 'Bryan Córdova',
-      tienePdf: true, urlPdf: null, puedeAnular: true,
+      tienePdf: true, urlPdf: null, puedeAnular: true, puedeReemplazar: false,
     },
     {
       idOc: 1004, numeroOc: 'OC-AUTO-000045', esAutogenerada: true,
@@ -114,7 +115,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'validada', estadoVisual: 'validada',
       resultadoIa: null, alertasIa: 0,
       idResponsable: 5, responsable: 'Jazir Chambergo',
-      tienePdf: true, urlPdf: null, puedeAnular: true,
+      tienePdf: true, urlPdf: null, puedeAnular: true, puedeReemplazar: false,
     },
     {
       idOc: 1005, numeroOc: 'OC-NEX-10550', esAutogenerada: false,
@@ -128,7 +129,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'anulada', estadoVisual: 'anulada',
       resultadoIa: null, alertasIa: 0,
       idResponsable: 6, responsable: 'Bryan Córdova',
-      tienePdf: true, urlPdf: null, puedeAnular: false,
+      tienePdf: true, urlPdf: null, puedeAnular: false, puedeReemplazar: false,
     },
     {
       idOc: 1006, numeroOc: 'OC-MIN-77214', esAutogenerada: false,
@@ -142,7 +143,7 @@ export const MOCK_BANDEJA: BandejaOrdenesCompraDto = {
       estado: 'recibida', estadoVisual: 'recibida',
       resultadoIa: null, alertasIa: 0,
       idResponsable: 5, responsable: 'Jazir Chambergo',
-      tienePdf: true, urlPdf: null, puedeAnular: true,
+      tienePdf: true, urlPdf: null, puedeAnular: true, puedeReemplazar: false,
     },
   ],
   total: 6,
@@ -540,6 +541,7 @@ export function mockDetalle(idOc: number): DetalleOrdenCompraDto {
       puedeEditar: true, puedeReemplazarPdf: true, puedeSubirCorregida: false,
       puedeAgregarPropuesta: true, puedeRevalidar: true, puedeAnular: true,
       puedeReemplazarAuto: false,
+      puedeReemplazar: false,
     },
     propuestas: [
       {
@@ -706,6 +708,7 @@ export function mockPreparacionAnulacion(idOc: number): PreparacionAnulacionOcDt
         idPropuesta: 501, numero: 'PROP-000010', version: 1,
         montoAsignado: 24_500, estadoValidacion: 'validada',
         saldoActual: 0, saldoDespues: 24_500,
+        generaraOcAutogenerada: true,
       },
     ],
     ordenesServicio: [],

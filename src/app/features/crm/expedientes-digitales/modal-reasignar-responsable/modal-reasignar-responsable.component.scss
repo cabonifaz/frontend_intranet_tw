@@ -1,0 +1,452 @@
+// ─── Cargando ───────────────────────────────────────────────────────────
+.rea__cargando {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 60px 20px;
+  color: #64748b; font-size: 13.5px;
+  .spin { animation: spin 1s linear infinite; color: #2563eb; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.rea { display: flex; flex-direction: column; gap: 18px; }
+
+// ─── Paso: wrapper ──────────────────────────────────────────────────────
+.rea__paso {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.rea__paso-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.rea__paso-label {
+  font-size: 10.5px; font-weight: 700; color: #475569;
+  letter-spacing: 0.6px;
+}
+
+// ─── PASO 1: tarjetas de modo ───────────────────────────────────────────
+.rea__modos { display: flex; flex-direction: column; gap: 8px; }
+
+.rea__modo {
+  display: grid;
+  grid-template-columns: 42px 1fr 28px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+
+  &:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  &--activo {
+    background: #eff6ff;
+    border-color: #2563eb;
+  }
+}
+
+.rea__modo-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  .material-symbols-outlined { font-size: 22px; }
+
+  &--azul    { background: #dbeafe; .material-symbols-outlined { color: #2563eb; } }
+  &--violeta { background: #ede9fe; .material-symbols-outlined { color: #6d28d9; } }
+  &--ambar   { background: #fef3c7; .material-symbols-outlined { color: #d97706; } }
+}
+
+.rea__modo-texto {
+  display: flex; flex-direction: column; gap: 2px;
+  strong { font-size: 13px; color: #0f172a; font-weight: 700; }
+  small  { font-size: 11.5px; color: #64748b; line-height: 1.4; }
+}
+
+.rea__modo-titulo {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+
+.rea__badge-recomendado {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  background: #dcfce7; color: #166534;
+  border-radius: 999px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;
+}
+
+.rea__badge-masivo {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  background: #fee2e2; color: #991b1b;
+  border-radius: 999px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px;
+}
+
+.rea__modo-check {
+  color: #cbd5e1;
+  .rea__modo--activo & { color: #2563eb; }
+  .material-symbols-outlined { font-size: 22px; }
+}
+
+// ─── PASO 2: pills de entidad ───────────────────────────────────────────
+.rea__entidades-pills {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.rea__pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+
+  &:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  &--activa {
+    background: #eff6ff;
+    border-color: #2563eb;
+  }
+}
+
+.rea__pill-icono {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 999px;
+  .material-symbols-outlined { font-size: 16px; }
+
+  &--azul    { background: #dbeafe; .material-symbols-outlined { color: #2563eb; } }
+  &--violeta { background: #ede9fe; .material-symbols-outlined { color: #6d28d9; } }
+  &--ambar   { background: #fef3c7; .material-symbols-outlined { color: #d97706; } }
+  &--verde   { background: #dcfce7; .material-symbols-outlined { color: #16a34a; } }
+  &--neutro  { background: #f1f5f9; .material-symbols-outlined { color: #64748b; } }
+}
+
+.rea__pill-texto {
+  display: flex; flex-direction: column; align-items: flex-start;
+  strong { font-size: 12px; color: #0f172a; font-weight: 700; }
+  small { font-size: 10.5px; color: #64748b; }
+}
+
+.rea__nota {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px;
+  color: #1d4ed8; font-size: 12px;
+  .material-symbols-outlined { font-size: 16px; color: #2563eb; }
+}
+
+// ─── Árbol para modo cascada ────────────────────────────────────────────
+.rea__arbol {
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 8px;
+  margin-top: 6px;
+}
+
+.rea__arbol-head {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  .material-symbols-outlined { font-size: 18px; color: #6d28d9; }
+  strong { font-size: 12.5px; color: #0f172a; }
+  .rea__arbol-stats {
+    margin-left: auto;
+    padding: 2px 10px;
+    background: #ede9fe; color: #6d28d9;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+  }
+}
+
+.rea__arbol-lista {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.rea__arbol-item {
+  display: grid;
+  grid-template-columns: 18px 28px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding-left: calc(10px + 20px * var(--nivel, 0));
+
+  &--raiz { background: #faf5ff; border-color: #e9d5ff; }
+
+  &--excluido {
+    opacity: 0.55;
+    background: #f8fafc;
+    .rea__arbol-texto strong { text-decoration: line-through; }
+  }
+
+  input[type="checkbox"] { accent-color: #2563eb; cursor: pointer; }
+}
+
+.rea__arbol-texto {
+  display: flex; flex-direction: column;
+  strong { font-size: 12px; color: #0f172a; font-weight: 700; }
+  small { font-size: 10.5px; color: #64748b; }
+}
+
+.rea__badge-raiz {
+  display: inline-flex; align-items: center;
+  color: #a855f7;
+  .material-symbols-outlined { font-size: 14px; }
+}
+
+.rea__badge-excluido {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  background: #fef3c7; color: #92400e;
+  border-radius: 999px;
+  font-size: 10px; font-weight: 700;
+}
+
+// ─── Modo C: cartera comercial ──────────────────────────────────────────
+.rea__cartera-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+}
+
+.rea__cartera-usuario {
+  display: flex; align-items: center; gap: 12px;
+  strong { font-size: 13px; color: #0f172a; display: block; }
+  small { font-size: 11.5px; color: #64748b; }
+}
+
+.rea__cartera-total {
+  display: flex; flex-direction: column; align-items: flex-end;
+  small { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+  strong { font-size: 22px; color: #0f172a; font-weight: 800; font-variant-numeric: tabular-nums; }
+}
+
+.rea__cartera-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;
+  margin-top: 8px;
+}
+
+.rea__stat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+
+  .rea__stat-icono {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    background: #eff6ff; border-radius: 8px;
+    .material-symbols-outlined { font-size: 17px; color: #2563eb; }
+  }
+
+  strong { font-size: 16px; color: #0f172a; font-weight: 800; display: block; }
+  small { font-size: 10.5px; color: #64748b; }
+}
+
+.rea__aviso-integridad {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px;
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+  margin-top: 6px;
+  .material-symbols-outlined { font-size: 16px; color: #d97706; flex-shrink: 0; margin-top: 1px; }
+  small { font-size: 11.5px; color: #92400e; line-height: 1.5; }
+}
+
+// ─── PASO 3: Responsables ────────────────────────────────────────────────
+.rea__responsables {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+
+  @media (max-width: 720px) { grid-template-columns: 1fr; }
+}
+
+.rea__resp-card {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+}
+
+.rea__resp-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 700; color: #64748b; letter-spacing: 0.4px;
+  text-transform: uppercase;
+  .material-symbols-outlined { font-size: 14px; }
+
+  &--obligatorio::after {
+    content: '';
+    display: inline-block;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: #dc2626;
+    margin-left: 2px;
+  }
+}
+
+.rea__resp-info {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+
+  strong { font-size: 12.5px; color: #0f172a; display: block; }
+  small { font-size: 11px; color: #64748b; }
+
+  &--nuevo {
+    border-color: #16a34a;
+    background: #f0fdf4;
+  }
+}
+
+.rea__resp-lock {
+  margin-left: auto;
+  color: #94a3b8;
+  .material-symbols-outlined { font-size: 15px; }
+}
+
+.rea__resp-limpiar {
+  margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  border: 0; background: transparent;
+  color: #64748b; cursor: pointer; border-radius: 6px;
+  &:hover { background: #e2e8f0; color: #0f172a; }
+  .material-symbols-outlined { font-size: 15px; }
+}
+
+.rea__buscador {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+  .material-symbols-outlined { font-size: 16px; color: #94a3b8; }
+  input {
+    flex: 1; border: 0; background: transparent; outline: none;
+    font-size: 12.5px; color: #0f172a;
+    &::placeholder { color: #94a3b8; }
+  }
+}
+
+.rea__buscador-vacio { color: #94a3b8; font-size: 11.5px; padding: 4px 2px; }
+
+.rea__candidatos {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 180px; overflow-y: auto;
+}
+
+.rea__candidato {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer;
+  transition: background .15s;
+  &:hover { background: #eff6ff; border-color: #93c5fd; }
+
+  strong { font-size: 12px; color: #0f172a; display: block; }
+  small { font-size: 10.5px; color: #64748b; }
+}
+
+// ─── Usuario avatar ──────────────────────────────────────────────────────
+.rea__usuario-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: #dbeafe; color: #1d4ed8;
+  border-radius: 50%;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+  flex-shrink: 0;
+
+  &--verde { background: #dcfce7; color: #166534; }
+  &--grande { width: 44px; height: 44px; font-size: 13px; }
+}
+
+// ─── Opciones (motivo + sla) ─────────────────────────────────────────────
+.rea__opciones {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  @media (max-width: 720px) { grid-template-columns: 1fr; }
+}
+
+.rea__campo {
+  display: flex; flex-direction: column; gap: 6px;
+
+  label {
+    font-size: 10.5px; font-weight: 700; color: #475569; letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  select, textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0; border-radius: 8px;
+    font-size: 12.5px; color: #0f172a;
+    outline: none;
+    font-family: inherit;
+    &:focus { border-color: #2563eb; }
+  }
+
+  textarea { resize: vertical; min-height: 70px; }
+}
+
+.rea__campo-head {
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.rea__contador {
+  font-size: 10.5px; color: #dc2626; font-weight: 600;
+  &--ok { color: #16a34a; }
+}
+
+.rea__radios {
+  display: flex; gap: 6px;
+}
+
+.rea__radio {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px; color: #475569;
+
+  input[type="radio"] { accent-color: #2563eb; }
+
+  &--activo {
+    background: #eff6ff;
+    border-color: #2563eb;
+    color: #1d4ed8;
+    font-weight: 600;
+  }
+}
+
+.rea__nota-impacto {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px;
+  background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px;
+  .material-symbols-outlined { font-size: 16px; color: #2563eb; flex-shrink: 0; margin-top: 1px; }
+  small { font-size: 11.5px; color: #1e40af; line-height: 1.5; }
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────
+.rea__footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 22px;
+  border-top: 1px solid #e2e8f0;
+  background: #fafbfc;
+  flex-shrink: 0;
+}
+
+.rea__nota {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #64748b; font-size: 11.5px;
+  .material-symbols-outlined { font-size: 15px; color: #2563eb; }
+}
+
+.rea__footer-acciones {
+  display: flex; align-items: center; gap: 10px;
+}

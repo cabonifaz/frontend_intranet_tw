@@ -106,6 +106,7 @@
                 <th>CONTACTO</th>
                 <th>REQUERIMIENTO</th>
                 <th class="tabla-propuestas__num">MONTO ASIGNADO</th>
+                <th class="tabla-propuestas__num">COBERTURA</th>
                 <th class="tabla-propuestas__num">SERVICIOS</th>
                 <th>MONEDA</th>
                 <th></th>
@@ -122,9 +123,33 @@
                   <td>{{ v.contacto ?? '—' }}</td>
                   <td>{{ v.numeroRq ?? '—' }}</td>
                   <td class="tabla-propuestas__num">
-                    <input type="number" min="0" step="0.01"
-                           [ngModel]="v.montoAsignado"
-                           (ngModelChange)="actualizarMontoAsignado(v.idPropuesta, $event)" />
+                    <div class="monto-cell">
+                      <input type="number" min="0" step="0.01"
+                             [ngModel]="v.montoAsignado"
+                             (ngModelChange)="actualizarMontoAsignado(v.idPropuesta, $event)" />
+                      <!-- Ticket E: equivalente en la moneda de la propuesta -->
+                      @if (montoCubiertoDe(v.idPropuesta); as mc) {
+                        <small class="monto-cell__cubierto">≈ {{ v.monedaSimbolo }} {{ mc | number:'1.2-2' }}</small>
+                      }
+                      <div class="monto-cell__botones">
+                        <button type="button" class="btn-mini" (click)="cubrirAlCien(v.idPropuesta)">Cubrir 100%</button>
+                        <button type="button" class="btn-mini" (click)="cubrirResto(v.idPropuesta)">Resto</button>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="tabla-propuestas__num">
+                    <div class="cobertura-cell">
+                      <span class="cobertura-cell__pct"
+                            [class.cobertura-cell__pct--ok]="coberturaPct(v.idPropuesta) === 100"
+                            [class.cobertura-cell__pct--mid]="coberturaPct(v.idPropuesta) > 0 && coberturaPct(v.idPropuesta) < 100">
+                        {{ coberturaPct(v.idPropuesta) }}%
+                      </span>
+                      <div class="cobertura-cell__bar">
+                        <div class="cobertura-cell__fill"
+                             [style.width.%]="coberturaPct(v.idPropuesta)"
+                             [class.cobertura-cell__fill--ok]="coberturaPct(v.idPropuesta) === 100"></div>
+                      </div>
+                    </div>
                   </td>
                   <td class="tabla-propuestas__num">{{ v.servicios ?? '—' }}</td>
                   <td>{{ v.monedaSimbolo ?? '—' }}</td>
@@ -151,6 +176,34 @@
             <div class="agregar-propuesta agregar-propuesta--vacio">
               <span class="material-symbols-outlined">info</span>
               <small>No hay otras propuestas aceptadas del mismo cliente para vincular a esta OC.</small>
+            </div>
+          }
+
+          <!-- ── Ticket E: tipo de cambio cuando hay mix de monedas ─────── -->
+          @if (hayMixMonedas()) {
+            <div class="aviso-tc"
+                 [class.aviso-tc--falta]="faltaTipoCambio()"
+                 [class.aviso-tc--ok]="!faltaTipoCambio()">
+              <span class="material-symbols-outlined">currency_exchange</span>
+              <div class="aviso-tc__texto">
+                <strong>
+                  @if (faltaTipoCambio()) {
+                    Monedas distintas detectadas: tipo de cambio obligatorio
+                  } @else {
+                    Monedas distintas detectadas: usando tipo de cambio {{ datos().tipoCambio }}
+                  }
+                </strong>
+                <small>
+                  Las propuestas vinculadas usan: {{ monedasVinculadasLabels().join(', ') }}.
+                  La OC está en {{ nombreMoneda() }}. La validación convertirá los montos con el TC indicado.
+                </small>
+              </div>
+              <div class="aviso-tc__input">
+                <label>TC (OC → propuesta)</label>
+                <input type="number" min="0" step="0.0001" placeholder="3.7500"
+                       [ngModel]="datos().tipoCambio"
+                       (ngModelChange)="actualizarCampo('tipoCambio', $event)" />
+              </div>
             </div>
           }
         </app-seccion>

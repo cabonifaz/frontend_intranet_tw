@@ -1,173 +1,166 @@
-// ─── Bloque Impacto Crítico ─────────────────────────────────────────────
-.impacto-critico {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-left: 4px solid #dc2626;
-  border-radius: 8px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
+// ─── Cargando ─────────────────────────────────────────────────────────
+.man__cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: #64748B;
+  font-size: 14px;
 
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #991b1b;
-    margin-bottom: 6px;
-
-    .material-symbols-outlined { font-size: 20px; }
-    strong { font-size: 13px; letter-spacing: 0.4px; }
-  }
-
-  &__texto {
-    color: #7f1d1d;
-    font-size: 13px;
-    line-height: 1.55;
-    margin: 0;
-  }
+  .spin { animation: spin 1s linear infinite; color: #2563EB; }
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-// ─── 3 Cards de Resumen ──────────────────────────────────────────────────
-.anular-resumen {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.resumen-card {
-  border-radius: 8px;
-  padding: 14px 16px;
+// ─── Contenedor ───────────────────────────────────────────────────────
+.man {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-
-  &__label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    color: #64748b;
-  }
-
-  &__valor {
-    font-size: 20px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    .material-symbols-outlined { font-size: 20px; }
-  }
-
-  &--monto {
-    background: #fef2f2;
-    .resumen-card__label { color: #991b1b; }
-    .resumen-card__valor { color: #dc2626; }
-  }
-
-  &--propuestas {
-    background: #fef3c7;
-    .resumen-card__label { color: #92400e; }
-    .resumen-card__valor { color: #b45309; }
-  }
-
-  &--os {
-    background: #fef2f2;
-    .resumen-card__label { color: #991b1b; }
-    .resumen-card__valor { color: #dc2626; }
-  }
-
-  &--neutral {
-    background: #f1f5f9;
-    .resumen-card__label { color: #475569; }
-    .resumen-card__valor { color: #334155; }
-  }
-}
-
-// ─── Formulario ──────────────────────────────────────────────────────────
-.anular-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 16px;
-}
+  padding: 4px 0;
 
-.campo {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  // ─── Resumen compacto (3 datos) ────────────────────────────────────
+  &__resumen {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
 
-  &__cabecera {
+    @media (max-width: 520px) { grid-template-columns: 1fr; }
+  }
+
+  &__dato {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    color: #475569;
+  &__dato-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: 0.5px;
   }
 
-  select, input, textarea {
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 9px 11px;
+  &__dato-valor {
     font-size: 14px;
-    color: #0f172a;
-    background: #fff;
+    font-weight: 700;
+    color: #0F172A;
 
-    &:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    &--rojo { color: #B91C1C; }
+  }
+
+  // ─── Avisos (crítico / info) ───────────────────────────────────────
+  &__aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+
+    .material-symbols-outlined { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+    strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    p    { margin: 0; font-size: 12px; line-height: 1.5; }
+    ul   { margin: 6px 0 0 16px; padding: 0; font-size: 12px; line-height: 1.6; }
+
+    &--critico {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #B91C1C;
+      .material-symbols-outlined { color: #DC2626; }
+    }
+
+    &--info {
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      color: #1E40AF;
+      border-left: 3px solid #2563EB;
+      .material-symbols-outlined { color: #2563EB; }
     }
   }
 
-  textarea {
-    resize: vertical;
-    font-family: inherit;
+  // ─── Campos (motivo + justificación) ───────────────────────────────
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      letter-spacing: 0.3px;
+    }
+
+    select, textarea {
+      padding: 10px 12px;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #FFF;
+      color: #0F172A;
+
+      &:focus { outline: 2px solid #BFDBFE; outline-offset: -1px; border-color: #2563EB; }
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
   }
-}
 
-.contador {
-  font-size: 11px;
-  color: #dc2626;
-  font-weight: 600;
+  &__campo-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
 
-  &--ok { color: #16a34a; }
-}
+  &__contador {
+    font-size: 11px;
+    color: #94A3B8;
+    font-variant-numeric: tabular-nums;
 
-.check-impacto {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #7f1d1d;
-  line-height: 1.5;
-  margin-top: 4px;
+    &--ok { color: #16A34A; font-weight: 600; }
+  }
 
-  input[type="checkbox"] {
-    margin-top: 2px;
-    accent-color: #dc2626;
+  // ─── Checkbox de confirmación ──────────────────────────────────────
+  &__check {
+    display: flex;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #991B1B;
+    line-height: 1.5;
     cursor: pointer;
+
+    input[type="checkbox"] {
+      margin-top: 2px;
+      accent-color: #DC2626;
+      flex-shrink: 0;
+    }
+
+    strong { font-weight: 700; }
   }
 
-  strong { color: #991b1b; }
-}
-
-// ─── Footer alineado con el patrón del sistema ──────────────────────────
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 14px 22px !important;
-  border-top: 1px solid #e2e8f0;
-  background: #fafbfc;
+  // ─── Footer ────────────────────────────────────────────────────────
+  &__footer {
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 22px !important;
+    border-top: 1px solid #E2E8F0;
+    background: #FAFBFC;
+  }
 }

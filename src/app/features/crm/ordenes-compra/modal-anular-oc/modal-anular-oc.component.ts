@@ -45,6 +45,9 @@ export class ModalAnularOcComponent {
 
   readonly longitudJust = computed(() => this.justificacion().trim().length);
   readonly tieneImpactoCritico = computed(() => this.impacto()?.impactoCritico ?? false);
+  /** Al menos una propuesta aceptada quedará sin OC vigente → se generará una OC-AUTO al confirmar. */
+  readonly generaraOcAuto = computed(() => this.propuestas().some(p => p.generaraOcAutogenerada));
+  readonly propuestasAfectadas = computed(() => this.propuestas().filter(p => p.generaraOcAutogenerada));
 
   readonly puedeConfirmar = computed(() => {
     if (!this.impacto())             return false;
@@ -79,12 +82,20 @@ export class ModalAnularOcComponent {
     if (!this.puedeConfirmar() || this.enviando()) return;
     this.enviando.set(true);
     try {
-      await this.svc.anular(this.idOc(), {
+      const r = await this.svc.anular(this.idOc(), {
         idMotivo:        this.idMotivo(),
         justificacion:   this.justificacion(),
         confirmaImpacto: this.confirmoImpacto() || !this.tieneImpactoCritico(),
       });
-      this.toast.exito(`Orden de Compra ${this.numeroOc()} anulada correctamente.`);
+      // Si el back generó OC-AUTO para alguna propuesta, mencionarlo en el toast.
+      const autogen = r.propuestas.filter(p => p.numeroOcAutogenerada);
+      if (autogen.length === 1) {
+        this.toast.exito(`OC ${this.numeroOc()} anulada. Se generó ${autogen[0].numeroOcAutogenerada} para mantener la cobertura de ${autogen[0].numero} v${autogen[0].version}.`);
+      } else if (autogen.length > 1) {
+        this.toast.exito(`OC ${this.numeroOc()} anulada. Se generaron ${autogen.length} OC autogeneradas para mantener la cobertura de las propuestas afectadas.`);
+      } else {
+        this.toast.exito(`Orden de Compra ${this.numeroOc()} anulada correctamente.`);
+      }
       this.confirmado.emit();
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo anular la OC.');

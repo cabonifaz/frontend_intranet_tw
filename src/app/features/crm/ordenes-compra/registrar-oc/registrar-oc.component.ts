@@ -91,7 +91,7 @@ export class RegistrarOcComponent {
   readonly datos = signal<DatosOrdenCompraDto>({
     numeroOc: null, fechaEmision: null, fechaRecepcion: new Date().toISOString().slice(0, 10),
     idMoneda: null, montoTotal: null, idCondicionPago: null, formaPago: null,
-    igvIncluido: null, igvPct: null, descuento: null,
+    igvIncluido: null, igvPct: null, descuento: null, tipoCambio: null,
     ruc: null, razonSocial: null, numeroPropuesta: null, vigenciaHasta: null,
     referencia: null, observaciones: null,
     facturaIgualOc: true, conceptos: [], camposIa: {}, camposManuales: [],
@@ -121,6 +121,36 @@ export class RegistrarOcComponent {
   readonly asignadoPct = computed(() => {
     const m = this.datos().montoTotal ?? 0;
     return m > 0 ? Math.round((this.totalAsignado() / m) * 100) : 0;
+  });
+
+  // ─── Ticket E: detección de mix de monedas ──────────────────────────────
+  /** Monedas distintas presentes entre las propuestas vinculadas. */
+  readonly monedasVinculadas = computed<number[]>(() => {
+    const ids = this.vinculadas().map(v => v.idMoneda).filter((m): m is number => m != null);
+    return [...new Set(ids)];
+  });
+
+  /** True si hay propuestas vinculadas en monedas distintas entre sí o distintas a la OC. */
+  readonly hayMixMonedas = computed(() => {
+    const idMonedaOc = this.datos().idMoneda;
+    const monedas = this.monedasVinculadas();
+    if (monedas.length === 0) return false;
+    if (monedas.length > 1) return true;
+    return idMonedaOc != null && monedas[0] !== idMonedaOc;
+  });
+
+  /** Nombres legibles de las monedas distintas detectadas. Útil para los mensajes. */
+  readonly monedasVinculadasLabels = computed<string[]>(() =>
+    this.monedasVinculadas().map(id =>
+      this.monedas().find(m => m.id === id)?.nombre ?? `#${id}`,
+    ),
+  );
+
+  /** True cuando hay mix de monedas pero no se ingresó tipo de cambio. */
+  readonly faltaTipoCambio = computed(() => {
+    if (!this.hayMixMonedas()) return false;
+    const tc = this.datos().tipoCambio;
+    return tc == null || tc <= 0;
   });
 
   /** Severidad global para pintar el sidebar / banners. */
@@ -209,7 +239,8 @@ export class RegistrarOcComponent {
     const basico = (d.numeroOc?.trim().length ?? 0) > 0
       && !!d.fechaEmision && d.idMoneda != null
       && (d.montoTotal ?? 0) > 0 && this.vinculadas().length > 0
-      && !this.sobreasignado();
+      && !this.sobreasignado()
+      && !this.faltaTipoCambio();                    // ticket E
     if (this.modo() === 'crear') {
       // En modo crear: PDF obligatorio Y extracción IA exitosa (fuente de verdad = PDF, no comercial)
       return basico && !!this.archivo() && this.extraccionExitosa();
@@ -322,16 +353,14 @@ export class RegistrarOcComponent {
       this.camposIaOriginales.set({ ...(r.datos.camposIa ?? {}) });
       this.extraccionExitosa.set(true);
       if (r.advertencias.length > 0) this.toast.error(`Advertencias IA: ${r.advertencias.join(' · ')}`);
-      else this.toast.exito(`PDF leído por ${r.motor}${r.confianza ? ' (' + Math.round(r.confianza * 100) + '%)' : ''}.`);
+      else this.toast.exito(`PDF leído por ${r.motor}${r.confianza ? ' (' + Math.round(r.confianza) + '%)' : ''}.`);
 
-      // Auto-asignación: si hay UNA sola propuesta vinculada, asignarle el monto total extraído.
-      // Si hay varias, el comercial debe distribuir manualmente antes de validar.
+      // Auto-asignación en cascada:
+      //   1. Asigna al tope del saldo de la propuesta ORIGEN.
+      //   2. Si sobra, cascadea el remanente a las demás vinculadas en orden hasta agotar el monto o los saldos.
+      //   3. Si falta, la última cubierta queda parcial. El comercial puede editar después manualmente.
       const montoTotal = this.datos().montoTotal ?? 0;
-      if (this.vinculadas().length === 1 && montoTotal > 0) {
-        const idOrigen = this.vinculadas()[0].idPropuesta;
-        this.vinculadas.update(list => list.map(v =>
-          v.idPropuesta === idOrigen ? { ...v, montoAsignado: montoTotal } : v));
-      }
+      this.repartirAutomatico(montoTotal);
 
       // Validación automática contra la(s) propuesta(s) vinculada(s) — sin esperar click del usuario.
       await this.validarAhora();
@@ -395,6 +424,64 @@ export class RegistrarOcComponent {
       v.idPropuesta === idPropuesta ? { ...v, montoAsignado: monto } : v));
   }
 
+  /**
+   * Reparto automático en cascada del monto total de la OC:
+   *   - Prioridad: propuesta origen primero, luego las demás en el orden en que fueron vinculadas.
+   *   - A cada propuesta se le asigna hasta su saldo pendiente (o su total si saldo = 0 por otras OC-AUTO).
+   *   - El remanente baja a la siguiente; cuando se agota el monto el resto queda en 0.
+   */
+  private repartirAutomatico(montoTotal: number): void {
+    if (montoTotal <= 0 || this.vinculadas().length === 0) return;
+    const ordenadas = [...this.vinculadas()].sort((a, b) => (a.esOrigen === b.esOrigen ? 0 : a.esOrigen ? -1 : 1));
+    const asign = new Map<number, number>();
+    let restante = montoTotal;
+    for (const v of ordenadas) {
+      if (restante <= 0) { asign.set(v.idPropuesta, 0); continue; }
+      const tope = v.saldo > 0 ? v.saldo : v.total;
+      const monto = Math.min(restante, tope);
+      asign.set(v.idPropuesta, monto);
+      restante -= monto;
+    }
+    this.vinculadas.update(list => list.map(v => ({
+      ...v,
+      montoAsignado: asign.get(v.idPropuesta) ?? v.montoAsignado,
+    })));
+  }
+
+  /** Asigna el saldo total pendiente de la propuesta como monto cubierto (botón "Cubrir 100%"). */
+  cubrirAlCien(idPropuesta: number): void {
+    const v = this.vinculadas().find(x => x.idPropuesta === idPropuesta);
+    if (!v) return;
+    const objetivo = v.saldo > 0 ? v.saldo : v.total;
+    this.actualizarMontoAsignado(idPropuesta, objetivo);
+    if (this.extraccionExitosa()) void this.validarAhora();
+  }
+
+  /** Asigna lo que falta del monto total de la OC a esta propuesta (botón "Resto"). */
+  cubrirResto(idPropuesta: number): void {
+    const v = this.vinculadas().find(x => x.idPropuesta === idPropuesta);
+    if (!v) return;
+    const restante = this.saldoOc() + (v.montoAsignado || 0);
+    if (restante <= 0) return;
+    this.actualizarMontoAsignado(idPropuesta, restante);
+    if (this.extraccionExitosa()) void this.validarAhora();
+  }
+
+  /** % cobertura por propuesta (0-100). Base = saldo si > 0, si no el total. */
+  coberturaPct(idPropuesta: number): number {
+    const v = this.vinculadas().find(x => x.idPropuesta === idPropuesta);
+    if (!v) return 0;
+    const base = v.saldo > 0 ? v.saldo : v.total;
+    if (base <= 0) return 0;
+    return Math.min(100, Math.round(((v.montoAsignado || 0) / base) * 100));
+  }
+
+  /** Monto cubierto en moneda de la propuesta (viene del back al comparar; null si misma moneda). */
+  montoCubiertoDe(idPropuesta: number): number | null {
+    const p = this.comparacion()?.propuestas?.find(c => c.idPropuesta === idPropuesta);
+    return p?.montoCubierto ?? null;
+  }
+
   // ─── Validar en vivo ───────────────────────────────────────────────────
 
   async validarAhora(): Promise<void> {
@@ -438,7 +525,15 @@ export class RegistrarOcComponent {
           idOcReemplaza: this.idOcReemplaza(),  // ← Reemplaza la OC autogenerada de respaldo si existe
           datos: this.datos(), vinculaciones, decision,
         }, this.archivo()!);
-        this.toast.exito(r.avisoIa ?? 'OC registrada.');
+        // Ticket B: el back puede haber reemplazado las OC-AUTO de todas las propuestas vinculadas.
+        const reemplazadas = r.oc.ocsReemplazadas ?? [];
+        let msg = r.avisoIa ?? 'OC registrada.';
+        if (reemplazadas.length === 1) {
+          msg += ` ${reemplazadas[0].numeroOc} fue reemplazada.`;
+        } else if (reemplazadas.length > 1) {
+          msg += ` ${reemplazadas.length} OC-AUTO fueron reemplazadas: ${reemplazadas.map(o => o.numeroOc).join(', ')}.`;
+        }
+        this.toast.exito(msg);
       }
       void this.router.navigate(['/crm/ordenes-compra']);
     } catch (e: unknown) {

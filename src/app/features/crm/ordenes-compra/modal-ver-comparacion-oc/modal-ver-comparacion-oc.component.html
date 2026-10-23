@@ -71,45 +71,128 @@
     </div>
   }
 
-  <!-- ── Comparación de campos (datos cabecera de la OC vs propuesta) ───── -->
-  <app-seccion icono="compare_arrows" titulo="Comparación de Campos"
-               subtitulo="Datos del PDF extraído por IA contrastados con la propuesta aceptada.">
-    <table class="tabla-comparacion">
-      <thead>
-        <tr>
-          <th>CONCEPTO / CAMPO</th>
-          <th>VALOR EN OC (PDF EXTRAÍDO)</th>
-          <th>VALOR EN PROPUESTA(S)</th>
-          <th>ESTADO / EVALUACIÓN IA</th>
-          <th>ACCIÓN RECOMENDADA</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (campo of campos(); track campo.campo + '-' + campo.orden + '-' + campo.idPropuesta) {
+  <!-- ── Tabla única: resumen agregado (multi sin pill) o detalle (mono / pill activo) ── -->
+  @if (propuestas().length > 1 && !idPropuestaFiltro()) {
+    <app-seccion icono="compare_arrows" titulo="Comparación de Campos"
+                 [subtitulo]="'Resumen agregado contra ' + propuestas().length + ' propuestas vinculadas. Cambia a un pill para ver el detalle por propuesta.'">
+      <table class="tabla-comparacion">
+        <thead>
           <tr>
-            <td class="celda-concepto">
-              <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
-              <strong>{{ campo.etiqueta }}</strong>
-            </td>
-            <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
-            <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
-            <td>
-              <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
-                <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
-                {{ labelSeveridad(campo.severidad) }}
-              </span>
-            </td>
-            <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+            <th>CONCEPTO / CAMPO</th>
+            <th>VALOR EN OC (PDF EXTRAÍDO)</th>
+            <th>VALOR EN PROPUESTAS</th>
+            <th>ESTADO / EVALUACIÓN IA</th>
+            <th>ACCIÓN RECOMENDADA</th>
           </tr>
-        } @empty {
-          <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
-        }
-      </tbody>
-    </table>
-  </app-seccion>
+        </thead>
+        <tbody>
+          @for (campo of camposResumen(); track campo.campo) {
+            <tr>
+              <td class="celda-concepto">
+                <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
+                <strong>{{ campo.etiqueta }}</strong>
+              </td>
+              <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
+              <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
+              <td>
+                <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
+                  <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
+                  {{ labelSeveridad(campo.severidad) }}
+                </span>
+              </td>
+              <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
+          }
+        </tbody>
+      </table>
+    </app-seccion>
+  } @else {
+    <!-- Mono-propuesta O pill de propuesta elegido: tabla por propuesta -->
+    <app-seccion icono="compare_arrows" titulo="Comparación de Campos"
+                 subtitulo="Datos del PDF extraído por IA contrastados con la propuesta aceptada.">
+      <table class="tabla-comparacion">
+        <thead>
+          <tr>
+            <th>CONCEPTO / CAMPO</th>
+            <th>VALOR EN OC (PDF EXTRAÍDO)</th>
+            <th>VALOR EN PROPUESTA(S)</th>
+            <th>ESTADO / EVALUACIÓN IA</th>
+            <th>ACCIÓN RECOMENDADA</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (campo of campos(); track campo.campo + '-' + campo.orden + '-' + campo.idPropuesta) {
+            <tr>
+              <td class="celda-concepto">
+                <span class="dot {{ claseSeveridad(campo.severidad) }}"></span>
+                <strong>{{ campo.etiqueta }}</strong>
+              </td>
+              <td class="celda-valor">{{ campo.valorOc ?? '—' }}</td>
+              <td class="celda-valor">{{ campo.valorPropuesta ?? '—' }}</td>
+              <td>
+                <span class="chip-sev {{ claseSeveridad(campo.severidad) }}">
+                  <span class="material-symbols-outlined">{{ iconoSeveridad(campo.severidad) }}</span>
+                  {{ labelSeveridad(campo.severidad) }}
+                </span>
+              </td>
+              <td class="celda-accion">{{ campo.accion ?? campo.mensaje ?? '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="celda-vacia">Sin diferencias en este filtro.</td></tr>
+          }
+        </tbody>
+      </table>
+    </app-seccion>
+  }
 
   <!-- ── Desglose por Concepto / Servicio Metrológico ───────────────────── -->
-  @if (conceptos().length > 0) {
+  @if (usarPoolConsolidado()) {
+    <!-- Modo agregado: pool consolidado (dedup entre propuestas) -->
+    <app-seccion icono="receipt_long" titulo="Pool Consolidado de Ítems"
+                 [subtitulo]="itemsConsolidados().length + ' ítem(s) únicos de ' + propuestas().length + ' propuestas vinculadas (deduplicado).'">
+      <table class="tabla-comparacion">
+        <thead>
+          <tr>
+            <th>ÍTEM</th>
+            <th>EN PROPUESTAS</th>
+            <th class="tabla-comparacion__num">CANT. ESPERADA</th>
+            <th class="tabla-comparacion__num">EN OC</th>
+            <th>ESTADO / EVALUACIÓN IA</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (it of itemsConsolidados(); track it.descripcionNormalizada) {
+            <tr>
+              <td class="celda-concepto">
+                <span class="dot {{ dotEstadoConsolidado(it.severidad) }}"></span>
+                <strong>{{ it.descripcion }}</strong>
+              </td>
+              <td class="celda-valor">{{ nombresPropuestas(it.enPropuestas) || '—' }}</td>
+              <td class="celda-valor tabla-comparacion__num">{{ it.cantidadTotal }}</td>
+              <td class="celda-valor tabla-comparacion__num">
+                @if (it.enOc) {
+                  {{ it.cantidadOc ?? '—' }}
+                } @else {
+                  <span class="celda-dif--neg">Falta</span>
+                }
+              </td>
+              <td>
+                <span class="chip-sev {{ dotEstadoConsolidado(it.severidad) }}">
+                  <span class="material-symbols-outlined">{{ iconoEstadoConsolidado(it.severidad) }}</span>
+                  {{ it.mensaje ?? labelEstadoConsolidado(it.severidad) }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="celda-vacia">Sin ítems para mostrar.</td></tr>
+          }
+        </tbody>
+      </table>
+    </app-seccion>
+  } @else if (conceptos().length > 0) {
+    <!-- Modo detalle por propuesta (mono o pill elegido): comparación tradicional -->
     <app-seccion icono="receipt_long" titulo="Desglose por Concepto / Servicio Metrológico"
                  [subtitulo]="conceptos().length + ' concepto(s) evaluado(s) por la IA.'">
       <table class="tabla-comparacion">
@@ -158,7 +241,7 @@
   <!-- ── Dictamen Inteligente del Motor Metrológico ─────────────────────── -->
   @if (dictamenPrimario(); as d) {
     <app-seccion icono="auto_awesome" titulo="Dictamen Inteligente del Motor Metrológico"
-                 [subtitulo]="d.confianza != null ? ('Confianza ' + (d.confianza * 100).toFixed(1) + '% · Motor: ' + (d.motor ?? '—')) : (d.motor ?? '')">
+                 [subtitulo]="d.confianza != null ? ('Confianza ' + d.confianza.toFixed(1) + '% · Motor: ' + (d.motor ?? '—')) : (d.motor ?? '')">
       <p class="dictamen-texto">{{ d.texto }}</p>
     </app-seccion>
   }
@@ -171,7 +254,7 @@
     </span>
     @if (evaluaciones()[0]?.confianza != null) {
       <span class="validacion-footer__item">
-        · Confianza {{ (evaluaciones()[0]!.confianza! * 100).toFixed(1) }}%
+        · Confianza {{ evaluaciones()[0]!.confianza!.toFixed(1) }}%
       </span>
     }
     <span class="validacion-footer__item">

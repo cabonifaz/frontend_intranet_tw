@@ -7,57 +7,74 @@
   (cerrar)="onCerrar()">
 
   @if (cargando()) {
-    <div class="cargando">
+    <div class="man__cargando">
       <span class="material-symbols-outlined spin">progress_activity</span>
       Cargando impacto...
     </div>
   } @else if (impacto(); as imp) {
-    <!-- Bloque de impacto crítico (solo si hay OS en ejecución) -->
-    @if (tieneImpactoCritico()) {
-      <div class="impacto-critico">
-        <div class="impacto-critico__header">
-          <span class="material-symbols-outlined">warning</span>
-          <strong>IMPACTO CRÍTICO DETECTADO</strong>
+    <div class="man">
+
+      <!-- ── Resumen compacto ──────────────────────────────────── -->
+      <div class="man__resumen">
+        <div class="man__dato">
+          <span class="man__dato-label">MONTO A ANULAR</span>
+          <span class="man__dato-valor man__dato-valor--rojo">{{ imp.montoOc | moneda:imp.monedaSimbolo }}</span>
         </div>
-        <p class="impacto-critico__texto">
-          Esta OC está vinculada a <strong>{{ imp.propuestasVinculadas }} propuesta(s)</strong>
-          y tiene <strong>{{ imp.osEnEjecucion }} Orden(es) de Servicio en ejecución</strong>.
-          La anulación descontará su cobertura económica y recalculará los saldos pendientes.
-          Esta acción es irreversible.
-        </p>
+        <div class="man__dato">
+          <span class="man__dato-label">PROPUESTAS AFECTADAS</span>
+          <span class="man__dato-valor">
+            {{ imp.propuestasVinculadas }} propuesta{{ imp.propuestasVinculadas === 1 ? '' : 's' }}
+          </span>
+        </div>
+        <div class="man__dato">
+          <span class="man__dato-label">OS EN EJECUCIÓN</span>
+          <span class="man__dato-valor"
+                [class.man__dato-valor--rojo]="imp.osEnEjecucion > 0">
+            @if (imp.osEnEjecucion > 0) {
+              {{ imp.osEnEjecucion }} en curso
+            } @else {
+              Ninguna
+            }
+          </span>
+        </div>
       </div>
-    }
 
-    <!-- Resumen en 3 cards -->
-    <div class="anular-resumen">
-      <div class="resumen-card resumen-card--monto">
-        <span class="resumen-card__label">MONTO A ANULAR</span>
-        <span class="resumen-card__valor">
-          {{ imp.montoOc | moneda:imp.monedaSimbolo }}
-        </span>
-      </div>
-      <div class="resumen-card resumen-card--propuestas">
-        <span class="resumen-card__label">PROPUESTAS AFECTADAS</span>
-        <span class="resumen-card__valor">
-          {{ imp.propuestasVinculadas }} propuesta{{ imp.propuestasVinculadas === 1 ? '' : 's' }}
-        </span>
-      </div>
-      <div class="resumen-card resumen-card--os" [class.resumen-card--neutral]="imp.osEnEjecucion === 0">
-        <span class="resumen-card__label">OS EN EJECUCIÓN</span>
-        <span class="resumen-card__valor">
-          @if (imp.osEnEjecucion > 0) {
-            {{ imp.osEnEjecucion }} en curso
-            <span class="material-symbols-outlined">warning</span>
-          } @else {
-            Ninguna
-          }
-        </span>
-      </div>
-    </div>
+      <!-- ── Impacto crítico (si hay OS en ejecución) ─────────── -->
+      @if (tieneImpactoCritico()) {
+        <div class="man__aviso man__aviso--critico">
+          <span class="material-symbols-outlined">error</span>
+          <div>
+            <strong>Impacto crítico detectado</strong>
+            <p>
+              Esta OC tiene <strong>{{ imp.osEnEjecucion }} Orden(es) de Servicio en ejecución</strong>.
+              Al anular, se descontará su cobertura económica y se recalcularán los saldos pendientes.
+              Esta acción es irreversible.
+            </p>
+          </div>
+        </div>
+      }
 
-    <!-- Formulario -->
-    <div class="anular-grid">
-      <div class="campo">
+      <!-- ── Aviso OC-AUTO ────────────────────────────────────── -->
+      @if (generaraOcAuto()) {
+        <div class="man__aviso man__aviso--info">
+          <span class="material-symbols-outlined">bolt</span>
+          <div>
+            <strong>Se generará una OC autogenerada</strong>
+            <p>
+              {{ propuestasAfectadas().length }} propuesta(s) aceptada(s) se quedarán sin OC vigente.
+              Para mantener la cobertura, el sistema generará automáticamente una OC-AUTO por cada una:
+            </p>
+            <ul>
+              @for (p of propuestasAfectadas(); track p.idPropuesta) {
+                <li>{{ p.numero }} v{{ p.version }} — saldo actual {{ p.saldoActual | moneda:imp.monedaSimbolo }}</li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
+
+      <!-- ── Motivo ──────────────────────────────────────────── -->
+      <div class="man__campo">
         <label>MOTIVO DE ANULACIÓN *</label>
         <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
           <option [ngValue]="null">Seleccione un motivo...</option>
@@ -66,34 +83,35 @@
           }
         </select>
       </div>
-    </div>
 
-    <div class="campo">
-      <div class="campo__cabecera">
-        <label>JUSTIFICACIÓN / COMENTARIO DETALLADO *</label>
-        <span class="contador" [class.contador--ok]="longitudJust() >= 20">
-          {{ longitudJust() }}/20 mínimo
-        </span>
+      <!-- ── Justificación ──────────────────────────────────── -->
+      <div class="man__campo">
+        <div class="man__campo-head">
+          <label>JUSTIFICACIÓN / COMENTARIO DETALLADO *</label>
+          <small class="man__contador" [class.man__contador--ok]="longitudJust() >= 20">
+            {{ longitudJust() }}/20 mínimo
+          </small>
+        </div>
+        <textarea
+          rows="4"
+          maxlength="500"
+          placeholder="Describe en detalle por qué se está anulando esta OC, qué comunicación hubo con el cliente, y cuál es el impacto esperado..."
+          [ngModel]="justificacion()"
+          (ngModelChange)="justificacion.set($event)">
+        </textarea>
       </div>
-      <textarea
-        rows="4"
-        maxlength="500"
-        placeholder="Describe en detalle por qué se está anulando esta OC, qué comunicación hubo con el cliente, y cuál es el impacto esperado en la propuesta vinculada..."
-        [ngModel]="justificacion()"
-        (ngModelChange)="justificacion.set($event)">
-      </textarea>
-    </div>
 
-    @if (tieneImpactoCritico()) {
-      <label class="check-impacto">
-        <input type="checkbox" [checked]="confirmoImpacto()"
-               (change)="confirmoImpacto.set($any($event.target).checked)" />
-        <span>Confirmo que entiendo el impacto crítico sobre las OS en ejecución y que esta acción es <strong>irreversible</strong>.</span>
-      </label>
-    }
+      @if (tieneImpactoCritico()) {
+        <label class="man__check">
+          <input type="checkbox" [checked]="confirmoImpacto()"
+                 (change)="confirmoImpacto.set($any($event.target).checked)" />
+          <span>Confirmo que entiendo el impacto crítico sobre las OS en ejecución y que esta acción es <strong>irreversible</strong>.</span>
+        </label>
+      }
+    </div>
   }
 
-  <div modalFooter class="footer">
+  <div modalFooter class="man__footer">
     <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
     <app-button variant="danger" icono="block"
                 [disabled]="!puedeConfirmar() || enviando()"

@@ -1,0 +1,418 @@
+<app-modal
+  titulo="Reasignar Responsable"
+  [subtitulo]="'Expediente ' + numeroExpediente() + (data()?.datos?.razonSocial ? ' · ' + data()!.datos.razonSocial : '')"
+  icono="swap_horiz"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="rea__cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Preparando reasignación...
+    </div>
+  } @else if (data(); as d) {
+    <div class="rea">
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           PASO 1 — Tipo de reasignación
+           ═══════════════════════════════════════════════════════════════ -->
+      <section class="rea__paso">
+        <header class="rea__paso-head">
+          <strong class="rea__paso-label">PASO 1 — ¿Qué tipo de reasignación quieres hacer?</strong>
+        </header>
+
+        <div class="rea__modos">
+          <button
+            class="rea__modo"
+            [class.rea__modo--activo]="modo() === 'entidad'"
+            (click)="setModo('entidad')">
+            <span class="rea__modo-icono rea__modo-icono--azul">
+              <span class="material-symbols-outlined">flag</span>
+            </span>
+            <div class="rea__modo-texto">
+              <strong>Reasignación de entidad específica</strong>
+              <small>Reasigna sólo una entidad puntual del expediente (ej. una propuesta o una OC sin alterar sus demás eslabones).</small>
+            </div>
+            <span class="rea__modo-check">
+              <span class="material-symbols-outlined">
+                {{ modo() === 'entidad' ? 'radio_button_checked' : 'radio_button_unchecked' }}
+              </span>
+            </span>
+          </button>
+
+          <button
+            class="rea__modo"
+            [class.rea__modo--activo]="modo() === 'cascada'"
+            (click)="setModo('cascada')">
+            <span class="rea__modo-icono rea__modo-icono--violeta">
+              <span class="material-symbols-outlined">account_tree</span>
+            </span>
+            <div class="rea__modo-texto">
+              <div class="rea__modo-titulo">
+                <strong>Reasignación en cascada</strong>
+                <span class="rea__badge-recomendado">RECOMENDADO</span>
+              </div>
+              <small>Reasigna una entidad raíz + todo lo que viene de ella en el árbol genealógico. Puedes personalizar la selección y desmarcar entidades descendientes.</small>
+            </div>
+            <span class="rea__modo-check">
+              <span class="material-symbols-outlined">
+                {{ modo() === 'cascada' ? 'radio_button_checked' : 'radio_button_unchecked' }}
+              </span>
+            </span>
+          </button>
+
+          <button
+            class="rea__modo"
+            [class.rea__modo--activo]="modo() === 'global'"
+            (click)="setModo('global')">
+            <span class="rea__modo-icono rea__modo-icono--ambar">
+              <span class="material-symbols-outlined">public</span>
+            </span>
+            <div class="rea__modo-texto">
+              <div class="rea__modo-titulo">
+                <strong>Todo lo pendiente del comercial</strong>
+                <span class="rea__badge-masivo">MASIVO</span>
+              </div>
+              <small>Reasigna todas las entidades activas de este comercial en TODOS los expedientes del sistema (uso: renuncia, vacaciones largas). Sólo entidades activas; las finalizadas no se tocan.</small>
+            </div>
+            <span class="rea__modo-check">
+              <span class="material-symbols-outlined">
+                {{ modo() === 'global' ? 'radio_button_checked' : 'radio_button_unchecked' }}
+              </span>
+            </span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           PASO 2 — Depende del modo
+           ═══════════════════════════════════════════════════════════════ -->
+      <section class="rea__paso">
+        <header class="rea__paso-head">
+          <strong class="rea__paso-label">
+            PASO 2 —
+            @switch (modo()) {
+              @case ('entidad')  { ENTIDAD A REASIGNAR }
+              @case ('cascada')  { ENTIDAD RAÍZ DE LA CASCADA }
+              @case ('global')   { IMPACTO GLOBAL EN CARTERA COMERCIAL }
+            }
+          </strong>
+        </header>
+
+        @switch (modo()) {
+
+          <!-- ─────────── Modo A: Entidad específica ─────────── -->
+          @case ('entidad') {
+            <div class="rea__entidades-pills">
+              @for (e of d.entidades; track e.clave) {
+                <button
+                  class="rea__pill"
+                  [class.rea__pill--activa]="claveEntidad() === e.clave"
+                  (click)="seleccionarEntidad(e.clave)">
+                  <span class="rea__pill-icono rea__pill-icono--{{ colorEntidad(e.entidadTipo) }}">
+                    <span class="material-symbols-outlined">{{ iconoEntidad(e.entidadTipo) }}</span>
+                  </span>
+                  <div class="rea__pill-texto">
+                    <strong>{{ etiquetaEntidad(e) }}</strong>
+                    <small>{{ tipoLegible(e.entidadTipo) }}@if (e.estado) { · {{ e.estado }} }</small>
+                  </div>
+                </button>
+              }
+            </div>
+            @if (entidadSeleccionada(); as sel) {
+              <div class="rea__nota">
+                <span class="material-symbols-outlined">info</span>
+                Se reasignará sólo: <strong>{{ etiquetaEntidad(sel) }}</strong>
+                (las entidades vinculadas mantendrán sus responsables actuales).
+              </div>
+            }
+          }
+
+          <!-- ─────────── Modo B: Cascada ─────────── -->
+          @case ('cascada') {
+            <div class="rea__entidades-pills">
+              @for (e of d.entidades; track e.clave) {
+                @if (!e.clavePadre) {
+                  <button
+                    class="rea__pill"
+                    [class.rea__pill--activa]="claveEntidad() === e.clave"
+                    (click)="seleccionarEntidad(e.clave)">
+                    <span class="rea__pill-icono rea__pill-icono--{{ colorEntidad(e.entidadTipo) }}">
+                      <span class="material-symbols-outlined">{{ iconoEntidad(e.entidadTipo) }}</span>
+                    </span>
+                    <div class="rea__pill-texto">
+                      <strong>{{ etiquetaEntidad(e) }}</strong>
+                      <small>{{ tipoLegible(e.entidadTipo) }}@if (e.estado) { · {{ e.estado }} }</small>
+                    </div>
+                  </button>
+                }
+              }
+            </div>
+
+            @if (entidadSeleccionada(); as raiz) {
+              <div class="rea__arbol">
+                <div class="rea__arbol-head">
+                  <span class="material-symbols-outlined">account_tree</span>
+                  <strong>Árbol descendiente de {{ etiquetaEntidad(raiz) }}</strong>
+                  <span class="rea__arbol-stats">
+                    {{ totalEntidadesAfectadas() }} de {{ descendientes().length + 1 }} entidades serán transferidas
+                  </span>
+                </div>
+
+                <ul class="rea__arbol-lista">
+                  <!-- Raíz (siempre incluida) -->
+                  <li class="rea__arbol-item rea__arbol-item--raiz">
+                    <input type="checkbox" checked disabled />
+                    <span class="rea__pill-icono rea__pill-icono--{{ colorEntidad(raiz.entidadTipo) }}">
+                      <span class="material-symbols-outlined">{{ iconoEntidad(raiz.entidadTipo) }}</span>
+                    </span>
+                    <div class="rea__arbol-texto">
+                      <strong>{{ etiquetaEntidad(raiz) }}</strong>
+                      <small>Raíz obligatoria · {{ tipoLegible(raiz.entidadTipo) }}</small>
+                    </div>
+                    <span class="rea__badge-raiz">
+                      <span class="material-symbols-outlined">lock</span>
+                    </span>
+                  </li>
+
+                  <!-- Descendientes (desmarcables) -->
+                  @for (hijo of descendientes(); track hijo.clave) {
+                    <li
+                      class="rea__arbol-item"
+                      [class.rea__arbol-item--excluido]="excluidos().has(hijo.clave)"
+                      [style.--nivel]="hijo.nivel">
+                      <input
+                        type="checkbox"
+                        [checked]="!excluidos().has(hijo.clave)"
+                        (change)="toggleExcluir(hijo.clave)" />
+                      <span class="rea__pill-icono rea__pill-icono--{{ colorEntidad(hijo.entidadTipo) }}">
+                        <span class="material-symbols-outlined">{{ iconoEntidad(hijo.entidadTipo) }}</span>
+                      </span>
+                      <div class="rea__arbol-texto">
+                        <strong>{{ etiquetaEntidad(hijo) }}</strong>
+                        <small>{{ tipoLegible(hijo.entidadTipo) }}@if (hijo.estado) { · {{ hijo.estado }} }</small>
+                      </div>
+                      @if (excluidos().has(hijo.clave)) {
+                        <span class="rea__badge-excluido">Excluida</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          }
+
+          <!-- ─────────── Modo C: Global / Cartera completa ─────────── -->
+          @case ('global') {
+            @if (cartera(); as c) {
+              <div class="rea__cartera-head">
+                <div class="rea__cartera-usuario">
+                  <span class="rea__usuario-avatar rea__usuario-avatar--grande">
+                    {{ iniciales(c.resumen.responsable) }}
+                  </span>
+                  <div>
+                    <strong>{{ c.resumen.responsable ?? '—' }}</strong>
+                    <small>{{ c.resumen.cargoResponsable ?? '—' }}</small>
+                  </div>
+                </div>
+                <div class="rea__cartera-total">
+                  <small>TOTAL ENTIDADES</small>
+                  <strong>{{ c.resumen.totalEntidades }}</strong>
+                </div>
+              </div>
+
+              <div class="rea__cartera-stats">
+                <div class="rea__stat">
+                  <span class="rea__stat-icono"><span class="material-symbols-outlined">folder_open</span></span>
+                  <div>
+                    <strong>{{ c.resumen.expedientes }}</strong>
+                    <small>Expedientes activos</small>
+                  </div>
+                </div>
+                <div class="rea__stat">
+                  <span class="rea__stat-icono"><span class="material-symbols-outlined">request_page</span></span>
+                  <div>
+                    <strong>{{ c.resumen.propuestas }}</strong>
+                    <small>Propuestas abiertas</small>
+                  </div>
+                </div>
+                <div class="rea__stat">
+                  <span class="rea__stat-icono"><span class="material-symbols-outlined">receipt_long</span></span>
+                  <div>
+                    <strong>{{ c.resumen.ordenesCompra }}</strong>
+                    <small>OCs vigentes</small>
+                  </div>
+                </div>
+                <div class="rea__stat">
+                  <span class="rea__stat-icono"><span class="material-symbols-outlined">engineering</span></span>
+                  <div>
+                    <strong>{{ c.resumen.ordenesServicio }}</strong>
+                    <small>OS en proceso</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rea__aviso-integridad">
+                <span class="material-symbols-outlined">info</span>
+                <small>
+                  Regla de integridad: Sólo se reasignarán entidades <strong>ACTIVAS</strong>. Las cerradas, canceladas o con liquidación finalizada NO serán alteradas en historial.
+                </small>
+              </div>
+            } @else {
+              <div class="rea__cargando">
+                <span class="material-symbols-outlined spin">progress_activity</span>
+                Cargando cartera...
+              </div>
+            }
+          }
+        }
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           PASO 3 — Responsables y condiciones
+           ═══════════════════════════════════════════════════════════════ -->
+      <section class="rea__paso">
+        <header class="rea__paso-head">
+          <strong class="rea__paso-label">PASO 3 — RESPONSABLES Y CONDICIONES</strong>
+        </header>
+
+        <div class="rea__responsables">
+          <!-- Responsable actual -->
+          <div class="rea__resp-card">
+            <small class="rea__resp-label">
+              <span class="material-symbols-outlined">person</span>
+              Responsable actual
+            </small>
+            <div class="rea__resp-info">
+              <span class="rea__usuario-avatar">{{ iniciales(d.datos.responsable) }}</span>
+              <div>
+                <strong>{{ d.datos.responsable ?? '—' }}</strong>
+                <small>{{ d.datos.cargoResponsable ?? '—' }}@if (d.datos.areaResponsable) { · {{ d.datos.areaResponsable }} }</small>
+              </div>
+              <span class="rea__resp-lock"><span class="material-symbols-outlined">lock</span></span>
+            </div>
+          </div>
+
+          <!-- Nuevo responsable (autocomplete) -->
+          <div class="rea__resp-card">
+            <small class="rea__resp-label rea__resp-label--obligatorio">
+              <span class="material-symbols-outlined">person_add</span>
+              Nuevo responsable *
+            </small>
+
+            @if (nuevoResp(); as nr) {
+              <div class="rea__resp-info rea__resp-info--nuevo">
+                <span class="rea__usuario-avatar rea__usuario-avatar--verde">{{ iniciales(nr.nombre) }}</span>
+                <div>
+                  <strong>{{ nr.nombre }}</strong>
+                  <small>{{ nr.cargo ?? '—' }}@if (nr.areaNombre || nr.area) { · {{ nr.areaNombre ?? nr.area }} }</small>
+                </div>
+                <button class="rea__resp-limpiar" (click)="limpiarNuevoResp()" title="Cambiar">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            } @else {
+              <div class="rea__buscador">
+                <span class="material-symbols-outlined">search</span>
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, correo o cargo..."
+                  [ngModel]="busqueda()"
+                  (ngModelChange)="onBuscarCandidatos($event)" />
+              </div>
+              @if (candidatos().length > 0) {
+                <ul class="rea__candidatos">
+                  @for (c of candidatos(); track c.idUsuario) {
+                    <li class="rea__candidato" (click)="seleccionarCandidato(c)">
+                      <span class="rea__usuario-avatar">{{ iniciales(c.nombre) }}</span>
+                      <div>
+                        <strong>{{ c.nombre }}</strong>
+                        <small>{{ c.cargo ?? '—' }}@if (c.areaNombre || c.area) { · {{ c.areaNombre ?? c.area }} }</small>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else if (busqueda().length >= 2 && !buscandoCand()) {
+                <small class="rea__buscador-vacio">Sin resultados.</small>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Motivo + Gestión SLA -->
+        <div class="rea__opciones">
+          <div class="rea__campo">
+            <label>Motivo de reasignación *</label>
+            <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+              <option [ngValue]="null">Seleccione un motivo...</option>
+              @for (m of d.motivos; track m.id) {
+                <option [ngValue]="m.id">{{ m.nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="rea__campo">
+            <label>Gestión del SLA</label>
+            <div class="rea__radios">
+              @for (g of d.gestionesSla; track g.codigo) {
+                <label class="rea__radio" [class.rea__radio--activo]="gestionSla() === g.codigo">
+                  <input
+                    type="radio"
+                    name="sla"
+                    [value]="g.codigo"
+                    [checked]="gestionSla() === g.codigo"
+                    (change)="gestionSla.set(g.codigo)" />
+                  <span>{{ g.nombre }}</span>
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Comentario -->
+        <div class="rea__campo">
+          <div class="rea__campo-head">
+            <label>Comentario / Justificación detallada *</label>
+            <small class="rea__contador" [class.rea__contador--ok]="comentarioValido()">
+              {{ longitudComentario() }} / 20 mínimo
+            </small>
+          </div>
+          <textarea
+            rows="3"
+            maxlength="500"
+            placeholder="Explica el motivo de la reasignación y el contexto operativo..."
+            [ngModel]="comentario()"
+            (ngModelChange)="comentario.set($event)">
+          </textarea>
+        </div>
+
+        @if (d.datos.notaImpacto) {
+          <div class="rea__nota-impacto">
+            <span class="material-symbols-outlined">info</span>
+            <small>{{ d.datos.notaImpacto }}</small>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  <div modalFooter class="rea__footer">
+    <small class="rea__nota">
+      <span class="material-symbols-outlined">mark_email_read</span>
+      Se notificará automáticamente al nuevo responsable y al cliente por correo corporativo.
+    </small>
+    <div class="rea__footer-acciones">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button
+        variant="primary"
+        icono="swap_horiz"
+        [disabled]="!puedeConfirmar()"
+        [cargando]="enviando()"
+        (clic)="confirmar()">
+        Confirmar Reasignación
+        @if (totalEntidadesAfectadas() > 0) { ({{ totalEntidadesAfectadas() }} entidad{{ totalEntidadesAfectadas() === 1 ? '' : 'es' }}) }
+      </app-button>
+    </div>
+  </div>
+</app-modal>

@@ -1,0 +1,1759 @@
+<div class="pagina">
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando expediente...
+    </div>
+  } @else if (detalle(); as d) {
+
+    <!-- ═══ Header de página (reutiliza patrón del sistema) ═══ -->
+    <app-page-header
+      icono="folder_open"
+      titulo="Detalle del Expediente Digital"
+      subtitulo="Vista consolidada del ciclo de vida del servicio end-to-end (RQ, Propuestas, OCs, OS, SSOMA y Ejecución)" />
+
+    <!-- ═══ Cabecera cliente (card custom con layout dedicado) ═══ -->
+    <section class="card-cliente">
+      <div class="card-cliente__principal">
+        <div class="card-cliente__izq">
+          <div class="card-cliente__logo">
+            <span class="material-symbols-outlined">business</span>
+          </div>
+          <div class="card-cliente__texto">
+            <h2 class="card-cliente__nombre">{{ d.cabecera.razonSocial }}</h2>
+            <div class="card-cliente__meta">
+              <span>RUC <strong>{{ d.cabecera.ruc }}</strong></span>
+              @if (d.cabecera.area) {
+                <span>·</span>
+                <span>Área <strong>{{ d.cabecera.area }}</strong></span>
+              }
+              <span>·</span>
+              <span class="card-cliente__exp-num">{{ d.cabecera.numero }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card-cliente__acciones">
+          <app-button
+            variant="ghost"
+            tamano="sm"
+            icono="download"
+            [cargando]="exportando()"
+            [disabled]="exportando()"
+            (clic)="exportar()">
+            Exportar
+          </app-button>
+          <app-button variant="ghost" tamano="sm" icono="folder" (clic)="abrirDocumentos()">Documentos</app-button>
+          <app-button variant="ghost" tamano="sm" icono="history" (clic)="abrirAuditoria()">Auditoría</app-button>
+          @if (d.cabecera.puedeReasignar) {
+            <app-button variant="primary" tamano="sm" icono="sync_alt" (clic)="abrirReasignar()">Reasignar Comercial</app-button>
+          }
+        </div>
+      </div>
+
+      <div class="card-cliente__chips">
+        @for (chip of chipsCabecera(); track $index) {
+          <span class="chip-estado" [class]="claseEstadoChip(chip.severidad)">
+            @if (chip.tipo === 'responsable') {
+              <span class="material-symbols-outlined">person</span>
+            } @else if (chip.tipo === 'sla') {
+              <span class="material-symbols-outlined">schedule</span>
+            } @else if (chip.tipo === 'bloqueo') {
+              <span class="material-symbols-outlined">block</span>
+            } @else if (chip.tipo === 'progreso') {
+              <span class="material-symbols-outlined">trending_up</span>
+            } @else if (chip.tipo === 'estado') {
+              <span class="dot"></span>
+            }
+            {{ chip.label }}@if (chip.valor) { <strong>: {{ chip.valor }}</strong> }
+          </span>
+        }
+      </div>
+    </section>
+
+    <!-- ═══ Pipeline navegable (11 pasos) ═══ -->
+    <app-seccion icono="account_tree" titulo="Flujo del expediente"
+                 subtitulo="Haz clic en una etapa para ver el detalle específico.">
+      <div class="pipeline">
+        @for (paso of pipelineVista(); track paso.etapa) {
+          <button type="button"
+                  [class]="clasePasoVista(paso)"
+                  (click)="cambiarTab(paso)">
+            <div class="pipeline-paso__circulo">
+              <span class="material-symbols-outlined">{{ paso.icono }}</span>
+            </div>
+            <small class="pipeline-paso__label">{{ paso.nombre }}</small>
+            @if (paso.cantidad != null) {
+              <span class="pipeline-paso__badge">{{ paso.cantidad }}</span>
+            }
+          </button>
+        }
+      </div>
+    </app-seccion>
+
+    <!-- ═══ Contenido del tab activo ═══ -->
+    @if (tabActivo() === 'resumen') {
+
+      <!-- ─── Vista Panorámica del Servicio ─── -->
+      <app-seccion icono="bar_chart" titulo="Vista Panorámica del Servicio"
+                   subtitulo="Resumen económico y de avance general del expediente.">
+        <div class="panorama">
+          <div class="panorama__item">
+            <small class="panorama__label">Cliente</small>
+            <strong class="panorama__valor">{{ vistaPanoramica()!.cliente }}</strong>
+          </div>
+          <div class="panorama__item">
+            <small class="panorama__label">Área</small>
+            <strong class="panorama__valor">{{ vistaPanoramica()!.area ?? '—' }}</strong>
+          </div>
+          <div class="panorama__item">
+            <small class="panorama__label">Fecha de Emisión</small>
+            <strong class="panorama__valor">{{ vistaPanoramica()!.fechaEmision ? (vistaPanoramica()!.fechaEmision | date:'dd/MM/yyyy') : '—' }}</strong>
+          </div>
+          <div class="panorama__item panorama__item--importe">
+            <small class="panorama__label">Importe Total</small>
+            <strong class="panorama__valor panorama__valor--monto">
+              {{ vistaPanoramica()!.monedaSimbolo }} {{ vistaPanoramica()!.importeTotal | number:'1.2-2' }}
+            </strong>
+          </div>
+          <div class="panorama__progreso-wrap">
+            <div class="panorama__progreso-head">
+              <small>Progreso general</small>
+              <strong>{{ vistaPanoramica()!.progresoPct }}%</strong>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill" [style.width.%]="vistaPanoramica()!.progresoPct"></div>
+            </div>
+            <small class="panorama__dias">
+              {{ vistaPanoramica()!.diasTranscurridos }} días transcurridos
+              @if (vistaPanoramica()!.diasRestantes != null) {
+                · @if (vistaPanoramica()!.diasRestantes! < 0) {
+                  SLA vencido hace {{ -vistaPanoramica()!.diasRestantes! }} día(s)
+                } @else {
+                  {{ vistaPanoramica()!.diasRestantes }} días restantes
+                }
+              }
+            </small>
+          </div>
+        </div>
+
+        <!-- Responsables actuales (bloque interno del Panorama) -->
+        <div class="panorama__responsables">
+          <small class="panorama__responsables-label">RESPONSABLES ACTUALES</small>
+          <div class="responsables">
+            @for (r of d.responsables; track r.rol + '-' + (r.idUsuario ?? 0)) {
+              <div class="responsable" [class.responsable--pendiente]="!r.nombre">
+                <small class="responsable__rol">{{ nombreRol(r.rol) }}</small>
+                <div class="responsable__contenido">
+                  @if (r.nombre) {
+                    <span class="responsable__avatar">{{ iniciales(r.nombre) }}</span>
+                    <div class="responsable__texto">
+                      <strong class="responsable__nombre">{{ r.nombre }}</strong>
+                      @if (r.cargo) { <small class="responsable__cargo">{{ r.cargo }}</small> }
+                    </div>
+                  } @else {
+                    <span class="responsable__avatar responsable__avatar--vacio">
+                      <span class="material-symbols-outlined">person_add</span>
+                    </span>
+                    <div class="responsable__texto">
+                      <strong class="responsable__nombre responsable__nombre--pendiente">Pendiente de asignar</strong>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </app-seccion>
+
+      <!-- ─── Entidades Vinculadas (árbol consultivo) ─── -->
+      <app-seccion icono="account_tree" titulo="Entidades Vinculadas al Servicio"
+                   [subtitulo]="d.entidades.length + ' entidad(es) activa(s). Árbol consultivo.'">
+        <div class="arbol">
+          @for (ent of entidadesNivel0(); track ent.clave) {
+            <div class="nodo" [class.nodo--historico]="!ent.activa">
+              <div class="nodo__cabecera">
+                <span class="nodo__tipo nodo__tipo--{{ cssTipoEntidad(ent.entidadTipo) }}">{{ tipoCortoEntidad(ent.entidadTipo) }}</span>
+                <strong class="nodo__codigo">{{ ent.codigo }}@if (ent.version) { <small class="nodo__version"> v{{ ent.version }}</small> }</strong>
+                @if (ent.estado) {
+                  <span class="chip-estado chip-estado--{{ severidadEstado(ent.estado) }}">{{ humanizarEstado(ent.estado) }}</span>
+                }
+                @if (ent.responsable) { <small class="nodo__meta">· {{ ent.responsable }}</small> }
+                @if (ent.monto != null) {
+                  <strong class="nodo__monto">{{ ent.simboloMoneda }} {{ ent.monto | number:'1.2-2' }}</strong>
+                }
+              </div>
+              @if (ent.detalle) { <p class="nodo__desc">{{ ent.detalle }}</p> }
+              @for (hijo of hijosDe(ent.clave); track hijo.clave) {
+                <div class="nodo-hijo" [class.nodo-hijo--historico]="!hijo.activa">
+                  <div class="nodo__cabecera">
+                    <span class="nodo__tipo nodo__tipo--{{ cssTipoEntidad(hijo.entidadTipo) }}">{{ tipoCortoEntidad(hijo.entidadTipo) }}</span>
+                    <strong class="nodo__codigo">{{ hijo.codigo }}@if (hijo.version) { <small class="nodo__version"> v{{ hijo.version }}</small> }</strong>
+                    @if (hijo.estado) {
+                      <span class="chip-estado chip-estado--{{ severidadEstado(hijo.estado) }}">{{ humanizarEstado(hijo.estado) }}</span>
+                    }
+                    @if (hijo.monto != null) {
+                      <strong class="nodo__monto">{{ hijo.simboloMoneda }} {{ hijo.monto | number:'1.2-2' }}</strong>
+                    }
+                  </div>
+                  @for (nieto of hijosDe(hijo.clave); track nieto.clave) {
+                    <div class="nodo-nieto">
+                      <div class="nodo__cabecera">
+                        <span class="nodo__tipo nodo__tipo--{{ cssTipoEntidad(nieto.entidadTipo) }}">{{ tipoCortoEntidad(nieto.entidadTipo) }}</span>
+                        <strong class="nodo__codigo">{{ nieto.codigo }}@if (nieto.version) { <small class="nodo__version"> v{{ nieto.version }}</small> }</strong>
+                        @if (nieto.estado) {
+                          <span class="chip-estado chip-estado--{{ severidadEstado(nieto.estado) }}">{{ humanizarEstado(nieto.estado) }}</span>
+                        }
+                        @if (nieto.monto != null) {
+                          <strong class="nodo__monto">{{ nieto.simboloMoneda }} {{ nieto.monto | number:'1.2-2' }}</strong>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </app-seccion>
+
+      <!-- ─── Alertas y Bloqueos Activos ─── -->
+      @if (d.alertas.length > 0) {
+        <app-seccion icono="warning" titulo="Alertas y Bloqueos Activos"
+                     [subtitulo]="d.alertas.length + ' alerta(s) activa(s). Priorizar las bloqueantes.'">
+          <div class="alertas">
+            @for (a of d.alertas; track a.clave) {
+              <div class="alerta alerta--{{ a.clase }}">
+                <span class="alerta__badge">{{ a.clase | uppercase }}</span>
+                <div class="alerta__texto">
+                  <strong>{{ a.motivo ?? a.tipoNombre ?? a.tipo }}@if (a.entidad) { <span class="alerta__ent">· {{ a.entidad }}</span> }</strong>
+                  @if (a.impacto) { <small>{{ a.impacto }}</small> }
+                </div>
+              </div>
+            }
+          </div>
+        </app-seccion>
+      }
+
+      <!-- ─── Actividad Reciente ─── -->
+      <app-seccion icono="history" titulo="Actividad Reciente"
+                   subtitulo="Últimos eventos del expediente. Ver todos en Auditoría.">
+        <div class="tl">
+          @for (e of d.actividadReciente; track $index) {
+            <div class="tl__item">
+              <span [class]="'tl__badge tl__badge--' + colorEventoTimeline(e.tipoEvento, e.titulo)">
+                <span class="material-symbols-outlined">{{ iconoEventoTimeline(e.tipoEvento, e.titulo) }}</span>
+              </span>
+              <div class="tl__body">
+                <div class="tl__head">
+                  <strong class="tl__fecha">{{ formatearFechaCorta(e.fecha) }}</strong>
+                  @if (e.usuario) {
+                    <span class="tl__user">
+                      <span class="tl__user-avatar">{{ iniciales(e.usuario) }}</span>
+                      {{ e.usuario }}
+                    </span>
+                  }
+                  @if (e.etapaNombre || e.etapa) {
+                    <span class="chip-etapa chip-etapa--{{ chipEtapa(e.etapa) }}">{{ e.etapaNombre ?? e.etapa }}</span>
+                  }
+                </div>
+                <strong class="tl__titulo">{{ e.titulo ?? e.accion ?? 'Evento' }}</strong>
+                @if (e.descripcion) { <p class="tl__desc">{{ e.descripcion }}</p> }
+                @if (e.entidad && esCodigoEntidad(e.entidad)) { <small class="tl__ref">{{ e.entidad }}</small> }
+              </div>
+            </div>
+          }
+        </div>
+      </app-seccion>
+
+      <!-- ─── Próximo Hito Esperado ─── -->
+      @if (proximoHito(); as h) {
+        <app-seccion icono="flag" titulo="Próximo Hito Esperado"
+                     subtitulo="El expediente avanzará automáticamente al completar los requisitos de la etapa actual.">
+          <div class="hito">
+            <div class="hito__item">
+              <small><span class="material-symbols-outlined">flag</span> HITO</small>
+              <strong>{{ h.titulo }}</strong>
+            </div>
+            <div class="hito__item">
+              <small><span class="material-symbols-outlined">person</span> RESPONSABLE</small>
+              <div class="hito__responsable">
+                <span class="hito__avatar">{{ iniciales(h.responsable) }}</span>
+                <strong>{{ h.responsable }}</strong>
+              </div>
+            </div>
+            <div class="hito__item">
+              <small><span class="material-symbols-outlined">schedule</span> SLA RESTANTE</small>
+              <span class="chip-estado chip-estado--{{ h.slaEstado ?? 'neutral' }} hito__chip">{{ h.slaRestante ?? '—' }}</span>
+            </div>
+            <div class="hito__item">
+              <small><span class="material-symbols-outlined">east</span> AL COMPLETARSE AVANZARÁ A</small>
+              <div class="hito__next">
+                <span class="chip-etapa chip-etapa--{{ chipEtapa(h.siguienteEtapa) }}">{{ h.siguienteEtapa }}</span>
+              </div>
+            </div>
+          </div>
+        </app-seccion>
+      }
+
+    } @else if (cargandoEtapa()) {
+      <app-seccion icono="progress_activity" titulo="Cargando etapa..." subtitulo="Obteniendo detalle del drill-down.">
+        <p class="placeholder">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando...
+        </p>
+      </app-seccion>
+    } @else if (drillEtapa(); as drill) {
+
+      @switch (drill.tipo) {
+
+        <!-- ─── RQ ─── -->
+        @case ('requerimiento') {
+          <app-seccion icono="description" titulo="Datos del Requerimiento"
+                       subtitulo="Información recibida del cliente que originó el expediente.">
+            <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                        (clic)="irAlRequerimiento(drill.data.datos.idRequerimiento)">
+              Ir al Módulo RQ
+            </app-button>
+            <div class="info-grid">
+              <div class="info-item"><small>N° RQ</small><strong class="valor-codigo">{{ drill.data.datos.numero }}</strong></div>
+              <div class="info-item"><small>Fecha Recepción</small><strong>{{ drill.data.datos.fechaRequerida ? (drill.data.datos.fechaRequerida | date:'dd/MM/yyyy') : '—' }}</strong></div>
+              <div class="info-item"><small>Área de Servicio</small><strong>{{ drill.data.datos.areaServicio ?? '—' }}</strong></div>
+              <div class="info-item">
+                <small>Grado de Necesidad</small>
+                @if (drill.data.datos.gradoNecesidad) {
+                  <span class="chip-estado chip-estado--{{ severidadGradoNecesidad(drill.data.datos.gradoNecesidad) }}">
+                    {{ drill.data.datos.gradoNecesidad | titlecase }}
+                  </span>
+                } @else { <strong>—</strong> }
+              </div>
+              <div class="info-item"><small>Fecha Registro</small><strong>{{ drill.data.datos.fechaRegistro ? (drill.data.datos.fechaRegistro | date:'dd/MM/yyyy') : '—' }}</strong></div>
+              <div class="info-item">
+                <small>Estado</small>
+                @if (drill.data.datos.estado) {
+                  <span class="chip-estado chip-estado--{{ severidadEstado(drill.data.datos.estado) }}">
+                    {{ drill.data.datos.estadoNombre ?? humanizarEstado(drill.data.datos.estado) }}
+                  </span>
+                } @else { <strong>—</strong> }
+              </div>
+            </div>
+            @if (drill.data.datos.descripcion) {
+              <div class="descripcion-bloque">
+                <small>DESCRIPCIÓN</small>
+                <p>{{ drill.data.datos.descripcion }}</p>
+              </div>
+            }
+          </app-seccion>
+
+          <app-seccion icono="person" titulo="Contacto y Cliente">
+            <div class="card-contacto-cliente">
+              <div class="card-contacto-cliente__logo">
+                <span class="material-symbols-outlined">business</span>
+              </div>
+              <div class="card-contacto-cliente__texto">
+                <strong>{{ drill.data.datos.razonSocial ?? '—' }}</strong>
+                <small>RUC {{ drill.data.datos.ruc ?? '—' }}</small>
+              </div>
+            </div>
+
+            <div class="info-grid info-grid--contacto">
+              <div class="info-item">
+                <small>NOMBRE</small>
+                <strong>{{ drill.data.datos.contactoNombre ?? '—' }}</strong>
+                @if (drill.data.datos.contactoCargo) { <small class="cargo">{{ drill.data.datos.contactoCargo }}</small> }
+              </div>
+              <div class="info-item">
+                <small>CORREO</small>
+                <strong class="valor-link">{{ drill.data.datos.contactoCorreo ?? '—' }}</strong>
+                @if (drill.data.datos.contactoTelefono) { <small>{{ drill.data.datos.contactoTelefono }}</small> }
+              </div>
+            </div>
+
+            @if (drill.data.datos.sedeNombre || drill.data.datos.sedeUbicacion) {
+              <div class="sede-operativa">
+                <span class="material-symbols-outlined">location_on</span>
+                <span><strong>Sede operativa:</strong> {{ drill.data.datos.sedeNombre ?? '—' }}@if (drill.data.datos.sedeUbicacion) { - {{ drill.data.datos.sedeUbicacion }} }</span>
+              </div>
+            }
+          </app-seccion>
+
+          @if (drill.data.adjuntos.length > 0) {
+            <app-seccion icono="attach_file" titulo="Archivos adjuntos del RQ" [subtitulo]="drill.data.adjuntos.length + ' archivo(s)'">
+              <div class="lista-archivos">
+                @for (a of drill.data.adjuntos; track a.clave) {
+                  <div class="archivo-item">
+                    <span class="archivo-item__icono material-symbols-outlined">{{ iconoArchivo(a.tipo) }}</span>
+                    <div class="archivo-item__texto">
+                      <strong>{{ a.nombreArchivo ?? a.clave }}</strong>
+                      <small>{{ tamanoLegible(a.tamanoBytes) }}{{ a.fecha ? ' · ' + (a.fecha | date:'dd/MM/yyyy') : '' }}{{ a.usuario ? ' · ' + a.usuario : '' }}</small>
+                    </div>
+                    <div class="archivo-item__acciones">
+                      <app-button variant="ghost" tamano="sm" icono="visibility" (clic)="verArchivo(a.clave)">Ver</app-button>
+                      <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarArchivo(a.clave, a.nombreArchivo)">Descargar</app-button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          @if (drill.data.timeline.length > 0) {
+            <app-seccion icono="timeline" titulo="Timeline del RQ" [subtitulo]="drill.data.timeline.length + ' evento(s)'">
+              <div class="tl">
+                @for (ev of drill.data.timeline; track $index) {
+                  <div class="tl__item">
+                    <span [class]="'tl__badge tl__badge--' + colorEventoTimeline(ev.tipo, ev.titulo)">
+                      <span class="material-symbols-outlined">{{ iconoEventoTimeline(ev.tipo, ev.titulo) }}</span>
+                    </span>
+                    <div class="tl__body">
+                      <div class="tl__head">
+                        <strong class="tl__fecha">{{ formatearFechaCorta(ev.fecha) }}</strong>
+                        <span class="tl__sep">·</span>
+                        <strong class="tl__titulo">{{ ev.titulo ?? ev.tipo }}</strong>
+                        @if (ev.usuario) {
+                          <span class="tl__sep">·</span>
+                          <span class="tl__user">{{ ev.usuario }}</span>
+                        }
+                      </div>
+                      @if (ev.descripcion) { <p class="tl__desc">{{ ev.descripcion }}</p> }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          @if (drill.data.propuestas.length > 0) {
+            <app-seccion icono="request_quote" titulo="Propuestas generadas desde este RQ" [subtitulo]="drill.data.propuestas.length + ' propuesta(s)'">
+              <div class="lista-propuestas-gen">
+                @for (p of drill.data.propuestas; track p.idPropuesta) {
+                  <div class="propuesta-gen">
+                    <div class="propuesta-gen__cab">
+                      <strong class="valor-codigo">{{ p.numero }} v{{ p.version }}</strong>
+                      <span class="chip-estado chip-estado--{{ severidadEstadoPropuesta(p.estado) }}">{{ humanizarEstado(p.estado) }}</span>
+                      @if (p.responsable) { <small>· RF: {{ p.responsable }}</small> }
+                    </div>
+                    <div class="propuesta-gen__meta">
+                      @if (p.fechaEnvio) { <small>Enviada: {{ p.fechaEnvio | date:'dd/MM/yyyy' }}</small> }
+                      @if (p.fechaAceptacion) { <small>· Aceptada: {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</small> }
+                      @if (p.fechaRechazo) { <small>· Rechazada: {{ p.fechaRechazo | date:'dd/MM/yyyy' }}</small> }
+                      <strong class="propuesta-gen__monto">{{ p.simboloMoneda }} {{ p.total | number:'1.2-2' }}</strong>
+                      <app-button variant="ghost" tamano="sm" icono="open_in_new" (clic)="irALaPropuesta(p.idPropuesta)">
+                        Ir al módulo original
+                      </app-button>
+                    </div>
+                    @if (p.motivoRechazo) { <small class="propuesta-gen__motivo">Motivo rechazo: "{{ p.motivoRechazo }}"</small> }
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── Propuesta ─── -->
+        @case ('propuesta') {
+          <!-- 0. Barra de pills: propuestas + versiones -->
+          <div class="prop-pills-bar">
+            @if (propuestasDistintas(drill.data.versiones).length > 1) {
+              <div class="prop-pills-group">
+                <small>Ver propuestas:</small>
+                @for (p of propuestasDistintas(drill.data.versiones); track p) {
+                  <button type="button"
+                          class="pill-prop"
+                          [class.pill-prop--activa]="p === drill.data.detalle?.numero"
+                          (click)="cambiarPropuestaMostrada(primeraVersionDePropuesta(p, drill.data.versiones))">
+                    {{ p }}
+                  </button>
+                }
+              </div>
+            }
+            <div class="prop-pills-group">
+              <small>Ver versión:</small>
+              @for (v of drill.data.versiones; track v.idPropuesta) {
+                <button type="button"
+                        class="pill-ver"
+                        [class.pill-ver--activa]="v.seleccionada"
+                        (click)="cambiarPropuestaMostrada(v.idPropuesta)">
+                  v{{ v.version }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- 1. Datos de la Propuesta -->
+          @if (drill.data.detalle; as det) {
+            <app-seccion icono="request_quote" [titulo]="'Datos de la Propuesta v' + det.version">
+              <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                          (clic)="irALaPropuesta(det.idPropuesta)">
+                Ir al Módulo Propuestas
+              </app-button>
+              <div class="info-grid">
+                <div class="info-item"><small>N° Propuesta</small><strong class="valor-codigo">{{ det.numero }} v{{ det.version }}</strong></div>
+                <div class="info-item"><small>Fecha Creación</small><strong>{{ det.fechaCreacion ? (det.fechaCreacion | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>Tipo de Propuesta</small><strong>{{ det.tipoPropuesta ?? '—' }}</strong></div>
+                <div class="info-item"><small>Fecha Envío al Cliente</small><strong>{{ det.fechaEnvio ? (det.fechaEnvio | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Responsable</small>
+                  <div class="responsable-mini">
+                    <span class="responsable-mini__avatar">{{ iniciales(det.responsable) }}</span>
+                    <strong>{{ det.responsable ?? '—' }}</strong>
+                  </div>
+                </div>
+                <div class="info-item"><small>Fecha Aceptación</small><strong>{{ det.fechaAceptacion ? (det.fechaAceptacion | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>RQ Origen</small><strong class="valor-codigo">{{ det.numeroRq ?? '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Estado</small>
+                  @if (det.estado) {
+                    <span class="chip-estado chip-estado--{{ severidadEstadoPropuesta(det.estado) }}">
+                      {{ humanizarEstado(det.estado) }}
+                    </span>
+                  } @else { <strong>—</strong> }
+                </div>
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 2. Contacto y Cliente (reutiliza datos de la cabecera) -->
+          @if (detalle(); as d) {
+            <app-seccion icono="person" titulo="Contacto y Cliente">
+              <div class="card-contacto-cliente">
+                <div class="card-contacto-cliente__logo">
+                  <span class="material-symbols-outlined">business</span>
+                </div>
+                <div class="card-contacto-cliente__texto">
+                  <strong>{{ d.cabecera.razonSocial ?? '—' }}</strong>
+                  <small>RUC {{ d.cabecera.ruc ?? '—' }}</small>
+                </div>
+              </div>
+              <div class="aviso-pendiente">
+                <span class="material-symbols-outlined">info</span>
+                <small>Los campos de contacto (nombre, cargo, correo, teléfono y sede) se agregarán cuando el back los incluya en el tab Propuesta.</small>
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 3. Resumen Económico -->
+          @if (drill.data.detalle; as det) {
+            <app-seccion icono="payments" titulo="Resumen Económico">
+              <div class="resumen-eco">
+                <div class="resumen-eco__bloque">
+                  <small>SUBTOTAL</small>
+                  <strong>{{ det.simboloMoneda }} {{ det.subtotal | number:'1.2-2' }}</strong>
+                </div>
+                <div class="resumen-eco__bloque">
+                  <small>DESCUENTO{{ det.descuentoPct ? ' (' + det.descuentoPct + '%)' : '' }}</small>
+                  <strong>{{ det.simboloMoneda }} {{ (det.descuentoMonto ?? 0) | number:'1.2-2' }}</strong>
+                </div>
+                <div class="resumen-eco__bloque">
+                  <small>IGV{{ det.igvPct ? ' ' + det.igvPct + '%' : '' }}</small>
+                  <strong>{{ det.simboloMoneda }} {{ (det.igvMonto ?? 0) | number:'1.2-2' }}</strong>
+                </div>
+                <div class="resumen-eco__bloque resumen-eco__bloque--total">
+                  <small>TOTAL</small>
+                  <strong>{{ det.simboloMoneda }} {{ det.total | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+              <div class="resumen-eco__meta">
+                <span>Moneda: <strong>{{ det.moneda ?? '—' }}</strong></span>
+                <span>·</span>
+                <span>Condición: <strong>{{ det.condicionPago ?? '—' }}</strong>@if (det.plazoEntregaDias) { <small> ({{ det.plazoEntregaDias }} días)</small> }</span>
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 4. Configuración del Servicio: 9 secciones del wizard de propuestas -->
+          @if (configuracionServicio(drill.data.detalle?.seccionesActivas, drill.data.equipos.length); as cfg) {
+            <app-seccion icono="tune" titulo="Configuración del Servicio" [subtitulo]="cfg.incluidas + ' de ' + cfg.total + ' secciones incluidas'">
+              <div class="cfg-servicio">
+                @for (item of cfg.items; track item.clave) {
+                  <div class="cfg-item" [class.cfg-item--incluido]="item.incluido">
+                    <span class="cfg-item__icono">
+                      <span class="material-symbols-outlined">{{ iconoSeccionWizard(item.clave) }}</span>
+                    </span>
+                    <div class="cfg-item__texto">
+                      <small class="cfg-item__num">Sección {{ item.numero }}</small>
+                      <strong class="cfg-item__nombre">{{ item.nombre }}</strong>
+                      @if (item.detalle) { <small class="cfg-item__detalle">{{ item.detalle }}</small> }
+                    </div>
+                    <div class="cfg-item__meta">
+                      @if (item.incluido) {
+                        <span class="cfg-item__check" title="Sección incluida">
+                          <span class="material-symbols-outlined">check_circle</span>
+                        </span>
+                      } @else {
+                        <span class="cfg-item__check cfg-item__check--off" title="Sección no incluida">
+                          <span class="material-symbols-outlined">radio_button_unchecked</span>
+                        </span>
+                      }
+                      @if (item.obligatoria) {
+                        <small class="cfg-item__obl" title="Sección obligatoria del wizard">
+                          <span class="material-symbols-outlined">lock</span>
+                        </small>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 5. Documentos Generados -->
+          @if (drill.data.detalle?.clavePdf) {
+            <app-seccion icono="description" titulo="Documentos Generados" subtitulo="1 archivo">
+              <div class="lista-archivos">
+                <div class="archivo-item">
+                  <span class="archivo-item__icono material-symbols-outlined">picture_as_pdf</span>
+                  <div class="archivo-item__texto">
+                    <strong>{{ drill.data.detalle!.nombrePdf ?? drill.data.detalle!.clavePdf }}</strong>
+                    <small>PDF · Propuesta {{ drill.data.detalle!.numero }} v{{ drill.data.detalle!.version }}</small>
+                  </div>
+                  <div class="archivo-item__acciones">
+                    <app-button variant="ghost" tamano="sm" icono="visibility"
+                                (clic)="verArchivo(drill.data.detalle!.clavePdf)">Ver</app-button>
+                    <app-button variant="ghost" tamano="sm" icono="download"
+                                (clic)="descargarArchivo(drill.data.detalle!.clavePdf, drill.data.detalle!.nombrePdf)">Descargar</app-button>
+                  </div>
+                </div>
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 6. Timeline de la Propuesta -->
+          @if (drill.data.timeline.length > 0) {
+            <app-seccion icono="timeline" titulo="Timeline de la Propuesta" [subtitulo]="drill.data.timeline.length + ' evento(s)'">
+              <div class="tl">
+                @for (ev of drill.data.timeline; track $index) {
+                  <div class="tl__item">
+                    <span [class]="'tl__badge tl__badge--' + colorEventoTimeline(ev.tipo, ev.titulo)">
+                      <span class="material-symbols-outlined">{{ iconoEventoTimeline(ev.tipo, ev.titulo) }}</span>
+                    </span>
+                    <div class="tl__body">
+                      <div class="tl__head">
+                        <strong class="tl__fecha">{{ formatearFechaCorta(ev.fecha) }}</strong>
+                        <span class="tl__sep">·</span>
+                        <strong class="tl__titulo">{{ ev.titulo ?? ev.tipo }}</strong>
+                        @if (ev.usuario) {
+                          <span class="tl__sep">·</span>
+                          <span class="tl__user">{{ ev.usuario }}</span>
+                        }
+                      </div>
+                      @if (ev.descripcion) { <p class="tl__desc">{{ ev.descripcion }}</p> }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 7. Órdenes de Compra Vinculadas (pendiente back) -->
+          <app-seccion icono="receipt_long" titulo="Órdenes de Compra Vinculadas desde esta Propuesta">
+            <div class="aviso-pendiente aviso-pendiente--grande">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>Pendiente del backend</strong>
+                <small>El tab Propuesta aún no devuelve las OCs vinculadas. Se agregará en una siguiente iteración.</small>
+              </div>
+            </div>
+          </app-seccion>
+        }
+
+        <!-- ─── Visto Bueno ─── -->
+        @case ('visto_bueno') {
+          <!-- 0. Barra de pills de propuestas -->
+          @if (drill.data.propuestas.length > 1) {
+            <div class="prop-pills-bar">
+              <div class="prop-pills-group">
+                <small>Ver propuesta:</small>
+                @for (p of drill.data.propuestas; track p.numero + '-' + p.version) {
+                  <button type="button"
+                          class="pill-prop"
+                          [class.pill-prop--activa]="p.seleccionada"
+                          (click)="cambiarPropuestaVb(p.numero)">
+                    {{ p.numero }} v{{ p.version }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 1. Estado Actual del Visto Bueno -->
+          @if (drill.data.estado; as e) {
+            <app-seccion icono="verified" [titulo]="'Estado Actual del Visto Bueno de ' + (e.numero ?? '—')">
+              <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                          (clic)="irAlVistoBueno()">
+                Ir al Módulo VB
+              </app-button>
+              <div class="info-grid">
+                <div class="info-item"><small>Propuesta en revisión</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionRevision ?? '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Aprobador asignado</small>
+                  <div class="responsable-mini">
+                    <span class="responsable-mini__avatar">{{ iniciales(e.aprobador) }}</span>
+                    <strong>{{ e.aprobador ?? 'Pendiente' }}</strong>
+                  </div>
+                </div>
+                <div class="info-item"><small>Propuesta aprobada</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionAprobada ?? '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Fecha solicitud</small>
+                  <strong>{{ e.fechaSolicitud ? (e.fechaSolicitud | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+                  @if (e.slaHoras) { <small class="sublabel">SLA {{ e.slaHoras }}h</small> }
+                </div>
+                <div class="info-item">
+                  <small>Estado VB</small>
+                  @if (e.estadoVb) {
+                    <span class="chip-estado chip-estado--{{ severidadEstadoVb(e.estadoVb) }}">
+                      {{ humanizarEstado(e.estadoVb) }}
+                    </span>
+                  } @else { <strong>—</strong> }
+                </div>
+                <div class="info-item"><small>Monto aprobado</small><strong class="valor-monto">{{ e.simboloMoneda }} {{ e.montoAprobado | number:'1.2-2' }}</strong></div>
+                <div class="info-item">
+                  <small>Fecha aprobación</small>
+                  <strong>{{ e.fechaAprobacion ? (e.fechaAprobacion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+                </div>
+              </div>
+              @if (e.dentroSla != null && e.horasHabiles != null) {
+                <div class="vb-sla-row">
+                  <span class="chip-estado chip-estado--{{ e.dentroSla ? 'ok' : 'critical' }} vb-chip-sla">
+                    <span class="material-symbols-outlined">{{ e.dentroSla ? 'check_circle' : 'warning' }}</span>
+                    {{ e.dentroSla ? 'Cumplido' : 'Fuera de SLA' }} en {{ e.horasHabiles }}h
+                    @if (e.slaHoras && e.dentroSla) {
+                      <small>({{ (e.slaHoras - e.horasHabiles) }}h antes del SLA)</small>
+                    }
+                  </span>
+                </div>
+              }
+              @if (e.comentario) {
+                <div class="descripcion-bloque"><small>COMENTARIO</small><p>{{ e.comentario }}</p></div>
+              }
+            </app-seccion>
+          }
+
+          <!-- 2. Historial de Decisiones por Versión -->
+          @if (drill.data.decisiones.length > 0) {
+            <app-seccion icono="history" titulo="Historial de Decisiones por Versión" [subtitulo]="drill.data.decisiones.length + ' decisión(es) registrada(s)'">
+              <div class="tl">
+                @for (d of drill.data.decisiones; track d.idVb) {
+                  <div class="tl__item">
+                    <span [class]="'tl__badge tl__badge--' + estadoDecisionClass(d.estado)">
+                      <span class="material-symbols-outlined">{{ iconoDecision(d.estado) }}</span>
+                    </span>
+                    <div class="tl__body">
+                      <div class="tl__head">
+                        <strong class="tl__fecha">{{ d.fechaRespuesta ? (d.fechaRespuesta | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+                        @if (d.aprobador) {
+                          <span class="tl__user">
+                            <span class="tl__user-avatar">{{ iniciales(d.aprobador) }}</span>
+                            {{ d.aprobador }}
+                          </span>
+                        }
+                        <span class="decision-vb__version">v{{ d.version }}</span>
+                        <span class="chip-estado chip-estado--{{ estadoDecisionClass(d.estado) }}">
+                          {{ labelDecision(d.estado) }}
+                        </span>
+                      </div>
+                      @if (d.motivoRechazo) {
+                        <p class="tl__desc tl__desc--motivo"><strong>Motivo:</strong> {{ d.motivoRechazo }}</p>
+                      }
+                      @if (d.comentario) {
+                        <p class="tl__desc">{{ d.comentario }}</p>
+                      }
+                      @if (d.horasRevision != null && d.horasRevision > 0) {
+                        <small class="tl__ref">{{ d.horasRevision }}h de revisión</small>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 3. Aprobador Actual -->
+          @if (drill.data.estado; as e) {
+            <app-seccion icono="person" titulo="Aprobador Actual">
+              <div class="card-aprobador" [class.card-aprobador--pendiente]="!e.aprobador">
+                <div class="card-aprobador__principal">
+                  <div class="card-aprobador__avatar">
+                    @if (e.aprobador) {
+                      {{ iniciales(e.aprobador) }}
+                    } @else {
+                      <span class="material-symbols-outlined">person_off</span>
+                    }
+                  </div>
+                  <div class="card-aprobador__nombre">
+                    <div class="card-aprobador__nombre-row">
+                      <strong>{{ e.aprobador ?? 'Pendiente de asignar' }}</strong>
+                      <span [class]="e.aprobador ? 'chip-estado chip-estado--ok' : 'chip-estado chip-estado--warning'">
+                        <span class="dot"></span> {{ e.aprobador ? 'Activo' : 'Sin asignar' }}
+                      </span>
+                    </div>
+                    @if (e.cargoAprobador) { <small>{{ e.cargoAprobador }}</small> }
+                  </div>
+                  @if (e.correoAprobador) {
+                    <app-button variant="ghost" tamano="sm" icono="mail" class="card-aprobador__mail-btn">{{ e.correoAprobador }}</app-button>
+                  }
+                </div>
+                <div class="card-aprobador__grid">
+                  <div class="card-aprobador__item">
+                    <span class="material-symbols-outlined">mail</span>
+                    <div>
+                      <small>Correo</small>
+                      <strong class="valor-link">{{ e.correoAprobador ?? '—' }}</strong>
+                    </div>
+                  </div>
+                  <div class="card-aprobador__item">
+                    <span class="material-symbols-outlined">phone</span>
+                    <div>
+                      <small>Teléfono</small>
+                      <strong>{{ e.telefonoAprobador ?? '—' }}</strong>
+                    </div>
+                  </div>
+                  <div class="card-aprobador__item">
+                    <span class="material-symbols-outlined">domain</span>
+                    <div>
+                      <small>Área</small>
+                      <strong>{{ e.areaAprobador ?? '—' }}</strong>
+                    </div>
+                  </div>
+                </div>
+                @if (e.aprobador) {
+                  <div class="card-aprobador__footer">
+                    <span class="material-symbols-outlined">task_alt</span>
+                    <small>
+                      Fecha asignación como aprobador: <strong>{{ e.fechaSolicitud ? (e.fechaSolicitud | date:'dd/MM/yyyy') : '—' }}</strong>
+                      @if (e.fechaSolicitud) { <span class="hace">({{ diasHace(e.fechaSolicitud) }})</span> }
+                    </small>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 4. Métricas de Aprobación -->
+          @if (drill.data.metricas; as m) {
+            <app-seccion icono="query_stats" titulo="Métricas de Aprobación">
+              <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                          (clic)="irAlVistoBueno()">
+                Ir al Módulo VB
+              </app-button>
+              <div class="metricas-vb">
+                <div class="metrica-vb">
+                  <strong class="metrica-vb__valor">{{ m.versionesTotales }}</strong>
+                  <small>VERSIONES TOTALES</small>
+                </div>
+                <div class="metrica-vb">
+                  <strong class="metrica-vb__valor metrica-vb__valor--ambar">{{ m.versionesDevueltas }}</strong>
+                  <small>VERSIONES DEVUELTAS</small>
+                </div>
+                <div class="metrica-vb">
+                  <strong class="metrica-vb__valor">{{ m.diasTotales ?? '—' }}<small class="unit">d</small></strong>
+                  <small>TIEMPO TOTAL</small>
+                  <span class="metrica-vb__sublabel">(desde solicitud hasta aprobación)</span>
+                </div>
+                <div class="metrica-vb metrica-vb--ok">
+                  <strong class="metrica-vb__valor">{{ m.decisionesEnSla }}</strong>
+                  <small>CUMPLIDO</small>
+                </div>
+              </div>
+              @if (m.diasPromedioRevision != null) {
+                <div class="metricas-vb__footer">
+                  <small>Promedio de tiempo por revisión: <strong>{{ m.diasPromedioRevision }} día(s)</strong></small>
+                </div>
+              }
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── Seguimiento ─── -->
+        @case ('seguimiento') {
+          <!-- 0. Barra de pills de propuestas -->
+          @if (drill.data.propuestas.length > 1) {
+            <div class="prop-pills-bar">
+              <div class="prop-pills-group">
+                <small>Ver seguimiento:</small>
+                @for (p of drill.data.propuestas; track p.numero + '-' + p.version) {
+                  <button type="button"
+                          class="pill-prop"
+                          [class.pill-prop--activa]="p.seleccionada"
+                          (click)="cambiarPropuestaSeguimiento(p.numero)">
+                    {{ p.numero }} v{{ p.version }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 1. Estado Actual del Seguimiento -->
+          @if (drill.data.estado; as e) {
+            <app-seccion icono="phone_in_talk" [titulo]="'Estado Actual del Seguimiento de ' + (e.numero ?? '—')">
+              <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                          (clic)="irAlSeguimiento()">
+                Ir al Módulo Seguimiento
+              </app-button>
+              <div class="info-grid">
+                <div class="info-item"><small>Propuesta en seguimiento</small><strong class="valor-codigo">{{ e.numero }} v{{ e.version ?? '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Comercial a cargo</small>
+                  <div class="responsable-mini">
+                    <span class="responsable-mini__avatar">{{ iniciales(e.comercial) }}</span>
+                    <div class="responsable-mini__texto">
+                      <strong>{{ e.comercial ?? '—' }}</strong>
+                      @if (e.cargoComercial) { <small>{{ titleCase(e.cargoComercial) }}</small> }
+                    </div>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <small>Estado global</small>
+                  @if (e.estadoSeguimiento) {
+                    <span class="chip-estado chip-estado--{{ resultadoClass(e.estadoSeguimiento) }}">
+                      {{ humanizarEstado(e.estadoSeguimiento) }}
+                    </span>
+                  } @else { <strong>—</strong> }
+                </div>
+                <div class="info-item">
+                  <small>Contacto cliente</small>
+                  <div class="responsable-mini">
+                    <span class="responsable-mini__avatar">{{ iniciales(e.contacto) }}</span>
+                    <div class="responsable-mini__texto">
+                      <strong>{{ e.contacto ?? '—' }}</strong>
+                      @if (e.cargoContacto) { <small>{{ titleCase(e.cargoContacto) }}</small> }
+                    </div>
+                  </div>
+                </div>
+                <div class="info-item"><small>Fecha de envío</small><strong>{{ e.fechaEnvio ? (e.fechaEnvio | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Última interacción</small>
+                  <strong>{{ e.ultimaInteraccion ? formatearFechaCorta(e.ultimaInteraccion) : '—' }}</strong>
+                </div>
+                <div class="info-item"><small>Fecha de aceptación</small><strong>{{ e.fechaCierre ? (e.fechaCierre | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>Total interacciones</small><strong>{{ e.totalInteracciones }}</strong></div>
+                <div class="info-item">
+                  <small>Días seguimiento</small>
+                  <strong>
+                    @if (e.diasSeguimiento != null) {
+                      {{ e.diasSeguimiento }} día(s)
+                    } @else { — }
+                  </strong>
+                </div>
+                <div class="info-item">
+                  <small>SLA de seguimiento</small>
+                  @if (e.slaCumplido != null) {
+                    <span class="chip-estado chip-estado--{{ e.slaCumplido ? 'ok' : 'critical' }}">
+                      <span class="material-symbols-outlined">{{ e.slaCumplido ? 'check_circle' : 'warning' }}</span>
+                      {{ e.slaCumplido ? 'Cumplido' : 'Fuera de SLA' }}
+                      @if (e.diasSeguimiento != null) { en {{ e.diasSeguimiento }} día(s) }
+                    </span>
+                  } @else {
+                    <strong>—</strong>
+                  }
+                </div>
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 2. Timeline de Interacciones -->
+          @if (drill.data.interacciones.length > 0) {
+            <app-seccion icono="forum" titulo="Timeline de Interacciones" [subtitulo]="drill.data.interacciones.length + ' interacción(es)'">
+              <div class="tl">
+                @for (i of drill.data.interacciones; track $index) {
+                  <div class="tl__item">
+                    <span class="tl__badge tl__badge--{{ colorInteraccion(i.tipo, i.resultado) }}">
+                      <span class="material-symbols-outlined">{{ iconoInteraccion(i.tipo) }}</span>
+                    </span>
+                    <div class="tl__body">
+                      <div class="tl__head">
+                        <strong class="tl__fecha">{{ i.fecha ? (i.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+                        @if (i.usuario) {
+                          <span class="tl__user">
+                            <span class="tl__user-avatar">{{ iniciales(i.usuario) }}</span>
+                            {{ i.usuario }}
+                          </span>
+                        }
+                        @if (i.canal) {
+                          <span class="chip-canal">
+                            <span class="material-symbols-outlined">{{ iconoCanal(i.canal) }}</span>
+                            {{ titleCase(i.canal) }}
+                          </span>
+                        }
+                        @if (i.resultado) {
+                          <span class="chip-estado chip-estado--{{ severidadResultadoInteraccion(i.resultado) }}">
+                            {{ humanizarEstado(i.resultado) }}
+                          </span>
+                        }
+                      </div>
+                      <strong class="tl__titulo">
+                        @if (i.resultado === 'aceptacion') {
+                          Aceptación de propuesta
+                        } @else {
+                          {{ i.titulo ?? titleCase(i.tipo) }}
+                        }
+                      </strong>
+                      @if (i.asunto) {
+                        <p class="tl__desc"><strong>Asunto:</strong> {{ i.asunto }}</p>
+                      }
+                      @if (i.detalle) {
+                        <p class="tl__desc">{{ i.detalle }}</p>
+                      }
+                      @if (i.proximaAccion || i.duracionMinutos) {
+                        <div class="tl__pies">
+                          @if (i.proximaAccion) {
+                            <span class="chip-pie">
+                              <span class="material-symbols-outlined">event</span>
+                              <span>Próxima acción: <strong>{{ i.proximaAccion }}</strong>@if (i.proximaAccionFecha) { · {{ i.proximaAccionFecha | date:'dd/MM/yyyy' }} }</span>
+                            </span>
+                          }
+                          @if (i.duracionMinutos) {
+                            <span class="chip-pie">
+                              <span class="material-symbols-outlined">schedule</span>
+                              {{ i.duracionMinutos }} min
+                            </span>
+                          }
+                        </div>
+                      }
+                      @if (i.adjuntos && i.adjuntos.length > 0) {
+                        <div class="tl__adjuntos">
+                          @for (a of i.adjuntos; track a.clave) {
+                            <button type="button" class="chip-archivo" (click)="verArchivo(a.clave)">
+                              <span class="material-symbols-outlined">{{ iconoArchivo(a.tipo) }}</span>
+                              {{ a.nombreArchivo ?? a.clave }}
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 3. Resultado del Seguimiento -->
+          @if (drill.data.resultado; as r) {
+            <app-seccion icono="task_alt" titulo="Resultado del Seguimiento">
+              <span headerActions class="chip-estado chip-estado--{{ resultadoClass(r.resultado) }}">
+                <span class="material-symbols-outlined">{{ r.resultado === 'aceptacion' ? 'check_circle' : (r.resultado === 'rechazo' ? 'cancel' : 'pending') }}</span>
+                Cerrado · {{ humanizarEstado(r.resultado) }}
+              </span>
+              <div class="info-grid">
+                <div class="info-item">
+                  <small>Resultado</small>
+                  <span class="chip-estado chip-estado--{{ resultadoClass(r.resultado) }}">
+                    {{ humanizarEstado(r.resultado) }}
+                  </span>
+                </div>
+                <div class="info-item">
+                  <small>Registrado por</small>
+                  <div class="responsable-mini">
+                    <span class="responsable-mini__avatar">{{ iniciales(r.registradoPor) }}</span>
+                    <strong>{{ r.registradoPor ?? '—' }}</strong>
+                  </div>
+                </div>
+                <div class="info-item"><small>Fecha de cierre</small><strong>{{ r.fechaCierre ? (r.fechaCierre | date:'dd/MM/yyyy HH:mm') : '—' }}</strong></div>
+                <div class="info-item"><small>Tipo de evidencia</small><strong>{{ r.tipoEvidencia ?? r.canal ?? '—' }}</strong></div>
+                @if (r.montoComprometido) {
+                  <div class="info-item"><small>Monto propuesta</small><strong class="valor-monto">{{ r.simboloMoneda }} {{ r.montoComprometido | number:'1.2-2' }}</strong></div>
+                }
+              </div>
+
+              @if (r.comentario) {
+                <div class="descripcion-bloque">
+                  <small>COMENTARIO DEL CIERRE</small>
+                  <p>{{ r.comentario }}</p>
+                </div>
+              }
+              @if (r.motivoRechazo) {
+                <div class="descripcion-bloque descripcion-bloque--rojo">
+                  <small>MOTIVO DE RECHAZO</small>
+                  <p>{{ r.motivoRechazo }}</p>
+                </div>
+              }
+
+              @if (drill.data.evidencias.length > 0) {
+                <div class="evidencias-bloque">
+                  <small>EVIDENCIAS ADJUNTAS</small>
+                  <div class="lista-archivos">
+                    @for (ev of drill.data.evidencias; track ev.clave) {
+                      <div class="archivo-item">
+                        <span class="archivo-item__icono material-symbols-outlined">{{ iconoArchivo(ev.tipo) }}</span>
+                        <div class="archivo-item__texto">
+                          <strong>{{ ev.nombreArchivo ?? ev.clave }}</strong>
+                          <small>{{ tamanoLegible(ev.tamanoBytes) }}{{ ev.fecha ? ' · ' + (ev.fecha | date:'dd/MM/yyyy') : '' }}</small>
+                        </div>
+                        <div class="archivo-item__acciones">
+                          <app-button variant="ghost" tamano="sm" icono="visibility" (clic)="verArchivo(ev.clave)">Ver</app-button>
+                          <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarArchivo(ev.clave, ev.nombreArchivo)">Descargar</app-button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </app-seccion>
+          }
+
+          <!-- 4. Comercial Responsable del Seguimiento -->
+          @if (drill.data.estado?.comercial; as com) {
+            <app-seccion icono="support_agent" titulo="Comercial Responsable del Seguimiento">
+              <span headerActions class="chip-estado chip-estado--neutral">
+                <span class="dot"></span> Responsable automático
+              </span>
+              <div class="card-aprobador">
+                <div class="card-aprobador__principal">
+                  <div class="card-aprobador__avatar">{{ iniciales(com) }}</div>
+                  <div class="card-aprobador__nombre">
+                    <div class="card-aprobador__nombre-row">
+                      <strong>{{ com }}</strong>
+                    </div>
+                    @if (drill.data.estado?.cargoComercial) { <small>{{ titleCase(drill.data.estado!.cargoComercial) }}</small> }
+                  </div>
+                </div>
+                <div class="card-aprobador__grid card-aprobador__grid--2cols">
+                  <div class="card-aprobador__item">
+                    <span class="material-symbols-outlined">mail</span>
+                    <div>
+                      <small>Correo corporativo</small>
+                      <strong class="valor-link">{{ drill.data.estado?.correoComercial ?? '—' }}</strong>
+                    </div>
+                  </div>
+                  <div class="card-aprobador__item">
+                    <span class="material-symbols-outlined">phone</span>
+                    <div>
+                      <small>Teléfono</small>
+                      <strong>{{ formatearTelefono(drill.data.estado?.telefonoComercial) }}</strong>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-aprobador__footer card-aprobador__footer--nota">
+                  <span class="material-symbols-outlined">info</span>
+                  <small>Comercial responsable de la propuesta <strong>{{ drill.data.estado?.numero }}</strong>, encargado del seguimiento hasta su cierre.</small>
+                </div>
+              </div>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── OC ─── -->
+        @case ('orden_compra') {
+          <!-- 0. Barra de pills de OCs -->
+          @if (drill.data.ordenesCompra.length > 1) {
+            <div class="prop-pills-bar">
+              <div class="prop-pills-group">
+                <small>Ver orden de compra:</small>
+                @for (oc of drill.data.ordenesCompra; track oc.idOc) {
+                  <button type="button"
+                          class="pill-prop"
+                          [class.pill-prop--activa]="oc.seleccionada"
+                          (click)="cambiarOcMostrada(oc.idOc)">
+                    {{ oc.numeroOc }}@if (oc.esAutogenerada) { <small> · auto</small> }
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 1. Datos de la Orden de Compra -->
+          @if (drill.data.datos; as oc) {
+            <app-seccion icono="receipt_long" [titulo]="'Datos de la Orden de Compra ' + oc.numeroOc">
+              <div headerActions class="header-acciones-grupo">
+                <span class="chip-estado chip-estado--{{ estadoOcClass(oc.estado) }}">
+                  {{ humanizarEstado(oc.estado) }}
+                </span>
+                <app-button variant="ghost" tamano="sm" icono="open_in_new"
+                            (clic)="irALaOc(oc.idOc)">
+                  Ir al Módulo OC
+                </app-button>
+              </div>
+              <div class="info-grid info-grid--2cols">
+                <div class="info-item"><small>Código OC</small><strong class="valor-codigo">{{ oc.numeroOc }}</strong></div>
+                <div class="info-item"><small>Monto total</small><strong class="valor-monto">{{ oc.simboloMoneda }} {{ oc.montoTotal | number:'1.2-2' }}</strong></div>
+                <div class="info-item"><small>Fecha emisión</small><strong>{{ oc.fechaEmision ? (oc.fechaEmision | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>Monto asignado</small><strong>{{ oc.simboloMoneda }} {{ oc.montoAsignado | number:'1.2-2' }}</strong></div>
+                <div class="info-item"><small>Fecha recepción</small><strong>{{ oc.fechaRecepcion ? (oc.fechaRecepcion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong></div>
+                <div class="info-item">
+                  <small>Saldo OC</small>
+                  <strong>{{ oc.simboloMoneda }} {{ oc.saldo | number:'1.2-2' }}
+                    @if (oc.montoTotal && oc.montoAsignado != null) {
+                      <span class="porcentaje-ok">· {{ ((oc.montoAsignado / oc.montoTotal) * 100) | number:'1.0-0' }}% completado</span>
+                    }
+                  </strong>
+                </div>
+                <div class="info-item"><small>Moneda</small><strong>{{ oc.moneda ?? '—' }}</strong></div>
+                <div class="info-item"><small>Forma de pago</small><strong>{{ oc.formaPago ?? '—' }}</strong></div>
+                <div class="info-item"><small>Responsable</small><strong>{{ oc.responsable ?? '—' }}</strong></div>
+                <div class="info-item"><small>IGV</small><strong>{{ oc.igvIncluido ? ('Incluido (' + (oc.igvPct ?? 0) + '%)') : 'No incluido' }}</strong></div>
+              </div>
+
+              <!-- Bloques informativos adicionales -->
+              @if (oc.facturaIgualOc) {
+                <div class="info-bloque info-bloque--azul">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  <small><strong>La factura tendrá exactamente lo mismo que la OC</strong> · El cliente confirmó esta validación.</small>
+                </div>
+              }
+              @if (oc.reemplazadaPor) {
+                <div class="info-bloque info-bloque--neutral">
+                  <span class="material-symbols-outlined">swap_horiz</span>
+                  <small><span class="valor-codigo">{{ oc.numeroOc }}</span> fue reemplazada por <span class="valor-codigo">{{ oc.reemplazadaPor }}</span>@if (oc.fechaReemplazo) { <span> el {{ oc.fechaReemplazo | date:'dd/MM/yyyy' }}</span> }.</small>
+                </div>
+              }
+
+              <!-- Botones de documento PDF -->
+              @if (oc.clavePdf) {
+                <div class="oc-doc-acciones">
+                  <app-button variant="ghost" tamano="sm" icono="visibility"
+                              (clic)="verArchivo(oc.clavePdf)">Ver PDF</app-button>
+                  <app-button variant="ghost" tamano="sm" icono="download"
+                              (clic)="descargarArchivo(oc.clavePdf, oc.numeroOc + '.pdf')">Descargar</app-button>
+                </div>
+              }
+
+              @if (oc.observaciones) {
+                <div class="descripcion-bloque">
+                  <small>OBSERVACIONES</small>
+                  <p>{{ oc.observaciones }}</p>
+                </div>
+              }
+            </app-seccion>
+          }
+
+          <!-- 2. Validación por IA -->
+          @if (drill.data.validaciones.length > 0 || drill.data.campos.length > 0) {
+            <app-seccion icono="auto_awesome" titulo="Validación por IA" [subtitulo]="difsIa() + ' diferencias detectadas'">
+              <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                          (clic)="irALaOc(drill.data.datos?.idOc)">
+                Ver Validación Completa
+              </app-button>
+
+              @if (resultadoGlobalIa() === 'ok') {
+                <div class="alerta-ia alerta-ia--verde">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  <div>
+                    <strong>Validación completa · Sin diferencias</strong>
+                    <small>La IA no detectó diferencias entre la OC y la(s) propuesta(s) aceptada(s).</small>
+                  </div>
+                </div>
+              } @else {
+                <div [class]="'alerta-ia alerta-ia--' + (resultadoGlobalIa() === 'critico' ? 'rojo' : 'ambar')">
+                  <span class="material-symbols-outlined">{{ resultadoGlobalIa() === 'critico' ? 'error' : 'warning' }}</span>
+                  <div>
+                    <strong>{{ resultadoGlobalIa() === 'critico' ? 'Diferencias críticas' : 'Validación parcial · Requiere revisión comercial' }}</strong>
+                    <small>La IA detectó {{ difsIa() }} diferencia(s) en la OC comparada con la(s) propuesta(s) aceptada(s).</small>
+                  </div>
+                </div>
+              }
+
+              @if (drill.data.campos.length > 0) {
+                <table class="tabla-validacion">
+                  <thead>
+                    <tr><th>Campo</th><th>Severidad</th><th>Mensaje</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (c of drill.data.campos; track $index) {
+                      <tr>
+                        <td class="celda-campo">
+                          <strong>{{ c.etiqueta ?? c.campo }}</strong>
+                          @if (c.valorOc || c.valorPropuesta) {
+                            <small class="valores">
+                              <span>OC: {{ c.valorOc ?? '—' }}</span> ·
+                              <span>Propuesta: {{ c.valorPropuesta ?? '—' }}</span>
+                            </small>
+                          }
+                        </td>
+                        <td>
+                          <span [class]="'chip-estado chip-estado--' + severidadClass(c.severidad)">
+                            <span class="material-symbols-outlined">{{ iconoSeveridad(c.severidad) }}</span>
+                            {{ labelSeveridad(c.severidad) }}
+                          </span>
+                        </td>
+                        <td class="celda-mensaje">{{ c.mensaje ?? '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </app-seccion>
+          }
+
+          <!-- 3. Propuestas Vinculadas (Sub-aplicaciones) -->
+          @if (drill.data.validaciones.length > 0) {
+            <app-seccion icono="hub" titulo="Propuestas Vinculadas (Sub-aplicaciones)" [subtitulo]="drill.data.validaciones.length + ' propuesta(s)'">
+              @if (drill.data.datos; as oc) {
+                <div class="oc-resumen-montos">
+                  <div class="oc-resumen-montos__item">
+                    <small>MONTO OC</small>
+                    <strong>{{ oc.simboloMoneda }} {{ oc.montoTotal | number:'1.2-2' }}</strong>
+                  </div>
+                  <div class="oc-resumen-montos__item">
+                    <small>ASIGNADO</small>
+                    <strong>{{ oc.simboloMoneda }} {{ oc.montoAsignado | number:'1.2-2' }}</strong>
+                  </div>
+                  <div class="oc-resumen-montos__item">
+                    <small>SALDO OC</small>
+                    <strong>{{ oc.simboloMoneda }} {{ oc.saldo | number:'1.2-2' }}</strong>
+                  </div>
+                  @if (oc.montoTotal && oc.montoAsignado != null) {
+                    <span class="chip-estado chip-estado--ok">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      {{ ((oc.montoAsignado / oc.montoTotal) * 100) | number:'1.0-0' }}% completado
+                    </span>
+                  }
+                </div>
+              }
+
+              <div class="sub-aplicaciones">
+                @for (v of drill.data.validaciones; track v.idPropuesta) {
+                  <div class="sub-aplicacion">
+                    <div class="sub-aplicacion__head">
+                      <span class="chip-codigo">{{ v.propuesta }}</span>
+                      <span class="chip-estado chip-estado--{{ resultadoClass(v.resultadoIa) }}">
+                        {{ v.resultadoIa ? humanizarEstado(v.resultadoIa) : 'Sin validar' }}
+                      </span>
+                      @if (v.deEsteExpediente) {
+                        <span class="chip-estado chip-estado--neutral">De este expediente</span>
+                      } @else {
+                        <span class="chip-estado chip-estado--warning">Externa (otra propuesta)</span>
+                      }
+                      <app-button variant="ghost" tamano="sm" icono="open_in_new" class="sub-aplicacion__btn"
+                                  (clic)="irALaPropuesta(v.idPropuesta)">
+                        Ir al módulo original
+                      </app-button>
+                    </div>
+
+                    <div class="sub-aplicacion__montos">
+                      <small>MONTO ASIGNADO</small>
+                      <strong>{{ drill.data.datos?.simboloMoneda }} {{ v.montoAsignado | number:'1.2-2' }}
+                        @if (v.porcentajeOc != null) {
+                          <small>({{ v.porcentajeOc | number:'1.1-1' }}% de la OC)</small>
+                        }
+                      </strong>
+                    </div>
+
+                    @if (v.porcentajeOc != null) {
+                      <div class="progress-bar">
+                        <div class="progress-bar__fill" [style.width.%]="v.porcentajeOc"></div>
+                      </div>
+                    }
+
+                    @if (v.sugerencia || v.dictamen) {
+                      <small class="sub-aplicacion__nota">{{ v.sugerencia ?? v.dictamen }}</small>
+                    }
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 4. Timeline de la Orden de Compra -->
+          @if (drill.data.timeline.length > 0) {
+            <app-seccion icono="timeline" titulo="Timeline de la Orden de Compra" [subtitulo]="drill.data.timeline.length + ' evento(s)'">
+              <div class="tl">
+                @for (ev of drill.data.timeline; track $index) {
+                  <div class="tl__item">
+                    <span [class]="'tl__badge tl__badge--' + colorEventoTimeline(ev.accion, ev.titulo)">
+                      <span class="material-symbols-outlined">{{ iconoEventoTimeline(ev.accion, ev.titulo) }}</span>
+                    </span>
+                    <div class="tl__body">
+                      <div class="tl__head">
+                        <strong class="tl__fecha">{{ formatearFechaCorta(ev.fecha) }}</strong>
+                        <span class="tl__sep">·</span>
+                        <strong class="tl__titulo">{{ ev.titulo ?? ev.accion }}</strong>
+                        @if (ev.usuario) {
+                          <span class="tl__sep">·</span>
+                          <span class="tl__user">{{ ev.usuario }}{{ ev.automaticoIa ? ' (IA)' : '' }}</span>
+                        }
+                      </div>
+                      @if (ev.descripcion) { <p class="tl__desc">{{ ev.descripcion }}</p> }
+                    </div>
+                  </div>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          <!-- 5. Órdenes de Servicio Vinculadas (pendiente back) -->
+          <app-seccion icono="engineering" titulo="Órdenes de Servicio Vinculadas">
+            <div class="aviso-pendiente aviso-pendiente--grande">
+              <span class="material-symbols-outlined">info</span>
+              <div>
+                <strong>Pendiente del backend</strong>
+                <small>El tab OC aún no devuelve las OSs vinculadas. Se agregará cuando Bryan incluya ese array en el DTO.</small>
+              </div>
+            </div>
+          </app-seccion>
+        }
+
+        <!-- ─── OS ─── -->
+        @case ('orden_servicio') {
+          @if (drill.data.ordenesServicio.length > 1) {
+            <app-seccion icono="engineering" titulo="Órdenes de servicio" [subtitulo]="drill.data.ordenesServicio.length + ' OS.'">
+              <div class="pills-propuesta">
+                @for (os of drill.data.ordenesServicio; track os.idOs) {
+                  <span class="pill-propuesta" [class.pill-propuesta--activa]="os.seleccionada">
+                    {{ os.numero }} <small>· {{ os.estado }}</small>
+                  </span>
+                }
+              </div>
+            </app-seccion>
+          }
+
+          @if (drill.data.datos; as os) {
+            <app-seccion icono="engineering" [titulo]="'OS ' + os.numero">
+              <div class="info-grid">
+                <div class="info-item"><small>Estado</small><strong>{{ os.estado }}</strong></div>
+                <div class="info-item"><small>Fecha ejecución</small><strong>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>Hora inicio</small><strong>{{ os.horaInicio ?? '—' }}</strong></div>
+                <div class="info-item"><small>Hora fin estimada</small><strong>{{ os.horaFinEstimada ?? '—' }}</strong></div>
+                <div class="info-item"><small>Tipo servicio</small><strong>{{ os.tipoServicio ?? '—' }}</strong></div>
+                <div class="info-item"><small>Sede</small><strong>{{ os.sede ?? '—' }}</strong></div>
+                <div class="info-item"><small>Técnico principal</small><strong>{{ os.tecnicoPrincipal ?? '—' }}</strong></div>
+                <div class="info-item"><small>Responsable comercial</small><strong>{{ os.responsableComercial ?? '—' }}</strong></div>
+                <div class="info-item"><small>Costo estimado</small><strong>{{ os.costoTotalEstimado | number:'1.2-2' }}</strong></div>
+                <div class="info-item"><small>Confirmación cliente</small><strong>{{ os.confirmacionCliente ? 'Sí' : 'Pendiente' }}</strong></div>
+              </div>
+              @if (os.notasOperativas) { <div class="descripcion-bloque"><small>NOTAS</small><p>{{ os.notasOperativas }}</p></div> }
+            </app-seccion>
+          }
+
+          @if (drill.data.personal.length > 0) {
+            <app-seccion icono="group" titulo="Personal asignado" [subtitulo]="drill.data.personal.length + ' técnico(s).'">
+              <ul class="lista-simple">
+                @for (p of drill.data.personal; track p.idUsuario) {
+                  <li><strong>{{ p.nombre }}</strong><small>{{ p.rolEnServicio ?? p.cargo ?? '—' }}{{ p.estadoSsoma ? ' · SSOMA: ' + p.estadoSsoma : '' }}</small></li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.equipos.length > 0) {
+            <app-seccion icono="precision_manufacturing" titulo="Equipos asignados" [subtitulo]="drill.data.equipos.length + ' equipo(s).'">
+              <ul class="lista-simple">
+                @for (eq of drill.data.equipos; track eq.idEquipo) {
+                  <li>
+                    <strong>{{ eq.marca ?? '—' }} {{ eq.modelo ?? '' }}</strong>
+                    <small>N° {{ eq.numeroSerie ?? '—' }}{{ eq.codigoTw ? ' · ' + eq.codigoTw : '' }}{{ eq.tipoIntervencion ? ' · ' + eq.tipoIntervencion : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.gastos.length > 0) {
+            <app-seccion icono="account_balance_wallet" titulo="Gastos / Viáticos" [subtitulo]="drill.data.gastos.length + ' gasto(s).'">
+              <table class="tabla-simple">
+                <thead><tr><th>Tipo</th><th>Concepto</th><th class="num">Monto</th><th>Estado</th><th>Usuario</th></tr></thead>
+                <tbody>
+                  @for (g of drill.data.gastos; track g.idGasto) {
+                    <tr>
+                      <td>{{ g.tipo ?? '—' }}</td>
+                      <td>{{ g.concepto ?? g.descripcion ?? '—' }}</td>
+                      <td class="num">{{ g.simboloMoneda }} {{ g.monto | number:'1.2-2' }}</td>
+                      <td>{{ g.estado ?? '—' }}</td>
+                      <td>{{ g.usuario ?? '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </app-seccion>
+          }
+
+          @if (drill.data.ordenesMetrologia.length > 0) {
+            <app-seccion icono="rule" titulo="Órdenes de Metrología">
+              <ul class="lista-simple">
+                @for (om of drill.data.ordenesMetrologia; track om.idOm) {
+                  <li>
+                    <strong>{{ om.numero }}</strong>
+                    <small>{{ om.estado ?? '—' }}{{ om.numeroCertificado ? ' · Cert. ' + om.numeroCertificado : '' }}{{ om.metrologo ? ' · ' + om.metrologo : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── Programación ─── -->
+        @case ('programacion') {
+          @if (drill.data.calendario.length > 0) {
+            <app-seccion icono="event_available" titulo="Calendario de OSs" [subtitulo]="drill.data.calendario.length + ' programada(s).'">
+              <table class="tabla-simple">
+                <thead><tr><th>OS</th><th>Estado</th><th>Fecha</th><th>Hora</th><th>Técnico</th><th>Sede</th><th>Confirmación</th></tr></thead>
+                <tbody>
+                  @for (c of drill.data.calendario; track c.idOs) {
+                    <tr>
+                      <td>{{ c.numero }}</td>
+                      <td>{{ c.estado }}</td>
+                      <td>{{ c.fechaEjecucion ? (c.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</td>
+                      <td>{{ c.horaInicio ?? '—' }} - {{ c.horaFinEstimada ?? '—' }}</td>
+                      <td>{{ c.tecnicoPrincipal ?? '—' }}</td>
+                      <td>{{ c.sede ?? '—' }}</td>
+                      <td>{{ c.confirmacionCliente ? 'OK' : 'Pendiente' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </app-seccion>
+          }
+
+          @if (drill.data.recursos.length > 0) {
+            <app-seccion icono="construction" titulo="Recursos reservados" [subtitulo]="drill.data.recursos.length + ' recurso(s).'">
+              <ul class="lista-simple">
+                @for (r of drill.data.recursos; track $index) {
+                  <li><strong>{{ r.tipoRecurso }}{{ r.os ? ' · ' + r.os : '' }}</strong><small>{{ r.recurso ?? '—' }}{{ r.estado ? ' · ' + r.estado : '' }}</small></li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.backlog.length > 0) {
+            <app-seccion icono="pending_actions" titulo="Backlog" [subtitulo]="drill.data.backlog.length + ' pendiente(s).'">
+              <table class="tabla-simple">
+                <thead><tr><th>OS/OM</th><th>Prioridad</th><th>Técnico sugerido</th><th>Fecha límite</th><th>Estado</th></tr></thead>
+                <tbody>
+                  @for (b of drill.data.backlog; track b.idBacklog) {
+                    <tr>
+                      <td>{{ b.os ?? b.om ?? '—' }}</td>
+                      <td>{{ b.prioridad ?? '—' }}</td>
+                      <td>{{ b.tecnicoSugerido ?? '—' }}</td>
+                      <td>{{ b.fechaLimite ? (b.fechaLimite | date:'dd/MM/yyyy') : '—' }}</td>
+                      <td>{{ b.estado ?? '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </app-seccion>
+          }
+
+          @if (drill.data.presalida.length > 0) {
+            <app-seccion icono="checklist" titulo="Checklist de presalida" [subtitulo]="drill.data.presalida.length + ' item(s).'">
+              <ul class="lista-simple">
+                @for (p of drill.data.presalida; track $index) {
+                  <li>
+                    <strong>{{ p.descripcion ?? '—' }}{{ p.os ? ' · ' + p.os : '' }}</strong>
+                    <small>{{ p.confirmado ? ('Confirmado' + (p.confirmadoPor ? ' por ' + p.confirmadoPor : '')) : 'Pendiente' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── SSOMA ─── -->
+        @case ('ssoma') {
+          @if (drill.data.resumen; as r) {
+            <app-seccion icono="health_and_safety" titulo="Resumen SSOMA" [subtitulo]="'Estado global: ' + r.estadoGlobal">
+              <div class="info-grid">
+                <div class="info-item"><small>Personal</small><strong>{{ r.personal }}</strong></div>
+                <div class="info-item"><small>Habilitados</small><strong>{{ r.habilitados }}</strong></div>
+                <div class="info-item"><small>Pendientes</small><strong>{{ r.pendientes }}</strong></div>
+                <div class="info-item"><small>Bloqueados</small><strong>{{ r.bloqueados }}</strong></div>
+                <div class="info-item"><small>Observados</small><strong>{{ r.observados }}</strong></div>
+                <div class="info-item"><small>Vencidos</small><strong>{{ r.vencidos }}</strong></div>
+              </div>
+            </app-seccion>
+          }
+
+          @if (drill.data.checklist.length > 0) {
+            <app-seccion icono="checklist" titulo="Checklist por técnico" [subtitulo]="drill.data.checklist.length + ' línea(s).'">
+              <table class="tabla-simple">
+                <thead><tr><th>OS</th><th>Técnico</th><th>Rol</th><th>Requisito</th><th>Estado</th><th>Vence</th></tr></thead>
+                <tbody>
+                  @for (c of drill.data.checklist; track $index) {
+                    <tr>
+                      <td>{{ c.os ?? '—' }}</td>
+                      <td>{{ c.tecnico ?? '—' }}</td>
+                      <td>{{ c.rolEnServicio ?? '—' }}</td>
+                      <td>{{ c.requisito ?? '—' }}</td>
+                      <td>{{ c.estadoDocumento ?? c.estadoSsoma ?? '—' }}</td>
+                      <td>{{ c.fechaVencimiento ? (c.fechaVencimiento | date:'dd/MM/yyyy') : '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </app-seccion>
+          }
+
+          @if (drill.data.documentos.length > 0) {
+            <app-seccion icono="description" titulo="Documentos SSOMA" [subtitulo]="drill.data.documentos.length + ' documento(s).'">
+              <ul class="lista-simple">
+                @for (d of drill.data.documentos; track d.clave) {
+                  <li>
+                    <strong>{{ d.nombreArchivo ?? d.tipo ?? '—' }}</strong>
+                    <small>v{{ d.version }} · {{ d.estado ?? '—' }}{{ d.fechaVencimiento ? ' · vence ' + (d.fechaVencimiento | date:'dd/MM/yyyy') : '' }}{{ d.tecnico ? ' · ' + d.tecnico : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.requisitosCliente.length > 0) {
+            <app-seccion icono="rule" titulo="Requisitos del cliente" [subtitulo]="drill.data.requisitosCliente.length + ' requisito(s).'">
+              <ul class="lista-simple">
+                @for (r of drill.data.requisitosCliente; track r.idRequisito) {
+                  <li>
+                    <strong>{{ r.requisito ?? '—' }}</strong>
+                    <small>{{ r.esObligatorio ? 'Obligatorio' : 'Opcional' }}{{ r.bloqueaServicio ? ' · bloquea servicio' : '' }}{{ r.sede ? ' · ' + r.sede : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── Ejecución ─── -->
+        @case ('ejecucion') {
+          @if (drill.data.ordenesServicio.length > 0) {
+            <app-seccion icono="play_circle" titulo="OSs en ejecución" [subtitulo]="drill.data.ordenesServicio.length + ' OS.'">
+              <table class="tabla-simple">
+                <thead><tr><th>OS</th><th>Estado</th><th>Fecha</th><th>Técnico</th><th>Hora inicio</th><th>Hora fin</th></tr></thead>
+                <tbody>
+                  @for (os of drill.data.ordenesServicio; track os.idOs) {
+                    <tr>
+                      <td>{{ os.numero }}</td>
+                      <td>{{ os.estado }}</td>
+                      <td>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</td>
+                      <td>{{ os.tecnicoPrincipal ?? '—' }}</td>
+                      <td>{{ os.horaLlegadaReal ?? os.horaInicio ?? '—' }}</td>
+                      <td>{{ os.horaFinReal ?? '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </app-seccion>
+          }
+
+          @if (drill.data.eventosCampo.length > 0) {
+            <app-seccion icono="my_location" titulo="Eventos de campo" [subtitulo]="drill.data.eventosCampo.length + ' evento(s).'">
+              <ul class="timeline-list">
+                @for (ev of drill.data.eventosCampo; track ev.idEvento) {
+                  <li>
+                    <small>{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</small>
+                    <strong>{{ ev.tipoEvento ?? '—' }}{{ ev.os ? ' · ' + ev.os : '' }}</strong>
+                    @if (ev.notas) { <p>{{ ev.notas }}</p> }
+                    <small class="user">{{ ev.usuario ?? '—' }}{{ ev.sincronizado ? '' : ' · pendiente sync' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.evidencias.length > 0) {
+            <app-seccion icono="photo_library" titulo="Evidencias" [subtitulo]="drill.data.evidencias.length + ' evidencia(s).'">
+              <ul class="lista-simple">
+                @for (e of drill.data.evidencias; track e.clave) {
+                  <li>
+                    <strong>{{ e.nombreArchivo ?? e.tipoEvidencia ?? '—' }}</strong>
+                    <small>{{ e.fecha | date:'dd/MM/yyyy HH:mm' }}{{ e.validacionIa ? ' · IA: ' + e.validacionIa : '' }}{{ e.usuario ? ' · ' + e.usuario : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.incidencias.length > 0) {
+            <app-seccion icono="warning" titulo="Incidencias" [subtitulo]="drill.data.incidencias.length + ' incidencia(s).'">
+              <ul class="lista-simple">
+                @for (i of drill.data.incidencias; track i.idIncidencia) {
+                  <li>
+                    <strong>{{ i.tipo ?? '—' }}{{ i.nivelAlerta ? ' · ' + i.nivelAlerta : '' }}</strong>
+                    <small>{{ i.descripcion ?? '—' }} · {{ i.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}{{ i.usuario ? ' · ' + i.usuario : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.demoras.length > 0) {
+            <app-seccion icono="schedule" titulo="Demoras" [subtitulo]="drill.data.demoras.length + ' demora(s).'">
+              <ul class="lista-simple">
+                @for (d of drill.data.demoras; track d.idDemora) {
+                  <li>
+                    <strong>{{ d.motivo ?? '—' }}{{ d.duracionMinutos ? ' · ' + d.duracionMinutos + ' min' : '' }}</strong>
+                    <small>{{ d.descripcion ?? '—' }} · {{ d.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+        }
+
+        <!-- ─── Cierre ─── -->
+        @case ('cierre') {
+          @if (drill.data.resumen; as r) {
+            <app-seccion icono="task_alt" titulo="Resumen de cierre" [subtitulo]="r.estadoCierre | uppercase">
+              <div class="info-grid">
+                <div class="info-item"><small>Estado</small><strong>{{ r.estadoCierre }}</strong></div>
+                <div class="info-item"><small>Fecha cierre</small><strong>{{ r.fechaCierre ? (r.fechaCierre | date:'dd/MM/yyyy') : '—' }}</strong></div>
+                <div class="info-item"><small>Informes</small><strong>{{ r.informesAprobados }} / {{ r.informes }}</strong></div>
+                <div class="info-item"><small>Conformes</small><strong>{{ r.conformes }}</strong></div>
+                <div class="info-item"><small>Observadas</small><strong>{{ r.observadas }}</strong></div>
+              </div>
+            </app-seccion>
+          }
+
+          @if (drill.data.informes.length > 0) {
+            <app-seccion icono="description" titulo="Informes técnicos" [subtitulo]="drill.data.informes.length + ' informe(s).'">
+              <ul class="lista-simple">
+                @for (i of drill.data.informes; track i.idInforme) {
+                  <li>
+                    <strong>{{ i.numero }} v{{ i.version }}{{ i.os ? ' · ' + i.os : '' }}</strong>
+                    <small>{{ i.estado }}{{ i.tecnico ? ' · ' + i.tecnico : '' }}{{ i.revisor ? ' · revisor ' + i.revisor : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.conformidades.length > 0) {
+            <app-seccion icono="verified" titulo="Conformidades del cliente" [subtitulo]="drill.data.conformidades.length + ' conformidad(es).'">
+              <ul class="lista-simple">
+                @for (c of drill.data.conformidades; track c.idConformidad) {
+                  <li>
+                    <strong>{{ c.informe ?? c.os ?? '—' }} · {{ c.tipo ?? '—' }}</strong>
+                    <small>{{ c.estado ?? '—' }}{{ c.contacto ? ' · ' + c.contacto : '' }}{{ c.registradoEn ? ' · ' + (c.registradoEn | date:'dd/MM/yyyy') : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+
+          @if (drill.data.certificados.length > 0) {
+            <app-seccion icono="workspace_premium" titulo="Certificados" [subtitulo]="drill.data.certificados.length + ' certificado(s).'">
+              <ul class="lista-simple">
+                @for (c of drill.data.certificados; track $index) {
+                  <li>
+                    <strong>{{ c.numero }}{{ c.numeroCertificado ? ' · ' + c.numeroCertificado : '' }}</strong>
+                    <small>{{ c.estado ?? '—' }}{{ c.fechaEmision ? ' · ' + (c.fechaEmision | date:'dd/MM/yyyy') : '' }}</small>
+                  </li>
+                }
+              </ul>
+            </app-seccion>
+          }
+        }
+      }
+    }
+
+    <!-- ═══ Footer ═══════════════════════════════════════════ -->
+    <div class="footer-pagina">
+      <app-button variant="ghost" icono="arrow_back" (clic)="irAtras()">Volver a la Bandeja</app-button>
+    </div>
+
+    <!-- ═══ Modales HU-31 / HU-32 / HU-33 ═══ -->
+    @if (modalDocumentos()) {
+      <app-modal-repositorio-documentos
+        [idExpediente]="idExpediente()"
+        [numeroExpediente]="detalle()!.cabecera.numero"
+        (cerrar)="modalDocumentos.set(false)" />
+    }
+    @if (modalAuditoria()) {
+      <app-modal-auditoria-expediente
+        [idExpediente]="idExpediente()"
+        [numeroExpediente]="detalle()!.cabecera.numero"
+        (cerrar)="modalAuditoria.set(false)" />
+    }
+    @if (modalReasignar()) {
+      <app-modal-reasignar-responsable
+        [idExpediente]="idExpediente()"
+        [numeroExpediente]="detalle()!.cabecera.numero"
+        (cerrar)="modalReasignar.set(false)"
+        (reasignado)="onReasignado()" />
+    }
+  }
+</div>

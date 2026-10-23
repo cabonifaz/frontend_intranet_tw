@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -36,6 +36,7 @@ export class ModalDetalleOcComponent {
   readonly svc            = inject(OrdenesCompraService);
   private readonly toast  = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly idOc   = input.required<number>();
   readonly cerrar = output<void>();
@@ -44,10 +45,13 @@ export class ModalDetalleOcComponent {
   readonly cargando          = signal(true);
   readonly cargandoTimeline  = signal(false);
   readonly cargandoValidacion = signal(false);
+  readonly cargandoPdf       = signal(false);
   readonly detalle           = signal<DetalleOrdenCompraDto | null>(null);
   readonly timeline          = signal<TimelineOrdenCompraDto | null>(null);
   readonly validacion        = signal<ValidacionOrdenCompraDto | null>(null);
   readonly tab               = signal<TabInterno>('resumen');
+  /** Object URL del PDF descargado como blob (el endpoint pide token, no se puede usar la URL cruda). */
+  readonly urlPdfPreview     = signal<string | null>(null);
 
   readonly idPropuestaSeleccionada = signal<number | null>(null);
   readonly filtroValidacion = signal<FiltroValidacion>('todas');
@@ -94,9 +98,6 @@ export class ModalDetalleOcComponent {
       observada:            { clase: 'badge--ambar',  label: 'Observada' },
       pendiente_reemplazo:  { clase: 'badge--rojo',   label: 'Pendiente Reemplazo' },
       anulada:              { clase: 'badge--gris',   label: 'Anulada' },
-      // Fallbacks temporales mientras el back no actualice los nombres
-      recibida:             { clase: 'badge--ambar',  label: 'Recibida' },
-      reemplazada:          { clase: 'badge--gris',   label: 'Reemplazada' },
     };
     return map[estado] ?? { clase: 'badge--gris', label: estado };
   });
@@ -215,6 +216,28 @@ export class ModalDetalleOcComponent {
       const id = this.idOc();
       if (id > 0) void this.cargar(id);
     });
+    this.destroyRef.onDestroy(() => this.revocarUrlPdf());
+  }
+
+  private revocarUrlPdf(): void {
+    const url = this.urlPdfPreview();
+    if (url) URL.revokeObjectURL(url);
+    this.urlPdfPreview.set(null);
+  }
+
+  private async cargarPdfPreview(): Promise<void> {
+    if (this.urlPdfPreview() || this.cargandoPdf()) return;
+    const c = this.cabecera();
+    if (!c?.tienePdf) return;
+    this.cargandoPdf.set(true);
+    try {
+      const blob = await this.svc.obtenerPdfBlob(this.idOc());
+      this.urlPdfPreview.set(URL.createObjectURL(blob));
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el PDF.');
+    } finally {
+      this.cargandoPdf.set(false);
+    }
   }
 
   onCerrar(): void { this.cerrar.emit(); }
@@ -223,9 +246,18 @@ export class ModalDetalleOcComponent {
     this.tab.set(t as TabInterno);
     if (t === 'timeline' && !this.timeline())     await this.cargarTimeline();
     if (t === 'validacion' && !this.validacion()) await this.cargarValidacion();
+    if (t === 'documento')                         await this.cargarPdfPreview();
   }
 
-  seleccionarPropuesta(idPropuesta: number): void { this.idPropuestaSeleccionada.set(idPropuesta); }
+  async seleccionarPropuesta(idPropuesta: number): Promise<void> {
+    if (this.idPropuestaSeleccionada() === idPropuesta) return;
+    this.idPropuestaSeleccionada.set(idPropuesta);
+    // Si el tab Validación IA está abierto, recargar con la propuesta elegida.
+    if (this.tab() === 'validacion') {
+      this.validacion.set(null);
+      await this.cargarValidacion();
+    }
+  }
 
   editar(): void { this.accion.emit('editar'); }
   anular(): void { this.accion.emit('anular'); }
@@ -311,6 +343,7 @@ export class ModalDetalleOcComponent {
 
   private async cargar(id: number): Promise<void> {
     this.cargando.set(true);
+    this.revocarUrlPdf();
     try {
       const d = await this.svc.obtenerDetalle(id);
       this.detalle.set(d);

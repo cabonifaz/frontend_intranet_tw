@@ -245,6 +245,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/expedientes-digitales',
+        loadComponent: () =>
+          import('./features/crm/expedientes-digitales/lista-expedientes/lista-expedientes.component').then(
+            m => m.ListaExpedientesComponent
+          ),
+      },
+      {
+        path: 'crm/expedientes-digitales/:idExpediente',
+        loadComponent: () =>
+          import('./features/crm/expedientes-digitales/detalle-expediente/detalle-expediente.component').then(
+            m => m.DetalleExpedienteComponent
+          ),
+      },
+      {
         path: 'crm/propuestas/nueva',
         canActivate: [permisoRutaGuard('propuesta_guardar')],
         loadComponent: () =>

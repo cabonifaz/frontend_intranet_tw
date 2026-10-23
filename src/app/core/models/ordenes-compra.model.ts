@@ -2,11 +2,24 @@
 // MÓDULO 6 — Órdenes de Compra (Sprint 4, refinamiento HU-22 a HU-28)
 // Alineado 1:1 con OrdenCompraDtos.cs del back.
 //
-// Estados de la OC:    recibida | validada | validada_parcial | observada | anulada | reemplazada
+// Estados de la OC:    autogenerada | validada | validada_parcial | observada | pendiente_reemplazo | anulada
 // Estado vinculación:  pendiente | validada | observada
 // Resultado IA:        ok | advertencia | critico
 // Decisión al guardar: validar | observar | correccion_cliente | nueva_version
+//
+// Reemplazo: una OC autogenerada o pendiente_reemplazo se reemplaza por la OC real
+// del cliente. La reemplazada queda marcada con reemplazadaPor y se oculta de la
+// bandeja salvo con incluirReemplazadas=true (auditoría).
 // ═════════════════════════════════════════════════════════════════════════════
+
+/** Estados posibles de la OC. */
+export type OrdenCompraEstado =
+  | 'autogenerada'
+  | 'validada'
+  | 'validada_parcial'
+  | 'observada'
+  | 'pendiente_reemplazo'
+  | 'anulada';
 
 export interface OpcionFiltro {
   id:     number;
@@ -42,6 +55,8 @@ export interface DatosOrdenCompraDto {
   igvIncluido?:     boolean | null;
   igvPct?:          number | null;
   descuento?:       number | null;
+  /** Tipo de cambio aplicable cuando la OC cubre propuestas de distinta moneda que la OC (ticket E). */
+  tipoCambio?:      number | null;
   ruc?:             string | null;
   razonSocial?:     string | null;
   numeroPropuesta?: string | null;
@@ -70,6 +85,8 @@ export interface ConceptoEvaluadoDto {
   montoPropuesta?: number | null;
   /** coincide · falta_en_oc · adicional_en_oc · monto_distinto */
   estado:          string;
+  /** Otras propuestas vinculadas que tienen el mismo ítem (descripción normalizada), en multi-propuesta (ticket C). */
+  compartidoConPropuestas?: number[];
 }
 
 export interface InsightIaDto {
@@ -129,8 +146,10 @@ export interface AnularOrdenCompraSolicitudDto {
 }
 
 export interface FiltrosBandejaOrdenesCompraDto {
-  /** todas | recibida | validada | validada_parcial | observada | anulada | reemplazada | autogeneradas | sin_asignar */
+  /** todas | autogenerada | validada | validada_parcial | observada | pendiente_reemplazo | anulada | sin_asignar */
   estado?:        string;
+  /** true = incluye OC ya reemplazadas por la OC del cliente (auditoría). */
+  incluirReemplazadas?: boolean;
   idCliente?:     number;
   idResponsable?: number;
   idPropuesta?:   number;
@@ -176,6 +195,9 @@ export interface PropuestaDisponibleOcDto {
   responsable?:   string | null;
   tipoServicio?:  string | null;
   tieneOc:        boolean;
+  /** OC-AUTO vigente de la propuesta (ticket A/B): si existe se reemplaza al registrar la OC real. */
+  idOcAutogenerada?:    number | null;
+  numeroOcAutogenerada?: string | null;
 }
 
 export interface PropuestaOrigenOcDto {
@@ -209,10 +231,13 @@ export interface PropuestaOrigenOcDto {
 }
 
 export interface OcAReemplazarDto {
-  idOc:         number;
-  numeroOc:     string;
-  montoTotal:   number;
+  idOc:           number;
+  numeroOc:       string;
+  montoTotal:     number;
   fechaRegistro?: string | null;
+  esAutogenerada: boolean;
+  /** autogenerada | pendiente_reemplazo */
+  estado:         string;
 }
 
 export interface PreparacionOrdenCompraDto {
@@ -244,6 +269,8 @@ export interface VinculacionEdicionOcDto {
   versionNuevaVersion?:     number | null;
   estadoNuevaVersion?:      string | null;
   nuevaVersionAceptada:     boolean;
+  /** Ticket E: montoAsignado convertido a la moneda de la propuesta (null = misma moneda que la OC). */
+  montoCubierto?:          number | null;
 }
 
 export interface OrdenCompraEdicionDto {
@@ -295,6 +322,14 @@ export interface ResumenComparacionOcDto {
   puedeNuevaVersion:        boolean;
 }
 
+/** Hito de pago de la propuesta (ticket D). DiasCredito: 0 al contado, N en CREDITO_N, null en otras condiciones. */
+export interface HitoPagoPropuestaDto {
+  porcentaje:   number;
+  condicion:    string;
+  diasCredito?: number | null;
+  codigo?:      string | null;
+}
+
 export interface ComparacionPropuestaOcDto {
   orden:         number;
   idPropuesta:   number;
@@ -306,6 +341,29 @@ export interface ComparacionPropuestaOcDto {
   criticas:      number;
   totalCampos:   number;
   sugerencia:    string;
+  /** Ticket E: montoAsignado convertido a la moneda de la propuesta con el TC. null = misma moneda o falta TC. */
+  montoCubierto?: number | null;
+  idMoneda?:      number;
+  moneda?:        string | null;
+  monedaSimbolo?: string | null;
+  /** Ticket D: hitos de pago de la propuesta (comparar contra la condición de pago de la OC). */
+  hitosPago?:    HitoPagoPropuestaDto[];
+}
+
+/**
+ * Ticket C — Pool consolidado de ítems para el tab Resumen de validación multi-propuesta.
+ * Severidad: ok (está en la OC y coincide) · advertencia (falta, adicional o cantidad distinta).
+ */
+export interface ItemConsolidadoOcDto {
+  descripcionNormalizada: string;
+  descripcion:            string;
+  /** IDs de propuestas vinculadas donde aparece este ítem. */
+  enPropuestas:   number[];
+  cantidadTotal:  number;
+  enOc:           boolean;
+  cantidadOc?:    number | null;
+  severidad:      string;
+  mensaje?:       string | null;
 }
 
 /** Fila de la comparación campo por campo. Severidad: ok · advertencia · critico · sin_dato. */
@@ -326,9 +384,18 @@ export interface ComparacionOrdenCompraDto {
   propuestas:      ComparacionPropuestaOcDto[];
   campos:          CampoComparadoOcDto[];
   evaluacionesIa:  EvaluacionIaPropuestaDto[];
+  /** Ticket C: pool consolidado de ítems de todas las propuestas vinculadas vs los conceptos de la OC. */
+  itemsConsolidados?: ItemConsolidadoOcDto[];
 }
 
 // ─── Resultado de registrar / editar / reemplazar PDF ──
+
+/** OC que fue reemplazada al registrar (ticket B: OC-AUTO automáticas + la indicada por idOcReemplaza). */
+export interface OcReemplazadaDto {
+  idOc:     number;
+  numeroOc: string;
+  estado:   string;
+}
 
 export interface OrdenCompraGuardadaDto {
   idOc:                number;
@@ -338,6 +405,10 @@ export interface OrdenCompraGuardadaDto {
   idOcReemplazada?:    number | null;
   numeroOcReemplazada?: string | null;
   notificados:         number;
+  /** Ticket B: todas las OC que se reemplazaron (OC-AUTO automáticas + la indicada por idOcReemplaza). */
+  ocsReemplazadas?: OcReemplazadaDto[];
+  /** Ticket E: TC aplicado al registrar (si cubrió propuestas de otra moneda). */
+  tipoCambio?: number | null;
 }
 
 export interface VinculacionGuardadaOcDto {
@@ -402,6 +473,8 @@ export interface TarjetasOrdenesCompraDto {
   observadas:              number;
   parcialUObservadas:      number;
   autogeneradasPendientes: number;
+  /** OC marcadas por el comercial como "pendiente_reemplazo" esperando la OC corregida del cliente. */
+  pendientesReemplazo:     number;
   sinAsignar:              number;
   anuladas:                number;
 }
@@ -448,6 +521,8 @@ export interface ItemBandejaOrdenCompraDto {
   tienePdf:               boolean;
   urlPdf?:                string | null;
   puedeAnular:            boolean;
+  /** Se puede registrar la OC del cliente que la reemplaza (autogenerada o pendiente_reemplazo). */
+  puedeReemplazar:        boolean;
 }
 
 export interface BandejaOrdenesCompraDto {
@@ -505,6 +580,8 @@ export interface CabeceraDetalleOcDto {
   igvIncluido?:            boolean | null;
   igvPct?:                 number | null;
   descuentoMonto?:         number | null;
+  /** Ticket E: TC usado si la OC cubre propuestas en moneda distinta. */
+  tipoCambio?:             number | null;
   fechaOc?:                string | null;
   fechaRecepcion?:         string | null;
   vigenciaHasta?:          string | null;
@@ -531,7 +608,10 @@ export interface CabeceraDetalleOcDto {
   puedeAgregarPropuesta:   boolean;
   puedeRevalidar:          boolean;
   puedeAnular:             boolean;
+  /** Alias legacy de puedeReemplazar (se mantiene por compatibilidad). */
   puedeReemplazarAuto:     boolean;
+  /** "Registrar OC del cliente" en reemplazo de esta (autogenerada o pendiente_reemplazo). */
+  puedeReemplazar:         boolean;
 }
 
 export interface PropuestaVinculadaOcDto {
@@ -542,6 +622,10 @@ export interface PropuestaVinculadaOcDto {
   aceptada:                 boolean;
   montoPropuesta:           number;
   montoAsignado:            number;
+  /** Ticket E: lo asignado convertido a la moneda de la propuesta (null = misma moneda que la OC). */
+  montoCubierto?:           number | null;
+  idMonedaPropuesta?:       number | null;
+  monedaSimboloPropuesta?:  string | null;
   pctOc:                    number;
   saldoPropuesta:           number;
   idContacto?:              number | null;
@@ -711,6 +795,8 @@ export interface PropuestaAfectadaOcDto {
   estadoValidacion?: string | null;
   saldoActual:       number;
   saldoDespues:      number;
+  /** La propuesta aceptada se queda sin OC vigente: al anular se le generará una OC-AUTO sola. */
+  generaraOcAutogenerada: boolean;
 }
 
 export interface OsEnEjecucionDto {
@@ -729,11 +815,14 @@ export interface PreparacionAnulacionOcDto {
 }
 
 export interface PropuestaSaldoOcDto {
-  idPropuesta:   number;
-  numero:        string;
-  version:       number;
-  montoAsignado: number;
-  saldo:         number;
+  idPropuesta:            number;
+  numero:                 string;
+  version:                number;
+  montoAsignado:          number;
+  saldo:                  number;
+  /** OC-AUTO generada al anular para mantener la cobertura de esta propuesta (si aplicó). */
+  idOcAutogenerada?:      number | null;
+  numeroOcAutogenerada?:  string | null;
 }
 
 export interface AnulacionOrdenCompraDto {

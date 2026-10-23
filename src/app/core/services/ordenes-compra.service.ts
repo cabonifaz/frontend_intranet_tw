@@ -72,7 +72,8 @@ export class OrdenesCompraService {
     let params = new HttpParams()
       .set('pagina',    (filtros.pagina ?? 1).toString())
       .set('porPagina', (filtros.porPagina ?? 10).toString());
-    if (filtros.estado)         params = params.set('estado',        filtros.estado);
+    if (filtros.estado)              params = params.set('estado',               filtros.estado);
+    if (filtros.incluirReemplazadas) params = params.set('incluirReemplazadas', 'true');
     if (filtros.idCliente)      params = params.set('idCliente',     filtros.idCliente.toString());
     if (filtros.idResponsable)  params = params.set('idResponsable', filtros.idResponsable.toString());
     if (filtros.idPropuesta)    params = params.set('idPropuesta',   filtros.idPropuesta.toString());
@@ -206,6 +207,8 @@ export class OrdenesCompraService {
           numeroOc: `OC-AUTO-${String(idOcReemplaza).padStart(6, '0')}`,
           montoTotal: 24_500,
           fechaRegistro: new Date(Date.now() - 86_400_000).toISOString(),
+          esAutogenerada: true,
+          estado: 'autogenerada',
         };
       }
       return this.mockResponse(pre);

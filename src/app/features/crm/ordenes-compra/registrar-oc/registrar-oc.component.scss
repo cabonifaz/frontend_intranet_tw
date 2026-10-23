@@ -569,3 +569,156 @@ textarea {
   strong { font-size: 12px; color: #991b1b; font-weight: 700; }
   small  { font-size: 11px; color: #7f1d1d; line-height: 1.5; }
 }
+
+// ─── Ticket E: aviso de tipo de cambio cuando hay mix de monedas ─────────
+.aviso-tc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+
+  .material-symbols-outlined { font-size: 22px; flex-shrink: 0; }
+
+  &__texto {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong { font-size: 12.5px; }
+    small  { font-size: 11.5px; line-height: 1.45; }
+  }
+
+  &__input {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 160px;
+    flex-shrink: 0;
+
+    label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: inherit;
+      opacity: 0.75;
+    }
+
+    input {
+      padding: 7px 10px;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #FFF;
+      color: #0F172A;
+      text-align: right;
+
+      &:focus { outline: 2px solid #BFDBFE; outline-offset: -1px; border-color: #2563EB; }
+    }
+  }
+
+  &--falta {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+
+    .material-symbols-outlined { color: #dc2626; }
+
+    .aviso-tc__input input {
+      border-color: #fca5a5;
+      &:focus { outline-color: #fecaca; border-color: #dc2626; }
+    }
+  }
+
+  &--ok {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+
+    .material-symbols-outlined { color: #10b981; }
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    &__input { width: 100%; }
+  }
+}
+
+// ─── Celda de monto con botones rápidos + conversión ─────────────────────
+.monto-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+
+  input {
+    width: 110px;
+    text-align: right;
+  }
+
+  &__cubierto {
+    font-size: 10.5px;
+    color: #64748b;
+    font-style: italic;
+  }
+
+  &__botones {
+    display: flex;
+    gap: 4px;
+  }
+}
+
+.btn-mini {
+  all: unset;
+  cursor: pointer;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  background: #F1F5F9;
+  border-radius: 999px;
+  transition: all .12s;
+
+  &:hover { background: #E2E8F0; color: #0F172A; }
+  &:active { background: #CBD5E1; }
+}
+
+// ─── Celda de cobertura ──────────────────────────────────────────────────
+.cobertura-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+
+  &__pct {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #64748b;
+
+    &--mid { color: #B45309; }
+    &--ok  { color: #15803D; }
+  }
+
+  &__bar {
+    width: 72px;
+    height: 5px;
+    background: #E2E8F0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    background: #F59E0B;
+    transition: width .2s;
+
+    &--ok { background: #10B981; }
+  }
+}

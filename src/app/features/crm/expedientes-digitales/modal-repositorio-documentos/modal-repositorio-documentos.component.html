@@ -1,0 +1,166 @@
+<app-modal
+  titulo="Repositorio de Documentos del Expediente"
+  [subtitulo]="numeroExpediente() + (data()?.razonSocial ? ' · ' + data()!.razonSocial : '')"
+  icono="folder_open"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="rep__cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando documentos...
+    </div>
+  } @else if (data(); as d) {
+    <div class="rep">
+
+      <!-- Toolbar: filtros + badge total -->
+      <div class="rep__toolbar">
+        <div class="rep__busqueda">
+          <span class="material-symbols-outlined">search</span>
+          <input
+            type="text"
+            placeholder="Buscar documento por nombre, tipo o módulo origen..."
+            [ngModel]="busqueda()"
+            (ngModelChange)="busqueda.set($event)"
+            (keyup.enter)="aplicarFiltros()" />
+        </div>
+
+        <div class="rep__filtro">
+          <input
+            type="date"
+            [ngModel]="desde()"
+            (ngModelChange)="desde.set($event); aplicarFiltros()"
+            title="Desde" />
+          <span class="rep__filtro-sep">–</span>
+          <input
+            type="date"
+            [ngModel]="hasta()"
+            (ngModelChange)="hasta.set($event); aplicarFiltros()"
+            title="Hasta" />
+        </div>
+
+        <div class="rep__filtro">
+          <select [ngModel]="formato()" (ngModelChange)="formato.set($event); aplicarFiltros()">
+            <option value="">Formato: Todos</option>
+            @for (fmt of d.formatos; track fmt.codigo) {
+              <option [value]="fmt.codigo">{{ fmt.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <span class="rep__total">
+          <span class="material-symbols-outlined">description</span>
+          {{ d.totalDocumentos }} documentos
+        </span>
+      </div>
+
+      <!-- Tabs por categoría -->
+      <div class="rep__tabs" role="tablist">
+        @for (p of d.pestanas; track p.codigo) {
+          <button
+            class="rep__tab"
+            [class.rep__tab--activo]="tabActivo() === p.codigo"
+            (click)="cambiarTab(p.codigo)">
+            {{ p.nombre }}
+            <span class="rep__tab-badge">{{ p.cantidad }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- Tabla de documentos -->
+      @if (documentosFiltrados().length === 0) {
+        <div class="rep__vacio">
+          <span class="material-symbols-outlined">folder_off</span>
+          <strong>No hay documentos</strong>
+          <small>No se encontraron documentos con los filtros aplicados.</small>
+        </div>
+      } @else {
+        <div class="rep__tabla-wrap">
+          <table class="rep__tabla">
+            <thead>
+              <tr>
+                <th class="col-check"><input type="checkbox" disabled /></th>
+                <th class="col-nombre">Nombre del documento</th>
+                <th>Origen</th>
+                <th>Versión</th>
+                <th>Fecha de carga</th>
+                <th>Usuario responsable</th>
+                <th class="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (doc of documentosFiltrados(); track doc.clave) {
+                <tr>
+                  <td class="col-check"><input type="checkbox" /></td>
+                  <td class="col-nombre">
+                    <div class="doc-nombre">
+                      <span class="doc-nombre__icono doc-nombre__icono--{{ colorFormato(doc.formato) }}">
+                        <span class="material-symbols-outlined">{{ iconoFormato(doc.formato, doc.tipoContenido) }}</span>
+                      </span>
+                      <div class="doc-nombre__texto">
+                        <strong>{{ doc.nombre }}</strong>
+                        <small>
+                          @if (doc.tamanoBytes) { {{ formatearTamano(doc.tamanoBytes) }} }
+                          @if (doc.descripcion) { · {{ doc.descripcion }} }
+                        </small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="chip-origen chip-origen--{{ colorOrigen(doc.modulo) }}">
+                      {{ doc.origen ?? doc.modulo ?? '—' }}
+                    </span>
+                  </td>
+                  <td class="col-version">
+                    @if (doc.version > 0) { v{{ doc.version }} } @else { — }
+                  </td>
+                  <td class="col-fecha">{{ formatearFecha(doc.fecha) }}</td>
+                  <td class="col-usuario">
+                    @if (doc.usuario) {
+                      <div class="doc-usuario">
+                        <span class="doc-usuario__avatar">{{ iniciales(doc.usuario) }}</span>
+                        <span class="doc-usuario__nombre">{{ doc.usuario }}</span>
+                      </div>
+                    } @else { <span class="rep__dash">—</span> }
+                  </td>
+                  <td class="col-acciones">
+                    @if (doc.previsualizable) {
+                      <button class="rep__accion" title="Previsualizar" (click)="previsualizar(doc)">
+                        <span class="material-symbols-outlined">visibility</span>
+                      </button>
+                    }
+                    @if (doc.descargable) {
+                      <button class="rep__accion" title="Descargar" (click)="descargar(doc)">
+                        <span class="material-symbols-outlined">download</span>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <div modalFooter class="rep__footer">
+    <small class="rep__contador">
+      @if (data(); as d) {
+        Mostrando {{ documentosFiltrados().length }} de {{ d.totalDocumentos }} documentos
+      }
+    </small>
+    <div class="rep__footer-acciones">
+      <app-button
+        variant="secondary"
+        icono="download"
+        [cargando]="exportando()"
+        [disabled]="exportando() || cargando()"
+        (clic)="exportar()">
+        Exportar lista XLSX
+      </app-button>
+      <app-button variant="ghost" (clic)="onCerrar()">Cerrar</app-button>
+    </div>
+  </div>
+</app-modal>

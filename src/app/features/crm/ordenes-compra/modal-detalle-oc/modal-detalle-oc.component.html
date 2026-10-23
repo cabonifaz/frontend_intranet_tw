@@ -40,7 +40,7 @@
           <strong>Esta es una OC provisional</strong>
           <small>Fue generada automáticamente al aceptar la propuesta para no bloquear la ejecución del servicio. Debe ser reemplazada por la OC real cuando el cliente la envíe, antes de proceder con la facturación.</small>
         </div>
-        @if (c.puedeReemplazarAuto) {
+        @if (c.puedeReemplazar) {
           <app-button variant="primary" icono="sync" (clic)="reemplazarAuto()">Reemplazar por OC del cliente</app-button>
         }
       </div>
@@ -363,7 +363,7 @@
             <span>
               <span class="material-symbols-outlined">memory</span>
               Motor: {{ v.motor ?? 'Total Weight OCR & Semantic Matcher' }}
-              @if (v.confianza != null) { · Confianza {{ (v.confianza * 100).toFixed(1) }}% }
+              @if (v.confianza != null) { · Confianza {{ v.confianza.toFixed(1) }}% }
             </span>
             @if (v.fechaValidacion) {
               <span>Auditoría: {{ v.fechaValidacion | date:'dd/MM/yyyy HH:mm' }}</span>
@@ -438,16 +438,28 @@
           }
         </div>
 
-        <!-- Preview del PDF -->
+        <!-- Preview del PDF (descargado como blob porque el endpoint pide token) -->
         <div class="doc-preview">
-          <iframe [src]="svc.obtenerUrlPdf(idOc()) | safeUrl" title="PDF OC"></iframe>
+          @if (cargandoPdf()) {
+            <div class="pdf-cargando">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              Cargando PDF...
+            </div>
+          } @else if (urlPdfPreview(); as url) {
+            <iframe [src]="url | safeUrl" title="PDF OC"></iframe>
+          } @else {
+            <div class="pdf-cargando">
+              <span class="material-symbols-outlined">picture_as_pdf</span>
+              Haz clic en "Abrir en Pantalla Completa" para ver el PDF.
+            </div>
+          }
         </div>
       } @else {
         <div class="pdf-vacio">
           <span class="material-symbols-outlined">upload_file</span>
           <h4>Sin documento adjunto</h4>
           <p>Esta OC es autogenerada. Reemplázala con el PDF real del cliente cuando llegue.</p>
-          @if (c.puedeReemplazarAuto) {
+          @if (c.puedeReemplazar) {
             <app-button variant="primary" icono="sync" (clic)="reemplazarAuto()">Reemplazar por OC del cliente</app-button>
           }
         </div>
