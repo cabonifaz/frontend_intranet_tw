@@ -108,9 +108,16 @@
                     </div>
                   </td>
                   <td>
-                    <span class="chip-origen chip-origen--{{ colorOrigen(doc.modulo) }}">
-                      {{ doc.origen ?? doc.modulo ?? '—' }}
-                    </span>
+                    <div class="col-origen">
+                      <span class="chip-origen chip-origen--{{ colorOrigen(doc.modulo) }}">
+                        {{ doc.origen ?? doc.modulo ?? '—' }}
+                      </span>
+                      @if (doc.rolDocumento) {
+                        <span class="chip-rol chip-rol--{{ colorRolDocumento(doc.rolDocumento) }}">
+                          {{ labelRolDocumento(doc.rolDocumento) }}
+                        </span>
+                      }
+                    </div>
                   </td>
                   <td class="col-version">
                     @if (doc.version > 0) { v{{ doc.version }} } @else { — }

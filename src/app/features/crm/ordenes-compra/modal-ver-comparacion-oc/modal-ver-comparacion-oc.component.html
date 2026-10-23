@@ -150,8 +150,8 @@
   <!-- ── Desglose por Concepto / Servicio Metrológico ───────────────────── -->
   @if (usarPoolConsolidado()) {
     <!-- Modo agregado: pool consolidado (dedup entre propuestas) -->
-    <app-seccion icono="receipt_long" titulo="Pool Consolidado de Ítems"
-                 [subtitulo]="itemsConsolidados().length + ' ítem(s) únicos de ' + propuestas().length + ' propuestas vinculadas (deduplicado).'">
+    <app-seccion icono="receipt_long" titulo="Pool Consolidado — Ítems Obligatorios"
+                 [subtitulo]="itemsObligatorios().length + ' ítem(s) obligatorio(s) de la Propuesta Técnica.'">
       <table class="tabla-comparacion">
         <thead>
           <tr>
@@ -163,11 +163,20 @@
           </tr>
         </thead>
         <tbody>
-          @for (it of itemsConsolidados(); track it.descripcionNormalizada) {
+          @for (it of itemsObligatorios(); track $index) {
             <tr>
               <td class="celda-concepto">
-                <span class="dot {{ dotEstadoConsolidado(it.severidad) }}"></span>
-                <strong>{{ it.descripcion }}</strong>
+                <span class="dot {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}"></span>
+                <div class="celda-concepto__texto">
+                  <strong>{{ it.descripcion }}</strong>
+                  @if (it.alcance || it.precioUnitario != null) {
+                    <small class="celda-concepto__meta">
+                      @if (it.alcance) { {{ it.alcance }} }
+                      @if (it.alcance && it.precioUnitario != null) { <span class="celda-concepto__sep">·</span> }
+                      @if (it.precioUnitario != null) { $ {{ it.precioUnitario | number:'1.2-2' }} }
+                    </small>
+                  }
+                </div>
               </td>
               <td class="celda-valor">{{ nombresPropuestas(it.enPropuestas) || '—' }}</td>
               <td class="celda-valor tabla-comparacion__num">{{ it.cantidadTotal }}</td>
@@ -179,18 +188,69 @@
                 }
               </td>
               <td>
-                <span class="chip-sev {{ dotEstadoConsolidado(it.severidad) }}">
-                  <span class="material-symbols-outlined">{{ iconoEstadoConsolidado(it.severidad) }}</span>
-                  {{ it.mensaje ?? labelEstadoConsolidado(it.severidad) }}
+                <span class="chip-sev {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}">
+                  <span class="material-symbols-outlined">{{ iconoEstadoConsolidado(severidadDesdeEstadoItem(it)) }}</span>
+                  {{ it.mensaje ?? labelEstadoItem(it.estado) }}
                 </span>
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="5" class="celda-vacia">Sin ítems para mostrar.</td></tr>
+            <tr><td colspan="5" class="celda-vacia">Sin ítems obligatorios para mostrar.</td></tr>
           }
         </tbody>
       </table>
     </app-seccion>
+
+    @if (itemsOpcionales().length > 0) {
+      <app-seccion icono="add_circle" titulo="Pool Consolidado — Ítems Opcionales"
+                   [subtitulo]="itemsOpcionales().length + ' ítem(s) opcional(es). Validación informativa (no suman advertencias).'">
+        <table class="tabla-comparacion">
+          <thead>
+            <tr>
+              <th>ÍTEM</th>
+              <th>EN PROPUESTAS</th>
+              <th class="tabla-comparacion__num">CANT. ESPERADA</th>
+              <th class="tabla-comparacion__num">EN OC</th>
+              <th>ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (it of itemsOpcionales(); track $index) {
+              <tr>
+                <td class="celda-concepto">
+                  <span class="dot {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}"></span>
+                  <div class="celda-concepto__texto">
+                    <strong>{{ it.descripcion }}</strong>
+                    @if (it.alcance || it.precioUnitario != null) {
+                      <small class="celda-concepto__meta">
+                        @if (it.alcance) { {{ it.alcance }} }
+                        @if (it.alcance && it.precioUnitario != null) { <span class="celda-concepto__sep">·</span> }
+                        @if (it.precioUnitario != null) { $ {{ it.precioUnitario | number:'1.2-2' }} }
+                      </small>
+                    }
+                  </div>
+                </td>
+                <td class="celda-valor">{{ nombresPropuestas(it.enPropuestas) || '—' }}</td>
+                <td class="celda-valor tabla-comparacion__num">{{ it.cantidadTotal }}</td>
+                <td class="celda-valor tabla-comparacion__num">
+                  {{ it.enOc ? (it.cantidadOc ?? '—') : '—' }}
+                </td>
+                <td>
+                  <span class="chip-sev {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}">
+                    <span class="material-symbols-outlined">{{ iconoEstadoConsolidado(severidadDesdeEstadoItem(it)) }}</span>
+                    {{ mensajeChipItem(it) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <small class="nota-opcionales">
+          <span class="material-symbols-outlined">info</span>
+          El cliente aceptó estos opcionales pero no está obligado a comprarlos. La OC los incluye o no según su conveniencia.
+        </small>
+      </app-seccion>
+    }
   } @else if (conceptos().length > 0) {
     <!-- Modo detalle por propuesta (mono o pill elegido): comparación tradicional -->
     <app-seccion icono="receipt_long" titulo="Desglose por Concepto / Servicio Metrológico"
@@ -236,6 +296,56 @@
         </tbody>
       </table>
     </app-seccion>
+
+    <!-- Ítems opcionales de la propuesta seleccionada -->
+    @if (itemsOpcionalesPropuesta().length > 0) {
+      <app-seccion icono="add_circle" titulo="Ítems Opcionales de esta Propuesta"
+                   [subtitulo]="itemsOpcionalesPropuesta().length + ' ítem(s) opcional(es). Validación informativa (no suman advertencias).'">
+        <table class="tabla-comparacion">
+          <thead>
+            <tr>
+              <th>ÍTEM</th>
+              <th class="tabla-comparacion__num">CANT. ESPERADA</th>
+              <th class="tabla-comparacion__num">EN OC</th>
+              <th>ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (it of itemsOpcionalesPropuesta(); track $index) {
+              <tr>
+                <td class="celda-concepto">
+                  <span class="dot {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}"></span>
+                  <div class="celda-concepto__texto">
+                    <strong>{{ it.descripcion }}</strong>
+                    @if (it.alcance || it.precioUnitario != null) {
+                      <small class="celda-concepto__meta">
+                        @if (it.alcance) { {{ it.alcance }} }
+                        @if (it.alcance && it.precioUnitario != null) { <span class="celda-concepto__sep">·</span> }
+                        @if (it.precioUnitario != null) { $ {{ it.precioUnitario | number:'1.2-2' }} }
+                      </small>
+                    }
+                  </div>
+                </td>
+                <td class="celda-valor tabla-comparacion__num">{{ it.cantidadTotal }}</td>
+                <td class="celda-valor tabla-comparacion__num">
+                  {{ it.enOc ? (it.cantidadOc ?? '—') : '—' }}
+                </td>
+                <td>
+                  <span class="chip-sev {{ dotEstadoConsolidado(severidadDesdeEstadoItem(it)) }}">
+                    <span class="material-symbols-outlined">{{ iconoEstadoConsolidado(severidadDesdeEstadoItem(it)) }}</span>
+                    {{ mensajeChipItem(it) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <small class="nota-opcionales">
+          <span class="material-symbols-outlined">info</span>
+          El cliente aceptó estos opcionales en la propuesta pero no está obligado a comprarlos. La OC los incluye o no según su conveniencia.
+        </small>
+      </app-seccion>
+    }
   }
 
   <!-- ── Dictamen Inteligente del Motor Metrológico ─────────────────────── -->

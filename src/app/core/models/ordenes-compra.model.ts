@@ -198,6 +198,8 @@ export interface PropuestaDisponibleOcDto {
   /** OC-AUTO vigente de la propuesta (ticket A/B): si existe se reemplaza al registrar la OC real. */
   idOcAutogenerada?:    number | null;
   numeroOcAutogenerada?: string | null;
+  /** Cantidad de ítems (servicios) de la propuesta — columna SERVICIOS. */
+  items?:         number;
 }
 
 export interface PropuestaOrigenOcDto {
@@ -357,6 +359,10 @@ export interface ComparacionPropuestaOcDto {
 export interface ItemConsolidadoOcDto {
   descripcionNormalizada: string;
   descripcion:            string;
+  /** Precio unitario (parte de la clave de identidad descripción + precio + alcance). */
+  precioUnitario?:        number | null;
+  /** Alcance del ítem (ej. "200kg", "100kg"). Parte de la clave de identidad. */
+  alcance?:               string | null;
   /** IDs de propuestas vinculadas donde aparece este ítem. */
   enPropuestas:   number[];
   cantidadTotal:  number;
@@ -364,6 +370,26 @@ export interface ItemConsolidadoOcDto {
   cantidadOc?:    number | null;
   severidad:      string;
   mensaje?:       string | null;
+  /** Precio unitario que trae la OC para este ítem (puede diferir del del pool). */
+  precioUnitarioOc?: number | null;
+  /** Cuánto aporta cada propuesta al pool: "15 unidades: 10 de PROP-A, 5 de PROP-B". */
+  aportesPorPropuesta?: ItemAporteOcDto[];
+  /** true = ítem de la sección Opcionales de la propuesta (validación suave/informativa). */
+  esOpcional:     boolean;
+  /** Estado detallado:
+   *  Obligatorios: ok · faltan_unidades · sobran_unidades · falta_en_oc · adicional_en_oc.
+   *  Opcionales:   confirmado_opcional · parcial_opcional · no_solicitado. */
+  estado:         string;
+  /** false en los opcionales: no suman advertencias ni cambian el resultado global. */
+  cuentaParaResultadoGlobal: boolean;
+}
+
+/** Aporte de una propuesta vinculada al pool consolidado. */
+export interface ItemAporteOcDto {
+  idPropuesta:     number;
+  numero:          string;
+  cantidad:        number;
+  precioUnitario?: number | null;
 }
 
 /** Fila de la comparación campo por campo. Severidad: ok · advertencia · critico · sin_dato. */

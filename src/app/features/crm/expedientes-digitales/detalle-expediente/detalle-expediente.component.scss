@@ -1168,6 +1168,10 @@ app-seccion + app-seccion { margin-top: 14px; }
     font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
   }
 
+  &__user-cargo {
+    color: #94a3b8; font-size: 11px; font-weight: 500; font-style: italic;
+  }
+
   &__desc {
     margin: 2px 0 0; font-size: 11.5px; color: #475569; line-height: 1.5;
   }
@@ -1437,6 +1441,14 @@ app-seccion + app-seccion { margin-top: 14px; }
   strong { color: #991b1b; font-weight: 700; margin-right: 4px; }
 }
 
+// Resumen del cuerpo del correo (más pequeño y en gris).
+.tl__desc--resumen {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  padding-left: 10px;
+  border-left: 2px solid #e2e8f0;
+}
+
 // Fila de adjuntos dentro de un timeline item (interacciones de seguimiento, etc.)
 .tl__adjuntos {
   display: flex; flex-wrap: wrap; gap: 6px;
@@ -1480,6 +1492,84 @@ app-seccion + app-seccion { margin-top: 14px; }
   border-radius: 6px;
   font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px;
   font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+// Aviso compacto cuando una sección opcional no tiene datos.
+.aviso-sin-datos {
+  display: block; padding: 10px 2px;
+  color: #94a3b8; font-size: 12px; font-style: italic;
+}
+
+// Dirección complementaria en la línea de sede operativa.
+.sede-direccion { color: #94a3b8; font-weight: 500; }
+
+// ─── OC: resumen compacto de OSs cubiertas (el detalle vive en el tab Propuesta) ─
+.oss-resumen {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+
+// ─── OC: OSs generadas desde esta OC ────────────────────────────────────
+.oss-vinculadas { display: flex; flex-direction: column; gap: 10px; }
+
+.os-vinc {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+
+  &__head {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+
+  &__btn { margin-left: auto; }
+
+  &__meta {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 11.5px; color: #475569;
+
+    small {
+      display: inline-flex; align-items: center; gap: 6px;
+      strong { color: #0f172a; font-weight: 600; }
+      .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
+    }
+  }
+}
+
+// ─── Propuesta: OCs vinculadas desde esta versión ───────────────────────
+.ocs-vinculadas { display: flex; flex-direction: column; gap: 10px; }
+
+.oc-vinc {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+
+  &__head {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+
+  &__btn { margin-left: auto; }
+
+  &__montos {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;
+    padding: 10px 12px;
+    background: #f8fafc; border-radius: 8px;
+  }
+
+  &__monto {
+    display: flex; flex-direction: column; gap: 1px;
+    small { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+    strong { font-size: 13.5px; color: #0f172a; font-variant-numeric: tabular-nums; }
+  }
+
+  &__meta {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    font-size: 11.5px; color: #64748b;
+    small strong { color: #475569; }
+
+    .meta-rojo  { color: #dc2626; font-weight: 600; }
+    .meta-ambar { color: #d97706; font-weight: 600; }
+  }
 }
 
 // Chip clicable para abrir/previsualizar un archivo adjunto.
@@ -1595,6 +1685,13 @@ app-seccion + app-seccion { margin-top: 14px; }
 .card-aprobador__mail-btn {
   margin-left: auto;
 }
+.card-aprobador__supervisor {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 4px;
+  color: #16a34a; font-size: 11px; font-weight: 600;
+  .material-symbols-outlined { font-size: 14px; }
+}
+
 .card-aprobador__footer {
   display: flex; align-items: center; gap: 6px;
   padding-top: 12px;

@@ -77,6 +77,8 @@ export class RegistrarOcComponent {
   readonly guardando   = signal(false);
   readonly extrayendoIa = signal(false);
   readonly comparando  = signal(false);
+  /** Mensaje de error si la validación IA falló (ej. "Ya existe la OC X"). */
+  readonly errorValidacion = signal<string | null>(null);
   readonly error       = signal('');
 
   readonly preparacion        = signal<PreparacionOrdenCompraDto | null>(null);
@@ -240,7 +242,8 @@ export class RegistrarOcComponent {
       && !!d.fechaEmision && d.idMoneda != null
       && (d.montoTotal ?? 0) > 0 && this.vinculadas().length > 0
       && !this.sobreasignado()
-      && !this.faltaTipoCambio();                    // ticket E
+      && !this.faltaTipoCambio()                     // ticket E
+      && !this.errorValidacion();                    // bloquea si validación IA falló (ej. OC duplicada)
     if (this.modo() === 'crear') {
       // En modo crear: PDF obligatorio Y extracción IA exitosa (fuente de verdad = PDF, no comercial)
       return basico && !!this.archivo() && this.extraccionExitosa();
@@ -399,7 +402,7 @@ export class RegistrarOcComponent {
       idPropuesta: p.idPropuesta, numero: p.numero, version: p.version,
       total: p.total, saldo: p.saldo, idMoneda: p.idMoneda,
       monedaSimbolo: p.monedaSimbolo, montoAsignado: 0, esOrigen: false,
-      contacto: p.contacto, numeroRq: p.numeroRq,
+      contacto: p.contacto, numeroRq: p.numeroRq, servicios: p.items,
     }]);
     this.otrasPropuestas.update(list => list.filter(x => x.idPropuesta !== p.idPropuesta));
     // Si ya hay PDF extraído, re-disparar validación IA contra todas las propuestas vinculadas.
@@ -467,6 +470,11 @@ export class RegistrarOcComponent {
     if (this.extraccionExitosa()) void this.validarAhora();
   }
 
+  /** Monto ya cubierto por OCs previas = total - saldo pendiente. */
+  cubiertoPreviamente(v: { total: number; saldo: number }): number {
+    return Math.max(0, (v.total ?? 0) - (v.saldo ?? 0));
+  }
+
   /** % cobertura por propuesta (0-100). Base = saldo si > 0, si no el total. */
   coberturaPct(idPropuesta: number): number {
     const v = this.vinculadas().find(x => x.idPropuesta === idPropuesta);
@@ -486,6 +494,7 @@ export class RegistrarOcComponent {
 
   async validarAhora(): Promise<void> {
     this.comparando.set(true);
+    this.errorValidacion.set(null);
     try {
       const r = await this.svc.comparar({
         idOc: this.modo() === 'editar' ? this.idOcEditar() : null,
@@ -498,7 +507,11 @@ export class RegistrarOcComponent {
       this.comparacion.set(r);
       this.toast.exito(`Validación lista: ${r.resumen.resultado}`);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo validar.');
+      const msg = e instanceof Error ? e.message : 'No se pudo validar.';
+      // Limpiar la comparación previa para que el badge "Validado" no quede colgado.
+      this.comparacion.set(null);
+      this.errorValidacion.set(msg);
+      this.toast.error(msg);
     } finally {
       this.comparando.set(false);
     }

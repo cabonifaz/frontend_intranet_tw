@@ -67,6 +67,13 @@
                 <span>ASIGNADO</span>
                 <strong>{{ formatearMonto(totalAsignado(), monedaSimbolo()) }}</strong>
               </div>
+              <div class="asignacion-resumen__item">
+                <span>SALDO</span>
+                <strong [class.asignacion-resumen__saldo-cero]="saldoOc() === 0"
+                        [class.asignacion-resumen__saldo-neg]="saldoOc() < 0">
+                  {{ formatearMonto(saldoOc(), monedaSimbolo()) }}
+                </strong>
+              </div>
               <span class="asignacion-chip"
                     [class.asignacion-chip--ok]="asignadoPct() === 100 && !sobreasignado()"
                     [class.asignacion-chip--error]="sobreasignado()">
@@ -103,12 +110,11 @@
             <thead>
               <tr>
                 <th>N° PROPUESTA</th>
-                <th>CONTACTO</th>
-                <th>REQUERIMIENTO</th>
+                <th class="tabla-propuestas__num">MONTO PROPUESTA</th>
+                <th>COBERTURA PREVIA</th>
+                <th class="tabla-propuestas__num">SERVICIOS</th>
                 <th class="tabla-propuestas__num">MONTO ASIGNADO</th>
                 <th class="tabla-propuestas__num">COBERTURA</th>
-                <th class="tabla-propuestas__num">SERVICIOS</th>
-                <th>MONEDA</th>
                 <th></th>
               </tr>
             </thead>
@@ -116,12 +122,40 @@
               @for (v of vinculadas(); track v.idPropuesta) {
                 <tr>
                   <td>
-                    <strong>{{ v.numero }}</strong>
-                    <span class="chip-ver">v{{ v.version }}</span>
-                    @if (v.esOrigen) { <span class="chip chip--azul">ORIGEN</span> }
+                    <div class="prop-cell">
+                      <div class="prop-cell__fila">
+                        <strong>{{ v.numero }}</strong>
+                        <span class="chip-ver">v{{ v.version }}</span>
+                        @if (v.esOrigen) { <span class="chip chip--azul">ORIGEN</span> }
+                      </div>
+                      <small class="prop-cell__rq">{{ v.numeroRq ?? '—' }}</small>
+                    </div>
                   </td>
-                  <td>{{ v.contacto ?? '—' }}</td>
-                  <td>{{ v.numeroRq ?? '—' }}</td>
+                  <td class="tabla-propuestas__num">
+                    <span class="monto-prop">
+                      {{ v.monedaSimbolo ?? '' }} {{ v.total | number:'1.2-2' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (cubiertoPreviamente(v) > 0 && v.total > 0) {
+                      <div class="prop-cell__cubierto">
+                        <div class="prop-cell__cubierto-head">
+                          <small>Cubierto por otras OCs</small>
+                          <small class="prop-cell__cubierto-pct">{{ ((cubiertoPreviamente(v) / v.total) * 100) | number:'1.0-0' }}%</small>
+                        </div>
+                        <div class="prop-cell__bar">
+                          <div class="prop-cell__bar-fill" [style.width.%]="(cubiertoPreviamente(v) / v.total) * 100"></div>
+                        </div>
+                        <div class="prop-cell__cubierto-nums">
+                          <small><strong>{{ v.monedaSimbolo ?? '' }} {{ cubiertoPreviamente(v) | number:'1.2-2' }}</strong> cubierto</small>
+                          <small><strong>{{ v.monedaSimbolo ?? '' }} {{ v.saldo | number:'1.2-2' }}</strong> saldo</small>
+                        </div>
+                      </div>
+                    } @else {
+                      <small class="prop-cell__sin-cobertura">Sin OCs previas</small>
+                    }
+                  </td>
+                  <td class="tabla-propuestas__num">{{ v.servicios ?? '—' }}</td>
                   <td class="tabla-propuestas__num">
                     <div class="monto-cell">
                       <input type="number" min="0" step="0.01"
@@ -151,8 +185,6 @@
                       </div>
                     </div>
                   </td>
-                  <td class="tabla-propuestas__num">{{ v.servicios ?? '—' }}</td>
-                  <td>{{ v.monedaSimbolo ?? '—' }}</td>
                   <td>
                     @if (!v.esOrigen) {
                       <app-button variant="ghost" tamano="sm" icono="delete" [soloIcon]="true"
@@ -416,6 +448,8 @@
             <strong class="card-sidebar__titulo">VALIDACIÓN IA</strong>
             @if (comparando()) {
               <small class="validando-mini"><span class="material-symbols-outlined spin">progress_activity</span> Validando...</small>
+            } @else if (errorValidacion()) {
+              <small class="validando-mini validando-mini--error"><span class="material-symbols-outlined">error</span> Error</small>
             } @else if (resumenValidacion()) {
               <small class="validando-mini"><span class="material-symbols-outlined">check_circle</span> Validado</small>
             }
@@ -429,6 +463,14 @@
             <p class="card-sidebar__texto">
               Procesando... La IA está comparando los datos extraídos contra las propuestas vinculadas.
             </p>
+          } @else if (errorValidacion()) {
+            <div class="val-error">
+              <span class="material-symbols-outlined">error</span>
+              <div>
+                <strong>No se pudo validar</strong>
+                <small>{{ errorValidacion() }}</small>
+              </div>
+            </div>
           } @else if (!resumenValidacion()) {
             <p class="card-sidebar__texto">
               Esperando resultado de la validación...
@@ -540,7 +582,12 @@
       <app-button variant="ghost" icono="arrow_back" (clic)="cancelar()">Cancelar</app-button>
       <div class="footer-pagina__sep"></div>
 
-      @if (botonPrincipal(); as b) {
+      @if (errorValidacion()) {
+        <span class="footer-hint footer-hint--error">
+          <span class="material-symbols-outlined">block</span>
+          No se puede registrar: {{ errorValidacion() }}
+        </span>
+      } @else if (botonPrincipal(); as b) {
         @if (explicacionAccion(); as msg) {
           <span class="footer-hint"
                 [class.footer-hint--error]="accionPrincipal() === 'correccion_cliente'"

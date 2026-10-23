@@ -204,7 +204,7 @@ export class ModalVerComparacionOcComponent {
   }
 
   dotEstadoConsolidado(sev: string): string {
-    return ({ ok: 'sev--ok', advertencia: 'sev--adv', critico: 'sev--crit' } as Record<string, string>)[sev] ?? 'sev--neutro';
+    return ({ ok: 'sev--ok', advertencia: 'sev--adv', critico: 'sev--crit', info: 'sev--info' } as Record<string, string>)[sev] ?? 'sev--neutro';
   }
 
   iconoEstadoConsolidado(sev: string): string {
@@ -212,12 +212,53 @@ export class ModalVerComparacionOcComponent {
       case 'ok':          return 'check_circle';
       case 'advertencia': return 'warning';
       case 'critico':     return 'error';
+      case 'info':        return 'info';
       default:            return 'help';
     }
   }
 
   labelEstadoConsolidado(sev: string): string {
-    return ({ ok: 'En OC', advertencia: 'Divergencia', critico: 'Crítico' } as Record<string, string>)[sev] ?? sev;
+    return ({ ok: 'En OC', advertencia: 'Divergencia', critico: 'Crítico', info: 'Informativo' } as Record<string, string>)[sev] ?? sev;
+  }
+
+  /** Mapea el `estado` detallado del back a una severidad semántica para colores/iconos. */
+  severidadDesdeEstadoItem(it: { estado?: string | null; esOpcional?: boolean; severidad?: string }): string {
+    const e = (it.estado ?? '').toLowerCase();
+    // Obligatorios
+    if (e === 'ok') return 'ok';
+    if (e === 'faltan_unidades' || e === 'sobran_unidades' || e === 'falta_en_oc' || e === 'adicional_en_oc') return 'advertencia';
+    // Opcionales
+    if (e === 'confirmado_opcional') return 'ok';
+    if (e === 'parcial_opcional' || e === 'no_solicitado') return 'info';
+    // Fallback a la severidad previa si viene
+    return it.severidad ?? 'neutro';
+  }
+
+  /** Label corto para la columna estado del pool. */
+  labelEstadoItem(estado?: string | null): string {
+    switch ((estado ?? '').toLowerCase()) {
+      case 'ok':                  return 'OK';
+      case 'faltan_unidades':     return 'Faltan unidades';
+      case 'sobran_unidades':     return 'Sobran unidades';
+      case 'falta_en_oc':         return 'Falta en OC';
+      case 'adicional_en_oc':     return 'Adicional en OC';
+      case 'confirmado_opcional': return 'Confirmado (opcional)';
+      case 'parcial_opcional':    return 'Parcial (opcional)';
+      case 'no_solicitado':       return 'No solicitado';
+      default:                    return estado ?? '—';
+    }
+  }
+
+  /** Mensaje visible en el chip. Compacto para opcionales (sobrescribe el msj largo del back). */
+  mensajeChipItem(it: { estado?: string | null; mensaje?: string | null; cantidadTotal?: number; esOpcional?: boolean }): string {
+    const estado = (it.estado ?? '').toLowerCase();
+    if (it.esOpcional) {
+      if (estado === 'no_solicitado') return `No solicitado (${it.cantidadTotal ?? 0} disp.)`;
+      if (estado === 'confirmado_opcional') return 'Confirmado';
+      if (estado === 'parcial_opcional') return 'Parcial';
+      return this.labelEstadoItem(it.estado);
+    }
+    return it.mensaje ?? this.labelEstadoItem(it.estado);
   }
 
   readonly conceptos = computed(() => {
@@ -229,6 +270,19 @@ export class ModalVerComparacionOcComponent {
 
   /** Pool consolidado (ticket C): se usa en modo agregado para no duplicar ítems entre propuestas. */
   readonly itemsConsolidados = computed(() => this.comparacion().itemsConsolidados ?? []);
+
+  /** Ítems obligatorios del pool (Propuesta Técnica). */
+  readonly itemsObligatorios = computed(() => this.itemsConsolidados().filter(i => !i.esOpcional));
+
+  /** Ítems opcionales del pool (sección Opcionales de cada propuesta). */
+  readonly itemsOpcionales = computed(() => this.itemsConsolidados().filter(i => i.esOpcional));
+
+  /** Opcionales filtrados por la propuesta seleccionada (modo single propuesta). */
+  readonly itemsOpcionalesPropuesta = computed(() => {
+    const idP = this.idPropuestaFiltro();
+    if (!idP) return [];
+    return this.itemsOpcionales().filter(i => i.enPropuestas.includes(idP));
+  });
 
   /** True si debemos mostrar el pool consolidado en vez del desglose por propuesta. */
   readonly usarPoolConsolidado = computed(() =>

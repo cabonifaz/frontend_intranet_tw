@@ -251,6 +251,8 @@ export interface EventoExpedienteDto {
   etapaNombre?: string | null;
   idUsuario?:   number | null;
   usuario:      string;
+  /** Cargo del usuario (ej. "Jefe Comercial") para mostrar junto al nombre en Auditoría. */
+  cargoUsuario?: string | null;
   entidad?:     string | null;
   referencia?:  string | null;
   urgente:      boolean;
@@ -387,6 +389,52 @@ export interface DetallePropuestaExpedienteDto {
   clavePdf:            string;
   nombrePdf?:          string | null;
   numeroRq?:           string | null;
+  // ── Pedido 1 (Bryan 2026-10-23) ─────────────────────────────
+  /** Contacto y sede de la propuesta agrupados. */
+  contactoCliente?:    ContactoClienteExpedienteDto | null;
+  /** Cantidad de suministros del cliente incluidos en la propuesta. */
+  suministros?:        number;
+}
+
+/** Contacto y sede del cliente para la sección "Contacto y Cliente" de la Propuesta (Pedido 1). */
+export interface ContactoClienteExpedienteDto {
+  idContacto?:    number | null;
+  nombre?:        string | null;
+  cargo?:         string | null;
+  area?:          string | null;
+  correo?:        string | null;
+  telefono?:      string | null;
+  idSede?:        number | null;
+  sedeNombre?:    string | null;
+  sedeUbicacion?: string | null;
+  sedeDireccion?: string | null;
+}
+
+/** OC vinculada a esta versión de propuesta — sección "Órdenes de Compra Vinculadas" (Pedido 2). */
+export interface OcVinculadaPropuestaDto {
+  idOc:              number;
+  numeroOc:          string;
+  estado:            string;
+  esAutogenerada:    boolean;
+  reemplazada:       boolean;
+  idMonedaOc?:       number | null;
+  simboloMonedaOc?:  string | null;
+  /** Igual a simboloMonedaOc. */
+  simboloMoneda?:    string | null;
+  montoTotal:        number;
+  montoAsignado:     number;
+  montoCubierto?:    number | null;
+  estadoValidacion?: string | null;
+  resultadoIa?:      string | null;
+  criticas?:         number | null;
+  advertencias?:     number | null;
+  idResponsable?:    number | null;
+  responsable?:      string | null;
+  fechaEmision?:     string | null;
+  fechaRecepcion?:   string | null;
+  fechaRegistro?:    string | null;
+  /** Texto corto derivado: "OK" | "Validación parcial" | "Observada (crítica)" | "Pendiente". */
+  validacion?:       string | null;
 }
 
 export interface FormaPagoExpedienteDto {
@@ -442,6 +490,10 @@ export interface TabPropuestasExpedienteDto {
   equipos:      EquipoPropuestaExpedienteDto[];
   vistosBuenos: VistoBuenoVersionDto[];
   timeline:     EventoTabDto[];
+  /** OCs vinculadas a esta versión de propuesta (Pedido 2). */
+  ordenesCompra: OcVinculadaPropuestaDto[];
+  /** OSs generadas desde la propuesta (follow-up 2026-10-23). Cada OS trae `idOc` + `numeroOc` que la cubre. */
+  ordenesServicio: OsVinculadaOcDto[];
 }
 
 // Pill reutilizable en VB / Seguimiento
@@ -459,12 +511,22 @@ export interface EstadoVistoBuenoExpDto {
   estadoPropuesta?:    string | null;
   /** sin_solicitud, pendiente, aprobado, rechazado, devuelto… */
   estadoVb?:           string | null;
+  /** VB vigente (para "Ir al Módulo VB"). */
+  idVb?:               number | null;
   idAprobador?:        number | null;
   aprobador?:          string | null;
   cargoAprobador?:     string | null;
   areaAprobador?:      string | null;
   correoAprobador?:    string | null;
   telefonoAprobador?:  string | null;
+  /** Estado del usuario aprobador: activo / inactivo. */
+  estadoAprobador?:    string | null;
+  /** true = aprobador por defecto (jefe directo o suplente); false = reasignado manualmente. */
+  aprobadorPorDefecto?: boolean | null;
+  idComercial?:        number | null;
+  comercial?:          string | null;
+  /** El aprobador es el jefe directo del comercial. */
+  esJefeDirectoComercial?: boolean | null;
   idPropuestaAprobada?: number | null;
   versionAprobada?:    number | null;
   montoAprobado?:      number | null;
@@ -542,6 +604,7 @@ export interface EstadoSeguimientoExpedienteDto {
   cargoComercial?:    string | null;
   correoComercial?:   string | null;
   telefonoComercial?: string | null;
+  areaComercial?:     string | null;
   contacto?:          string | null;
   cargoContacto?:     string | null;
   correoContacto?:    string | null;
@@ -565,6 +628,11 @@ export interface InteraccionSeguimientoDto {
   version?:            number | null;
   idUsuario?:          number | null;
   usuario?:            string | null;
+  /** "Para" del correo o contacto de la propuesta en el envío. */
+  destinatario?:       string | null;
+  /** Resumen del cuerpo del correo (hasta ~300 caracteres). */
+  resumenCuerpo?:      string | null;
+  tipoAceptacion?:     string | null;
   adjuntos:            ArchivoTabDto[];
 }
 
@@ -684,11 +752,44 @@ export interface EventoOcExpedienteDto {
 }
 
 export interface TabOrdenesCompraExpedienteDto {
-  ordenesCompra: OcPillExpedienteDto[];
-  datos?:        DatosOcExpedienteDto | null;
-  validaciones:  ValidacionOcExpedienteDto[];
-  campos:        CampoValidacionOcDto[];
-  timeline:      EventoOcExpedienteDto[];
+  ordenesCompra:   OcPillExpedienteDto[];
+  datos?:          DatosOcExpedienteDto | null;
+  validaciones:    ValidacionOcExpedienteDto[];
+  campos:          CampoValidacionOcDto[];
+  timeline:        EventoOcExpedienteDto[];
+  /** OSs cubiertas por la OC elegida (sigue por compatibilidad; el detalle ahora va en el tab Propuestas). */
+  ordenesServicio: OsVinculadaOcDto[];
+  /** Contador para el chip "N OS cubiertas por esta OC" (follow-up 2026-10-23). */
+  ordenesServicioCubiertas: number;
+}
+
+/** OS vinculada a la OC (sección "Órdenes de Servicio Vinculadas" del tab OC — Pedido 5). */
+export interface OsVinculadaOcDto {
+  idOs:                   number;
+  numero:                 string;
+  estado:                 string;
+  costoEstimado?:         number | null;
+  fechaEjecucion?:        string | null;
+  /** Igual a fechaEjecucion (alias). */
+  fechaProgramada?:       string | null;
+  horaInicio?:            string | null;
+  idTecnico?:             number | null;
+  tecnico?:               string | null;
+  /** Igual a tecnico (alias). */
+  tecnicoPrincipal?:      string | null;
+  /** Demás personal asignado a la OS (sin el técnico principal), separado por comas. */
+  ejecutor?:              string | null;
+  idResponsableComercial?: number | null;
+  responsableComercial?:  string | null;
+  confirmacionCliente?:   string | null;
+  /** Lo que la OC asignó a la propuesta de esta OS (moneda de la OC). */
+  montoPropuestaOc?:      number | null;
+  simboloMoneda?:         string | null;
+  idExpediente:           number;
+  numeroExpediente?:      string | null;
+  /** OC que cubre esta OS (follow-up 2026-10-23). Visible en el tab Propuestas. */
+  idOc?:                  number | null;
+  numeroOc?:              string | null;
 }
 
 // Tab OS
@@ -1034,6 +1135,10 @@ export interface DocumentoExpedienteDto {
   etapaOrigen?:   string | null;
   etapa?:         string | null;
   etapaNombre?:   string | null;
+  /** Rol funcional del documento (Pedido 6):
+   * generada | comunicacion | adjunto_cliente | documento_origen |
+   * habilitacion | induccion | certificado | evidencia | otro. */
+  rolDocumento?:  string | null;
   version:        number;
   estado:         string;
   fecha?:         string | null;

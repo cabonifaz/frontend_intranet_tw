@@ -250,6 +250,7 @@
                     <span class="tl__user">
                       <span class="tl__user-avatar">{{ iniciales(e.usuario) }}</span>
                       {{ e.usuario }}
+                      @if (e.cargoUsuario) { <small class="tl__user-cargo">({{ e.cargoUsuario }})</small> }
                     </span>
                   }
                   @if (e.etapaNombre || e.etapa) {
@@ -512,7 +513,7 @@
             </app-seccion>
           }
 
-          <!-- 2. Contacto y Cliente (reutiliza datos de la cabecera) -->
+          <!-- 2. Contacto y Cliente -->
           @if (detalle(); as d) {
             <app-seccion icono="person" titulo="Contacto y Cliente">
               <div class="card-contacto-cliente">
@@ -524,10 +525,39 @@
                   <small>RUC {{ d.cabecera.ruc ?? '—' }}</small>
                 </div>
               </div>
-              <div class="aviso-pendiente">
-                <span class="material-symbols-outlined">info</span>
-                <small>Los campos de contacto (nombre, cargo, correo, teléfono y sede) se agregarán cuando el back los incluya en el tab Propuesta.</small>
-              </div>
+
+              @if (drill.data.detalle?.contactoCliente; as c) {
+                <div class="info-grid info-grid--contacto">
+                  <div class="info-item">
+                    <small>NOMBRE</small>
+                    <strong>{{ c.nombre ?? '—' }}</strong>
+                    @if (c.cargo) { <small class="cargo">{{ titleCase(c.cargo) }}</small> }
+                  </div>
+                  <div class="info-item">
+                    <small>CORREO</small>
+                    <strong class="valor-link">{{ c.correo ?? '—' }}</strong>
+                    @if (c.telefono) { <small>{{ formatearTelefono(c.telefono) }}</small> }
+                  </div>
+                  @if (c.area) {
+                    <div class="info-item">
+                      <small>ÁREA</small>
+                      <strong>{{ titleCase(c.area) }}</strong>
+                    </div>
+                  }
+                </div>
+
+                @if (c.sedeNombre || c.sedeUbicacion || c.sedeDireccion) {
+                  <div class="sede-operativa">
+                    <span class="material-symbols-outlined">location_on</span>
+                    <span>
+                      <strong>Sede operativa:</strong> {{ c.sedeNombre ?? '—' }}@if (c.sedeUbicacion) { — {{ c.sedeUbicacion }} }
+                      @if (c.sedeDireccion) { <small class="sede-direccion"> · {{ c.sedeDireccion }}</small> }
+                    </span>
+                  </div>
+                }
+              } @else {
+                <small class="aviso-sin-datos">Sin datos de contacto registrados para esta propuesta.</small>
+              }
             </app-seccion>
           }
 
@@ -561,7 +591,7 @@
           }
 
           <!-- 4. Configuración del Servicio: 9 secciones del wizard de propuestas -->
-          @if (configuracionServicio(drill.data.detalle?.seccionesActivas, drill.data.equipos.length); as cfg) {
+          @if (configuracionServicio(drill.data.detalle?.seccionesActivas, drill.data.equipos.length, drill.data.detalle?.suministros ?? 0); as cfg) {
             <app-seccion icono="tune" titulo="Configuración del Servicio" [subtitulo]="cfg.incluidas + ' de ' + cfg.total + ' secciones incluidas'">
               <div class="cfg-servicio">
                 @for (item of cfg.items; track item.clave) {
@@ -645,14 +675,133 @@
           }
 
           <!-- 7. Órdenes de Compra Vinculadas (pendiente back) -->
-          <app-seccion icono="receipt_long" titulo="Órdenes de Compra Vinculadas desde esta Propuesta">
-            <div class="aviso-pendiente aviso-pendiente--grande">
-              <span class="material-symbols-outlined">info</span>
-              <div>
-                <strong>Pendiente del backend</strong>
-                <small>El tab Propuesta aún no devuelve las OCs vinculadas. Se agregará en una siguiente iteración.</small>
+          <app-seccion
+            icono="receipt_long"
+            titulo="Órdenes de Compra Vinculadas desde esta Propuesta"
+            [subtitulo]="drill.data.ordenesCompra.length + ' OC(s) vinculada(s)'">
+            @if (drill.data.ordenesCompra.length === 0) {
+              <small class="aviso-sin-datos">No hay OCs vinculadas a esta propuesta todavía.</small>
+            } @else {
+              <div class="ocs-vinculadas">
+                @for (oc of drill.data.ordenesCompra; track oc.idOc) {
+                  <div class="oc-vinc">
+                    <div class="oc-vinc__head">
+                      <span class="chip-codigo">{{ oc.numeroOc }}</span>
+                      <span class="chip-estado chip-estado--{{ severidadEstadoPropuesta(oc.estado) }}">
+                        {{ humanizarEstado(oc.estado) }}
+                      </span>
+                      @if (oc.validacion) {
+                        <span class="chip-estado chip-estado--{{ severidadValidacionOc(oc.resultadoIa, oc.validacion) }}">
+                          {{ oc.validacion }}
+                        </span>
+                      }
+                      @if (oc.esAutogenerada && (oc.estado ?? '').toLowerCase() !== 'autogenerada') {
+                        <span class="chip-estado chip-estado--neutral">
+                          <span class="material-symbols-outlined">auto_awesome</span>
+                          Autogenerada
+                        </span>
+                      }
+                      @if (oc.reemplazada) {
+                        <span class="chip-estado chip-estado--warning">
+                          <span class="material-symbols-outlined">swap_horiz</span>
+                          Reemplazada
+                        </span>
+                      }
+                      <app-button variant="ghost" tamano="sm" icono="open_in_new" class="oc-vinc__btn"
+                                  (clic)="irALaOc(oc.idOc)">
+                        Ir a la OC
+                      </app-button>
+                    </div>
+
+                    <div class="oc-vinc__montos">
+                      <div class="oc-vinc__monto">
+                        <small>MONTO TOTAL OC</small>
+                        <strong>{{ oc.simboloMoneda ?? oc.simboloMonedaOc }} {{ oc.montoTotal | number:'1.2-2' }}</strong>
+                      </div>
+                      <div class="oc-vinc__monto">
+                        <small>MONTO ASIGNADO A ESTA PROPUESTA</small>
+                        <strong class="valor-monto">{{ oc.simboloMoneda ?? oc.simboloMonedaOc }} {{ oc.montoAsignado | number:'1.2-2' }}</strong>
+                      </div>
+                      @if (oc.montoCubierto != null) {
+                        <div class="oc-vinc__monto">
+                          <small>CUBIERTO</small>
+                          <strong>{{ oc.simboloMoneda ?? oc.simboloMonedaOc }} {{ oc.montoCubierto | number:'1.2-2' }}</strong>
+                        </div>
+                      }
+                    </div>
+
+                    <div class="oc-vinc__meta">
+                      @if (oc.fechaEmision) { <small><strong>Emisión:</strong> {{ oc.fechaEmision | date:'dd/MM/yyyy' }}</small> }
+                      @if (oc.fechaRecepcion) { <small>· <strong>Recepción:</strong> {{ oc.fechaRecepcion | date:'dd/MM/yyyy' }}</small> }
+                      @if (oc.responsable) { <small>· <strong>Responsable:</strong> {{ oc.responsable }}</small> }
+                      @if ((oc.criticas ?? 0) > 0 || (oc.advertencias ?? 0) > 0) {
+                        <small>·
+                          @if ((oc.criticas ?? 0) > 0) { <span class="meta-rojo">{{ oc.criticas }} crítica(s)</span> }
+                          @if ((oc.criticas ?? 0) > 0 && (oc.advertencias ?? 0) > 0) { · }
+                          @if ((oc.advertencias ?? 0) > 0) { <span class="meta-ambar">{{ oc.advertencias }} advertencia(s)</span> }
+                        </small>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
-            </div>
+            }
+          </app-seccion>
+
+          <!-- 8. Órdenes de Servicio Vinculadas desde esta Propuesta (follow-up 2026-10-23) -->
+          <app-seccion
+            icono="engineering"
+            titulo="Órdenes de Servicio Vinculadas desde esta Propuesta"
+            [subtitulo]="drill.data.ordenesServicio.length + ' OS(s) generada(s) desde esta propuesta'">
+            @if (drill.data.ordenesServicio.length === 0) {
+              <small class="aviso-sin-datos">No hay OSs generadas desde esta propuesta todavía.</small>
+            } @else {
+              <div class="oss-vinculadas">
+                @for (os of drill.data.ordenesServicio; track os.idOs) {
+                  <div class="os-vinc">
+                    <div class="os-vinc__head">
+                      <span class="chip-codigo">{{ os.numero }}</span>
+                      <span class="chip-estado chip-estado--{{ severidadEstadoOs(os.estado) }}">
+                        {{ humanizarEstado(os.estado) }}
+                      </span>
+                      @if (os.confirmacionCliente) {
+                        <span class="chip-estado chip-estado--{{ os.confirmacionCliente === 'confirmada' ? 'ok' : 'warning' }}">
+                          Cliente {{ humanizarEstado(os.confirmacionCliente) }}
+                        </span>
+                      }
+                      @if (os.numeroOc) {
+                        <span class="chip-estado chip-estado--neutral" [title]="'Cubierta por OC ' + os.numeroOc">
+                          <span class="material-symbols-outlined">receipt_long</span>
+                          OC {{ os.numeroOc }}
+                        </span>
+                      }
+                      <app-button variant="ghost" tamano="sm" icono="open_in_new" class="os-vinc__btn"
+                                  (clic)="irALaOs(os.idOs)">
+                        Ir a la OS
+                      </app-button>
+                    </div>
+
+                    <div class="os-vinc__meta">
+                      @if (os.fechaProgramada ?? os.fechaEjecucion; as f) {
+                        <small><span class="material-symbols-outlined">event</span> <strong>Fecha programada:</strong> {{ f | date:'dd/MM/yyyy' }}@if (os.horaInicio) { · {{ os.horaInicio }} }</small>
+                      }
+                      @if (os.tecnicoPrincipal ?? os.tecnico; as tec) {
+                        <small><span class="material-symbols-outlined">engineering</span> <strong>Técnico principal:</strong> {{ tec }}</small>
+                      }
+                      @if (os.ejecutor) {
+                        <small><span class="material-symbols-outlined">group</span> <strong>Ejecutor(es):</strong> {{ os.ejecutor }}</small>
+                      }
+                      @if (os.responsableComercial) {
+                        <small><span class="material-symbols-outlined">support_agent</span> <strong>Responsable comercial:</strong> {{ os.responsableComercial }}</small>
+                      }
+                      @if (os.montoPropuestaOc != null) {
+                        <small><span class="material-symbols-outlined">payments</span> <strong>Monto asignado:</strong> {{ os.simboloMoneda }} {{ os.montoPropuestaOc | number:'1.2-2' }}</small>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </app-seccion>
         }
 
@@ -679,7 +828,7 @@
           @if (drill.data.estado; as e) {
             <app-seccion icono="verified" [titulo]="'Estado Actual del Visto Bueno de ' + (e.numero ?? '—')">
               <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
-                          (clic)="irAlVistoBueno()">
+                          (clic)="irAlVistoBueno(e.idVb)">
                 Ir al Módulo VB
               </app-button>
               <div class="info-grid">
@@ -782,11 +931,32 @@
                   <div class="card-aprobador__nombre">
                     <div class="card-aprobador__nombre-row">
                       <strong>{{ e.aprobador ?? 'Pendiente de asignar' }}</strong>
-                      <span [class]="e.aprobador ? 'chip-estado chip-estado--ok' : 'chip-estado chip-estado--warning'">
-                        <span class="dot"></span> {{ e.aprobador ? 'Activo' : 'Sin asignar' }}
-                      </span>
+                      @if (e.aprobador) {
+                        <span class="chip-estado chip-estado--{{ (e.estadoAprobador ?? 'activo') === 'activo' ? 'ok' : 'warning' }}">
+                          {{ (e.estadoAprobador ?? 'activo') === 'activo' ? 'Activo' : 'Inactivo' }}
+                        </span>
+                        @if (e.aprobadorPorDefecto === true) {
+                          <span class="chip-estado chip-estado--neutral" title="Aprobador por defecto (jefe directo o suplente)">
+                            <span class="material-symbols-outlined">manage_accounts</span>
+                            Por defecto
+                          </span>
+                        } @else if (e.aprobadorPorDefecto === false) {
+                          <span class="chip-estado chip-estado--warning" title="Fue reasignado manualmente">
+                            <span class="material-symbols-outlined">swap_horiz</span>
+                            Reasignado
+                          </span>
+                        }
+                      } @else {
+                        <span class="chip-estado chip-estado--warning">Sin asignar</span>
+                      }
                     </div>
                     @if (e.cargoAprobador) { <small>{{ e.cargoAprobador }}</small> }
+                    @if (e.esJefeDirectoComercial && e.comercial) {
+                      <small class="card-aprobador__supervisor">
+                        <span class="material-symbols-outlined">verified_user</span>
+                        Es el supervisor directo de {{ e.comercial }}
+                      </small>
+                    }
                   </div>
                   @if (e.correoAprobador) {
                     <app-button variant="ghost" tamano="sm" icono="mail" class="card-aprobador__mail-btn">{{ e.correoAprobador }}</app-button>
@@ -832,7 +1002,7 @@
           @if (drill.data.metricas; as m) {
             <app-seccion icono="query_stats" titulo="Métricas de Aprobación">
               <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
-                          (clic)="irAlVistoBueno()">
+                          (clic)="irAlVistoBueno(drill.data.estado?.idVb)">
                 Ir al Módulo VB
               </app-button>
               <div class="metricas-vb">
@@ -987,11 +1157,23 @@
                           {{ i.titulo ?? titleCase(i.tipo) }}
                         }
                       </strong>
+                      @if (i.destinatario) {
+                        <p class="tl__desc"><strong>Para:</strong> {{ i.destinatario }}</p>
+                      }
                       @if (i.asunto) {
                         <p class="tl__desc"><strong>Asunto:</strong> {{ i.asunto }}</p>
                       }
                       @if (i.detalle) {
                         <p class="tl__desc">{{ i.detalle }}</p>
+                      }
+                      @if (i.resumenCuerpo && i.resumenCuerpo !== i.detalle) {
+                        <p class="tl__desc tl__desc--resumen">{{ i.resumenCuerpo }}</p>
+                      }
+                      @if (i.tipoAceptacion) {
+                        <small class="tl__ref">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          Aceptación: {{ humanizarEstado(i.tipoAceptacion) }}
+                        </small>
                       }
                       @if (i.proximaAccion || i.duracionMinutos) {
                         <div class="tl__pies">
@@ -1106,7 +1288,7 @@
                     @if (drill.data.estado?.cargoComercial) { <small>{{ titleCase(drill.data.estado!.cargoComercial) }}</small> }
                   </div>
                 </div>
-                <div class="card-aprobador__grid card-aprobador__grid--2cols">
+                <div class="card-aprobador__grid">
                   <div class="card-aprobador__item">
                     <span class="material-symbols-outlined">mail</span>
                     <div>
@@ -1121,6 +1303,15 @@
                       <strong>{{ formatearTelefono(drill.data.estado?.telefonoComercial) }}</strong>
                     </div>
                   </div>
+                  @if (drill.data.estado?.areaComercial) {
+                    <div class="card-aprobador__item">
+                      <span class="material-symbols-outlined">domain</span>
+                      <div>
+                        <small>Área</small>
+                        <strong>{{ titleCase(drill.data.estado!.areaComercial!) }}</strong>
+                      </div>
+                    </div>
+                  }
                 </div>
                 <div class="card-aprobador__footer card-aprobador__footer--nota">
                   <span class="material-symbols-outlined">info</span>
@@ -1369,15 +1560,24 @@
             </app-seccion>
           }
 
-          <!-- 5. Órdenes de Servicio Vinculadas (pendiente back) -->
-          <app-seccion icono="engineering" titulo="Órdenes de Servicio Vinculadas">
-            <div class="aviso-pendiente aviso-pendiente--grande">
-              <span class="material-symbols-outlined">info</span>
-              <div>
-                <strong>Pendiente del backend</strong>
-                <small>El tab OC aún no devuelve las OSs vinculadas. Se agregará cuando Bryan incluya ese array en el DTO.</small>
+          <!-- 5. OSs Cubiertas por esta OC — resumen compacto (detalle completo en tab Propuestas) -->
+          <app-seccion
+            icono="engineering"
+            titulo="Órdenes de Servicio Cubiertas"
+            [subtitulo]="(drill.data.ordenesServicioCubiertas ?? 0) + ' OS(s) cubiertas por esta OC'">
+            @if ((drill.data.ordenesServicioCubiertas ?? 0) === 0) {
+              <small class="aviso-sin-datos">Esta OC todavía no cubre ninguna OS.</small>
+            } @else {
+              <div class="oss-resumen">
+                <span class="chip-estado chip-estado--neutral">
+                  <span class="material-symbols-outlined">engineering</span>
+                  {{ drill.data.ordenesServicioCubiertas }} OS cubiertas
+                </span>
+                <small class="aviso-sin-datos">
+                  El detalle de cada OS (con la propuesta de origen) se ve en el tab <strong>Propuesta</strong>.
+                </small>
               </div>
-            </div>
+            }
           </app-seccion>
         }
 

@@ -167,6 +167,29 @@
   &--neutro  { background: #f1f5f9; color: #475569; }
 }
 
+// Columna que agrupa origen (módulo) + rol funcional del documento.
+.col-origen { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+
+// Chip secundario del rol funcional del documento (Pedido 6):
+// generada / comunicacion / adjunto_cliente / documento_origen / habilitacion /
+// induccion / certificado / evidencia / otro.
+.chip-rol {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.2px;
+  white-space: nowrap;
+  background: #f1f5f9; color: #475569;
+
+  &--azul    { background: #eff6ff; color: #1d4ed8; }
+  &--violeta { background: #f5f3ff; color: #6d28d9; }
+  &--cian    { background: #ecfeff; color: #0e7490; }
+  &--ambar   { background: #fffbeb; color: #92400e; }
+  &--verde   { background: #f0fdf4; color: #166534; }
+  &--rojo    { background: #fef2f2; color: #991b1b; }
+  &--neutro  { background: #f8fafc; color: #64748b; }
+}
+
 // ─── Usuario responsable ─────────────────────────────────────────────────
 .doc-usuario { display: flex; align-items: center; gap: 8px; }
 .doc-usuario__avatar {

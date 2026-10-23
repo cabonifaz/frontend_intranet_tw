@@ -145,6 +145,38 @@ export class ModalRepositorioDocumentosComponent implements OnInit {
     return 'neutro';
   }
 
+  /** Label legible del rol del documento (Pedido 6). */
+  labelRolDocumento(rol?: string | null): string {
+    switch ((rol ?? '').toLowerCase()) {
+      case 'generada':         return 'Generada';
+      case 'comunicacion':     return 'Comunicación';
+      case 'adjunto_cliente':  return 'Adjunto cliente';
+      case 'documento_origen': return 'Documento origen';
+      case 'habilitacion':     return 'Habilitación';
+      case 'induccion':        return 'Inducción';
+      case 'certificado':      return 'Certificado';
+      case 'evidencia':        return 'Evidencia';
+      case 'otro':             return 'Otro';
+      default:                 return rol ?? '';
+    }
+  }
+
+  /** Color pastel del chip del rol del documento. */
+  colorRolDocumento(rol?: string | null): string {
+    switch ((rol ?? '').toLowerCase()) {
+      case 'generada':         return 'verde';   // PDF del sistema → OK
+      case 'certificado':      return 'verde';
+      case 'documento_origen': return 'azul';    // PDF del cliente
+      case 'comunicacion':     return 'cian';    // correos
+      case 'adjunto_cliente':  return 'violeta';
+      case 'habilitacion':     return 'ambar';   // SSOMA
+      case 'induccion':        return 'ambar';
+      case 'evidencia':        return 'ambar';
+      case 'otro':             return 'neutro';
+      default:                 return 'neutro';
+    }
+  }
+
   /** Color del chip de origen según el módulo. */
   colorOrigen(modulo?: string | null): string {
     const m = (modulo || '').toLowerCase();

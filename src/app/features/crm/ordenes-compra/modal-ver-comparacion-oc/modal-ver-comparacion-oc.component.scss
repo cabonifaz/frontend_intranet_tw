@@ -123,8 +123,22 @@ app-seccion + app-seccion { margin-top: 14px; }
   &__num { text-align: right; white-space: nowrap; }
 }
 
-.celda-concepto { display: flex; align-items: center; gap: 8px;
-  strong { color: #0f172a; font-size: 12.5px; }
+.celda-concepto {
+  display: flex; align-items: flex-start; gap: 8px;
+
+  .dot { margin-top: 6px; }
+
+  strong { color: #0f172a; font-size: 12.5px; display: block; line-height: 1.3; }
+
+  &__texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  &__meta {
+    font-size: 10.5px; color: #94a3b8; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__sep { color: #cbd5e1; }
 }
 
 .dot {
@@ -132,12 +146,27 @@ app-seccion + app-seccion { margin-top: 14px; }
   &.sev--ok    { background: #16a34a; }
   &.sev--adv   { background: #f59e0b; }
   &.sev--crit  { background: #dc2626; }
+  &.sev--info  { background: #94a3b8; }
   &.sev--neutro { background: #94a3b8; }
+}
+
+// Variante info (opcionales): gris pastel, no es alerta.
+.chip-sev.sev--info {
+  background: #f1f5f9; color: #475569;
+  .material-symbols-outlined { color: #64748b; }
 }
 
 .celda-valor { color: #475569; font-size: 12px; white-space: pre-line; }
 .celda-accion { color: #2563eb; font-size: 12px; font-weight: 500; }
 .celda-vacia { text-align: center; padding: 24px; color: #94a3b8; font-style: italic; }
+
+// Nota informativa al pie de la tabla de opcionales.
+.nota-opcionales {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px;
+  color: #64748b; font-size: 11.5px; font-style: italic;
+  .material-symbols-outlined { font-size: 14px; color: #94a3b8; }
+}
 
 .chip-sev {
   display: inline-flex; align-items: center; gap: 4px;

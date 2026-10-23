@@ -314,6 +314,17 @@ export class DetalleExpedienteComponent implements OnInit {
     return 'neutral';
   }
 
+  /** Severidad para el chip del campo `validacion` corto de una OC vinculada. */
+  severidadValidacionOc(resultadoIa?: string | null, validacion?: string | null): string {
+    const r = (resultadoIa ?? '').toLowerCase();
+    const v = (validacion ?? '').toLowerCase();
+    if (r === 'ok' || v === 'ok') return 'ok';
+    if (r === 'critico' || v.includes('crítica') || v.includes('critica')) return 'critical';
+    if (r === 'advertencia' || v.includes('parcial') || v.includes('observa')) return 'warning';
+    if (v === 'pendiente') return 'neutral';
+    return 'neutral';
+  }
+
   /** Severidad semántica del estado del Visto Bueno. */
   severidadEstadoVb(estado?: string | null): string {
     const e = (estado ?? '').toLowerCase();
@@ -456,8 +467,12 @@ export class DetalleExpedienteComponent implements OnInit {
     return [...new Set(versiones.map(v => v.numero))];
   }
 
-  irAlVistoBueno(): void {
-    void this.router.navigate(['/crm/visto-bueno']);
+  irAlVistoBueno(idVb?: number | null): void {
+    if (idVb != null) {
+      void this.router.navigate(['/crm/visto-bueno', idVb]);
+    } else {
+      void this.router.navigate(['/crm/visto-bueno']);
+    }
   }
 
   irAlSeguimiento(): void {
@@ -467,6 +482,20 @@ export class DetalleExpedienteComponent implements OnInit {
   irALaOc(id: number | null | undefined): void {
     if (id == null) return;
     void this.router.navigate(['/crm/ordenes-compra', id]);
+  }
+
+  irALaOs(id: number | null | undefined): void {
+    if (id == null) return;
+    void this.router.navigate(['/operaciones/ordenes-servicio', id]);
+  }
+
+  /** Severidad del estado de una OS. */
+  severidadEstadoOs(estado?: string | null): string {
+    const e = (estado ?? '').toLowerCase();
+    if (['ejecutada', 'completada', 'cerrada', 'conformada'].includes(e)) return 'ok';
+    if (['anulada', 'cancelada', 'rechazada'].includes(e)) return 'critical';
+    if (['programada', 'confirmada', 'en_ruta', 'en_ejecucion', 'en_curso', 'pendiente_conformidad'].includes(e)) return 'warning';
+    return 'neutral';
   }
 
   /** Cambia la OC mostrada en el tab OC. */
@@ -558,7 +587,7 @@ export class DetalleExpedienteComponent implements OnInit {
     return mapa[clave] ?? 'check_box';
   }
 
-  configuracionServicio(seccionesJson?: string | null, equiposVinculados = 0): {
+  configuracionServicio(seccionesJson?: string | null, equiposVinculados = 0, suministrosCliente = 0): {
     incluidas: number;
     total: number;
     items: { clave: string; nombre: string; numero: number; incluido: boolean; obligatoria: boolean; detalle?: string }[];
@@ -581,13 +610,15 @@ export class DetalleExpedienteComponent implements OnInit {
       if (Array.isArray(parsed)) parsed.forEach(k => activas.add(String(k)));
     } catch { /* ignore */ }
 
-    const items = definicion.map(d => ({
-      ...d,
-      incluido: activas.has(d.clave),
-      detalle: d.clave === 'listado_equipos' && equiposVinculados > 0
-        ? `${equiposVinculados} equipo${equiposVinculados > 1 ? 's' : ''}`
-        : undefined,
-    }));
+    const items = definicion.map(d => {
+      let detalle: string | undefined;
+      if (d.clave === 'listado_equipos' && equiposVinculados > 0) {
+        detalle = `${equiposVinculados} equipo${equiposVinculados > 1 ? 's' : ''}`;
+      } else if (d.clave === 'suministros_cliente' && suministrosCliente > 0) {
+        detalle = `${suministrosCliente} suministro${suministrosCliente > 1 ? 's' : ''}`;
+      }
+      return { ...d, incluido: activas.has(d.clave), detalle };
+    });
 
     return {
       incluidas: items.filter(i => i.incluido).length,
@@ -729,7 +760,16 @@ export class DetalleExpedienteComponent implements OnInit {
   /** TitleCase simple: "ADMIN" → "Admin", "SUPERINTENDENTE DE PLANTA" → "Superintendente De Planta". */
   titleCase(txt?: string | null): string {
     if (!txt) return '—';
-    return txt.toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+    // Palabras de 2-3 letras que se mantienen en mayúsculas (siglas comunes).
+    const siglas = new Set(['TI', 'HR', 'QA', 'IT', 'OC', 'OS', 'RQ', 'VB', 'IA', 'PE', 'RRHH', 'TIC', 'SST', 'SSO', 'SSOMA', 'GTH', 'GAF', 'CEO', 'CFO', 'CTO', 'COO', 'ERP', 'CRM']);
+    return txt
+      .split(/\s+/)
+      .map(w => {
+        const up = w.toUpperCase();
+        if (siglas.has(up)) return up;
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      })
+      .join(' ');
   }
 
   // ── Helpers de Interacciones del Seguimiento ────────────────────

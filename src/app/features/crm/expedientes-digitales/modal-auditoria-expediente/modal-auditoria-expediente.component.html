@@ -111,6 +111,7 @@
                         <span class="ev__usuario">
                           <span class="ev__usuario-avatar">{{ iniciales(ev.usuario) }}</span>
                           {{ ev.usuario }}
+                          @if (ev.cargoUsuario) { <small class="ev__cargo">({{ ev.cargoUsuario }})</small> }
                         </span>
                       }
                       @if (ev.etapaNombre || ev.etapa) {
