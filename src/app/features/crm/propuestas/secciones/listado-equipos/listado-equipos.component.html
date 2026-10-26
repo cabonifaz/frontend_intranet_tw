@@ -107,9 +107,12 @@
   </app-doble-panel>
 </app-seccion>
 
-<!-- HU-89: Modal Import XLS con IA (mock) -->
-@if (modalImportAbierto()) {
+<!-- HU-89: Modal Import XLS con IA -->
+@if (modalImportAbierto() && draftSvc.draft().idCliente) {
   <app-modal-import-xls-ia
+    [idCliente]="draftSvc.draft().idCliente!"
+    [idsEquipoEnPropuesta]="idsEnPropuesta()"
+    [seriesEnPropuesta]="seriesEnPropuesta()"
     (cerrar)="cerrarModalImport()"
     (importado)="onEquiposImportados($event)"
   />

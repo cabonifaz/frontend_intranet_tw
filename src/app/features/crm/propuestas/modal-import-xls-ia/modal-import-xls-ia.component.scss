@@ -118,10 +118,237 @@
   font-size: 10px;
   font-weight: 700;
 
-  &--auto   { background: #ECFDF5; color: #047857; }
-  &--manual { background: #FFFBEB; color: #92400E; }
-  &--nuevo  { background: #FEE2E2; color: #B91C1C; }
+  &--auto    { background: #ECFDF5; color: #047857; }
+  &--manual  { background: #FFFBEB; color: #92400E; }
+  &--nuevo   { background: #FEE2E2; color: #B91C1C; }
+  &--omitido { background: #F1F5F9; color: #475569; }
 }
+
+// ─── Link inline en el meta del archivo ─────────────────────────────────
+.mix-link {
+  border: none;
+  background: transparent;
+  color: #1D4ED8;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover { color: #1E40AF; }
+}
+
+// ─── Popover: columnas detectadas ────────────────────────────────────────
+.mix-columnas {
+  padding: 12px 14px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1D4ED8;
+    margin-bottom: 10px;
+
+    .material-symbols-outlined { font-size: 18px; }
+  }
+
+  &__lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 6px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 6px 10px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #DBEAFE;
+    }
+  }
+
+  &__campo {
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  &__arrow { color: #94A3B8; font-weight: 700; }
+
+  &__col {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    color: #1D4ED8;
+    background: #EFF6FF;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  &__enc {
+    color: #64748B;
+    font-style: italic;
+    font-size: 10px;
+    margin-left: auto;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ─── Buscador en la tabla ────────────────────────────────────────────────
+.mix-buscador {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+
+  &:focus-within {
+    border-color: #1D4ED8;
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+  }
+
+  .material-symbols-outlined { font-size: 18px; color: #94A3B8; }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12px;
+    color: #0F172A;
+
+    &::placeholder { color: #94A3B8; }
+  }
+
+  &__clear {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px;
+    color: #94A3B8;
+    display: inline-flex;
+    border-radius: 4px;
+
+    &:hover { background: #F1F5F9; color: #0F172A; }
+
+    .material-symbols-outlined { font-size: 14px; }
+  }
+}
+
+// ─── Motivo (chip chico debajo del estado) ──────────────────────────────
+.mix-motivo {
+  margin-top: 3px;
+  font-size: 10px;
+  color: #475569;
+  font-weight: 600;
+  text-transform: lowercase;
+  letter-spacing: 0.2px;
+}
+
+// ─── Aviso IA no disponible / parcial ────────────────────────────────────
+.mix-aviso-ia {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 8px;
+  color: #92400E;
+  font-size: 11px;
+  font-weight: 600;
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+// ─── Upload inicial ──────────────────────────────────────────────────────
+.mix-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 50px 20px;
+  border: 2px dashed #CBD5E1;
+  border-radius: 12px;
+  background: #F8FAFC;
+  text-align: center;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+  // Impide que los hijos capturen eventos de drag (evita flicker con dragleave).
+  & > * { pointer-events: none; }
+  &__acciones, &__acciones * { pointer-events: auto; }
+  input[type="file"] { pointer-events: auto; }
+
+  &--arrastrando {
+    background: #EFF6FF;
+    border-color: #1D4ED8;
+    transform: scale(1.01);
+
+    .mix-upload__icon { color: #1D4ED8; }
+    .mix-upload__titulo { color: #1D4ED8; }
+  }
+
+  &__icon  { font-size: 48px; color: #94A3B8; }
+  &__titulo { margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; }
+  &__sub   { margin: 0; font-size: 12px; color: #64748B; max-width: 520px; }
+  &__acciones { display: flex; gap: 10px; margin-top: 8px; }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #FEE2E2;
+    border: 1px solid #FECACA;
+    border-radius: 8px;
+    color: #B91C1C;
+    font-size: 12px;
+    font-weight: 600;
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+}
+
+// ─── Loading analizar ────────────────────────────────────────────────────
+.mix-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  text-align: center;
+
+  h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; }
+  p  { margin: 0; font-size: 12px; color: #64748B; }
+
+  &__spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #DBEAFE;
+    border-top-color: #1D4ED8;
+    border-radius: 50%;
+    animation: mix-spin 0.8s linear infinite;
+  }
+}
+
+@keyframes mix-spin { to { transform: rotate(360deg); } }
 
 // ─── Tabla ───────────────────────────────────────────────────────────────
 .mix-tabla-wrap { overflow-x: auto; }
@@ -176,6 +403,13 @@
   }
 }
 
+.mix-estado-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .mix-estado {
   display: inline-flex;
   padding: 3px 10px;
@@ -183,9 +417,44 @@
   font-size: 10px;
   font-weight: 700;
 
-  &.estado--auto   { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
-  &.estado--manual { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
-  &.estado--nuevo  { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+  &.estado--auto    { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+  &.estado--manual  { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  &.estado--nuevo   { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+  &.estado--omitido { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+}
+
+.mix-confianza {
+  font-size: 10px;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.mix-origen-ia {
+  padding: 1px 6px;
+  background: #EEF2FF;
+  color: #4338CA;
+  border: 1px solid #C7D2FE;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.mix-obs {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #64748B;
+  font-style: italic;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  small { color: #94A3B8; margin-left: 4px; }
+}
+
+.mix-row--omitida {
+  td { opacity: 0.55; }
 }
 
 .mix-icon {

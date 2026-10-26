@@ -23,6 +23,12 @@ import {
   PropuestaDetalleModal,
   VistoBuenoPropuesta,
 } from '../models/propuesta-modales.model';
+import {
+  AnalisisImportacionEquipos,
+  ConfirmarImportacionEquiposRequest,
+  FilaImportacionEquipo,
+  ResultadoImportacionEquipos,
+} from '../models/importacion-equipos.model';
 
 // ─── DTOs del back (shape literal del server) ────────────────────────────────
 interface PropuestaResumenDtoApi {
@@ -469,6 +475,61 @@ export class PropuestasService {
     );
     if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo solicitar la revocación.');
     return r.datos;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HU-89 — Importación masiva de equipos desde Excel con IA (Sprint 4)
+  // Base: /api/crm/propuestas/equipos/importacion
+  // ═══════════════════════════════════════════════════════════════════════════
+  private get baseImportacion(): string { return `${this.base}/equipos/importacion`; }
+
+  /** GET …/plantilla → descarga el .xlsx sugerido (formato libre, la IA reconoce columnas). */
+  async descargarPlantillaImportacion(): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.baseImportacion}/plantilla`, { responseType: 'blob' })
+    );
+  }
+
+  /**
+   * POST …/analizar (multipart) — lee el Excel, la IA reconoce columnas y concilia cada fila
+   * contra los equipos del cliente y el catálogo. NO guarda nada: devuelve la vista previa.
+   * idsEquipoEnPropuesta y seriesEnPropuesta se mandan para no sugerir lo que ya está en el listado.
+   */
+  async analizarImportacionEquipos(args: {
+    archivo:                File;
+    idCliente:              number;
+    idSede?:                number | null;
+    idsEquipoEnPropuesta?:  number[];
+    seriesEnPropuesta?:     string[];
+  }): Promise<AnalisisImportacionEquipos> {
+    const form = new FormData();
+    form.append('archivo', args.archivo, args.archivo.name);
+    form.append('idCliente', String(args.idCliente));
+    if (args.idSede != null) form.append('idSede', String(args.idSede));
+    for (const id of args.idsEquipoEnPropuesta ?? []) form.append('idsEquipoEnPropuesta', String(id));
+    for (const s of args.seriesEnPropuesta ?? []) if (s) form.append('seriesEnPropuesta', s);
+
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<AnalisisImportacionEquipos>>(`${this.baseImportacion}/analizar`, form)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo analizar el archivo.');
+    return r.datos;
+  }
+
+  /** POST …/confirmar — crea los equipos nuevos y devuelve la lista final para el listado. Todo o nada. */
+  async confirmarImportacionEquipos(dto: ConfirmarImportacionEquiposRequest): Promise<ResultadoImportacionEquipos> {
+    const r = await firstValueFrom(
+      this.http.post<RespuestaApi<ResultadoImportacionEquipos>>(`${this.baseImportacion}/confirmar`, dto)
+    );
+    if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo confirmar la importación.');
+    return r.datos;
+  }
+
+  /** POST …/reporte — descarga el .xlsx de conciliación (incluye las correcciones del comercial). */
+  async descargarReporteImportacion(filas: FilaImportacionEquipo[]): Promise<Blob> {
+    return firstValueFrom(
+      this.http.post(`${this.baseImportacion}/reporte`, filas, { responseType: 'blob' })
+    );
   }
 
   // ─── HTTP real ──────────────────────────────────────────────────────────────

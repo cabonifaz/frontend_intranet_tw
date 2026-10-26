@@ -1,125 +1,271 @@
 <app-modal titulo="Importar Equipos desde Excel con IA" ancho="xl" (cerrar)="onCerrar()">
   <div class="mix-body">
-    <!-- Tabs superiores (del prototipo: 3 tabs) -->
-    <div class="mix-tabs">
-      <button class="mix-tabs__item" [class.activa]="tab() === 'auto'" (click)="cambiarTab('auto')">
-        <span class="mix-tabs__num">{{ totalAuto() }}</span>
-        <span>Coincidencias Automáticas</span>
-      </button>
-      <button class="mix-tabs__item" [class.activa]="tab() === 'manual'" (click)="cambiarTab('manual')">
-        <span class="mix-tabs__num mix-tabs__num--manual">{{ totalManual() }}</span>
-        <span>Discrepancias / Revisión Manual</span>
-      </button>
-      <button class="mix-tabs__item" [class.activa]="tab() === 'completa'" (click)="cambiarTab('completa')">
-        <span class="mix-tabs__num mix-tabs__num--total">{{ totalFilas() }}</span>
-        <span>Vista Previa Completa</span>
-      </button>
-    </div>
 
-    <!-- Archivo + progreso -->
-    <div class="mix-info">
-      <div class="mix-archivo">
-        <span class="material-symbols-outlined">description</span>
-        <div>
-          <div class="mix-archivo__nombre">
-            {{ archivo()?.name || 'Listado_Equipos_Mantenimiento_Antamina.xlsx' }}
+    <!-- ═══ ESTADO 1 — Sin archivo (upload inicial) ═══ -->
+    @if (!analisis() && !analizando()) {
+      <div class="mix-upload"
+           [class.mix-upload--arrastrando]="arrastrando()"
+           (dragover)="onDragOver($event)"
+           (dragenter)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)">
+        <span class="material-symbols-outlined mix-upload__icon">
+          {{ arrastrando() ? 'file_download' : 'upload_file' }}
+        </span>
+        <h3 class="mix-upload__titulo">
+          {{ arrastrando() ? 'Soltá el archivo para analizarlo' : 'Sube el listado de equipos del cliente' }}
+        </h3>
+        <p class="mix-upload__sub">
+          Arrastrá el archivo acá o <strong>elegilo manualmente</strong>. Formato libre (.xlsx, .xls o .csv,
+          hasta 5 MB y 500 equipos). La IA detecta las columnas y concilia cada fila contra el inventario
+          del cliente y el catálogo de suministros.
+        </p>
+        <div class="mix-upload__acciones">
+          <input type="file" accept=".xlsx,.xls,.csv" (change)="onArchivoSeleccionado($event)" hidden #inputXls />
+          <app-button variant="primary" icono="upload" (clic)="inputXls.click()">
+            Elegir archivo
+          </app-button>
+          <app-button variant="ghost" icono="download"
+                      [cargando]="descargandoPlantilla()"
+                      (clic)="descargarPlantilla()">
+            Descargar plantilla
+          </app-button>
+        </div>
+        @if (error()) {
+          <div class="mix-upload__error">
+            <span class="material-symbols-outlined">error</span>
+            <span>{{ error() }}</span>
           </div>
-          <div class="mix-archivo__meta">8 equipos detectados</div>
+        }
+      </div>
+    }
+
+    <!-- ═══ ESTADO 2 — Analizando ═══ -->
+    @if (analizando()) {
+      <div class="mix-loading">
+        <div class="mix-loading__spinner"></div>
+        <h3>Analizando el archivo con IA…</h3>
+        <p>Detectando columnas y conciliando contra el inventario del cliente.</p>
+      </div>
+    }
+
+    <!-- ═══ ESTADO 3 — Vista previa ═══ -->
+    @if (analisis() && !analizando()) {
+      <!-- Tabs superiores -->
+      <div class="mix-tabs">
+        <button class="mix-tabs__item" [class.activa]="tab() === 'auto'" (click)="cambiarTab('auto')">
+          <span class="mix-tabs__num">{{ totalAuto() }}</span>
+          <span>Coincidencias Automáticas</span>
+        </button>
+        <button class="mix-tabs__item" [class.activa]="tab() === 'manual'" (click)="cambiarTab('manual')">
+          <span class="mix-tabs__num mix-tabs__num--manual">{{ totalRevision() }}</span>
+          <span>Revisión Manual</span>
+        </button>
+        <button class="mix-tabs__item" [class.activa]="tab() === 'completa'" (click)="cambiarTab('completa')">
+          <span class="mix-tabs__num mix-tabs__num--total">{{ totalFilas() }}</span>
+          <span>Vista Previa Completa</span>
+        </button>
+      </div>
+
+      <!-- Archivo + progreso -->
+      <div class="mix-info">
+        <div class="mix-archivo">
+          <span class="material-symbols-outlined">description</span>
+          <div>
+            <div class="mix-archivo__nombre">{{ archivo()?.name }}</div>
+            <div class="mix-archivo__meta">
+              {{ totalFilas() }} filas · hoja «{{ analisis()!.hoja }}» · motor: {{ analisis()!.motor }}
+              @if (analisis()!.columnas.length > 0) {
+                · <button class="mix-link" (click)="toggleColumnas()">
+                    {{ columnasVisibles() ? 'ocultar' : 'ver' }} columnas detectadas ({{ analisis()!.columnas.length }})
+                  </button>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="mix-progreso">
+          <span class="mix-pill mix-pill--auto">✓ Automáticos: {{ totalAuto() }} ({{ progresoAuto() }}%)</span>
+          <span class="mix-pill mix-pill--manual">⚠ Revisión: {{ totalRevision() }} ({{ progresoManual() }}%)</span>
+          <span class="mix-pill mix-pill--total">
+            Seleccionados: {{ totalSeleccionados() }} de {{ totalFilas() }}
+          </span>
         </div>
       </div>
-      <input type="file" accept=".xlsx,.xls" (change)="onArchivoSeleccionado($event)" hidden #inputXls />
-      <div class="mix-progreso">
-        <span class="mix-pill mix-pill--auto">✓ Coincidencias automáticas: {{ totalAuto() }} ({{ progresoAuto() }}%)</span>
-        <span class="mix-pill mix-pill--manual">⚠ Discrepancias / Revisión manual: {{ totalManual() }} ({{ progresoManual() }}%)</span>
-        <span class="mix-pill mix-pill--total">Progreso: {{ totalResueltos() }} de {{ totalFilas() }} resueltos</span>
-      </div>
-    </div>
 
-    <!-- Banner informativo -->
-    <div class="mix-banner">
-      <span class="material-symbols-outlined">lightbulb</span>
-      <span>
-        Vista consolidada de todos los {{ totalFilas() }} equipos procesados del archivo XLS.
-        Revisa el resultado final antes de confirmar la importación a la propuesta correcta.
-      </span>
-      <div class="mix-banner__pills">
-        <span class="mix-mini-pill mix-mini-pill--auto">● {{ totalAuto() }} Automáticos</span>
-        <span class="mix-mini-pill mix-mini-pill--manual">● {{ totalManual() }} Conciliado Manual</span>
-        <span class="mix-mini-pill mix-mini-pill--nuevo">● {{ totalNuevo() }} Nuevo Equipo Creado</span>
-      </div>
-    </div>
+      <!-- Popover: columnas detectadas por la IA -->
+      @if (columnasVisibles()) {
+        <div class="mix-columnas">
+          <div class="mix-columnas__titulo">
+            <span class="material-symbols-outlined">table_chart</span>
+            La IA mapeó estas columnas del archivo:
+          </div>
+          <ul class="mix-columnas__lista">
+            @for (c of analisis()!.columnas; track c.campo) {
+              <li>
+                <span class="mix-columnas__campo">{{ labelCampo(c.campo) }}</span>
+                <span class="mix-columnas__arrow">→</span>
+                <span class="mix-columnas__col">columna {{ c.columna }}</span>
+                @if (c.encabezado) {
+                  <span class="mix-columnas__enc">«{{ c.encabezado }}»</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
 
-    <!-- Tabla de filas -->
-    <div class="mix-tabla-wrap">
-      <table class="mix-tabla">
-        <thead>
-          <tr>
-            <th class="mix-check">
-              <input type="checkbox"
-                     [checked]="totalSeleccionados() === totalFilas()"
-                     (change)="toggleTodos($any($event.target).checked)" />
-            </th>
-            <th>N/S (XLS)</th>
-            <th>CÓDIGO TW ASIGNADO</th>
-            <th>EQUIPO / INSTRUMENTO</th>
-            <th>CAPACIDAD / ALCANCE</th>
-            <th>UBICACIÓN EN SEDE</th>
-            <th>TIPO DE CONCILIACIÓN / ESTADO</th>
-            <th class="mix-acciones">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (f of filasFiltradas(); track f.nsXls) {
-            <tr>
-              <td class="mix-check">
-                <input type="checkbox" [checked]="f.seleccionado" (change)="toggleFila(f)" />
-              </td>
-              <td class="mix-mono">{{ f.nsXls }}</td>
-              <td>
-                <span class="mix-chip-tw" [class.mix-chip-tw--nuevo]="f.esNuevo">
-                  {{ f.codigoTwAsignado }}
-                  @if (f.esNuevo) { <small>(Nuevo)</small> }
-                </span>
-              </td>
-              <td>{{ f.equipo }}</td>
-              <td>{{ f.capacidadAlcance }}</td>
-              <td>{{ f.ubicacion }}</td>
-              <td>
-                <span class="mix-estado" [ngClass]="claseEstado(f.estado)">
-                  {{ f.estadoLabel }}
-                </span>
-              </td>
-              <td class="mix-acciones">
-                <button class="mix-icon" title="Ver detalle"><span class="material-symbols-outlined">visibility</span></button>
-                <button class="mix-icon" title="Editar"><span class="material-symbols-outlined">edit</span></button>
-              </td>
-            </tr>
-          } @empty {
-            <tr><td colspan="8" class="mix-vacio">Sin equipos para esta vista.</td></tr>
+      <!-- Banner informativo -->
+      <div class="mix-banner">
+        <span class="material-symbols-outlined">lightbulb</span>
+        <span>
+          Vista consolidada de las {{ totalFilas() }} filas del archivo. Revisá y confirmá antes de agregar al listado.
+        </span>
+        <div class="mix-banner__pills">
+          <span class="mix-mini-pill mix-mini-pill--auto">● {{ totalAuto() }} Automáticos</span>
+          <span class="mix-mini-pill mix-mini-pill--manual">● {{ totalRevision() }} Revisión</span>
+          <span class="mix-mini-pill mix-mini-pill--nuevo">● {{ totalNuevo() }} Nuevos</span>
+          @if (totalOmitido() > 0) {
+            <span class="mix-mini-pill mix-mini-pill--omitido">● {{ totalOmitido() }} Omitidos</span>
           }
-        </tbody>
-      </table>
-    </div>
+        </div>
+      </div>
+
+      @if (analisis()!.avisoIa) {
+        <div class="mix-aviso-ia">
+          <span class="material-symbols-outlined">info</span>
+          <span>{{ analisis()!.avisoIa }}</span>
+        </div>
+      }
+
+      <!-- Buscador de texto en la tabla -->
+      <div class="mix-buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text"
+               [ngModel]="busqueda()"
+               (ngModelChange)="busqueda.set($event)"
+               placeholder="Buscar por N/S, código, marca, modelo, ubicación…" />
+        @if (busqueda()) {
+          <button class="mix-buscador__clear" (click)="busqueda.set('')" title="Limpiar">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        }
+      </div>
+
+      <!-- Tabla de filas -->
+      <div class="mix-tabla-wrap">
+        <table class="mix-tabla">
+          <thead>
+            <tr>
+              <th class="mix-check">
+                <input type="checkbox"
+                       [checked]="totalSeleccionados() > 0 && totalSeleccionados() === totalFilas()"
+                       (change)="toggleTodos($any($event.target).checked)" />
+              </th>
+              <th>FILA</th>
+              <th>N/S (XLS)</th>
+              <th>CÓDIGO TW</th>
+              <th>EQUIPO / INSTRUMENTO</th>
+              <th>CAPACIDAD / ALCANCE</th>
+              <th>UBICACIÓN</th>
+              <th>ESTADO / CONCILIACIÓN</th>
+              <th class="mix-acciones">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filasFiltradas(); track f.fila) {
+              <tr [class.mix-row--omitida]="f.estado === 'omitido' || !f.importable">
+                <td class="mix-check">
+                  <input type="checkbox"
+                         [checked]="f.seleccionado"
+                         [disabled]="!f.importable"
+                         (change)="toggleFila(f)" />
+                </td>
+                <td class="mix-mono">#{{ f.fila }}</td>
+                <td class="mix-mono">{{ nsFila(f) }}</td>
+                <td>
+                  <span class="mix-chip-tw" [class.mix-chip-tw--nuevo]="f.accion === 'crear'">
+                    {{ codigoTwFila(f) }}
+                  </span>
+                </td>
+                <td>{{ equipoFila(f) }}</td>
+                <td>{{ capacidadFila(f) }}</td>
+                <td>{{ ubicacionFila(f) }}</td>
+                <td>
+                  <div class="mix-estado-cell">
+                    <span class="mix-estado" [ngClass]="claseEstado(f.estado)">
+                      {{ f.estadoLabel }}
+                    </span>
+                    @if (f.confianza > 0) {
+                      <span class="mix-confianza">· {{ f.confianza }}% confianza</span>
+                    }
+                    @if (f.origen === 'ia') {
+                      <span class="mix-origen-ia" title="Resuelto por IA">IA</span>
+                    }
+                  </div>
+                  @if (f.motivo) {
+                    <div class="mix-motivo">{{ labelMotivo(f.motivo) }}</div>
+                  }
+                  @if (f.observaciones.length > 0) {
+                    <div class="mix-obs" [title]="f.observaciones.join(' · ')">
+                      {{ f.observaciones[0] }}
+                      @if (f.observaciones.length > 1) { <small>(+{{ f.observaciones.length - 1 }})</small> }
+                    </div>
+                  }
+                </td>
+                <td class="mix-acciones">
+                  <button class="mix-icon" title="Editar fila (candidatos / cambiar acción)"
+                          (click)="editarFila(f)"
+                          [disabled]="f.estado === 'omitido'">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9" class="mix-vacio">Sin filas en esta vista.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   </div>
 
   <div modalFooter class="mix-footer">
-    <app-button variant="ghost" icono="download" (clic)="descargarReporte()">
-      Descargar reporte completo (.xlsx)
-    </app-button>
-    <div class="mix-footer__meta">
-      <span class="mix-footer__count">● {{ totalSeleccionados() }} de {{ totalFilas() }} equipos seleccionados para importar</span>
-    </div>
+    @if (analisis()) {
+      <app-button variant="ghost" icono="download"
+                  [cargando]="descargandoReporte()"
+                  (clic)="descargarReporte()">
+        Descargar reporte (.xlsx)
+      </app-button>
+      <div class="mix-footer__meta">
+        <span class="mix-footer__count">● {{ totalSeleccionados() }} de {{ totalFilas() }} seleccionados</span>
+      </div>
+    } @else {
+      <span></span>
+    }
     <div class="mix-footer__der">
       <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
-      <app-button
-        variant="primary"
-        icono="input"
-        [disabled]="totalSeleccionados() === 0"
-        [cargando]="importando()"
-        (clic)="importar()"
-      >
-        Importar los {{ totalSeleccionados() }} Equipos a la Propuesta
-      </app-button>
+      @if (analisis()) {
+        <app-button
+          variant="primary"
+          icono="input"
+          [disabled]="!puedeConfirmar()"
+          [cargando]="confirmando()"
+          (clic)="confirmar()"
+        >
+          Importar los {{ totalSeleccionados() }} Equipos
+        </app-button>
+      }
     </div>
   </div>
 </app-modal>
+
+<!-- ═══ Modal secundario: resolver fila ═══ -->
+@if (filaEditando(); as f) {
+  <app-modal-editar-fila-importacion
+    [fila]="f"
+    [sedes]="analisis()?.sedes ?? []"
+    [clasificaciones]="analisis()?.clasificaciones ?? []"
+    (cerrar)="cerrarEdicionFila()"
+    (guardar)="guardarEdicionFila($event)"
+  />
+}

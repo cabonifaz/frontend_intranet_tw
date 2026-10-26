@@ -273,6 +273,8 @@ export interface VinculacionEdicionOcDto {
   nuevaVersionAceptada:     boolean;
   /** Ticket E: montoAsignado convertido a la moneda de la propuesta (null = misma moneda que la OC). */
   montoCubierto?:          number | null;
+  /** Cantidad de ítems (servicios) de la propuesta vinculada — columna SERVICIOS (follow-up 2026-10-26). */
+  items?:                   number;
 }
 
 export interface OrdenCompraEdicionDto {

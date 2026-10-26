@@ -1,0 +1,386 @@
+.mef-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 2px;
+}
+
+// ─── Header ──────────────────────────────────────────────────────────────
+.mef-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+
+  &__num {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-radius: 10px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  &__datos { flex: 1; min-width: 0; }
+  &__titulo { font-size: 14px; font-weight: 700; color: #0F172A; }
+  &__marca  { font-weight: 500; color: #475569; }
+  &__meta {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #64748B;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    strong { color: #0F172A; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; }
+  }
+
+  &__estado { align-self: center; }
+}
+
+.mef-chip {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #F1F5F9;
+  color: #475569;
+
+  &--rev { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  &--new { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+  &--omi { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+  &--inact { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; margin-left: 6px; font-size: 9px; }
+}
+
+// ─── Selector de acción ──────────────────────────────────────────────────
+.mef-accion {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mef-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+
+  &:hover { border-color: #CBD5E1; }
+
+  &--activo {
+    border-color: #1D4ED8;
+    background: #EFF6FF;
+  }
+
+  input[type="radio"] { margin-top: 2px; }
+
+  &__texto { display: flex; flex-direction: column; gap: 2px; }
+  &__titulo { font-size: 12px; font-weight: 700; color: #0F172A; }
+  &__sub { font-size: 10px; color: #64748B; }
+
+  input:disabled + &__texto { opacity: 0.5; }
+}
+
+// ─── Panel genérico ──────────────────────────────────────────────────────
+.mef-panel {
+  padding: 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+
+  &__titulo {
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: #0F172A;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &--sub { margin-top: 16px; color: #64748B; }
+  }
+
+  &--omitir {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #F8FAFC;
+
+    .material-symbols-outlined { font-size: 24px; color: #94A3B8; }
+    h4 { margin: 0; font-size: 13px; font-weight: 700; color: #0F172A; }
+    p  { margin: 2px 0 0 0; font-size: 11px; color: #64748B; }
+  }
+}
+
+// ─── Candidatos ──────────────────────────────────────────────────────────
+.mef-cand {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.1s, background 0.1s;
+
+    &:hover { border-color: #CBD5E1; }
+
+    &--activo {
+      border-color: #1D4ED8;
+      background: #EFF6FF;
+    }
+
+    input[type="radio"] { margin-top: 3px; }
+  }
+
+  &__info { flex: 1; min-width: 0; }
+
+  &__linea1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  &__cod {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    color: #1D4ED8;
+    background: #EFF6FF;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  &__ns { color: #475569; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 11px; }
+  &__cc { color: #64748B; font-size: 11px; }
+
+  &__linea2 {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #0F172A;
+    font-weight: 600;
+  }
+
+  &__linea3 {
+    margin-top: 2px;
+    font-size: 10px;
+    color: #64748B;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__puntaje {
+    font-size: 11px;
+    font-weight: 700;
+    color: #047857;
+    background: #ECFDF5;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    border: 1px solid #A7F3D0;
+    align-self: center;
+  }
+}
+
+.mef-vacio {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #94A3B8;
+  font-style: italic;
+}
+
+// ─── Formulario (crear) ──────────────────────────────────────────────────
+.mef-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  &__full { display: flex; flex-direction: column; gap: 6px; }
+}
+
+.mef-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  &__req  { color: #B91C1C; }
+  &__hint {
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #94A3B8;
+    font-size: 10px;
+    font-style: italic;
+  }
+
+  input, select {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #0F172A;
+    background: white;
+    width: 100%;
+
+    &:focus {
+      outline: none;
+      border-color: #1D4ED8;
+      box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+    }
+  }
+}
+
+// ─── Suministro: seleccionado ────────────────────────────────────────────
+.mef-sum-sel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #1D4ED8;
+  background: #EFF6FF;
+  border-radius: 8px;
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong { font-size: 13px; color: #0F172A; }
+    span   { font-size: 11px; color: #475569; }
+    small  { font-size: 10px; color: #64748B; }
+  }
+
+  &__quitar {
+    border: none;
+    background: transparent;
+    color: #64748B;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+
+    &:hover { background: white; color: #B91C1C; }
+
+    .material-symbols-outlined { font-size: 16px; }
+  }
+}
+
+// ─── Suministro: búsqueda ────────────────────────────────────────────────
+.mef-sum-busqueda {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  input {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 12px;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: #1D4ED8;
+      box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+    }
+  }
+}
+
+.mef-sum-vacio {
+  padding: 14px;
+  text-align: center;
+  font-size: 11px;
+  color: #64748B;
+  font-style: italic;
+  border: 1px dashed #CBD5E1;
+  border-radius: 8px;
+
+  a { color: #1D4ED8; text-decoration: underline; }
+}
+
+.mef-sum-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #F1F5F9;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: #F8FAFC; }
+
+    strong { font-size: 12px; color: #0F172A; }
+  }
+
+  &__desc {
+    display: block;
+    font-size: 10px;
+    color: #64748B;
+    margin-top: 2px;
+  }
+
+  &__pts {
+    font-size: 10px;
+    font-weight: 700;
+    color: #047857;
+    background: #ECFDF5;
+    padding: 2px 8px;
+    border-radius: 9999px;
+  }
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────
+.mef-footer {
+  display: flex !important;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 22px !important;
+  border-top: 1px solid #E2E8F0;
+  background: #FAFBFC;
+}

@@ -286,6 +286,7 @@ export class RegistrarOcComponent {
           monedaSimbolo: this.monedas().find(m => m.id === v.idMoneda)?.simbolo,
           montoAsignado: v.montoAsignado, esOrigen: v.idPropuesta === p.oc.idPropuesta,
           contacto: v.contacto, numeroRq: v.numeroRq, estadoValidacion: v.estadoValidacion,
+          servicios: v.items,
         })));
       } else {
         const pre = this.idPropuestaOrigen();

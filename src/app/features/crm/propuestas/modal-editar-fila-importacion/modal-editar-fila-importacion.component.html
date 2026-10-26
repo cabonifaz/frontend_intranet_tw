@@ -1,0 +1,231 @@
+<app-modal titulo="Resolver fila de importación" ancho="lg" (cerrar)="onCerrar()">
+  <div class="mef-body">
+
+    <!-- ═══ Encabezado — info de la fila ═══ -->
+    <div class="mef-header">
+      <div class="mef-header__num">#{{ fila().fila }}</div>
+      <div class="mef-header__datos">
+        <div class="mef-header__titulo">
+          {{ fila().leido.equipo || 'Equipo sin descripción' }}
+          @if (fila().leido.marca || fila().leido.modelo) {
+            <span class="mef-header__marca">· {{ fila().leido.marca }} {{ fila().leido.modelo }}</span>
+          }
+        </div>
+        <div class="mef-header__meta">
+          <span>N/S: <strong>{{ fila().leido.numSerie || '—' }}</strong></span>
+          @if (fila().leido.codigoTw) { <span>Cód TW: {{ fila().leido.codigoTw }}</span> }
+          @if (fila().leido.codigoCliente) { <span>Cód cliente: {{ fila().leido.codigoCliente }}</span> }
+        </div>
+      </div>
+      <div class="mef-header__estado">
+        <span class="mef-chip" [class.mef-chip--rev]="fila().estado === 'revision'"
+                               [class.mef-chip--new]="fila().estado === 'nuevo'"
+                               [class.mef-chip--omi]="fila().estado === 'omitido'">
+          {{ fila().estadoLabel }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ═══ Selector de acción ═══ -->
+    <div class="mef-accion">
+      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'vincular'">
+        <input type="radio" name="accion" [checked]="accion() === 'vincular'"
+               (change)="cambiarAccion('vincular')"
+               [disabled]="fila().candidatos.length === 0" />
+        <span class="mef-radio__texto">
+          <span class="mef-radio__titulo">Vincular a equipo existente</span>
+          <span class="mef-radio__sub">
+            @if (fila().candidatos.length === 0) {
+              No hay candidatos sugeridos en el inventario del cliente
+            } @else {
+              {{ fila().candidatos.length }} candidato{{ fila().candidatos.length > 1 ? 's' : '' }} sugerido{{ fila().candidatos.length > 1 ? 's' : '' }}
+            }
+          </span>
+        </span>
+      </label>
+
+      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'crear'">
+        <input type="radio" name="accion" [checked]="accion() === 'crear'" (change)="cambiarAccion('crear')" />
+        <span class="mef-radio__texto">
+          <span class="mef-radio__titulo">Crear equipo nuevo</span>
+          <span class="mef-radio__sub">Registrar en el inventario del cliente</span>
+        </span>
+      </label>
+
+      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'omitir'">
+        <input type="radio" name="accion" [checked]="accion() === 'omitir'" (change)="cambiarAccion('omitir')" />
+        <span class="mef-radio__texto">
+          <span class="mef-radio__titulo">Omitir esta fila</span>
+          <span class="mef-radio__sub">No importar este equipo</span>
+        </span>
+      </label>
+    </div>
+
+    <!-- ═══ Panel según acción ═══ -->
+
+    <!-- Vincular → lista de candidatos -->
+    @if (accion() === 'vincular') {
+      <div class="mef-panel">
+        <h4 class="mef-panel__titulo">Elegí el equipo correcto del inventario</h4>
+        @if (fila().candidatos.length === 0) {
+          <div class="mef-vacio">No hay equipos sugeridos. Cambiá a "Crear equipo nuevo" o cerrá y buscá en el maestro.</div>
+        } @else {
+          <ul class="mef-cand">
+            @for (c of fila().candidatos; track c.idEquipo) {
+              <li class="mef-cand__item"
+                  [class.mef-cand__item--activo]="idEquipoSeleccionado() === c.idEquipo"
+                  (click)="elegirCandidato(c)">
+                <input type="radio" name="candidato" [checked]="idEquipoSeleccionado() === c.idEquipo" />
+                <div class="mef-cand__info">
+                  <div class="mef-cand__linea1">
+                    <strong class="mef-cand__cod">{{ c.codigoTw }}</strong>
+                    <span class="mef-cand__ns">N/S: {{ c.numSerie }}</span>
+                    @if (c.codigoCliente) {
+                      <span class="mef-cand__cc">· TAG {{ c.codigoCliente }}</span>
+                    }
+                    @if (c.estado === 'inactivo') {
+                      <span class="mef-chip mef-chip--inact">INACTIVO</span>
+                    }
+                  </div>
+                  <div class="mef-cand__linea2">
+                    {{ c.marca }} {{ c.modelo }}
+                    @if (c.alcanceMaximo) { · {{ c.alcanceMaximo }} }
+                  </div>
+                  <div class="mef-cand__linea3">
+                    @if (c.sedeNombre) { <span>📍 {{ c.sedeNombre }}</span> }
+                    @if (c.ubicacion) { <span>· {{ c.ubicacion }}</span> }
+                  </div>
+                </div>
+                <div class="mef-cand__puntaje">{{ c.puntaje }}%</div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+
+    <!-- Crear → formulario -->
+    @if (accion() === 'crear') {
+      <div class="mef-panel">
+        <h4 class="mef-panel__titulo">Datos del equipo nuevo</h4>
+
+        <!-- Obligatorios -->
+        <div class="mef-form">
+          <div class="mef-form__row">
+            <label class="mef-field">
+              <span class="mef-field__label">
+                N/S fabricante <span class="mef-field__req">*</span>
+              </span>
+              <input type="text" [ngModel]="nNumSerie()" (ngModelChange)="nNumSerie.set($event)"
+                     placeholder="Ej: TWQA-26-0001" />
+            </label>
+
+            <label class="mef-field">
+              <span class="mef-field__label">
+                Sede <span class="mef-field__req">*</span>
+              </span>
+              <select [ngModel]="nIdSede()" (ngModelChange)="nIdSede.set($event)">
+                <option [ngValue]="null">— Elegí una sede —</option>
+                @for (s of sedes(); track s.id) {
+                  <option [ngValue]="s.id">{{ s.nombre }}</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <!-- Suministro: buscador + chip -->
+          <div class="mef-form__full">
+            <span class="mef-field__label">
+              Suministro del catálogo <span class="mef-field__req">*</span>
+              <small class="mef-field__hint">Marca, modelo y clasificación se heredan del suministro</small>
+            </span>
+
+            @if (suministroSeleccionado(); as sel) {
+              <div class="mef-sum-sel">
+                <div class="mef-sum-sel__info">
+                  <strong>{{ sel.marca }} {{ sel.modelo }}</strong>
+                  <span>{{ sel.descripcion }}</span>
+                  @if (sel.clase) { <small>Clase: {{ sel.clase }}</small> }
+                </div>
+                <button class="mef-sum-sel__quitar" (click)="quitarSuministro()" title="Quitar">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            } @else {
+              <div class="mef-sum-busqueda">
+                <input type="text" [ngModel]="busquedaSuministro()"
+                       (ngModelChange)="busquedaSuministro.set($event)"
+                       placeholder="Buscar por marca, modelo o descripción…" />
+                @if (suministrosFiltrados().length === 0) {
+                  <div class="mef-sum-vacio">
+                    @if (todosSuministros().length === 0) {
+                      No hay suministros sugeridos para esta fila. Creá uno nuevo desde
+                      <a href="/crm/maestros/suministros" target="_blank" rel="noopener">Mantenimiento de Suministros</a>
+                      y volvé.
+                    } @else {
+                      No hay coincidencias con «{{ busquedaSuministro() }}».
+                    }
+                  </div>
+                } @else {
+                  <ul class="mef-sum-lista">
+                    @for (s of suministrosFiltrados(); track s.idSuministro) {
+                      <li class="mef-sum-lista__item" (click)="elegirSuministro(s)">
+                        <div>
+                          <strong>{{ s.marca }} {{ s.modelo }}</strong>
+                          <span class="mef-sum-lista__desc">{{ s.descripcion }}</span>
+                        </div>
+                        <span class="mef-sum-lista__pts">{{ s.puntaje }}%</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Opcionales -->
+        <h4 class="mef-panel__titulo mef-panel__titulo--sub">Datos opcionales</h4>
+        <div class="mef-form">
+          <div class="mef-form__row">
+            <label class="mef-field">
+              <span class="mef-field__label">Código del cliente (TAG)</span>
+              <input type="text" [ngModel]="nCodigoCliente()" (ngModelChange)="nCodigoCliente.set($event)"
+                     placeholder="Ej: TAG-BAL-001" />
+            </label>
+
+            <label class="mef-field">
+              <span class="mef-field__label">Alcance máximo</span>
+              <input type="text" [ngModel]="nAlcanceMaximo()" (ngModelChange)="nAlcanceMaximo.set($event)"
+                     placeholder="Ej: 80 000 kg" />
+            </label>
+          </div>
+
+          <label class="mef-field">
+            <span class="mef-field__label">Ubicación en sede</span>
+            <input type="text" [ngModel]="nUbicacion()" (ngModelChange)="nUbicacion.set($event)"
+                   placeholder="Ej: Garita de ingreso" />
+          </label>
+        </div>
+      </div>
+    }
+
+    <!-- Omitir -->
+    @if (accion() === 'omitir') {
+      <div class="mef-panel mef-panel--omitir">
+        <span class="material-symbols-outlined">block</span>
+        <div>
+          <h4>Esta fila no se importará a la propuesta</h4>
+          <p>El equipo del Excel quedará sin acción. Podés volver a elegir otra acción antes de guardar.</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div modalFooter class="mef-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" [disabled]="!puedeGuardar()" (clic)="onGuardar()">
+      Guardar cambios
+    </app-button>
+  </div>
+</app-modal>
