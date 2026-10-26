@@ -152,10 +152,33 @@ export class ListaExpedientesComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar la bandeja.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo descargar la bandeja.'));
     } finally {
       this.descargando.set(false);
     }
+  }
+
+  /** Extrae el mensaje real del back cuando el request de blob falla. */
+  private async mensajeErrorBlob(e: unknown, fallback: string): Promise<string> {
+    const err = e as { error?: unknown; status?: number; message?: string };
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const texto = await body.text();
+        try {
+          const json = JSON.parse(texto) as { mensaje?: string; message?: string };
+          return json.mensaje || json.message || fallback;
+        } catch {
+          return texto || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (err?.status === 404) return 'No se encontró el recurso.';
+    if (err?.status === 403) return 'No tienes permisos para esta acción.';
+    if (err?.status === 401) return 'Sesión expirada. Volvé a iniciar sesión.';
+    return err?.message || fallback;
   }
 
   // ─── Navegación ──────────────────────────────────────────────────────

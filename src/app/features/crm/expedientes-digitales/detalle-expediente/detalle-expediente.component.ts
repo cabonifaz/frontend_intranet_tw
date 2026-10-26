@@ -272,13 +272,36 @@ export class DetalleExpedienteComponent implements OnInit {
     void this.router.navigate(['/crm/propuestas', id]);
   }
 
+  /** Extrae el mensaje real del back cuando el request de blob falla (el error body viene como Blob). */
+  private async mensajeErrorBlob(e: unknown, fallback: string): Promise<string> {
+    const err = e as { error?: unknown; status?: number; message?: string };
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const texto = await body.text();
+        try {
+          const json = JSON.parse(texto) as { mensaje?: string; message?: string };
+          return json.mensaje || json.message || fallback;
+        } catch {
+          return texto || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (err?.status === 404) return 'El archivo no se encontró.';
+    if (err?.status === 403) return 'No tienes permisos para abrir este archivo.';
+    if (err?.status === 401) return 'Sesión expirada. Volvé a iniciar sesión.';
+    return err?.message || fallback;
+  }
+
   async verArchivo(clave: string): Promise<void> {
     try {
       const blob = await this.svc.obtenerArchivoDocumento(this.idExpediente(), clave, false);
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo abrir el archivo.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo abrir el archivo.'));
     }
   }
 
@@ -292,7 +315,7 @@ export class DetalleExpedienteComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar el archivo.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo descargar el archivo.'));
     }
   }
 
@@ -355,7 +378,7 @@ export class DetalleExpedienteComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo exportar el expediente.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo exportar el expediente.'));
     } finally {
       this.exportando.set(false);
     }

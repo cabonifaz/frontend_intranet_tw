@@ -695,6 +695,14 @@ textarea {
     display: flex;
     gap: 4px;
   }
+
+  // Deshabilitado mientras la IA valida (evita que el usuario cambie montos durante el procesamiento).
+  &--bloqueado {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    input, button { cursor: not-allowed; }
+  }
 }
 
 .btn-mini {

@@ -70,6 +70,29 @@ export class ModalRepositorioDocumentosComponent implements OnInit {
 
   aplicarFiltros(): void { void this.cargar(); }
 
+  /** Extrae el mensaje real del back cuando el request de blob falla (el error body viene como Blob). */
+  private async mensajeErrorBlob(e: unknown, fallback: string): Promise<string> {
+    const err = e as { error?: unknown; status?: number; message?: string };
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const texto = await body.text();
+        try {
+          const json = JSON.parse(texto) as { mensaje?: string; message?: string };
+          return json.mensaje || json.message || fallback;
+        } catch {
+          return texto || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (err?.status === 404) return 'El archivo no se encontró.';
+    if (err?.status === 403) return 'No tienes permisos para abrir este archivo.';
+    if (err?.status === 401) return 'Sesión expirada. Volvé a iniciar sesión.';
+    return err?.message || fallback;
+  }
+
   async exportar(): Promise<void> {
     this.exportando.set(true);
     try {
@@ -87,7 +110,7 @@ export class ModalRepositorioDocumentosComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      this.toast.error((e as Error).message || 'No se pudo exportar la lista.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo exportar la lista.'));
     } finally {
       this.exportando.set(false);
     }
@@ -100,7 +123,7 @@ export class ModalRepositorioDocumentosComponent implements OnInit {
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     } catch (e) {
-      this.toast.error((e as Error).message || 'No se pudo abrir el documento.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo abrir el documento.'));
     }
   }
 
@@ -115,7 +138,7 @@ export class ModalRepositorioDocumentosComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      this.toast.error((e as Error).message || 'No se pudo descargar el documento.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo descargar el documento.'));
     }
   }
 

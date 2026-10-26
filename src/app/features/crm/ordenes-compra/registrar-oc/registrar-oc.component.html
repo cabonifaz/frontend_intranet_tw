@@ -157,17 +157,23 @@
                   </td>
                   <td class="tabla-propuestas__num">{{ v.servicios ?? '—' }}</td>
                   <td class="tabla-propuestas__num">
-                    <div class="monto-cell">
+                    <div class="monto-cell" [class.monto-cell--bloqueado]="comparando()">
                       <input type="number" min="0" step="0.01"
                              [ngModel]="v.montoAsignado"
-                             (ngModelChange)="actualizarMontoAsignado(v.idPropuesta, $event)" />
+                             (ngModelChange)="actualizarMontoAsignado(v.idPropuesta, $event)"
+                             [disabled]="comparando()"
+                             [title]="comparando() ? 'La IA está validando. Esperá a que termine para modificar el monto.' : ''" />
                       <!-- Ticket E: equivalente en la moneda de la propuesta -->
                       @if (montoCubiertoDe(v.idPropuesta); as mc) {
                         <small class="monto-cell__cubierto">≈ {{ v.monedaSimbolo }} {{ mc | number:'1.2-2' }}</small>
                       }
                       <div class="monto-cell__botones">
-                        <button type="button" class="btn-mini" (click)="cubrirAlCien(v.idPropuesta)">Cubrir 100%</button>
-                        <button type="button" class="btn-mini" (click)="cubrirResto(v.idPropuesta)">Resto</button>
+                        <button type="button" class="btn-mini"
+                                [disabled]="comparando()"
+                                (click)="cubrirAlCien(v.idPropuesta)">Cubrir 100%</button>
+                        <button type="button" class="btn-mini"
+                                [disabled]="comparando()"
+                                (click)="cubrirResto(v.idPropuesta)">Resto</button>
                       </div>
                     </div>
                   </td>

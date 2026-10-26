@@ -234,10 +234,33 @@ export class ModalDetalleOcComponent {
       const blob = await this.svc.obtenerPdfBlob(this.idOc());
       this.urlPdfPreview.set(URL.createObjectURL(blob));
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el PDF.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo cargar el PDF.'));
     } finally {
       this.cargandoPdf.set(false);
     }
+  }
+
+  /** Extrae el mensaje real del back cuando el request de blob falla. */
+  private async mensajeErrorBlob(e: unknown, fallback: string): Promise<string> {
+    const err = e as { error?: unknown; status?: number; message?: string };
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const texto = await body.text();
+        try {
+          const json = JSON.parse(texto) as { mensaje?: string; message?: string };
+          return json.mensaje || json.message || fallback;
+        } catch {
+          return texto || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (err?.status === 404) return 'El archivo no se encontró.';
+    if (err?.status === 403) return 'No tienes permisos para ver este archivo.';
+    if (err?.status === 401) return 'Sesión expirada. Volvé a iniciar sesión.';
+    return err?.message || fallback;
   }
 
   onCerrar(): void { this.cerrar.emit(); }

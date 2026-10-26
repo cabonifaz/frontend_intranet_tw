@@ -69,6 +69,29 @@ export class ModalAuditoriaExpedienteComponent implements OnInit {
   cambiarTab(t: TabAud): void { this.tabActivo.set(t); }
   aplicarFiltros(): void { void this.cargar(); }
 
+  /** Extrae el mensaje real del back cuando el request de blob falla. */
+  private async mensajeErrorBlob(e: unknown, fallback: string): Promise<string> {
+    const err = e as { error?: unknown; status?: number; message?: string };
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const texto = await body.text();
+        try {
+          const json = JSON.parse(texto) as { mensaje?: string; message?: string };
+          return json.mensaje || json.message || fallback;
+        } catch {
+          return texto || fallback;
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    if (err?.status === 404) return 'No se encontró el archivo.';
+    if (err?.status === 403) return 'No tienes permisos para exportar.';
+    if (err?.status === 401) return 'Sesión expirada. Volvé a iniciar sesión.';
+    return err?.message || fallback;
+  }
+
   async exportar(formato: 'xlsx' | 'pdf'): Promise<void> {
     this.exportando.set(true);
     try {
@@ -90,7 +113,7 @@ export class ModalAuditoriaExpedienteComponent implements OnInit {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      this.toast.error((e as Error).message || 'No se pudo exportar.');
+      this.toast.error(await this.mensajeErrorBlob(e, 'No se pudo exportar.'));
     } finally {
       this.exportando.set(false);
     }
