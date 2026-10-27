@@ -1,0 +1,523 @@
+<div class="ficha-os">
+
+  @if (cargando()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando ficha…
+    </div>
+  } @else if (error()) {
+    <div class="error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+      <app-button variant="ghost" (clic)="cancelar()">Volver</app-button>
+    </div>
+  } @else {
+
+    <!-- ─── Breadcrumb + Hero Header ───────────────────────────────────── -->
+    <app-breadcrumb [items]="breadcrumb()" />
+
+    <app-hero-header
+      [icono]="tipo() === 'OM' ? 'workspace_premium' : 'build'"
+      [titulo]="titulo()"
+      [descripcion]="subtitulo()"
+      [codigoFicha]="numeroDocumento()"
+      [badgeTexto]="badgeHero()"
+      [badgeVariant]="badgeVariant()"
+      [mostrarBack]="false">
+      <span class="chip-tipo-hero" [class]="claseChipTipo(tipo())">{{ tipo() }}</span>
+      @if (modo() === 'editar' && edicion()?.autorizacion) {
+        <span class="chip-info chip-info--verde">
+          <span class="material-symbols-outlined">verified</span>
+          EDITABLE
+        </span>
+      }
+    </app-hero-header>
+
+    <!-- ─── Banner "Edición autorizada" ────────────────────────────────── -->
+    @if (modo() === 'editar' && edicion()?.autorizacion; as a) {
+      <div class="banner-autorizacion">
+        <span class="material-symbols-outlined banner-autorizacion__icono">verified</span>
+        <div class="banner-autorizacion__texto">
+          <strong>Edición autorizada</strong>
+          <small>
+            Autorizado por <strong>{{ a.jefeComercial }}</strong>
+            el {{ a.fechaAutorizacion | date:'dd/MM/yyyy HH:mm' }}.
+            Motivo: <strong>{{ a.motivoLabel }}</strong>.
+          </small>
+        </div>
+        <button class="banner-autorizacion__link" (click)="verDetalleSolicitud()">
+          Ver detalle
+          <span class="material-symbols-outlined">open_in_new</span>
+        </button>
+      </div>
+    }
+
+    <!-- ─── 1. DATOS DEL CLIENTE Y ORIGEN ──────────────────────────────── -->
+    <app-seccion icono="apartment"
+                 titulo="1. Datos del Cliente y Origen"
+                 subtitulo="Cliente de la propuesta y resumen del origen (solo el contacto es editable)">
+      @if (propuestaOrigen()) {
+        <app-button variant="ghost" tamano="sm" icono="open_in_new"
+                    headerActions (clic)="irAPropuesta()">
+          Ver propuesta
+        </app-button>
+      }
+      @if (propuestaOrigen(); as p) {
+        <!-- Fila superior: Cliente | Propuesta+RQ apilados | Equipos+Conceptos apilados -->
+        <div class="s1-fila-top">
+          <!-- Columna 1: identidad del cliente -->
+          <div class="s1-cliente">
+            <div class="s1-cliente__avatar">
+              <span class="material-symbols-outlined">apartment</span>
+            </div>
+            <div class="s1-cliente__info">
+              <h4 class="s1-cliente__nombre">{{ razonSocial() }}</h4>
+              <div class="s1-cliente__meta">
+                <span class="chip-info">RUC {{ ruc() }}</span>
+                @if (direccion()) {
+                  <span class="s1-cliente__sep">·</span>
+                  <span class="s1-cliente__direccion">
+                    <span class="material-symbols-outlined">location_on</span>
+                    {{ direccion() }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna 2: Un solo card con Propuesta + RQ apilados dentro -->
+          <div class="s1-card s1-card--doble">
+            <div class="s1-card__item">
+              <div class="s1-card__icono">
+                <span class="material-symbols-outlined">description</span>
+              </div>
+              <div class="s1-card__contenido">
+                <span class="s1-card__label">N° Propuesta</span>
+                <div class="s1-card__valor">
+                  <span class="mono">{{ p.codigo }} v{{ p.version }}</span>
+                  <span class="chip-info chip-info--verde">● {{ p.estadoLabel | uppercase }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="s1-card__divisor"></div>
+            <div class="s1-card__item">
+              <div class="s1-card__icono s1-card__icono--ambar">
+                <span class="material-symbols-outlined">request_quote</span>
+              </div>
+              <div class="s1-card__contenido">
+                <span class="s1-card__label">N° Requerimiento</span>
+                <div class="s1-card__valor">
+                  <span class="mono">{{ numeroRequerimiento() ?? '—' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna 3: Un solo card con Equipos + Conceptos apilados dentro -->
+          <div class="s1-card s1-card--doble">
+            <div class="s1-card__item">
+              <div class="s1-card__icono s1-card__icono--verde">
+                <span class="material-symbols-outlined">precision_manufacturing</span>
+              </div>
+              <div class="s1-card__contenido">
+                <span class="s1-card__label">N° equipos cotizados</span>
+                <div class="s1-card__valor s1-card__valor--grande">
+                  {{ p.cantidadEquiposCotizados }}
+                </div>
+              </div>
+            </div>
+            <div class="s1-card__divisor"></div>
+            <div class="s1-card__item">
+              <div class="s1-card__icono s1-card__icono--violeta">
+                <span class="material-symbols-outlined">build</span>
+              </div>
+              <div class="s1-card__contenido">
+                <span class="s1-card__label">N° conceptos cotizados</span>
+                <div class="s1-card__valor s1-card__valor--grande">
+                  {{ p.cantidadConceptosCotizados }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila inferior: Contacto (editable) + Monto + Fecha emisión (readonly con fondo gris) -->
+        <div class="s1-fila-bottom">
+          <app-campo label="Contacto *" hint="por default: contacto principal del RQ">
+            <select class="input-sistema"
+                    [ngModel]="idContactoSel()"
+                    (ngModelChange)="idContactoSel.set($event)">
+              @for (c of contactos(); track c.idContacto) {
+                <option [ngValue]="c.idContacto">
+                  {{ c.nombre }}{{ c.cargo ? ' — ' + c.cargo : '' }}
+                  @if (c.esPrincipal) {  (principal) }
+                </option>
+              }
+            </select>
+          </app-campo>
+
+          <app-campo label="Monto total (referencial)">
+            <div class="lectura">
+              <span class="mono">{{ p.moneda }} {{ p.montoTotal | number:'1.2-2' }}</span>
+            </div>
+          </app-campo>
+
+          <app-campo label="Fecha de emisión">
+            <div class="lectura">{{ (fechaEmision() | date:'dd/MM/yyyy') || '—' }}</div>
+          </app-campo>
+        </div>
+      }
+
+      <!-- Fecha programada tentativa — solo OS -->
+      @if (esOs()) {
+        <div class="s1-separador"></div>
+        <div class="bloque-fecha-prog">
+          <div class="bloque-fecha-prog__header">
+            <span class="material-symbols-outlined">event</span>
+            <strong>Fecha programada tentativa — rango</strong>
+            <span class="chip-info chip-info--opcional">Opcional · solo aplicable en OS</span>
+          </div>
+          <div class="grid-cols-3">
+            <app-campo label="Desde">
+              <input type="date" class="input-sistema"
+                     [ngModel]="fechaDesde()" (ngModelChange)="fechaDesde.set($event)" />
+            </app-campo>
+            <app-campo label="Hasta">
+              <input type="date" class="input-sistema"
+                     [ngModel]="fechaHasta()" (ngModelChange)="fechaHasta.set($event)" />
+            </app-campo>
+            <app-campo label="Días hábiles estimados">
+              <div class="lectura">
+                <span class="mono">{{ diasHabiles() || '—' }}</span>
+              </div>
+            </app-campo>
+          </div>
+          <small class="bloque-fecha-prog__nota">
+            Fecha tentativa. El área de Operaciones definirá la fecha real de intervención en el Módulo 8 Programación.
+          </small>
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ─── 2. CONCEPTOS DEL SERVICIO ──────────────────────────────────── -->
+    <app-seccion icono="build"
+                 titulo="2. Conceptos del Servicio"
+                 subtitulo="Suministros tipo Servicio que describen el trabajo a realizar">
+      <app-button variant="primary" tamano="sm" icono="add"
+                  headerActions (clic)="abrirAgregarConcepto()">
+        Agregar concepto
+      </app-button>
+
+      @if (conceptos().length === 0) {
+        <div class="vacio-tabla">
+          <span class="material-symbols-outlined">build</span>
+          <strong>Sin conceptos agregados aún</strong>
+          <small>Agregá al menos un concepto del catálogo maestro para describir el servicio.</small>
+        </div>
+      } @else {
+        <table class="tabla-sistema">
+          <thead>
+            <tr>
+              <th style="width:40px; text-align:center;">#</th>
+              <th>CÓDIGO</th>
+              <th>CONCEPTO</th>
+              <th>TIPO / SUBTIPO</th>
+              <th>N° EQUIPOS APLICADOS</th>
+              <th style="width:48px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of conceptos(); track c.idConcepto; let i = $index) {
+              <tr>
+                <td style="text-align:center;">{{ i + 1 }}</td>
+                <td class="mono">{{ c.codigo }}</td>
+                <td>{{ c.descripcion }}</td>
+                <td>
+                  @if (c.tipo) {
+                    <span class="chip-info chip-info--morado">{{ c.tipo }}</span>
+                    @if (c.subtipo) {
+                      <small class="subtipo-inline">{{ c.subtipo }}</small>
+                    }
+                  } @else if (c.clasificacion) {
+                    <span class="chip-info chip-info--morado">{{ c.clasificacion }}</span>
+                  } @else { — }
+                </td>
+                <td>
+                  @let aplicados = equiposQueAplican(c.codigo);
+                  @if (aplicados.length === 0) {
+                    <span class="chip-info chip-info--opcional">General (toda la OS)</span>
+                  } @else {
+                    <span class="recuento-tooltip">
+                      <strong class="recuento-tooltip__num">{{ aplicados.length }}</strong>
+                      {{ aplicados.length === 1 ? 'equipo' : 'equipos' }}
+                      <div class="recuento-tooltip__popup">
+                        <strong>Equipos aplicados:</strong>
+                        @for (eqCod of aplicados; track eqCod) {
+                          <span>{{ eqCod }}</span>
+                        }
+                      </div>
+                    </span>
+                  }
+                </td>
+                <td style="text-align:center;">
+                  <button class="btn-quitar" title="Quitar concepto"
+                          (click)="quitarConcepto(c.idConcepto, $event)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </app-seccion>
+
+    <!-- ─── 3. EQUIPOS / INSTRUMENTOS ──────────────────────────────────── -->
+    <app-seccion icono="precision_manufacturing"
+                 titulo="3. Equipos / Instrumentos"
+                 subtitulo="Activos del cliente que serán intervenidos">
+      <div headerActions class="acciones-header">
+        <app-button variant="ghost" tamano="sm" icono="upload_file" (clic)="abrirImportarExcel()">
+          Importar Excel
+        </app-button>
+        <app-button variant="primary" tamano="sm" icono="add" (clic)="abrirAgregarEquipo()">
+          Agregar equipo
+        </app-button>
+      </div>
+
+      @if (equipos().length === 0) {
+        <div class="vacio-tabla">
+          <span class="material-symbols-outlined">precision_manufacturing</span>
+          <strong>Sin equipos agregados aún</strong>
+          <small>Agregá equipos del catálogo del cliente o importalos desde Excel.</small>
+        </div>
+      } @else {
+        <table class="tabla-sistema">
+          <thead>
+            <tr>
+              <th style="width:36px; text-align:center;">#</th>
+              <th>N° SERIE</th>
+              <th>CÓD TW</th>
+              <th>CLASIFICACIÓN</th>
+              <th>MARCA MODELO</th>
+              <th>UBICACIÓN</th>
+              <th>ALCANCE</th>
+              <th>CONCEPTO(S)</th>
+              <th style="width:48px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of equipos(); track e.idEquipo; let i = $index) {
+              <tr>
+                <td style="text-align:center;">{{ i + 1 }}</td>
+                <td class="mono">{{ e.numSerie }}</td>
+                <td class="mono" style="color:#1D4ED8;">{{ e.codigoTw }}</td>
+                <td>
+                  <span [class]="e.clasificacion === 'equipo' ? 'chip-info chip-info--azul' : 'chip-info chip-info--morado'">
+                    {{ e.clasificacionLabel }}
+                  </span>
+                </td>
+                <td>
+                  <strong>{{ e.marca }}</strong>
+                  <small style="color:#64748B; display:block; margin-top:1px;">{{ e.modelo }}</small>
+                </td>
+                <td>{{ e.ubicacion ?? '—' }}</td>
+                <td>{{ e.alcance ?? '—' }}</td>
+                <td class="conceptos-cell">
+                  <!-- Chips de conceptos ya vinculados -->
+                  @for (codCon of e.conceptosAplicados; track codCon) {
+                    <span class="chip-vinculado">
+                      {{ codCon }}
+                      <button class="chip-vinculado__quitar"
+                              title="Quitar vinculación"
+                              (click)="toggleConceptoEnEquipo(e.idEquipo, codCon)">
+                        <span class="material-symbols-outlined">close</span>
+                      </button>
+                    </span>
+                  }
+
+                  <!-- Botón + Vincular con popover -->
+                  @if (conceptos().length === 0) {
+                    <small class="hint-vacio">Agregá conceptos primero</small>
+                  } @else {
+                    <div class="popover-vincular"
+                         [class.abierto]="popoverVincularAbierto() === e.idEquipo">
+                      <button class="btn-vincular"
+                              (click)="togglePopoverVincular(e.idEquipo, $event)">
+                        <span class="material-symbols-outlined">add</span>
+                        Vincular
+                      </button>
+                      @if (popoverVincularAbierto() === e.idEquipo) {
+                        <div class="popover-vincular__panel" (click)="$event.stopPropagation()">
+                          <div class="popover-vincular__header">Vincular conceptos</div>
+                          @for (c of conceptos(); track c.idConcepto) {
+                            <label class="popover-vincular__item">
+                              <input type="checkbox"
+                                     [checked]="e.conceptosAplicados.includes(c.codigo)"
+                                     (change)="toggleConceptoEnEquipo(e.idEquipo, c.codigo)" />
+                              <div>
+                                <span class="popover-vincular__cod">{{ c.codigo }}</span>
+                                <small class="popover-vincular__desc">{{ c.descripcion }}</small>
+                              </div>
+                            </label>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </td>
+                <td style="text-align:center;">
+                  <button class="btn-quitar" title="Quitar equipo"
+                          (click)="quitarEquipo(e.idEquipo, $event)">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </app-seccion>
+
+    <!-- ─── 4. OBSERVACIONES ───────────────────────────────────────────── -->
+    <app-seccion icono="notes"
+                 titulo="4. Observaciones"
+                 subtitulo="Instrucciones dirigidas al técnico o metrólogo (texto libre)">
+      <app-campo label="Observaciones">
+        <textarea class="input-sistema" rows="4"
+                  [ngModel]="observaciones()"
+                  (ngModelChange)="observaciones.set($event)"
+                  placeholder="Ej: Metróloga deberá coordinarse con el jefe de planta antes de iniciar la calibración."></textarea>
+      </app-campo>
+    </app-seccion>
+
+    <!-- ─── 5. DATOS DEL CERTIFICADO (solo OM) ─────────────────────────── -->
+    @if (esOm()) {
+      <app-seccion icono="workspace_premium"
+                   titulo="5. Datos para Emisión del Certificado"
+                   subtitulo="Datos del cliente al que se emitirá el certificado de calibración">
+        @if (!esTercerizado()) {
+          <div class="aviso-info">
+            <span class="material-symbols-outlined">info</span>
+            <small>
+              Esta sección se precarga automáticamente de los Datos del Cliente del RQ.
+              Los campos son editables solo si el Requerimiento origen tiene activada la opción
+              <strong>"Servicio Tercerizado"</strong>.
+            </small>
+          </div>
+        } @else {
+          <div class="aviso-info aviso-info--ambar">
+            <span class="material-symbols-outlined">groups</span>
+            <small>
+              <strong>Servicio Tercerizado</strong> · completá los datos de la empresa a la que
+              se emitirá el certificado (puede ser distinta al cliente contratante).
+            </small>
+          </div>
+        }
+
+        @if (datosCertificado(); as c) {
+          <div class="grid-cols-2">
+            <app-campo label="Razón social">
+              @if (esTercerizado()) {
+                <input class="input-sistema" [ngModel]="c.razonSocial"
+                       (ngModelChange)="datosCertificado.set({ ...c, razonSocial: $event })" />
+              } @else {
+                <div class="lectura">{{ c.razonSocial }}</div>
+              }
+            </app-campo>
+            <app-campo label="RUC">
+              @if (esTercerizado()) {
+                <input class="input-sistema" [ngModel]="c.ruc"
+                       (ngModelChange)="datosCertificado.set({ ...c, ruc: $event })" />
+              } @else {
+                <div class="lectura"><span class="mono">{{ c.ruc }}</span></div>
+              }
+            </app-campo>
+            <app-campo label="Dirección">
+              @if (esTercerizado()) {
+                <input class="input-sistema" [ngModel]="c.direccion"
+                       (ngModelChange)="datosCertificado.set({ ...c, direccion: $event })" />
+              } @else {
+                <div class="lectura">{{ c.direccion ?? '—' }}</div>
+              }
+            </app-campo>
+            <app-campo label="Contacto">
+              @if (esTercerizado()) {
+                <input class="input-sistema" [ngModel]="c.contacto"
+                       (ngModelChange)="datosCertificado.set({ ...c, contacto: $event })" />
+              } @else {
+                <div class="lectura">{{ c.contacto ?? '—' }}</div>
+              }
+            </app-campo>
+          </div>
+        }
+      </app-seccion>
+    }
+
+    <!-- ─── Footer sticky ──────────────────────────────────────────────── -->
+    <!-- ═══ Modales ═══ -->
+    @if (modalAgregarConceptoAbierto()) {
+      <app-modal-agregar-concepto-os
+        [codigosYaAgregados]="codigosConceptosYa()"
+        [idPropuesta]="idPropuestaActual()"
+        (cerrar)="modalAgregarConceptoAbierto.set(false)"
+        (agregados)="onConceptosAgregados($event)" />
+    }
+
+    @if (modalAgregarEquipoAbierto()) {
+      <app-modal-agregar-equipo-os
+        [idCliente]="obtenerIdClienteParaModal()"
+        [idPropuesta]="idPropuestaActual()"
+        [razonSocial]="razonSocial()"
+        [idsEquiposAgregados]="idsEquiposYa()"
+        (cerrar)="modalAgregarEquipoAbierto.set(false)"
+        (agregados)="onEquiposAgregados($event)" />
+    }
+
+    @if (modalImportarExcelAbierto()) {
+      <app-modal-importar-excel-os
+        (cerrar)="modalImportarExcelAbierto.set(false)"
+        (importado)="onExcelImportado($event)" />
+    }
+
+    @if (modalSolicitarEdicionAbierto() && edicion()?.detalle; as d) {
+      <app-modal-solicitar-edicion-os
+        [idOs]="d.idOs"
+        [numeroOs]="d.numero"
+        [razonSocial]="d.datosGenerales.razonSocial"
+        (cerrar)="modalSolicitarEdicionAbierto.set(false)"
+        (enviada)="onEdicionSolicitada()" />
+    }
+
+    @if (modalAnularAbierto() && edicion()?.detalle; as d) {
+      <app-modal-anular-os
+        [idOs]="d.idOs"
+        [numeroOs]="d.numero"
+        [razonSocial]="d.datosGenerales.razonSocial"
+        (cerrar)="modalAnularAbierto.set(false)"
+        (anulada)="onAnulada()" />
+    }
+
+    <div class="footer-sticky">
+      <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+      <div class="footer-sticky__der">
+        <app-button variant="secondary" icono="save"
+                    [cargando]="guardando()"
+                    [disabled]="!puedeGuardar() || emitiendo()"
+                    (clic)="guardarBorrador()">
+          Guardar borrador
+        </app-button>
+        <app-button variant="primary" icono="send"
+                    [cargando]="emitiendo()"
+                    [disabled]="!puedeGuardar() || guardando()"
+                    (clic)="emitir()">
+          @if (modo() === 'nueva') {
+            Emitir {{ tipo() }}
+          } @else {
+            Guardar cambios y re-emitir
+          }
+        </app-button>
+      </div>
+    </div>
+  }
+</div>

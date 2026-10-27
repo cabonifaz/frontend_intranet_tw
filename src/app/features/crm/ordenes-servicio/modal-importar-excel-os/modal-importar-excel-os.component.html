@@ -1,0 +1,260 @@
+<app-modal
+  titulo="Importar equipos y conceptos desde Excel"
+  subtitulo="Carga masiva del alcance del servicio"
+  icono="upload_file"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  <!-- Stepper -->
+  <div class="mie-stepper">
+    <div class="mie-stepper__item"
+         [class.mie-stepper__item--activo]="paso() === 1"
+         [class.mie-stepper__item--completo]="paso() > 1">
+      <span class="mie-stepper__num">1</span>
+      <span class="mie-stepper__label">Plantilla</span>
+    </div>
+    <div class="mie-stepper__linea"></div>
+    <div class="mie-stepper__item"
+         [class.mie-stepper__item--activo]="paso() === 2"
+         [class.mie-stepper__item--completo]="paso() > 2">
+      <span class="mie-stepper__num">2</span>
+      <span class="mie-stepper__label">Subir archivo</span>
+    </div>
+    <div class="mie-stepper__linea"></div>
+    <div class="mie-stepper__item"
+         [class.mie-stepper__item--activo]="paso() === 3"
+         [class.mie-stepper__item--completo]="paso() > 3">
+      <span class="mie-stepper__num">3</span>
+      <span class="mie-stepper__label">Previsualizar</span>
+    </div>
+    <div class="mie-stepper__linea"></div>
+    <div class="mie-stepper__item"
+         [class.mie-stepper__item--activo]="paso() === 4">
+      <span class="mie-stepper__num">4</span>
+      <span class="mie-stepper__label">Confirmar</span>
+    </div>
+  </div>
+
+  <!-- Paso 1 — Plantilla + Upload -->
+  @if (paso() === 1 && !archivo()) {
+    <div class="mie-paso-plantilla">
+      <div class="mie-info-plantilla">
+        <span class="material-symbols-outlined">download</span>
+        <div>
+          <strong>Antes de subir tu archivo, descargá la plantilla oficial</strong>
+          <small>Asegura el formato correcto. Tiene 2 hojas: <strong>Conceptos</strong> (código del suministro) y <strong>Equipos</strong> (código TW + conceptos aplicados separados por punto y coma).</small>
+        </div>
+        <app-button variant="secondary" icono="download" (clic)="descargarPlantilla()">
+          Descargar plantilla
+        </app-button>
+      </div>
+
+      <div class="mie-upload"
+           [class.mie-upload--arrastrando]="arrastrando()"
+           (dragover)="onDragOver($event)"
+           (dragenter)="onDragOver($event)"
+           (dragleave)="onDragLeave($event)"
+           (drop)="onDrop($event)">
+        <span class="material-symbols-outlined">
+          {{ arrastrando() ? 'file_download' : 'upload_file' }}
+        </span>
+        <h3>Arrastrá tu archivo .xlsx o hacé click para seleccionar</h3>
+        <small>Hasta 5 MB · 500 conceptos máx · 1000 equipos máx</small>
+        <input type="file" accept=".xlsx,.xls" hidden #inputFile (change)="onArchivoSel($event)" />
+        <app-button variant="primary" icono="upload" (clic)="inputFile.click()">
+          Elegir archivo
+        </app-button>
+      </div>
+    </div>
+  }
+
+  <!-- Paso 2 — Analizando -->
+  @if (analizando()) {
+    <div class="mie-loading">
+      <div class="mie-spinner"></div>
+      <h3>Procesando archivo…</h3>
+      <small>Validando conceptos contra el catálogo maestro y equipos contra el inventario del cliente.</small>
+    </div>
+  }
+
+  <!-- Paso 3 — Preview -->
+  @if (paso() === 3 && analisis(); as a) {
+    <!-- Header archivo -->
+    <div class="mie-archivo">
+      <div class="mie-archivo__info">
+        <span class="material-symbols-outlined">description</span>
+        <div>
+          <strong>{{ a.nombreArchivo }}</strong>
+          <small>
+            <span class="chip-info chip-info--verde">✓ Procesado</span>
+            {{ a.totalEquipos }} equipos · {{ a.totalConceptos }} conceptos · {{ a.totalRelaciones }} relaciones
+          </small>
+        </div>
+      </div>
+      <button class="mie-archivo__cambiar" (click)="cambiarArchivo()">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        Cambiar archivo
+      </button>
+    </div>
+
+    <!-- Resumen validación -->
+    <div class="mie-resumen">
+      <span class="chip-info chip-info--verde">✓ {{ a.resumenEquiposOk }} OK</span>
+      @if (a.resumenEquiposAdvertencias > 0) {
+        <span class="chip-info chip-info--ambar">⚠ {{ a.resumenEquiposAdvertencias }} Advertencias</span>
+      }
+      @if (a.resumenEquiposErrores > 0) {
+        <span class="chip-info chip-info--rojo">✕ {{ a.resumenEquiposErrores }} Errores</span>
+      }
+      <span class="mie-resumen__relaciones">· {{ a.totalRelaciones }} relaciones validadas</span>
+      @if (a.resumenEquiposErrores === 0) {
+        <span class="mie-resumen__ok">
+          <span class="material-symbols-outlined">check_circle</span>
+          Podés confirmar la importación
+        </span>
+      }
+    </div>
+
+    <!-- Tabs preview -->
+    <div class="mie-tabs">
+      <button class="mie-tabs__item"
+              [class.activa]="tabPreview() === 'equipos'"
+              (click)="cambiarTab('equipos')">
+        Equipos ({{ a.totalEquipos }})
+      </button>
+      <button class="mie-tabs__item"
+              [class.activa]="tabPreview() === 'conceptos'"
+              (click)="cambiarTab('conceptos')">
+        Conceptos ({{ a.totalConceptos }})
+      </button>
+    </div>
+
+    @if (tabPreview() === 'equipos') {
+      <div class="mie-tabla-wrap">
+        <table class="mie-tabla">
+          <thead>
+            <tr>
+              <th>ESTADO</th>
+              <th>TIPO</th>
+              <th>CÓDIGO TW</th>
+              <th>MARCA</th>
+              <th>MODELO</th>
+              <th>N° SERIE</th>
+              <th>UBICACIÓN</th>
+              <th>CONCEPTOS APLICADOS</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of a.equipos; track e.codigoTw; let i = $index) {
+              <tr [class.mie-tabla__fila--advertencia]="e.estado === 'advertencia'"
+                  [class.mie-tabla__fila--error]="e.estado === 'error'">
+                <td>
+                  <span [class]="claseEstadoFila(e.estado)">
+                    {{ iconoEstadoFila(e.estado) }} {{ e.estado === 'ok' ? 'OK' : e.estado === 'advertencia' ? 'Advertencia' : 'Error' }}
+                  </span>
+                </td>
+                <td><span [class]="e.tipo === 'equipo' ? 'chip-info chip-info--azul' : 'chip-info chip-info--morado'">{{ e.tipoLabel }}</span></td>
+                <td class="mie-mono mie-mono--azul">{{ e.codigoTw }}</td>
+                <td>{{ e.marca }}</td>
+                <td>{{ e.modelo }}</td>
+                <td class="mie-mono">{{ e.numSerie }}</td>
+                <td>{{ e.ubicacion ?? '—' }}</td>
+                <td>
+                  @for (c of e.conceptosAplicados; track c) {
+                    <span class="chip-info chip-info--azul mie-concepto-chip">{{ c }}</span>
+                  }
+                </td>
+              </tr>
+              @if (e.mensaje) {
+                <tr class="mie-tabla__mensaje">
+                  <td colspan="8">
+                    <span class="material-symbols-outlined">info</span>
+                    <strong>{{ e.estado === 'advertencia' ? 'Advertencia' : 'Error' }}:</strong>
+                    {{ e.mensaje }}
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="mie-tabla-wrap">
+        <table class="mie-tabla">
+          <thead>
+            <tr>
+              <th>ESTADO</th>
+              <th>CÓDIGO</th>
+              <th>CONCEPTO (DESCRIPCIÓN)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of a.conceptos; track c.codigo) {
+              <tr>
+                <td>
+                  <span [class]="claseEstadoFila(c.estado)">
+                    {{ iconoEstadoFila(c.estado) }} {{ c.estado === 'ok' ? 'OK' : c.estado === 'advertencia' ? 'Advertencia' : 'Error' }}
+                  </span>
+                </td>
+                <td class="mie-mono mie-mono--azul">{{ c.codigo }}</td>
+                <td>{{ c.descripcion }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Estrategia merge -->
+    <div class="mie-estrategia">
+      <strong>¿Cómo manejar los datos del Excel con lo que ya tiene esta OS/OM?</strong>
+      <label class="mie-radio" [class.mie-radio--activo]="estrategia() === 'fusionar'">
+        <input type="radio" name="estrategia" value="fusionar" [(ngModel)]="estrategia" />
+        <div>
+          <strong>Fusionar <span class="chip-info chip-info--verde">RECOMENDADO</span></strong>
+          <small>Mantener los existentes y agregar los nuevos sin duplicar</small>
+        </div>
+      </label>
+      <label class="mie-radio" [class.mie-radio--activo]="estrategia() === 'reemplazar'">
+        <input type="radio" name="estrategia" value="reemplazar" [(ngModel)]="estrategia" />
+        <div>
+          <strong>Reemplazar todo</strong>
+          <small>Borrar los existentes y cargar solo los del Excel</small>
+        </div>
+      </label>
+      <label class="mie-radio" [class.mie-radio--activo]="estrategia() === 'cancelar'">
+        <input type="radio" name="estrategia" value="cancelar" [(ngModel)]="estrategia" />
+        <div>
+          <strong>Cancelar sin importar</strong>
+          <small>No se aplica ningún cambio</small>
+        </div>
+      </label>
+    </div>
+  }
+
+  <div modalFooter class="mie-footer">
+    @if (paso() === 3) {
+      <app-button variant="ghost" icono="arrow_back" (clic)="cambiarArchivo()">
+        Volver a subir archivo
+      </app-button>
+    } @else {
+      <span></span>
+    }
+
+    <div class="mie-footer__acciones">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      @if (paso() === 3) {
+        <app-button variant="primary" icono="check"
+                    [cargando]="confirmando()"
+                    [disabled]="!puedeConfirmar()"
+                    (clic)="confirmar()">
+          Confirmar importación
+          @if (analisis(); as a) {
+            ({{ a.totalEquipos }} eq. + {{ a.totalConceptos }} conc.)
+          }
+        </app-button>
+      }
+    </div>
+  </div>
+</app-modal>

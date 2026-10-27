@@ -1,0 +1,90 @@
+<app-modal
+  titulo="Elegir Propuesta Aceptada"
+  subtitulo="Selecciona la propuesta aceptada a partir de la cual generar la OS/OM"
+  icono="description"
+  iconoColor="azul"
+  ancho="lg"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mep-cargando">
+      <div class="mep-spinner"></div>
+      <span>Cargando propuestas aceptadas…</span>
+    </div>
+  } @else if (propuestas().length === 0) {
+    <div class="mep-vacio">
+      <span class="material-symbols-outlined">inbox</span>
+      <h4>No hay propuestas aceptadas disponibles</h4>
+      <p>Para generar una OS/OM, primero cerrá una propuesta con aceptación en el módulo <strong>Seguimiento</strong>.</p>
+    </div>
+  } @else {
+    <!-- Filtros -->
+    <div class="mep-filtros">
+      <div class="mep-buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [(ngModel)]="busqueda"
+               placeholder="Buscar por N° propuesta, cliente, RUC o N° RQ..." />
+      </div>
+      <select [(ngModel)]="filtroTipo" class="mep-select-tipo">
+        <option value="">Todos los tipos</option>
+        <option value="OS">OS — Orden de Servicio</option>
+        <option value="OM">OM — Orden de Metrología</option>
+      </select>
+    </div>
+
+    <p class="mep-ayuda">Solo se listan propuestas aceptadas sin OS/OM activa.</p>
+
+    <!-- Lista -->
+    @if (propuestasFiltradas().length === 0) {
+      <div class="mep-vacio mep-vacio--chico">
+        <span class="material-symbols-outlined">search_off</span>
+        <p>No hay propuestas con los filtros aplicados.</p>
+      </div>
+    } @else {
+      <div class="mep-lista">
+        @for (p of propuestasFiltradas(); track p.idPropuesta) {
+          <button class="mep-item" (click)="seleccionar(p)">
+            <div class="mep-item__left">
+              <span [class]="claseChipTipo(p.tipoOrden)">{{ p.tipoOrden }}</span>
+            </div>
+            <div class="mep-item__info">
+              <div class="mep-item__linea1">
+                <strong>{{ p.numero }} v{{ p.version }}</strong>
+                <span class="mep-item__tipo-servicio">{{ p.tipoServicio }}</span>
+              </div>
+              <div class="mep-item__linea2">{{ p.razonSocial }}</div>
+              <div class="mep-item__linea3">
+                <span>RUC {{ p.ruc }}</span>
+                @if (p.numeroRequerimiento) {
+                  <span class="mep-item__sep">·</span>
+                  <span>{{ p.numeroRequerimiento }}</span>
+                }
+                <span class="mep-item__sep">·</span>
+                <span>Aceptada {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</span>
+                <span class="mep-item__sep">·</span>
+                <span>{{ p.comercial }}</span>
+              </div>
+              @if (p.intentosPrevios && p.intentosPrevios > 0) {
+                <div class="mep-item__aviso">
+                  <span class="material-symbols-outlined">info</span>
+                  Esta propuesta ya tuvo {{ p.intentosPrevios }} OS/OM anulada{{ p.intentosPrevios > 1 ? 's' : '' }} previas.
+                </div>
+              }
+            </div>
+            <div class="mep-item__counts">
+              <div class="mep-count mep-count--equipos">
+                <strong>{{ p.cantidadEquipos }}</strong>
+                <small>equipos</small>
+              </div>
+              <div class="mep-count mep-count--conceptos">
+                <strong>{{ p.cantidadConceptos }}</strong>
+                <small>conceptos</small>
+              </div>
+            </div>
+            <span class="material-symbols-outlined mep-item__arrow">chevron_right</span>
+          </button>
+        }
+      </div>
+    }
+  }
+</app-modal>

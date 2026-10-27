@@ -245,6 +245,27 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'crm/ordenes-servicio',
+        loadComponent: () =>
+          import('./features/crm/ordenes-servicio/lista-ordenes-servicio/lista-ordenes-servicio.component').then(
+            m => m.ListaOrdenesServicioComponent
+          ),
+      },
+      {
+        path: 'crm/ordenes-servicio/nueva/:idPropuesta',
+        loadComponent: () =>
+          import('./features/crm/ordenes-servicio/ficha-orden-servicio/ficha-orden-servicio.component').then(
+            m => m.FichaOrdenServicioComponent
+          ),
+      },
+      {
+        path: 'crm/ordenes-servicio/:idOs/editar',
+        loadComponent: () =>
+          import('./features/crm/ordenes-servicio/ficha-orden-servicio/ficha-orden-servicio.component').then(
+            m => m.FichaOrdenServicioComponent
+          ),
+      },
+      {
         path: 'crm/expedientes-digitales',
         loadComponent: () =>
           import('./features/crm/expedientes-digitales/lista-expedientes/lista-expedientes.component').then(

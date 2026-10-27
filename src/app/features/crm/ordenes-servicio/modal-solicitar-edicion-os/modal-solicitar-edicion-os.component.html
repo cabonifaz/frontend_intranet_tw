@@ -1,0 +1,92 @@
+<app-modal
+  titulo="Solicitar Edición al Jefe Comercial"
+  [subtitulo]="numeroOs() + (razonSocial() ? ' · ' + razonSocial() : '')"
+  icono="edit_note"
+  iconoColor="ambar"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mse-cargando">
+      <div class="mse-spinner"></div>
+      <span>Cargando…</span>
+    </div>
+  } @else {
+    <!-- Alert explicativo -->
+    <div class="aviso-amarillo">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        Esta OS/OM está <strong>EMITIDA</strong> y bloqueada para edición.
+        Para modificarla, debés solicitar permiso al Jefe Comercial
+        <strong>{{ jefe()?.nombre }}</strong>.
+        <br />
+        <small>Una vez aprobada la solicitud, podrás editar los campos y volver a confirmar.</small>
+      </div>
+    </div>
+
+    <!-- Motivo -->
+    <div class="mse-campo">
+      <label class="mse-label">
+        Motivo de la edición <span class="mse-req">*</span>
+      </label>
+      <select class="input-sistema" [(ngModel)]="idMotivoSel">
+        @for (m of motivos(); track m.idMotivo) {
+          <option [ngValue]="m.idMotivo">{{ m.label }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Comentario -->
+    <div class="mse-campo">
+      <div class="mse-label-row">
+        <label class="mse-label">
+          Comentario <span class="mse-req">*</span>
+        </label>
+        <span class="chip-info chip-info--opcional">mínimo {{ minComentario }} caracteres</span>
+      </div>
+      <textarea class="input-sistema" rows="4"
+                [(ngModel)]="comentario"
+                [maxlength]="maxComentario"
+                placeholder="Explicá brevemente por qué necesitás modificar esta OS/OM. El Jefe Comercial revisará tu solicitud."></textarea>
+      <small class="mse-contador">{{ comentario.length }} / {{ maxComentario }} caracteres</small>
+    </div>
+
+    <!-- Jefe destinatario -->
+    @if (jefe(); as j) {
+      <div class="mse-campo">
+        <label class="mse-label">Solicitud dirigida a</label>
+        <div class="mse-jefe-card">
+          <div class="mse-jefe-card__avatar">{{ j.iniciales }}</div>
+          <div class="mse-jefe-card__info">
+            <strong>{{ j.nombre }}</strong>
+            <small>{{ j.cargo }}@if (j.sede) { — {{ j.sede }} }</small>
+          </div>
+          @if (j.disponible) {
+            <span class="chip-info chip-info--verde">● Disponible</span>
+          } @else {
+            <span class="chip-info chip-info--opcional">● Fuera de línea</span>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Nota de notificación -->
+    <div class="mse-nota">
+      <span class="material-symbols-outlined">notifications</span>
+      <small>
+        Al enviar, <strong>{{ jefe()?.nombre }}</strong> recibirá una notificación por campanita y correo electrónico.
+        Esta solicitud quedará registrada en el Historial de Auditoría del expediente.
+      </small>
+    </div>
+  }
+
+  <div modalFooter class="mse-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" icono="send"
+                [cargando]="enviando()"
+                [disabled]="!puedeEnviar()"
+                (clic)="enviar()">
+      Enviar solicitud
+    </app-button>
+  </div>
+</app-modal>

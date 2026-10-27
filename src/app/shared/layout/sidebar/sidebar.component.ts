@@ -54,6 +54,7 @@ export class SidebarComponent {
         { etiqueta: 'Visto Bueno',    ruta: '/crm/visto-bueno',    accion: 'propuesta_vb_bandeja' },
         { etiqueta: 'Seguimiento',    ruta: '/crm/seguimiento',    accion: 'propuesta_seguimiento_bandeja' },
         { etiqueta: 'Órdenes de Compra',    ruta: '/crm/ordenes-compra' },
+        { etiqueta: 'Órdenes de Servicio',  ruta: '/crm/ordenes-servicio' },
         { etiqueta: 'Expedientes Digitales', ruta: '/crm/expedientes-digitales' },
       ],
     },

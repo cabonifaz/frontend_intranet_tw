@@ -1,0 +1,132 @@
+<app-modal
+  titulo="Agregar concepto del servicio"
+  subtitulo="Catálogo de Suministros tipo Servicio (Maestros)"
+  icono="build"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mac-cargando">
+      <div class="mac-spinner"></div>
+      <span>Cargando catálogo…</span>
+    </div>
+  } @else {
+    <!-- Tabs -->
+    <div class="mac-tabs">
+      <button class="mac-tabs__item"
+              [class.activa]="tab() === 'propuesta'"
+              [disabled]="conceptosDePropuesta().length === 0"
+              (click)="cambiarTab('propuesta')">
+        <span class="material-symbols-outlined">description</span>
+        De la propuesta
+        <span class="mac-tabs__count">{{ conceptosDePropuesta().length }}</span>
+      </button>
+      <button class="mac-tabs__item"
+              [class.activa]="tab() === 'todos'"
+              (click)="cambiarTab('todos')">
+        <span class="material-symbols-outlined">library_books</span>
+        Todos los del catálogo
+        <span class="mac-tabs__count">{{ conceptos().length }}</span>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="mac-filtros">
+      <div class="mac-buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [(ngModel)]="busqueda"
+               placeholder="Buscar por descripción o código de suministro..." />
+      </div>
+      <select class="mac-select" [(ngModel)]="tipoSel">
+        <option value="">Todos los tipos</option>
+        @for (t of tipos(); track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Tabla -->
+    @if (conceptosFiltrados().length === 0) {
+      <div class="mac-vacio">
+        <span class="material-symbols-outlined">search_off</span>
+        No hay servicios con los filtros aplicados.
+      </div>
+    } @else {
+      <div class="mac-tabla-wrap">
+        <table class="mac-tabla">
+          <thead>
+            <tr>
+              <th class="mac-check"></th>
+              <th>CÓDIGO</th>
+              <th>CONCEPTO (DESCRIPCIÓN)</th>
+              <th>TIPO / SUBTIPO</th>
+              <th>APLICABLE A</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of conceptosFiltrados(); track c.idSuministro) {
+              <tr [class.mac-tabla__fila--selec]="seleccionados().has(c.idSuministro)"
+                  [class.mac-tabla__fila--ya]="c.yaAgregado"
+                  (click)="toggle(c)">
+                <td class="mac-check">
+                  <input type="checkbox"
+                         [checked]="seleccionados().has(c.idSuministro) || c.yaAgregado"
+                         [disabled]="c.yaAgregado"
+                         (click)="$event.stopPropagation()"
+                         (change)="toggle(c)" />
+                </td>
+                <td class="mac-mono">{{ c.codigo }}</td>
+                <td>{{ c.descripcion }}</td>
+                <td>
+                  @if (c.tipo) {
+                    <span class="chip-info chip-info--morado">{{ c.tipo }}</span>
+                    @if (c.subtipo) {
+                      <small class="mac-subtipo">{{ c.subtipo }}</small>
+                    }
+                  } @else { — }
+                </td>
+                <td>
+                  <small class="mac-aplicable">
+                    <span class="material-symbols-outlined">precision_manufacturing</span>
+                    {{ c.aplicableA }}
+                  </small>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Nota -->
+    <div class="mac-nota">
+      <span class="material-symbols-outlined">info</span>
+      <small>
+        Los conceptos agregados no se vincularán automáticamente a equipos. Después de agregarlos,
+        usá el botón <strong>+ Vincular</strong> en cada equipo para asociarlos con los conceptos
+        aplicables, o déjalos como <strong>"General"</strong> si aplican a toda la OS.
+      </small>
+    </div>
+  }
+
+  <div modalFooter class="mac-footer">
+    @if (seleccionados().size > 0) {
+      <div class="mac-footer__sel">
+        <span class="mac-footer__sel-count">● {{ seleccionados().size }} conceptos seleccionados</span>
+        <button class="mac-footer__clear" (click)="limpiarSeleccion()">
+          <span class="material-symbols-outlined">close</span>
+          Limpiar selección
+        </button>
+      </div>
+    } @else {
+      <span class="mac-footer__hint">Mostrando {{ conceptosFiltrados().length }} de {{ conceptos().length }} servicios</span>
+    }
+    <div class="mac-footer__acciones">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button variant="primary" icono="add" [disabled]="!puedeAgregar()" (clic)="agregar()">
+        Agregar {{ seleccionados().size || '' }} conceptos seleccionados
+      </app-button>
+    </div>
+  </div>
+</app-modal>

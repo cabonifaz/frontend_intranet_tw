@@ -1,0 +1,702 @@
+// Alineado al patrón de propuesta-wizard + secciones del sistema.
+:host { display: block; }
+
+.ficha-os {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  padding-bottom: 100px;    // reserva espacio para el footer sticky
+  background: #F8FAFC;
+  min-height: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
+// ─── Loading / Error ─────────────────────────────────────────────────────
+.cargando, .error {
+  display: flex; align-items: center; gap: 10px;
+  padding: 32px; justify-content: center;
+  color: #64748B; font-size: 14px;
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+
+  .material-symbols-outlined { font-size: 22px; }
+}
+.error { background: #FEF2F2; border-color: #FECACA; color: #B91C1C; }
+.spin  { animation: fos-rot 1s linear infinite; }
+@keyframes fos-rot { to { transform: rotate(360deg); } }
+
+// ─── Grid utilities locales (patrón del sistema) ─────────────────────────
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  @media (max-width: 700px) { grid-template-columns: 1fr; }
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+// ─── Celda readonly (patrón del sistema) ─────────────────────────────────
+.lectura {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  color: #0F172A;
+  font-size: 13px;
+  font-weight: 500;
+  min-height: 40px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+// ─── Input/textarea estándar del sistema ─────────────────────────────────
+.input-sistema {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0F172A;
+  background: white;
+  font-family: inherit;
+  box-sizing: border-box;
+  min-height: 40px;
+
+  &:focus {
+    outline: none;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &:is(textarea) {
+    resize: vertical;
+    min-height: 80px;
+  }
+}
+
+.mono {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 12.5px;
+}
+
+// ─── Chips (patrón del sistema) ──────────────────────────────────────────
+.chip-info {
+  padding: 2px 8px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &--verde {
+    background: #DCFCE7;
+    color: #15803D;
+
+    .material-symbols-outlined { font-size: 12px; }
+  }
+
+  &--opcional {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+}
+
+.chip-tipo-hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.chip-tipo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+
+  &--os { background: #DBEAFE; color: #1D4ED8; }
+  &--om { background: #EDE9FE; color: #6D28D9; }
+}
+
+.chip-tipo-hero.chip-tipo--os { background: #DBEAFE; color: #1D4ED8; }
+.chip-tipo-hero.chip-tipo--om { background: #EDE9FE; color: #6D28D9; }
+
+// ═════════════════════════════════════════════════════════════════════════
+// Sección 1 — Datos del Cliente y Origen
+// ═════════════════════════════════════════════════════════════════════════
+
+// Fila superior: 3 cards de igual ancho — Cliente | Propuesta+RQ | Equipos+Conceptos
+.s1-fila-top {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+
+// Card con 2 items internos separados por divisor
+.s1-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+
+  // Variante doble: 2 items en 2 columnas horizontales con divisor vertical
+  &--doble {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    min-width: 0;
+  }
+
+  &__divisor {
+    width: 1px;
+    align-self: stretch;
+    background: #F1F5F9;
+    margin: 10px 0;
+  }
+
+  &__icono {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-radius: 10px;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 20px; }
+
+    &--ambar   { background: #FEF3C7; color: #D97706; }
+    &--verde   { background: #DCFCE7; color: #15803D; }
+    &--violeta { background: #EDE9FE; color: #6D28D9; }
+  }
+
+  &__contenido {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &__valor {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0F172A;
+    flex-wrap: wrap;
+
+    &--grande {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+    }
+  }
+}
+
+// Fila inferior: contacto editable + monto + fecha emisión (3 columnas, con app-campo + lectura)
+.s1-fila-bottom {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Columna 1 — Card del cliente (mismo estilo que los otros 2 cards)
+.s1-cliente {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+
+  &__avatar {
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #DBEAFE;
+    color: #1D4ED8;
+    border-radius: 10px;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 24px; }
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__nombre {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 11.5px;
+    color: #64748B;
+  }
+
+  &__sep { color: #CBD5E1; }
+
+  &__direccion {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #64748B;
+
+    .material-symbols-outlined {
+      font-size: 14px;
+      color: #94A3B8;
+    }
+  }
+}
+
+
+// ─── Banner "Edición autorizada" ─────────────────────────────────────────
+.banner-autorizacion {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  border-radius: 10px;
+
+  &__icono {
+    color: #15803D;
+    font-size: 24px !important;
+    flex-shrink: 0;
+  }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+
+    strong { font-size: 13px; color: #14532D; }
+    small  { font-size: 11.5px; color: #166534; line-height: 1.45; }
+  }
+
+  &__link {
+    border: 1px solid #86EFAC;
+    background: white;
+    color: #15803D;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover { background: #F0FDF4; }
+
+    .material-symbols-outlined { font-size: 14px; }
+  }
+}
+
+// ─── Bloque "Fecha programada" (destacado en sección 3) ──────────────────
+.bloque-fecha-prog {
+  margin-top: 14px;
+  padding: 14px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    color: #78350F;
+
+    strong { font-weight: 700; font-size: 12.5px; }
+
+    .material-symbols-outlined { font-size: 18px; color: #D97706; }
+  }
+
+  &__nota {
+    display: block;
+    margin-top: 10px;
+    font-size: 11px;
+    color: #78350F;
+    font-style: italic;
+    line-height: 1.4;
+  }
+}
+
+// ─── Avisos info ─────────────────────────────────────────────────────────
+.aviso-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+  color: #1D4ED8;
+
+  .material-symbols-outlined { color: #2563EB; font-size: 20px; flex-shrink: 0; }
+
+  small {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.5;
+
+    strong { color: #0F172A; font-weight: 700; }
+  }
+
+  &--ambar {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+
+    .material-symbols-outlined { color: #D97706; }
+    small {
+      color: #78350F;
+      strong { color: #78350F; }
+    }
+  }
+}
+
+// ─── Placeholder (HU-43 pendiente) ───────────────────────────────────────
+.placeholder-hu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 10px;
+  color: #64748B;
+
+  .material-symbols-outlined {
+    font-size: 28px;
+    color: #94A3B8;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    color: #0F172A;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  small {
+    font-size: 11.5px;
+    color: #64748B;
+    line-height: 1.5;
+  }
+}
+
+// ─── Secciones 2 y 3 (Conceptos y Equipos) ──────────────────────────────
+.vacio-tabla {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 32px 20px;
+  background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 10px;
+  color: #64748B; text-align: center;
+
+  .material-symbols-outlined { font-size: 32px; color: #94A3B8; }
+  strong { font-size: 13px; color: #0F172A; font-weight: 700; }
+  small  { font-size: 11.5px; color: #64748B; max-width: 460px; }
+}
+
+.tabla-sistema {
+  width: 100%; border-collapse: collapse;
+  font-size: 12.5px;
+  background: white;
+
+  thead th {
+    text-align: left; padding: 10px 12px;
+    background: #F8FAFC; color: #475569;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4px; text-transform: uppercase;
+    border-bottom: 1px solid #E2E8F0;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+    vertical-align: middle;
+  }
+
+  .mono {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11.5px;
+  }
+}
+
+.btn-quitar {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent;
+  border-radius: 6px;
+  color: #94A3B8; cursor: pointer;
+
+  &:hover { background: #FEE2E2; color: #DC2626; }
+
+  .material-symbols-outlined { font-size: 16px; }
+}
+
+.conceptos-cell {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  max-width: 320px;
+}
+
+.hint-vacio {
+  font-size: 10.5px; color: #94A3B8; font-style: italic;
+}
+
+// Chip ya vinculado (en la celda CONCEPTO(S))
+.chip-vinculado {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 2px 2px 8px;
+  background: #DBEAFE; color: #1D4ED8; border: 1px solid #BFDBFE;
+  border-radius: 4px;
+  font-size: 10.5px; font-weight: 700;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  letter-spacing: 0.3px;
+
+  &__quitar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px;
+    border: none; background: transparent;
+    color: #1D4ED8;
+    border-radius: 3px;
+    cursor: pointer;
+
+    &:hover { background: #BFDBFE; color: #B91C1C; }
+    .material-symbols-outlined { font-size: 11px; }
+  }
+}
+
+// Popover "+ Vincular"
+.popover-vincular {
+  position: relative;
+  display: inline-block;
+
+  &__panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 100;
+    min-width: 280px; max-width: 360px; max-height: 280px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    padding: 8px;
+  }
+
+  &__header {
+    padding: 6px 10px 8px;
+    font-size: 10.5px; font-weight: 700;
+    color: #475569;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: 4px;
+  }
+
+  &__item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover { background: #F8FAFC; }
+
+    input[type="checkbox"] { flex-shrink: 0; margin: 0; }
+
+    > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  }
+
+  &__cod {
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 11px; font-weight: 700; color: #1D4ED8;
+  }
+
+  &__desc {
+    font-size: 10.5px; color: #64748B;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}
+
+.btn-vincular {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 8px;
+  background: #F8FAFC; color: #475569;
+  border: 1px dashed #CBD5E1; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; border-style: solid; }
+
+  .material-symbols-outlined { font-size: 12px; }
+}
+
+// Tooltip recuento equipos aplicados
+.recuento-tooltip {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #0F172A; font-weight: 500;
+  cursor: default;
+
+  &__num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; padding: 1px 6px;
+    background: #DBEAFE; color: #1D4ED8;
+    border-radius: 9999px;
+    font-size: 11px; font-weight: 700;
+  }
+
+  &__popup {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px); left: 0;
+    z-index: 50;
+    min-width: 180px; max-width: 320px;
+    padding: 8px 10px;
+    background: #1E293B; color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    font-size: 11px; font-weight: 500;
+
+    strong { display: block; margin-bottom: 4px; color: #CBD5E1; font-size: 10px; letter-spacing: 0.3px; text-transform: uppercase; }
+    span { display: block; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 10.5px; }
+
+    // Flecha
+    &::before {
+      content: ''; position: absolute;
+      top: -4px; left: 12px;
+      width: 8px; height: 8px;
+      background: #1E293B;
+      transform: rotate(45deg);
+    }
+  }
+
+  &:hover &__popup { display: block; }
+}
+
+// Subtipo bajo chip de tipo (en tabla conceptos)
+.subtipo-inline {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px; color: #94A3B8; font-style: italic;
+}
+
+.acciones-header {
+  display: flex; gap: 8px;
+}
+
+// Chip info (local a secciones 2/3)
+.chip-info {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  background: #DBEAFE; color: #1D4ED8;
+  border-radius: 4px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px;
+
+  &--morado   { background: #EDE9FE; color: #6D28D9; }
+  &--azul     { background: #DBEAFE; color: #1D4ED8; }
+  &--opcional { background: #FEF3C7; color: #92400E; }
+}
+
+// ─── Footer sticky ───────────────────────────────────────────────────────
+.footer-sticky {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  margin: 20px -24px 0;
+  background: white;
+  border-top: 1px solid #E2E8F0;
+  box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.05);
+  z-index: 10;
+
+  &__der {
+    display: flex;
+    gap: 10px;
+  }
+}

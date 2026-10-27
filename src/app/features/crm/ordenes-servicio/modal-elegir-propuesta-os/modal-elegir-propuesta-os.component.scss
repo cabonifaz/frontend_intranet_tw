@@ -1,0 +1,240 @@
+// Alineado al estilo del modal-elegir-propuesta-oc del sistema.
+
+// ─── Loading / Vacío ─────────────────────────────────────────────────────
+.mep-cargando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  justify-content: center;
+  color: #64748B;
+  font-size: 14px;
+}
+
+.mep-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #DBEAFE;
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: mep-spin 0.8s linear infinite;
+}
+
+@keyframes mep-spin { to { transform: rotate(360deg); } }
+
+.mep-vacio {
+  text-align: center;
+  padding: 32px 16px;
+
+  .material-symbols-outlined { font-size: 48px; color: #94A3B8; }
+  h4 { margin: 10px 0 4px; color: #0F172A; font-size: 14px; }
+  p  { margin: 0; color: #64748B; font-size: 12.5px; }
+
+  &--chico {
+    padding: 20px 16px;
+    .material-symbols-outlined { font-size: 32px; }
+  }
+}
+
+// ─── Filtros ─────────────────────────────────────────────────────────────
+.mep-filtros {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mep-buscador {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: white;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+
+  &:focus-within {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+  }
+
+  .material-symbols-outlined { font-size: 16px; color: #94A3B8; }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12.5px;
+    color: #0F172A;
+
+    &::placeholder { color: #94A3B8; }
+  }
+}
+
+.mep-select-tipo {
+  padding: 7px 10px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #0F172A;
+  background: white;
+  min-width: 180px;
+
+  &:focus {
+    outline: none;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+  }
+}
+
+.mep-ayuda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #64748B;
+
+  .material-symbols-outlined { font-size: 15px; color: #94A3B8; }
+}
+
+// ─── Lista de propuestas ─────────────────────────────────────────────────
+.mep-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.mep-item {
+  all: unset;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+
+    .mep-item__arrow { color: #2563EB; }
+  }
+
+  &__left { display: flex; align-items: center; }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__linea1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    strong {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 13px;
+      color: #0F172A;
+      font-weight: 600;
+    }
+  }
+
+  &__tipo-servicio {
+    font-size: 11px;
+    color: #475569;
+    font-weight: 500;
+  }
+
+  &__linea2 {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #475569;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__linea3 {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: #94A3B8;
+  }
+
+  &__sep { color: #CBD5E1; }
+
+  &__aviso {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 3px;
+    font-size: 10.5px;
+    color: #92400E;
+    font-weight: 500;
+
+    .material-symbols-outlined { font-size: 12px; }
+  }
+
+  &__counts {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__arrow {
+    color: #94A3B8;
+    font-size: 20px;
+  }
+}
+
+.mep-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1;
+  }
+
+  small {
+    font-size: 10px;
+    font-weight: 500;
+    color: #94A3B8;
+    letter-spacing: 0.2px;
+    margin-top: 2px;
+  }
+}
+
+// ─── Chip tipo OS/OM (consistente con el resto del módulo) ───────────────
+.chip-tipo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+
+  &--os { background: #DBEAFE; color: #1D4ED8; }
+  &--om { background: #EDE9FE; color: #6D28D9; }
+}

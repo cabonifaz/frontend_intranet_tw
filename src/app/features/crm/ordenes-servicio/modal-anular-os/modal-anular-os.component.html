@@ -1,0 +1,109 @@
+<app-modal
+  titulo="Anular Orden de Servicio"
+  [subtitulo]="numeroOs() + (razonSocial() ? ' · ' + razonSocial() : '')"
+  icono="block"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mao-cargando">
+      <div class="mao-spinner"></div>
+      <span>Cargando…</span>
+    </div>
+  } @else {
+    <!-- Impacto si está programada -->
+    @if (impacto()?.tieneProgramacion) {
+      <div class="aviso-rojo">
+        <div class="aviso-rojo__header">
+          <span class="material-symbols-outlined">warning</span>
+          <strong>Impacto de la anulación</strong>
+        </div>
+        <small>
+          Esta OS/OM ya tiene programación asignada en el Módulo 8. Al anularla, se liberarán
+          automáticamente los siguientes recursos:
+        </small>
+
+        <div class="mao-impacto-grid">
+          @if (impacto()?.tecnicoAsignado) {
+            <div class="mao-impacto-item">
+              <div class="mao-impacto-item__label">
+                <span class="material-symbols-outlined">engineering</span>
+                Técnico asignado
+              </div>
+              <strong>{{ impacto()?.tecnicoAsignado }}</strong>
+              @if (impacto()?.fechaLiberacion) {
+                <small>Liberado el {{ impacto()?.fechaLiberacion | date:'dd/MM/yyyy' }}</small>
+              }
+            </div>
+          }
+
+          @if (impacto()?.fechaReservada) {
+            <div class="mao-impacto-item">
+              <div class="mao-impacto-item__label">
+                <span class="material-symbols-outlined">event</span>
+                Fecha reservada
+              </div>
+              <strong>{{ impacto()?.fechaReservada | date:'dd/MM/yyyy' }}</strong>
+              <small>{{ impacto()?.horaInicio }} — {{ impacto()?.horaFin }} (slot libre)</small>
+            </div>
+          }
+
+          @if (impacto()?.viaticosLiberados) {
+            <div class="mao-impacto-item">
+              <div class="mao-impacto-item__label">
+                <span class="material-symbols-outlined">payments</span>
+                Viáticos liberados
+              </div>
+              <strong>{{ impacto()?.monedaViaticos }} {{ impacto()?.viaticosLiberados | number:'1.2-2' }}</strong>
+              <small>Devueltos al presupuesto</small>
+            </div>
+          }
+        </div>
+
+        <small class="mao-impacto-nota">
+          <span class="material-symbols-outlined">campaign</span>
+          Operaciones recibirá notificación automática inmediata.
+        </small>
+      </div>
+    }
+
+    <!-- Motivo -->
+    <div class="mao-campo">
+      <label class="mao-label">
+        Motivo de anulación <span class="mao-req">*</span>
+      </label>
+      <select class="input-sistema" [(ngModel)]="idMotivoSel">
+        @for (m of motivos(); track m.idMotivo) {
+          <option [ngValue]="m.idMotivo">{{ m.label }}</option>
+        }
+      </select>
+      <small class="mao-hint">El catálogo de motivos se ampliará desde Mantenimientos.</small>
+    </div>
+
+    <!-- Justificación -->
+    <div class="mao-campo">
+      <div class="mao-label-row">
+        <label class="mao-label">
+          Justificación detallada <span class="mao-req">*</span>
+        </label>
+        <span class="chip-info chip-info--opcional">mínimo {{ minJustificacion }} caracteres</span>
+      </div>
+      <textarea class="input-sistema" rows="4"
+                [(ngModel)]="justificacion"
+                [maxlength]="maxJustificacion"
+                placeholder="Explicá con detalle por qué se anula esta OS/OM. Esta justificación quedará registrada en la auditoría del expediente."></textarea>
+      <small class="mao-contador">{{ justificacion.length }} / {{ maxJustificacion }} caracteres</small>
+    </div>
+  }
+
+  <div modalFooter class="mao-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="danger" icono="block"
+                [cargando]="anulando()"
+                [disabled]="!puedeAnular()"
+                (clic)="confirmar()">
+      Confirmar anulación
+    </app-button>
+  </div>
+</app-modal>

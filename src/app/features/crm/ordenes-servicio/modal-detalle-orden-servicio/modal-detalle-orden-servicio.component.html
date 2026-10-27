@@ -1,0 +1,416 @@
+<app-modal
+  [titulo]="tituloModal()"
+  [subtitulo]="subtituloModal()"
+  icono="description"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  <!-- Chips al lado del título -->
+  @if (detalle(); as d) {
+    <span modalHeaderBadges class="mdo-header-badges">
+      <span [class]="claseChipTipo(d.tipo)">{{ d.tipo }}</span>
+      <span class="badge {{ claseEstado(d.estadoGrupo) }}">● {{ d.estadoLabel | uppercase }}</span>
+    </span>
+  }
+
+  @if (cargando()) {
+    <div class="mdo-loading">
+      <div class="mdo-spinner"></div>
+      <span>Cargando detalle de la OS/OM…</span>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="mdo-error">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  @if (detalle(); as d) {
+
+    <!-- ═══ BARRA DE ACCIONES ═══ -->
+    <div class="mdo-acciones">
+      <app-button variant="ghost"  tamano="sm" icono="folder_open" (clic)="onDocumentos()">Documentos</app-button>
+      <app-button variant="ghost"  tamano="sm" icono="history"     (clic)="onAuditoria()">Historial de Auditoría</app-button>
+
+      <div class="mdo-acciones__spacer"></div>
+
+      @if (d.puedeSolicitarEdicion) {
+        <app-button variant="secondary" tamano="sm" icono="edit_note" (clic)="onSolicitarEdicion()">
+          Solicitar Edición
+        </app-button>
+      }
+      @if (d.puedeResolverSolicitud) {
+        <app-button variant="secondary" tamano="sm" icono="rule" (clic)="onResolverSolicitud()">
+          Resolver Solicitud
+        </app-button>
+      }
+      @if (d.puedeEditar) {
+        <app-button variant="primary" tamano="sm" icono="edit" (clic)="onEditar()">Editar</app-button>
+      }
+      @if (d.puedeAnular) {
+        <app-button variant="danger" tamano="sm" icono="block" (clic)="onAnular()">Anular</app-button>
+      }
+    </div>
+
+    <!-- Banner solicitud pendiente -->
+    @if (d.solicitudPendiente; as s) {
+      <div class="mdo-banner-pendiente" (click)="onResolverSolicitud()">
+        <span class="material-symbols-outlined">pending</span>
+        <span>
+          <strong>Solicitud de edición pendiente de aprobación</strong>
+          — motivo: {{ s.motivoLabel }} · solicitada por {{ s.solicitadaPor }}
+        </span>
+        <span class="material-symbols-outlined mdo-banner-pendiente__arrow">chevron_right</span>
+      </div>
+    }
+
+    <!-- ═══ TABS ═══ -->
+    <app-tabs [tabs]="tabs()" [activo]="tabActivo()" (cambio)="cambiarTab($event)" />
+
+    <!-- ═══ CONTENIDO ═══ -->
+    <div class="mdo-contenido">
+
+      <!-- ─── Tab Resumen ─── -->
+      @if (tabActivo() === 'resumen') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3>
+              <span class="mdo-seccion__num">1</span>
+              Datos Generales de la Orden
+            </h3>
+            <span class="mdo-chip-info">Modo sólo lectura</span>
+          </header>
+
+          <div class="mdo-grid">
+            <div><label>N° OS/OM</label><span class="mdo-mono">{{ d.datosGenerales.numero }}</span></div>
+            <div><label>Tipo</label>
+              <span [class]="claseChipTipo(d.tipo)">{{ d.datosGenerales.tipoLabel }}</span>
+            </div>
+
+            <div><label>Fecha de Emisión</label>
+              <span>{{ (d.datosGenerales.fechaEmision | date:'dd/MM/yyyy') || '—' }}</span>
+            </div>
+            @if (d.tipo === 'OS') {
+              <div>
+                <label>Fecha Programada Tentativa</label>
+                @if (d.datosGenerales.fechaProgramadaDesde && d.datosGenerales.fechaProgramadaHasta) {
+                  <span>
+                    {{ d.datosGenerales.fechaProgramadaDesde | date:'dd/MM/yyyy' }}
+                    — {{ d.datosGenerales.fechaProgramadaHasta | date:'dd/MM/yyyy' }}
+                    @if (d.datosGenerales.diasHabilesEstimados) {
+                      <small>({{ d.datosGenerales.diasHabilesEstimados }} días hábiles estimados)</small>
+                    }
+                  </span>
+                } @else {
+                  <span class="mdo-vacio">Sin fecha tentativa</span>
+                }
+              </div>
+            }
+
+            <div><label>Empresa</label><span>{{ d.datosGenerales.razonSocial }}</span></div>
+            <div><label>RUC</label><span class="mdo-mono">{{ d.datosGenerales.ruc }}</span></div>
+
+            <div><label>Dirección de Operaciones</label><span>{{ d.datosGenerales.direccionOperaciones ?? '—' }}</span></div>
+            <div><label>Contacto en Planta</label><span>{{ d.datosGenerales.contactoPlanta ?? '—' }}</span></div>
+
+            <div><label>Comercial Responsable</label><span>{{ d.datosGenerales.comercialResponsable }}</span></div>
+            <div>
+              <label>Requerimiento Origen</label>
+              @if (d.datosGenerales.numeroRequerimiento) {
+                <span class="mdo-link mdo-mono">{{ d.datosGenerales.numeroRequerimiento }}</span>
+              } @else {
+                <span class="mdo-vacio">—</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- Avance por Equipos -->
+        <section class="mdo-seccion mdo-seccion--avance">
+          <header class="mdo-seccion__header">
+            <h3>
+              <span class="material-symbols-outlined mdo-seccion__icono">insights</span>
+              Avance por Equipos
+            </h3>
+            <span class="mdo-chip-info mdo-chip-info--verde">
+              <span class="material-symbols-outlined">cloud_sync</span>
+              Actualizado desde {{ d.avancePorEquipos.actualizadoDesde }}
+            </span>
+          </header>
+
+          <div class="mdo-avance-head">
+            <div class="mdo-avance-head__total">
+              Total en Orden: <strong>{{ d.avancePorEquipos.totalEquipos }} unidades</strong>
+            </div>
+            @if (d.avancePorEquipos.descripcion) {
+              <div class="mdo-avance-head__desc">{{ d.avancePorEquipos.descripcion }}</div>
+            }
+          </div>
+
+          <div class="mdo-progreso">
+            <div class="mdo-progreso__barra">
+              <div class="mdo-progreso__barra-fill" [style.width.%]="d.avancePorEquipos.porcentaje"></div>
+            </div>
+            <span class="mdo-progreso__texto">
+              ✓ {{ d.avancePorEquipos.ejecutados }} de {{ d.avancePorEquipos.totalEquipos }} ejecutados
+              ({{ d.avancePorEquipos.porcentaje }}%)
+            </span>
+          </div>
+
+          <table class="mdo-tabla">
+            <thead>
+              <tr>
+                <th>Equipo / Instrumento</th>
+                <th>Estado</th>
+                <th>Fecha Ejecución</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of d.avancePorEquipos.equipos; track e.idEquipo) {
+                <tr>
+                  <td class="mdo-mono">{{ e.descripcion }}</td>
+                  <td><span [class]="claseEjecucion(e.estado)">{{ e.estadoLabel }}</span></td>
+                  <td>
+                    @if (e.fechaEjecucion) {
+                      {{ e.fechaEjecucion | date:'dd/MM/yyyy HH:mm' }}
+                    } @else {
+                      <span class="mdo-vacio">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- ─── Tab Propuesta Origen ─── -->
+      @if (tabActivo() === 'propuesta') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3><span class="material-symbols-outlined mdo-seccion__icono">description</span>Propuesta Origen</h3>
+            <app-button variant="ghost" tamano="sm" icono="open_in_new" (clic)="irAPropuesta()">
+              Ver Propuesta Completa
+            </app-button>
+          </header>
+
+          <div class="mdo-grid">
+            <div><label>Código + Versión</label>
+              <span class="mdo-mono">{{ d.propuestaOrigen.codigo }} v{{ d.propuestaOrigen.version }}</span>
+            </div>
+            <div><label>Estado</label>
+              <span class="badge badge--verde">{{ d.propuestaOrigen.estadoLabel }}</span>
+            </div>
+
+            <div><label>Tipo de Servicio</label><span>{{ d.propuestaOrigen.tipoServicio }}</span></div>
+            <div><label>Fecha de Aceptación</label>
+              <span>{{ (d.propuestaOrigen.fechaAceptacion | date:'dd/MM/yyyy') || '—' }}</span>
+            </div>
+
+            <div><label>Comercial</label><span>{{ d.propuestaOrigen.comercial }}</span></div>
+            <div><label>Aprobador VB</label><span>{{ d.propuestaOrigen.aprobadorVb ?? '—' }}</span></div>
+
+            <div><label>Monto Total (referencial)</label>
+              <span class="mdo-mono">{{ d.propuestaOrigen.moneda }} {{ d.propuestaOrigen.montoTotal | number:'1.2-2' }}</span>
+            </div>
+            <div><label>Condición de Pago</label><span>{{ d.propuestaOrigen.condicionPago ?? '—' }}</span></div>
+
+            <div><label>N° de Equipos Cotizados</label><span>{{ d.propuestaOrigen.cantidadEquiposCotizados }}</span></div>
+            <div><label>N° de Conceptos Cotizados</label><span>{{ d.propuestaOrigen.cantidadConceptosCotizados }}</span></div>
+          </div>
+        </section>
+      }
+
+      <!-- ─── Tab Equipos / Instrumentos ─── -->
+      @if (tabActivo() === 'equipos') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3><span class="material-symbols-outlined mdo-seccion__icono">precision_manufacturing</span>
+              Equipos / Instrumentos ({{ d.equipos.length }})
+            </h3>
+          </header>
+
+          <div class="mdo-tabla-wrap">
+            <table class="mdo-tabla mdo-tabla--equipos">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Tipo</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>N° Serie</th>
+                  <th>Código TW</th>
+                  <th>Alcance</th>
+                  <th>Ubicación</th>
+                  <th>Conceptos aplicados</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of d.equipos; track e.idEquipo) {
+                  <tr>
+                    <td>{{ e.item }}</td>
+                    <td><span [class]="'chip-eqtipo chip-eqtipo--' + e.clasificacion">{{ e.clasificacionLabel }}</span></td>
+                    <td>{{ e.marca }}</td>
+                    <td>{{ e.modelo }}</td>
+                    <td class="mdo-mono">{{ e.numSerie }}</td>
+                    <td class="mdo-mono">{{ e.codigoTw }}</td>
+                    <td>{{ e.alcance ?? '—' }}</td>
+                    <td>{{ e.ubicacion ?? '—' }}</td>
+                    <td class="mdo-conceptos-cell">
+                      @if (e.conceptosAplicados.length === 0) {
+                        <span class="chip-general">General</span>
+                      } @else {
+                        @for (c of e.conceptosAplicados; track c) {
+                          <span class="chip-concepto">{{ c }}</span>
+                        }
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      <!-- ─── Tab Conceptos ─── -->
+      @if (tabActivo() === 'conceptos') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3><span class="material-symbols-outlined mdo-seccion__icono">build</span>
+              Conceptos del Servicio ({{ d.conceptos.length }})
+            </h3>
+          </header>
+
+          <table class="mdo-tabla">
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Concepto</th>
+                <th>Clasificación</th>
+                <th>Equipos aplicados</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of d.conceptos; track c.idConcepto) {
+                <tr>
+                  <td class="mdo-mono">{{ c.codigo }}</td>
+                  <td>{{ c.descripcion }}</td>
+                  <td>{{ c.clasificacion ?? '—' }}</td>
+                  <td>
+                    @if (c.equiposAplicados.length === 0) {
+                      <span class="chip-general">General (toda la OS)</span>
+                    } @else {
+                      {{ equiposLabel(c.equiposAplicados) }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+
+      <!-- ─── Tab Observaciones ─── -->
+      @if (tabActivo() === 'observaciones') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3><span class="material-symbols-outlined mdo-seccion__icono">notes</span>Observaciones</h3>
+          </header>
+          @if (d.observaciones) {
+            <div class="mdo-observaciones">{{ d.observaciones }}</div>
+          } @else {
+            <div class="mdo-vacio-card">
+              <span class="material-symbols-outlined">inbox</span>
+              Esta OS/OM no tiene observaciones registradas.
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ─── Tab Programación ─── -->
+      @if (tabActivo() === 'programacion') {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3><span class="material-symbols-outlined mdo-seccion__icono">calendar_month</span>Programación Operativa</h3>
+            @if (d.programacion.tieneProgramacion) {
+              <app-button variant="ghost" tamano="sm" icono="open_in_new" (clic)="irAProgramacion()">
+                Ir a Programación
+              </app-button>
+            }
+          </header>
+
+          @if (d.programacion.tieneProgramacion) {
+            <div class="mdo-grid">
+              <div><label>Técnico Asignado</label><span>{{ d.programacion.tecnicoAsignado }}</span></div>
+              <div><label>Fecha Real</label>
+                <span>{{ (d.programacion.fechaReal | date:'dd/MM/yyyy') }}</span>
+              </div>
+
+              <div><label>Hora</label>
+                <span>{{ d.programacion.horaInicio }} — {{ d.programacion.horaFin }}</span>
+              </div>
+              <div><label>Estado de Preparación</label>
+                <span class="badge badge--verde">{{ d.programacion.estadoPreparacion }}</span>
+              </div>
+
+              <div><label>Viáticos Asignados</label>
+                <span class="mdo-mono">
+                  {{ d.programacion.moneda }} {{ d.programacion.viaticosAsignados | number:'1.2-2' }}
+                </span>
+              </div>
+            </div>
+          } @else {
+            <div class="mdo-vacio-card">
+              <span class="material-symbols-outlined">event_busy</span>
+              <div>
+                <strong>Esta OS/OM está pendiente de programación.</strong>
+                <p>Operaciones la verá en el Módulo 8 Programación Operativa.</p>
+              </div>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ─── Tab Certificado (solo OM) ─── -->
+      @if (tabActivo() === 'certificado' && d.datosCertificado; as c) {
+        <section class="mdo-seccion">
+          <header class="mdo-seccion__header">
+            <h3>
+              <span class="material-symbols-outlined mdo-seccion__icono">workspace_premium</span>
+              Datos para Emisión del Certificado
+            </h3>
+            @if (c.esTercerizado) {
+              <span class="mdo-chip-info mdo-chip-info--ambar">
+                <span class="material-symbols-outlined">groups</span>Servicio Tercerizado
+              </span>
+            }
+          </header>
+
+          <div class="mdo-grid">
+            <div><label>Razón Social</label><span>{{ c.razonSocial }}</span></div>
+            <div><label>RUC</label><span class="mdo-mono">{{ c.ruc }}</span></div>
+
+            <div><label>Dirección</label><span>{{ c.direccion ?? '—' }}</span></div>
+            <div><label>Contacto</label><span>{{ c.contacto ?? '—' }}</span></div>
+          </div>
+        </section>
+      }
+    </div>
+
+    <!-- ═══ FOOTER ═══ -->
+    <div modalFooter class="mdo-footer">
+      <div class="mdo-footer__meta">
+        Última actualización: {{ d.ultimaActualizacion | date:'dd/MM/yyyy HH:mm' }}
+        · por <strong>{{ d.usuarioUltimaActualizacion }}</strong>
+        @if (d.fuenteUltimaActualizacion) {
+          <span class="mdo-vacio"> ({{ d.fuenteUltimaActualizacion }})</span>
+        }
+      </div>
+      <app-button variant="primary" (clic)="onCerrar()">Cerrar</app-button>
+    </div>
+  }
+</app-modal>

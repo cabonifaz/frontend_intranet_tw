@@ -1,0 +1,399 @@
+// ─── Header badges (chip tipo + chip estado al lado del titulo) ──────────
+.mdo-header-badges {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.chip-tipo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+
+  &--os { background: #DBEAFE; color: #1D4ED8; }
+  &--om { background: #EDE9FE; color: #6D28D9; }
+}
+
+// ─── Loading / Error ─────────────────────────────────────────────────────
+.mdo-loading, .mdo-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: #64748B;
+  font-size: 13px;
+}
+
+.mdo-error { color: #B91C1C; }
+
+.mdo-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #DBEAFE;
+  border-top-color: #1D4ED8;
+  border-radius: 50%;
+  animation: mdo-spin 0.8s linear infinite;
+}
+
+@keyframes mdo-spin { to { transform: rotate(360deg); } }
+
+// ─── Barra de acciones del header ────────────────────────────────────────
+.mdo-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 12px;
+
+  &__spacer { flex: 1; }
+}
+
+// ─── Banner de solicitud pendiente ───────────────────────────────────────
+.mdo-banner-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  color: #92400E;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #FEF3C7; }
+
+  .material-symbols-outlined { font-size: 20px; }
+
+  &__arrow { margin-left: auto; font-size: 18px !important; }
+
+  strong { font-weight: 700; }
+}
+
+// ─── Contenido general ───────────────────────────────────────────────────
+.mdo-contenido {
+  padding-top: 14px;
+}
+
+.mdo-seccion {
+  margin-bottom: 20px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0F172A;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+  }
+
+  &__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  &__icono {
+    font-size: 20px !important;
+    color: #1D4ED8;
+  }
+}
+
+// ─── Chip informativo (ej. "Modo sólo lectura") ──────────────────────────
+.mdo-chip-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  &--verde {
+    background: #ECFDF5;
+    color: #047857;
+    border-color: #A7F3D0;
+  }
+
+  &--ambar {
+    background: #FFFBEB;
+    color: #92400E;
+    border-color: #FDE68A;
+  }
+}
+
+// ─── Grid de datos genéricos ─────────────────────────────────────────────
+.mdo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  padding: 14px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  span {
+    font-size: 13px;
+    color: #0F172A;
+
+    small {
+      color: #94A3B8;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+  }
+}
+
+.mdo-mono {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace !important;
+  font-size: 12px !important;
+}
+
+.mdo-link {
+  color: #1D4ED8;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+
+.mdo-vacio {
+  color: #94A3B8;
+  font-style: italic;
+}
+
+// ─── Avance por Equipos ──────────────────────────────────────────────────
+.mdo-seccion--avance {
+  .mdo-grid { background: #F0F9FF; border-color: #BAE6FD; }
+}
+
+.mdo-avance-head {
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-radius: 10px;
+  font-size: 12px;
+
+  &__total  { color: #0F172A; }
+  &__desc   { color: #475569; margin-top: 2px; font-size: 11px; }
+
+  strong { color: #0369A1; font-weight: 700; }
+}
+
+.mdo-progreso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+
+  &__barra {
+    flex: 1;
+    height: 8px;
+    background: #E2E8F0;
+    border-radius: 9999px;
+    overflow: hidden;
+
+    &-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10B981, #059669);
+      border-radius: 9999px;
+      transition: width 0.3s ease;
+    }
+  }
+
+  &__texto {
+    font-size: 11px;
+    color: #047857;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+// ─── Tabla ────────────────────────────────────────────────────────────────
+.mdo-tabla-wrap { overflow-x: auto; }
+
+.mdo-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  overflow: hidden;
+
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    background: #F8FAFC;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #E2E8F0;
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+
+    &:last-child { border-right: none; }
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  &--equipos { font-size: 11px; }
+}
+
+// ─── Chip estado de ejecución (en Avance por Equipos) ────────────────────
+.chip-ejec {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &--pendiente  { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
+  &--enProceso  { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+  &--ejecutado  { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+  &--observado  { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+}
+
+// ─── Chip tipo equipo (en tab Equipos) ────────────────────────────────────
+.chip-eqtipo {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &--equipo      { background: #DBEAFE; color: #1D4ED8; }
+  &--instrumento { background: #EDE9FE; color: #6D28D9; }
+  &--pesa        { background: #FEF3C7; color: #92400E; }
+}
+
+// Chips de conceptos en la celda inline
+.mdo-conceptos-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 240px;
+}
+
+.chip-concepto, .chip-general {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-weight: 600;
+}
+
+.chip-concepto {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+}
+
+.chip-general {
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
+// ─── Observaciones ───────────────────────────────────────────────────────
+.mdo-observaciones {
+  padding: 16px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #0F172A;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.mdo-vacio-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #F8FAFC;
+  border: 1px dashed #CBD5E1;
+  border-radius: 10px;
+  color: #64748B;
+  font-size: 12px;
+
+  .material-symbols-outlined { font-size: 24px; color: #94A3B8; }
+
+  strong { color: #0F172A; font-size: 13px; }
+  p { margin: 4px 0 0; font-size: 11px; }
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────
+.mdo-footer {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px !important;
+  border-top: 1px solid #E2E8F0;
+  background: #FAFBFC;
+
+  &__meta {
+    font-size: 11px;
+    color: #64748B;
+
+    strong { color: #0F172A; font-weight: 600; }
+  }
+}

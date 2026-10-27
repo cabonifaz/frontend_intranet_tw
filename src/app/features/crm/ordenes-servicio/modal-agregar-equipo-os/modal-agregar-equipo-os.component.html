@@ -1,0 +1,144 @@
+<app-modal
+  titulo="Agregar equipo / instrumento"
+  [subtitulo]="'Catálogo de equipos registrados del cliente' + (razonSocial() ? ' — ' + razonSocial() : '')"
+  icono="precision_manufacturing"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="mae-cargando">
+      <div class="mae-spinner"></div>
+      <span>Cargando catálogo del cliente…</span>
+    </div>
+  } @else {
+    <!-- Tabs -->
+    <div class="mae-tabs">
+      <button class="mae-tabs__item"
+              [class.activa]="tab() === 'propuesta'"
+              [disabled]="equiposDePropuesta().length === 0"
+              (click)="cambiarTab('propuesta')">
+        <span class="material-symbols-outlined">description</span>
+        De la propuesta
+        <span class="mae-tabs__count">{{ equiposDePropuesta().length }}</span>
+      </button>
+      <button class="mae-tabs__item"
+              [class.activa]="tab() === 'todos'"
+              (click)="cambiarTab('todos')">
+        <span class="material-symbols-outlined">precision_manufacturing</span>
+        Todos los del cliente
+        <span class="mae-tabs__count">{{ equipos().length }}</span>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="mae-filtros">
+      <div class="mae-buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text" [(ngModel)]="busqueda"
+               placeholder="Buscar por código TW, marca, modelo o N° serie..." />
+      </div>
+      <select class="mae-select" [(ngModel)]="tipoSel">
+        <option value="">Todos los tipos</option>
+        <option value="equipo">Equipos</option>
+        <option value="instrumento">Instrumentos</option>
+      </select>
+      <select class="mae-select" [(ngModel)]="ubicacionSel">
+        <option value="">Todas las ubicaciones</option>
+        @for (u of ubicaciones(); track u) {
+          <option [value]="u">{{ u }}</option>
+        }
+      </select>
+      <span class="chip-info">{{ equipos().length }} equipos disponibles</span>
+    </div>
+
+    <!-- Nota -->
+    <div class="mae-nota">
+      <span class="material-symbols-outlined">info</span>
+      <small>
+        Las columnas específicas de metrología (<strong>d, e, Clase</strong> para Equipos;
+        <strong>Escala, Puntos de calibración</strong> para Instrumentos) se mostrarán al agregar
+        los equipos a la OS/OM.
+      </small>
+    </div>
+
+    <!-- Tabla -->
+    @if (equiposFiltrados().length === 0) {
+      <div class="mae-vacio">
+        <span class="material-symbols-outlined">search_off</span>
+        No hay equipos con los filtros aplicados.
+      </div>
+    } @else {
+      <div class="mae-tabla-wrap">
+        <table class="mae-tabla">
+          <thead>
+            <tr>
+              <th class="mae-check"></th>
+              <th>TIPO</th>
+              <th>MARCA</th>
+              <th>MODELO</th>
+              <th>N° SERIE</th>
+              <th>CÓDIGO TW</th>
+              <th>ALCANCE</th>
+              <th>UBICACIÓN</th>
+              <th>ESTADO</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of equiposFiltrados(); track e.idEquipo) {
+              <tr [class.mae-tabla__fila--selec]="seleccionados().has(e.idEquipo)"
+                  [class.mae-tabla__fila--ya]="e.yaAgregado"
+                  [class.mae-tabla__fila--advertencia]="e.estado === 'en_otra_os_activa'"
+                  (click)="toggle(e)">
+                <td class="mae-check">
+                  <input type="checkbox"
+                         [checked]="seleccionados().has(e.idEquipo) || e.yaAgregado"
+                         [disabled]="e.yaAgregado"
+                         (click)="$event.stopPropagation()"
+                         (change)="toggle(e)" />
+                </td>
+                <td><span [class]="claseChipTipo(e.clasificacion)">{{ e.clasificacionLabel }}</span></td>
+                <td>{{ e.marca }}</td>
+                <td>{{ e.modelo }}</td>
+                <td class="mae-mono">{{ e.numSerie }}</td>
+                <td class="mae-mono mae-mono--azul">{{ e.codigoTw }}</td>
+                <td>{{ e.alcance ?? '—' }}</td>
+                <td>{{ e.ubicacion ?? '—' }}</td>
+                <td>
+                  @if (e.estado === 'disponible') {
+                    <span class="chip-info chip-info--verde">● Disponible</span>
+                  } @else {
+                    <span class="chip-info chip-info--opcional"
+                          [title]="'En otra OS activa: ' + e.numeroOsActiva">
+                      ⚠ En otra OS ({{ e.numeroOsActiva }})
+                    </span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <div modalFooter class="mae-footer">
+    @if (seleccionados().size > 0) {
+      <div class="mae-footer__sel">
+        <span class="mae-footer__sel-count">● {{ seleccionados().size }} equipos seleccionados</span>
+        <button class="mae-footer__clear" (click)="limpiarSeleccion()">
+          <span class="material-symbols-outlined">close</span>
+          Limpiar selección
+        </button>
+      </div>
+    } @else {
+      <span class="mae-footer__hint">Mostrando {{ equiposFiltrados().length }} de {{ equipos().length }} equipos del catálogo del cliente</span>
+    }
+    <div class="mae-footer__acciones">
+      <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button variant="primary" icono="add" [disabled]="!puedeAgregar()" (clic)="agregar()">
+        Agregar {{ seleccionados().size || '' }} equipos seleccionados
+      </app-button>
+    </div>
+  </div>
+</app-modal>

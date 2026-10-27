@@ -1,0 +1,242 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="Órdenes de Servicio / Metrología"
+    subtitulo="Pipeline consolidado de OS y OM emitidas por el área comercial"
+    textoBoton="Registrar OS"
+    iconoBoton="add"
+    (clicBoton)="registrarOs()" />
+
+  <!-- ── KPI Cards (6 estados accionables + filtro rápido) ───────────────── -->
+  <app-kpi-grid [columnas]="6">
+    <app-kpi-card icono="edit_note"       etiqueta="BORRADORES"    [valor]="tarjetas().borradores"
+                  subtitulo="Por emitir"              variante="rosa" />
+    <app-kpi-card icono="send"            etiqueta="EMITIDAS"      [valor]="tarjetas().emitidas"
+                  [subtitulo]="'+' + tarjetas().emitidasSemana + ' esta semana'" variante="azul" />
+    <app-kpi-card icono="event"           etiqueta="PROGRAMADAS"   [valor]="tarjetas().programadas"
+                  subtitulo="En calendario"           variante="morado" />
+    <app-kpi-card icono="bolt"            etiqueta="EN EJECUCIÓN"  [valor]="tarjetas().enEjecucion"
+                  subtitulo="Activo"                   variante="ambar" />
+    <app-kpi-card icono="check_circle"    etiqueta="FINALIZADAS"   [valor]="tarjetas().finalizadas"
+                  [subtitulo]="tarjetas().finalizadasMes + ' este mes'" variante="verde" />
+    <app-kpi-card icono="block"           etiqueta="ANULADAS"      [valor]="tarjetas().anuladas"
+                  subtitulo="Histórico"               variante="rojo" />
+  </app-kpi-grid>
+
+  <!-- ── Barra de filtros ────────────────────────────────────────────────── -->
+  <app-barra-filtros-bandeja
+    [cantidadActivos]="filtrosActivos()"
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por N° OS/OM, N° Propuesta, Cliente o RUC..."
+    [conDescarga]="true"
+    (limpiar)="limpiarFiltros()"
+    (aplicar)="aplicarFiltros()"
+    (descargar)="exportar()">
+
+    <div class="filtros-seccion">Filtros</div>
+
+    <div class="col-full">
+      <label>ESTADO</label>
+      <select [(ngModel)]="estadoFiltro">
+        @for (e of estadosTabs; track e.codigo) {
+          <option [value]="e.codigo">{{ e.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-full">
+      <label>TIPO</label>
+      <select [(ngModel)]="tipoFiltro">
+        @for (t of tiposTabs; track t.codigo) {
+          <option [value]="t.codigo">{{ t.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-full">
+      <label>CLIENTE</label>
+      <select [(ngModel)]="idClienteFiltro">
+        <option [ngValue]="''">Todos</option>
+        @for (c of clientes(); track c.id) {
+          <option [ngValue]="c.id">{{ c.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-full">
+      <label>RESPONSABLE DE LA ORDEN</label>
+      <select [(ngModel)]="idResponsableFiltro">
+        <option [ngValue]="''">Todos</option>
+        @for (r of responsables(); track r.id) {
+          <option [ngValue]="r.id">{{ r.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="col-mitad">
+      <label>EMITIDA DESDE</label>
+      <input type="date" [(ngModel)]="fechaDesde" />
+    </div>
+    <div class="col-mitad">
+      <label>EMITIDA HASTA</label>
+      <input type="date" [(ngModel)]="fechaHasta" />
+    </div>
+  </app-barra-filtros-bandeja>
+
+  <!-- ── Tabla paginada ──────────────────────────────────────────────────── -->
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="items().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina()"
+    textoCargando="Cargando órdenes de servicio..."
+    textoVacio="No hay órdenes de servicio con los filtros aplicados."
+    textoItems="órdenes"
+    (paginar)="irPagina($event)">
+    <thead>
+      <tr>
+        <th>N.° OS/OM</th>
+        <th>FECHA EMISIÓN</th>
+        <th>CLIENTE / RUC</th>
+        <th>RESPONSABLE DE LA ORDEN</th>
+        <th class="tabla__th--centro">N.° EQUIPOS</th>
+        <th class="tabla__th--centro">N.° CONCEPTOS</th>
+        <th>ESTADO</th>
+        <th class="tabla__th--centro">ACCIONES</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of items(); track item.idOs) {
+        <tr class="tabla__fila" (click)="verDetalle(item)">
+          <td>
+            <div class="os-codigo-cell">
+              <span class="tabla__codigo">{{ item.numero }}</span>
+              @if (item.numeroPropuesta) {
+                <a class="os-codigo-cell__link" (click)="irAPropuesta(item.idPropuesta, $event)">
+                  {{ item.numeroPropuesta }}@if (item.versionPropuesta) { v{{ item.versionPropuesta }} }
+                  <span class="material-symbols-outlined">open_in_new</span>
+                </a>
+              }
+            </div>
+          </td>
+          <td>
+            @if (item.fechaEmision) {
+              {{ item.fechaEmision | date:'dd/MM/yyyy' }}
+            } @else {
+              <span class="tabla__rq">—</span>
+            }
+          </td>
+          <td>
+            <div class="tabla__cliente">
+              <span class="tabla__cliente-nombre">{{ item.razonSocial ?? '—' }}</span>
+              @if (item.ruc) {
+                <span class="tabla__cliente-ruc">{{ item.ruc }}</span>
+              }
+            </div>
+          </td>
+          <td>
+            @if (item.responsable) {
+              <div class="os-responsable">
+                <span class="os-responsable__avatar">{{ iniciales(item.responsable) }}</span>
+                <span class="os-responsable__nombre">{{ item.responsable }}</span>
+              </div>
+            } @else {
+              —
+            }
+          </td>
+          <td class="tabla__td--centro">
+            <span class="chip-conteo chip-conteo--equipos">
+              {{ item.numeroEquipos }} equipos
+            </span>
+          </td>
+          <td class="tabla__td--centro">
+            <span class="chip-conteo chip-conteo--conceptos">
+              {{ item.numeroConceptos }} conceptos
+            </span>
+          </td>
+          <td>
+            <span class="badge {{ estadoChip(item.estadoGrupo, item.estadoLabel).clase }}">
+              {{ estadoChip(item.estadoGrupo, item.estadoLabel).label }}
+            </span>
+            @if (item.solicitudPendiente) {
+              <span class="chip-solicitud" title="Solicitud de edición pendiente de aprobación">
+                <span class="material-symbols-outlined">pending</span>
+                Edición pendiente
+              </span>
+            }
+          </td>
+          <td class="tabla__td--centro">
+            <div class="tabla__acciones" (click)="$event.stopPropagation()">
+              <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                          ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(item)" />
+              @if (item.puedeEditar) {
+                <app-button variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                            ariaLabel="Editar" title="Editar borrador" (clic)="editarOrden(item, $event)" />
+              }
+              @if (item.puedeSolicitarEdicion) {
+                <app-button variant="ghost" tamano="sm" icono="edit_note" [soloIcon]="true"
+                            ariaLabel="Solicitar edición" title="Solicitar edición al Jefe Comercial"
+                            (clic)="solicitarEdicion(item, $event)" />
+              }
+              @if (item.puedeResolverSolicitud) {
+                <app-button variant="ghost" tamano="sm" icono="rule" [soloIcon]="true"
+                            ariaLabel="Resolver solicitud" title="Aprobar o rechazar solicitud de edición"
+                            (clic)="resolverSolicitud(item, $event)" />
+              }
+              @if (item.puedeAnular) {
+                <app-button variant="ghost" tamano="sm" icono="block" [soloIcon]="true"
+                            ariaLabel="Anular" title="Anular orden" (clic)="anularOrden(item, $event)" />
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
+</div>
+
+<!-- ═══ Modal Elegir Propuesta Aceptada (HU-40 — entrada del flujo) ═══ -->
+@if (elegirPropuestaAbierto()) {
+  <app-modal-elegir-propuesta-os
+    (cerrar)="cerrarElegirPropuesta()"
+    (elegida)="onPropuestaElegida($event)"
+  />
+}
+
+<!-- ═══ Modal Detalle OS/OM (HU-42) ═══ -->
+@if (idOsDetalle(); as id) {
+  <app-modal-detalle-orden-servicio
+    [idOs]="id"
+    (cerrar)="cerrarDetalle()"
+    (solicitarEdicion)="onAccionDetalle('Solicitar edición', $event.idOs)"
+    (resolverSolicitud)="onAccionDetalle('Resolver solicitud', $event.idOs)"
+    (editar)="onAccionDetalle('Editar', $event.idOs)"
+    (anular)="onAccionDetalle('Anular', $event.idOs)"
+    (abrirDocumentos)="onAccionDetalle('Documentos', $event ?? 0)"
+    (abrirAuditoria)="onAccionDetalle('Historial de auditoría', $event ?? 0)"
+  />
+}
+
+<!-- ═══ Modal Solicitar Edición (HU-40 Fase C) ═══ -->
+@if (solicitarEdicionCtx(); as item) {
+  <app-modal-solicitar-edicion-os
+    [idOs]="item.idOs"
+    [numeroOs]="item.numero"
+    [razonSocial]="item.razonSocial ?? ''"
+    (cerrar)="solicitarEdicionCtx.set(null)"
+    (enviada)="onSolicitudEnviada()" />
+}
+
+<!-- ═══ Modal Anular (HU-40 Fase C) ═══ -->
+@if (anularCtx(); as item) {
+  <app-modal-anular-os
+    [idOs]="item.idOs"
+    [numeroOs]="item.numero"
+    [razonSocial]="item.razonSocial ?? ''"
+    (cerrar)="anularCtx.set(null)"
+    (anulada)="onOrdenAnulada()" />
+}
