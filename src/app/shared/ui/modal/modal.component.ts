@@ -1,6 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 
-type Ancho = 'sm' | 'md' | 'lg' | 'xl';
+type Ancho = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 type IconoColor = 'azul' | 'verde' | 'ambar' | 'rojo';
 
 @Component({

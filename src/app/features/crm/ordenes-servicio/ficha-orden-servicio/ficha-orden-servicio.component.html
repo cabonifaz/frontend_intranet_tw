@@ -231,7 +231,12 @@
               <tr>
                 <td style="text-align:center;">{{ i + 1 }}</td>
                 <td class="mono">{{ c.codigo }}</td>
-                <td>{{ c.descripcion }}</td>
+                <td>
+                  <div>{{ c.descripcion }}</div>
+                  @if (c.alcance) {
+                    <small class="concepto-alcance">Alcance: {{ c.alcance }}</small>
+                  }
+                </td>
                 <td>
                   @if (c.tipo) {
                     <span class="chip-info chip-info--morado">{{ c.tipo }}</span>
@@ -476,6 +481,8 @@
 
     @if (modalImportarExcelAbierto()) {
       <app-modal-importar-excel-os
+        [idCliente]="idClienteActual()"
+        [idOs]="edicion()?.detalle?.idOs ?? null"
         (cerrar)="modalImportarExcelAbierto.set(false)"
         (importado)="onExcelImportado($event)" />
     }
@@ -498,25 +505,21 @@
         (anulada)="onAnulada()" />
     }
 
-    <div class="footer-sticky">
-      <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
-      <div class="footer-sticky__der">
-        <app-button variant="secondary" icono="save"
-                    [cargando]="guardando()"
-                    [disabled]="!puedeGuardar() || emitiendo()"
-                    (clic)="guardarBorrador()">
-          Guardar borrador
-        </app-button>
-        <app-button variant="primary" icono="send"
-                    [cargando]="emitiendo()"
-                    [disabled]="!puedeGuardar() || guardando()"
-                    (clic)="emitir()">
-          @if (modo() === 'nueva') {
-            Emitir {{ tipo() }}
-          } @else {
-            Guardar cambios y re-emitir
-          }
-        </app-button>
+    <div class="ficha-footer">
+      <div class="footer-sticky">
+        <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+        <div class="footer-sticky__der">
+          <app-button variant="primary" icono="send"
+                      [cargando]="emitiendo()"
+                      [disabled]="!puedeGuardar()"
+                      (clic)="emitir()">
+            @if (modo() === 'nueva') {
+              Registrar {{ tipo() }}
+            } @else {
+              Guardar cambios y re-emitir
+            }
+          </app-button>
+        </div>
       </div>
     </div>
   }

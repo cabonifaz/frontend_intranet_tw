@@ -24,6 +24,8 @@ import { ModalDetalleOrdenServicioComponent } from '../modal-detalle-orden-servi
 import { ModalElegirPropuestaOsComponent } from '../modal-elegir-propuesta-os/modal-elegir-propuesta-os.component';
 import { ModalSolicitarEdicionOsComponent } from '../modal-solicitar-edicion-os/modal-solicitar-edicion-os.component';
 import { ModalAnularOsComponent } from '../modal-anular-os/modal-anular-os.component';
+import { ModalResolverSolicitudOsComponent } from '../modal-resolver-solicitud-os/modal-resolver-solicitud-os.component';
+import { SolicitudEdicionOs } from '../../../../core/models/ordenes-servicio.model';
 
 /**
  * HU-41 — Bandeja consolidada de Órdenes de Servicio / Metrología.
@@ -38,7 +40,6 @@ import { ModalAnularOsComponent } from '../modal-anular-os/modal-anular-os.compo
  */
 const ESTADOS: { codigo: EstadoGrupoOrdenServicio | ''; label: string }[] = [
   { codigo: '',             label: 'Todos' },
-  { codigo: 'borrador',     label: 'Borradores' },
   { codigo: 'emitida',      label: 'Emitidas' },
   { codigo: 'programada',   label: 'Programadas' },
   { codigo: 'en_ejecucion', label: 'En ejecución' },
@@ -63,6 +64,7 @@ const TARJETAS_VACIAS: TarjetasOrdenesServicio = {
     FormsModule, DatePipe, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, ModalDetalleOrdenServicioComponent,
     ModalElegirPropuestaOsComponent, ModalSolicitarEdicionOsComponent, ModalAnularOsComponent,
+    ModalResolverSolicitudOsComponent,
   ],
   templateUrl: './lista-ordenes-servicio.component.html',
   styleUrl: './lista-ordenes-servicio.component.scss',
@@ -222,6 +224,7 @@ export class ListaOrdenesServicioComponent implements OnInit {
         case 'Solicitar edición':  this.solicitarEdicionCtx.set(item); break;
         case 'Anular':             this.anularCtx.set(item); break;
         case 'Editar':             this.router.navigate(['/crm/ordenes-servicio', item.idOs, 'editar']); break;
+        case 'Resolver solicitud': this.resolverSolicitud(item); break;
         default:                   this.toast.info(`${accion} — pendiente.`);
       }
     }, 100);
@@ -245,9 +248,33 @@ export class ListaOrdenesServicioComponent implements OnInit {
     this.solicitarEdicionCtx.set(item);
   }
 
-  resolverSolicitud(item: ItemBandejaOrdenServicio, evt?: Event): void {
+  readonly resolverSolicitudCtx = signal<{
+    idOs: number;
+    numeroOs: string;
+    solicitud: SolicitudEdicionOs;
+  } | null>(null);
+
+  async resolverSolicitud(item: ItemBandejaOrdenServicio, evt?: Event): Promise<void> {
     evt?.stopPropagation();
-    this.toast.info(`Resolver solicitud de ${item.numero} — pendiente modal (Fase futura).`);
+    try {
+      const detalle = await this.svc.obtenerDetalle(item.idOs);
+      if (!detalle.solicitudPendiente) {
+        this.toast.info('Esta OS/OM ya no tiene solicitud pendiente.');
+        return;
+      }
+      this.resolverSolicitudCtx.set({
+        idOs:      item.idOs,
+        numeroOs:  item.numero,
+        solicitud: detalle.solicitudPendiente,
+      });
+    } catch (e: any) {
+      this.toast.error(e?.message ?? 'No se pudo cargar la solicitud.');
+    }
+  }
+
+  onSolicitudResuelta(_: 'aprobada' | 'rechazada'): void {
+    this.resolverSolicitudCtx.set(null);
+    this.cargar();
   }
 
   onSolicitudEnviada(): void {

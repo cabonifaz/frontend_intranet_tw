@@ -67,7 +67,6 @@ export class FichaOrdenServicioComponent implements OnInit {
 
   readonly modo        = signal<ModoFicha>('nueva');
   readonly cargando    = signal(true);
-  readonly guardando   = signal(false);
   readonly emitiendo   = signal(false);
   readonly error       = signal<string | null>(null);
 
@@ -275,15 +274,7 @@ export class FichaOrdenServicioComponent implements OnInit {
     this.router.navigate(['/crm/ordenes-servicio']);
   }
 
-  async guardarBorrador(): Promise<void> {
-    await this.guardarInterno(false);
-  }
-
   async emitir(): Promise<void> {
-    await this.guardarInterno(true);
-  }
-
-  private async guardarInterno(emitir: boolean): Promise<void> {
     if (!this.idContactoSel()) {
       this.toast.error('Seleccioná el contacto del cliente antes de guardar.');
       return;
@@ -291,8 +282,7 @@ export class FichaOrdenServicioComponent implements OnInit {
     const p = this.propuestaOrigen();
     if (!p) return;
 
-    const esEmitir = emitir;
-    (esEmitir ? this.emitiendo : this.guardando).set(true);
+    this.emitiendo.set(true);
     try {
       const equipos  = this.obtenerEquiposActuales();
       const conceptos = this.obtenerConceptosActuales();
@@ -308,21 +298,16 @@ export class FichaOrdenServicioComponent implements OnInit {
         equipos,
         conceptos,
         datosCertificado:     this.esOm() ? (this.datosCertificado() ?? undefined) : undefined,
-        emitir:               esEmitir,
+        emitir:               true,
       };
 
       const r = await this.svc.guardar(req);
-
-      this.toast.exito(esEmitir
-        ? `${r.numero} emitida correctamente.`
-        : `${r.numero} guardada como borrador.`,
-      );
-
+      this.toast.exito(`${r.numero} registrada correctamente.`);
       this.router.navigate(['/crm/ordenes-servicio']);
     } catch (e: any) {
-      this.toast.error(e?.message ?? 'No se pudo guardar la OS/OM.');
+      this.toast.error(e?.message ?? 'No se pudo registrar la OS/OM.');
     } finally {
-      (esEmitir ? this.emitiendo : this.guardando).set(false);
+      this.emitiendo.set(false);
     }
   }
 
@@ -339,7 +324,7 @@ export class FichaOrdenServicioComponent implements OnInit {
   readonly idsEquiposYa       = computed(() => this.equipos().map(e => e.idEquipo));
 
   readonly idClienteActual = computed(() =>
-    this.preparacion()?.idCliente ?? this.edicion()?.detalle.datosGenerales ? 0 : 0,
+    this.preparacion()?.idCliente ?? 0,
   );
 
   abrirAgregarConcepto(): void { this.modalAgregarConceptoAbierto.set(true); }

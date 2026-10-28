@@ -18,7 +18,7 @@
   </div>
 
   <!-- ── Grid: catálogo | botones | selección ────────────────────────────── -->
-  <div class="dpanel__grid">
+  <div class="dpanel__grid" [class.dpanel__grid--balanceado]="balanceado()">
     <div class="dpanel__panel dpanel__panel--catalogo">
       <div class="dpanel__panel-header">
         <span class="dpanel__panel-titulo">{{ tituloCatalogo() }}</span>

@@ -1,4 +1,4 @@
-import { Component, computed, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
@@ -25,6 +25,9 @@ type TabPreview = 'equipos' | 'conceptos';
   styleUrl: './modal-importar-excel-os.component.scss',
 })
 export class ModalImportarExcelOsComponent {
+  readonly idCliente = input.required<number>();
+  /** OS existente — opcional, solo si estamos editando una ya guardada. */
+  readonly idOs      = input<number | null>(null);
   readonly cerrar     = output<void>();
   readonly importado = output<{ analisis: AnalisisImportacionOsOm; estrategia: EstrategiaMergeImportacion }>();
 
@@ -100,7 +103,7 @@ export class ModalImportarExcelOsComponent {
     this.paso.set(2);
     this.analizando.set(true);
     try {
-      const r = await this.svc.analizarImportOs(f);
+      const r = await this.svc.analizarImportOs(f, this.idCliente(), this.idOs());
       this.analisis.set(r);
       this.paso.set(3);
     } catch (e: any) {

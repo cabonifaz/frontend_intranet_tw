@@ -11,15 +11,16 @@ import {
   SuministroConciliado,
 } from '../../../../core/models/importacion-equipos.model';
 
-type AccionUi = 'vincular' | 'crear' | 'omitir';
+type AccionUi = 'vincular' | 'crear';
 
 /**
  * Modal secundario — Fase 2 de HU-89.
- * Permite al comercial resolver una fila en revisión:
- *  - cambiar la acción (vincular ↔ crear ↔ omitir)
+ * Permite al comercial resolver una fila en revisión o nueva:
  *  - si vincular: elegir entre los candidatos del cliente
  *  - si crear: completar los datos obligatorios (N/S, sede, suministro) y opcionales
  *    (código cliente, ubicación, alcance máximo).
+ * En match automático solo se muestra el panel Vincular (sin selector).
+ * Para descartar una fila, el comercial deselecciona el checkbox en el preview.
  * Marca/Modelo/Clasificación se heredan del suministro, no se editan a mano.
  */
 @Component({
@@ -70,13 +71,15 @@ export class ModalEditarFilaImportacionComponent {
 
   readonly puedeGuardar = computed(() => {
     const a = this.accion();
-    if (a === 'omitir')   return true;
     if (a === 'vincular') return this.idEquipoSeleccionado() != null;
     // crear
     return !!this.nNumSerie().trim()
         && this.nIdSede() != null
         && this.nIdSuministro() != null;
   });
+
+  /** En match automático solo se puede vincular → ocultamos el selector. */
+  readonly mostrarSelectorAccion = computed(() => this.fila().estado !== 'automatico');
 
   constructor() {
     // Inicialización desde la fila (effect sobre el input al construir).
@@ -87,10 +90,10 @@ export class ModalEditarFilaImportacionComponent {
     const f = this.fila();
     const n = f.nuevo;
 
-    // Acción UI
-    if (!f.importable && f.estado === 'omitido')      this.accion.set('omitir');
-    else if (f.accion === 'vincular')                 this.accion.set('vincular');
-    else                                               this.accion.set('crear');
+    // Acción UI: automático siempre vincular. Para el resto, respetamos lo que trae la fila.
+    if (f.estado === 'automatico')     this.accion.set('vincular');
+    else if (f.accion === 'vincular')  this.accion.set('vincular');
+    else                               this.accion.set('crear');
 
     // Vincular
     this.idEquipoSeleccionado.set(f.equipo?.idEquipo ?? null);
@@ -136,18 +139,7 @@ export class ModalEditarFilaImportacionComponent {
 
     let actualizada: FilaImportacionEquipo;
 
-    if (a === 'omitir') {
-      actualizada = {
-        ...original,
-        estado:       'omitido',
-        motivo:       'omitido_manual',
-        estadoLabel:  'Omitido manualmente',
-        accion:       'ninguna' as AccionImportacion,
-        importable:   false,
-        seleccionado: false,
-        origen:       'reglas',
-      };
-    } else if (a === 'vincular') {
+    if (a === 'vincular') {
       const idEq = this.idEquipoSeleccionado();
       const eq   = original.candidatos.find(c => c.idEquipo === idEq) ?? original.equipo;
       actualizada = {

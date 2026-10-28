@@ -48,6 +48,9 @@
     grid-template-columns: 2fr auto 3fr;
     gap: 12px;
     align-items: stretch;
+
+    // Modificador: ambos paneles al mismo ancho (cuando las dos tablas tienen la misma cantidad de columnas).
+    &--balanceado { grid-template-columns: 1fr auto 1fr; }
   }
 
   &__panel {

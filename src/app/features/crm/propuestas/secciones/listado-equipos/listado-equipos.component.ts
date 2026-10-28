@@ -11,14 +11,14 @@ import { ToastService } from '../../../../../core/services/toast.service';
 import { ResultadoImportacionEquipos } from '../../../../../core/models/importacion-equipos.model';
 
 interface EquipoCatalogo {
-  id:       number;
-  local:    string;
-  tipo:     string;
-  subtipo:  string;
-  marca:    string;
-  modelo:   string;
-  numSerie: string;
-  codigoTw: string;
+  id:        number;
+  local:     string;   // sede
+  tipo:      string;
+  subtipo:   string;
+  marca:     string;
+  modelo:    string;
+  numSerie:  string;
+  codigoTw:  string;
 }
 
 @Component({
@@ -46,14 +46,14 @@ export class ListadoEquiposComponent implements OnInit {
       // del draft) que estén vigentes/activos para servicio.
       const r = await this.equiposSvc.obtenerEquipos(undefined, idCliente, undefined, undefined, 'Activo', true, 1, 500);
       const items: EquipoCatalogo[] = r.items.map(e => ({
-        id:       e.idEquipo,
-        local:    e.sedeNombre || '—',
-        tipo:     e.clasificacionLabel || 'Equipo',
-        subtipo:  e.clasificacionLabel || '',
-        marca:    e.marca,
-        modelo:   e.modelo,
-        numSerie: e.numSerie,
-        codigoTw: e.codigoTw,
+        id:        e.idEquipo,
+        local:     e.sedeNombre || '—',
+        tipo:      e.clasificacionLabel || 'Equipo',
+        subtipo:   e.clasificacionLabel || '',
+        marca:     e.marca,
+        modelo:    e.modelo,
+        numSerie:  e.numSerie,
+        codigoTw:  e.codigoTw,
       }));
       this.catalogo.set(items);
     } catch { /* silencioso */ }
@@ -65,7 +65,9 @@ export class ListadoEquiposComponent implements OnInit {
   readonly catalogoFiltrado = computed(() => {
     const q = this.busqueda().toLowerCase().trim();
     const s = this.subtipoFiltro();
+    const yaEnPropuesta = new Set(this.equipos().map(e => e.idEquipo).filter(id => id > 0));
     return this.catalogo().filter(c =>
+      !yaEnPropuesta.has(c.id) &&
       (!q || c.numSerie.toLowerCase().includes(q) || c.codigoTw.toLowerCase().includes(q) ||
             c.marca.toLowerCase().includes(q) || c.modelo.toLowerCase().includes(q)) &&
       (!s || c.subtipo === s)
@@ -82,8 +84,15 @@ export class ListadoEquiposComponent implements OnInit {
     if (this.equipos().some(x => x.idEquipo === e.id)) return;    // ya existe
     this.draftSvc.actualizar({
       equiposVinculados: [...this.equipos(), {
-        idEquipo: e.id, numSerie: e.numSerie, codigoTw: e.codigoTw,
-        local: e.local, tipo: e.tipo, subtipo: e.subtipo, marca: e.marca, modelo: e.modelo,
+        idEquipo: e.id,
+        numSerie: e.numSerie,
+        codigoTw: e.codigoTw,
+        local:    e.local,
+        tipo:     e.tipo,
+        subtipo:  e.subtipo,
+        marca:    e.marca,
+        modelo:   e.modelo,
+        esNuevo:  false,
       } as EquipoVinculado],
     });
   }
@@ -134,6 +143,7 @@ export class ListadoEquiposComponent implements OnInit {
         subtipo:  e.subtipo || '',
         marca:    e.marca,
         modelo:   e.modelo,
+        esNuevo:  e.resultado === 'creado',
       }));
 
     this.draftSvc.actualizar({

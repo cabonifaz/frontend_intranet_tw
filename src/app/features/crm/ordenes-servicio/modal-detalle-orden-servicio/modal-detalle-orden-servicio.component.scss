@@ -46,16 +46,6 @@
 @keyframes mdo-spin { to { transform: rotate(360deg); } }
 
 // ─── Barra de acciones del header ────────────────────────────────────────
-.mdo-acciones {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 0 12px;
-  border-bottom: 1px solid #E2E8F0;
-  margin-bottom: 12px;
-
-  &__spacer { flex: 1; }
-}
 
 // ─── Banner de solicitud pendiente ───────────────────────────────────────
 .mdo-banner-pendiente {
@@ -79,6 +69,22 @@
   &__arrow { margin-left: auto; font-size: 18px !important; }
 
   strong { font-weight: 700; }
+}
+
+// ─── Tabs: homologar padding al estilo de propuestas (texto centrado vertical) ──
+:host ::ng-deep app-tabs {
+  display: block;
+  margin-top: -20px;        // compensa el padding-top del body del modal shared
+                            // los tabs quedan pegados al borde inferior del header
+
+  .tabs {
+    scrollbar-width: none;              // Firefox
+    &::-webkit-scrollbar { display: none; }  // Chromium / Safari
+  }
+
+  .tabs__tab {
+    padding: 14px 16px;    // top/bottom simétrico y más amplio (antes 10px)
+  }
 }
 
 // ─── Contenido general ───────────────────────────────────────────────────
@@ -126,6 +132,26 @@
     font-size: 20px !important;
     color: #1D4ED8;
   }
+}
+
+// ─── Badges estándar (misma línea que el resto del sistema) ──────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+
+  &--azul    { background: #DBEAFE; color: #1D4ED8; }
+  &--verde   { background: #D1FAE5; color: #059669; }
+  &--morado  { background: #EDE9FE; color: #6D28D9; }
+  &--ambar   { background: #FEF3C7; color: #D97706; }
+  &--rojo    { background: #FEE2E2; color: #B91C1C; }
+  &--gris    { background: #F1F5F9; color: #475569; }
 }
 
 // ─── Chip informativo (ej. "Modo sólo lectura") ──────────────────────────
@@ -380,7 +406,7 @@
   p { margin: 4px 0 0; font-size: 11px; }
 }
 
-// ─── Footer ───────────────────────────────────────────────────────────────
+// ─── Footer con acciones (izquierda + derecha) ──────────────────────────
 .mdo-footer {
   display: flex !important;
   justify-content: space-between;
@@ -390,10 +416,23 @@
   border-top: 1px solid #E2E8F0;
   background: #FAFBFC;
 
-  &__meta {
-    font-size: 11px;
-    color: #64748B;
-
-    strong { color: #0F172A; font-weight: 600; }
+  &__izq,
+  &__der {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
+}
+
+// Línea de última actualización en el final del contenido
+.mdo-ultima-actualizacion {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px dashed #E2E8F0;
+  font-size: 11px;
+  color: #64748B;
+  text-align: right;
+
+  strong { color: #0F172A; font-weight: 600; }
 }

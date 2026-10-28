@@ -58,6 +58,10 @@ export class ModalDetalleOrdenServicioComponent {
 
   readonly tabActivo = signal<TabInterno>('resumen');
 
+  /** Tabs lazy ya cargados — para no re-fetchear al cambiar entre tabs. */
+  private readonly tabsCargados = new Set<TabInterno>(['resumen']);
+  readonly cargandoTab = signal<TabInterno | null>(null);
+
   readonly tituloModal = computed(() => {
     const d = this.detalle();
     const nombreTipo = d?.tipo === 'OM' ? 'Orden de Metrología' : 'Orden de Servicio';
@@ -80,19 +84,20 @@ export class ModalDetalleOrdenServicioComponent {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   }
 
-  // Tabs se arman según detalle (el 7mo "Certificado" solo si OM)
+  // Tabs se arman según detalle (el 7mo "Certificado" solo si OM).
+  // Sin íconos — homologado al patrón de propuestas y requerimientos.
   readonly tabs = computed<Tab[]>(() => {
     const d = this.detalle();
     const esOm = d?.tipo === 'OM';
     const tabs: Tab[] = [
-      { codigo: 'resumen',       label: 'Resumen',             icono: 'dashboard' },
-      { codigo: 'propuesta',     label: 'Propuesta Origen',    icono: 'description' },
-      { codigo: 'equipos',       label: `Equipos / Instrumentos${d ? ' (' + d.equipos.length + ')' : ''}`, icono: 'precision_manufacturing' },
-      { codigo: 'conceptos',     label: `Conceptos${d ? ' (' + d.conceptos.length + ')' : ''}`,            icono: 'build' },
-      { codigo: 'observaciones', label: 'Observaciones',       icono: 'notes' },
-      { codigo: 'programacion',  label: 'Programación',        icono: 'calendar_month' },
+      { codigo: 'resumen',       label: 'Resumen' },
+      { codigo: 'propuesta',     label: 'Propuesta Origen' },
+      { codigo: 'equipos',       label: `Equipos / Instrumentos${d ? ' (' + d.equipos.length + ')' : ''}` },
+      { codigo: 'conceptos',     label: `Conceptos${d ? ' (' + d.conceptos.length + ')' : ''}` },
+      { codigo: 'observaciones', label: 'Observaciones' },
+      { codigo: 'programacion',  label: 'Programación' },
     ];
-    if (esOm) tabs.push({ codigo: 'certificado', label: 'Certificado', icono: 'workspace_premium' });
+    if (esOm) tabs.push({ codigo: 'certificado', label: 'Certificado' });
     return tabs;
   });
 
@@ -113,8 +118,57 @@ export class ModalDetalleOrdenServicioComponent {
     }
   }
 
-  cambiarTab(codigo: string): void {
-    this.tabActivo.set(codigo as TabInterno);
+  async cambiarTab(codigo: string): Promise<void> {
+    const tab = codigo as TabInterno;
+    this.tabActivo.set(tab);
+    if (!this.tabsCargados.has(tab)) {
+      await this.cargarTab(tab);
+    }
+  }
+
+  /** Carga lazy el tab recién activado y hace merge en `detalle()`. */
+  private async cargarTab(tab: TabInterno): Promise<void> {
+    const idOs = this.idOs();
+    this.cargandoTab.set(tab);
+    try {
+      switch (tab) {
+        case 'propuesta': {
+          const p = await this.svc.obtenerTabPropuesta(idOs);
+          this.detalle.update(d => d ? { ...d, propuestaOrigen: p } : null);
+          break;
+        }
+        case 'equipos':
+        case 'conceptos': {
+          // Equipos y conceptos van juntos: necesitamos ambos para resolver
+          // la relación "conceptos aplicados a cada equipo".
+          const { equipos, conceptos } = await this.svc.obtenerTabEquiposYConceptos(idOs);
+          this.detalle.update(d => d ? { ...d, equipos, conceptos } : null);
+          this.tabsCargados.add('equipos');
+          this.tabsCargados.add('conceptos');
+          break;
+        }
+        case 'observaciones': {
+          const obs = await this.svc.obtenerTabObservaciones(idOs);
+          this.detalle.update(d => d ? { ...d, observaciones: obs } : null);
+          break;
+        }
+        case 'programacion': {
+          const prog = await this.svc.obtenerTabProgramacion(idOs);
+          this.detalle.update(d => d ? { ...d, programacion: prog } : null);
+          break;
+        }
+        case 'certificado': {
+          const cert = await this.svc.obtenerTabCertificado(idOs);
+          this.detalle.update(d => d ? { ...d, datosCertificado: cert } : null);
+          break;
+        }
+      }
+      this.tabsCargados.add(tab);
+    } catch (e: any) {
+      this.toast.error(e?.message ?? `No se pudo cargar el tab ${tab}.`);
+    } finally {
+      this.cargandoTab.set(null);
+    }
   }
 
   onCerrar(): void { this.cerrar.emit(); }

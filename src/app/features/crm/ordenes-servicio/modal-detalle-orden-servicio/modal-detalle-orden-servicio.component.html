@@ -30,31 +30,6 @@
 
   @if (detalle(); as d) {
 
-    <!-- ═══ BARRA DE ACCIONES ═══ -->
-    <div class="mdo-acciones">
-      <app-button variant="ghost"  tamano="sm" icono="folder_open" (clic)="onDocumentos()">Documentos</app-button>
-      <app-button variant="ghost"  tamano="sm" icono="history"     (clic)="onAuditoria()">Historial de Auditoría</app-button>
-
-      <div class="mdo-acciones__spacer"></div>
-
-      @if (d.puedeSolicitarEdicion) {
-        <app-button variant="secondary" tamano="sm" icono="edit_note" (clic)="onSolicitarEdicion()">
-          Solicitar Edición
-        </app-button>
-      }
-      @if (d.puedeResolverSolicitud) {
-        <app-button variant="secondary" tamano="sm" icono="rule" (clic)="onResolverSolicitud()">
-          Resolver Solicitud
-        </app-button>
-      }
-      @if (d.puedeEditar) {
-        <app-button variant="primary" tamano="sm" icono="edit" (clic)="onEditar()">Editar</app-button>
-      }
-      @if (d.puedeAnular) {
-        <app-button variant="danger" tamano="sm" icono="block" (clic)="onAnular()">Anular</app-button>
-      }
-    </div>
-
     <!-- Banner solicitud pendiente -->
     @if (d.solicitudPendiente; as s) {
       <div class="mdo-banner-pendiente" (click)="onResolverSolicitud()">
@@ -73,15 +48,22 @@
     <!-- ═══ CONTENIDO ═══ -->
     <div class="mdo-contenido">
 
+      <!-- Loader del tab activo (lazy load) -->
+      @if (cargandoTab()) {
+        <div class="mdo-loading mdo-loading--tab">
+          <div class="mdo-spinner"></div>
+          <span>Cargando…</span>
+        </div>
+      }
+
       <!-- ─── Tab Resumen ─── -->
       @if (tabActivo() === 'resumen') {
         <section class="mdo-seccion">
           <header class="mdo-seccion__header">
             <h3>
-              <span class="mdo-seccion__num">1</span>
+              <span class="material-symbols-outlined mdo-seccion__icono">receipt_long</span>
               Datos Generales de la Orden
             </h3>
-            <span class="mdo-chip-info">Modo sólo lectura</span>
           </header>
 
           <div class="mdo-grid">
@@ -399,18 +381,55 @@
           </div>
         </section>
       }
+
+      <!-- Línea de última actualización (al final del contenido, no en el footer) -->
+      @if (d.ultimaActualizacion) {
+        <div class="mdo-ultima-actualizacion">
+          Última actualización: {{ d.ultimaActualizacion | date:'dd/MM/yyyy HH:mm' }}
+          · por <strong>{{ d.usuarioUltimaActualizacion }}</strong>
+          @if (d.fuenteUltimaActualizacion) {
+            <span class="mdo-vacio"> ({{ d.fuenteUltimaActualizacion }})</span>
+          }
+        </div>
+      }
     </div>
 
     <!-- ═══ FOOTER ═══ -->
     <div modalFooter class="mdo-footer">
-      <div class="mdo-footer__meta">
-        Última actualización: {{ d.ultimaActualizacion | date:'dd/MM/yyyy HH:mm' }}
-        · por <strong>{{ d.usuarioUltimaActualizacion }}</strong>
-        @if (d.fuenteUltimaActualizacion) {
-          <span class="mdo-vacio"> ({{ d.fuenteUltimaActualizacion }})</span>
+      <!-- Izquierda: acciones informativas + anular -->
+      <div class="mdo-footer__izq">
+        <app-button variant="ghost" tamano="sm" icono="folder_open" (clic)="onDocumentos()">
+          Documentos
+        </app-button>
+        <app-button variant="ghost" tamano="sm" icono="history" (clic)="onAuditoria()">
+          Historial de Auditoría
+        </app-button>
+        @if (d.puedeAnular) {
+          <app-button variant="danger-ghost" tamano="sm" icono="block" (clic)="onAnular()">
+            Anular
+          </app-button>
         }
       </div>
-      <app-button variant="primary" (clic)="onCerrar()">Cerrar</app-button>
+
+      <!-- Derecha: acciones primarias -->
+      <div class="mdo-footer__der">
+        @if (d.puedeSolicitarEdicion) {
+          <app-button variant="secondary" tamano="sm" icono="edit_note" (clic)="onSolicitarEdicion()">
+            Solicitar Edición
+          </app-button>
+        }
+        @if (d.puedeResolverSolicitud) {
+          <app-button variant="secondary" tamano="sm" icono="rule" (clic)="onResolverSolicitud()">
+            Resolver Solicitud
+          </app-button>
+        }
+        @if (d.puedeEditar) {
+          <app-button variant="primary" tamano="sm" icono="edit" (clic)="onEditar()">
+            Editar
+          </app-button>
+        }
+        <app-button variant="primary" (clic)="onCerrar()">Cerrar</app-button>
+      </div>
     </div>
   }
 </app-modal>

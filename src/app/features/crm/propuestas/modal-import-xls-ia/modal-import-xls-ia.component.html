@@ -1,4 +1,4 @@
-<app-modal titulo="Importar Equipos desde Excel con IA" ancho="xl" (cerrar)="onCerrar()">
+<app-modal titulo="Importar Equipos desde Excel con IA" [ancho]="analisis() ? '2xl' : 'xl'" (cerrar)="onCerrar()">
   <div class="mix-body">
 
     <!-- ═══ ESTADO 1 — Sin archivo (upload inicial) ═══ -->

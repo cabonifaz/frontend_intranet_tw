@@ -1,0 +1,85 @@
+<app-modal
+  [titulo]="'Resolver Solicitud de Edición — ' + numeroOs()"
+  subtitulo="Aprobá o rechazá la solicitud. Rechazar requiere comentario (mín. 10 caracteres)."
+  icono="rule"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <div class="mrs-body">
+
+    <!-- ─── Info de la solicitud ─── -->
+    <section class="mrs-info">
+      <div class="mrs-info__row">
+        <label>Solicitada por</label>
+        <span>{{ solicitud().solicitadaPor }}</span>
+      </div>
+      <div class="mrs-info__row">
+        <label>Fecha</label>
+        <span>{{ solicitud().fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      <div class="mrs-info__row">
+        <label>Motivo</label>
+        <span class="mrs-info__motivo">{{ solicitud().motivoLabel || solicitud().motivo }}</span>
+      </div>
+      @if (solicitud().comentario) {
+        <div class="mrs-info__row mrs-info__row--full">
+          <label>Comentario del comercial</label>
+          <p>{{ solicitud().comentario }}</p>
+        </div>
+      }
+    </section>
+
+    <!-- ─── Botones de decisión ─── -->
+    <section class="mrs-decision">
+      <button class="mrs-opt mrs-opt--aprobar"
+              [class.mrs-opt--activa]="decision() === 'aprobar'"
+              (click)="elegirAprobar()">
+        <span class="material-symbols-outlined">check_circle</span>
+        <strong>Aprobar</strong>
+        <small>Habilita al comercial a editar la OS/OM</small>
+      </button>
+      <button class="mrs-opt mrs-opt--rechazar"
+              [class.mrs-opt--activa]="decision() === 'rechazar'"
+              (click)="elegirRechazar()">
+        <span class="material-symbols-outlined">cancel</span>
+        <strong>Rechazar</strong>
+        <small>El comercial no podrá editar — comentario obligatorio</small>
+      </button>
+    </section>
+
+    <!-- ─── Comentario (opcional al aprobar, obligatorio al rechazar) ─── -->
+    @if (decision()) {
+      <section class="mrs-comentario">
+        <label>
+          @if (decision() === 'aprobar') {
+            Comentario (opcional)
+          } @else {
+            Comentario de rechazo <span class="mrs-req">*</span>
+            <small>mínimo 10 caracteres</small>
+          }
+        </label>
+        <textarea
+          rows="3"
+          [ngModel]="comentario()"
+          (ngModelChange)="comentario.set($event)"
+          placeholder="Explicá tu decisión al comercial…"></textarea>
+      </section>
+    }
+  </div>
+
+  <div modalFooter class="mrs-footer">
+    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
+    @if (decision() === 'aprobar') {
+      <app-button variant="success" icono="check" [cargando]="enviando()" [disabled]="!puedeAprobar()" (clic)="confirmar()">
+        Aprobar solicitud
+      </app-button>
+    } @else if (decision() === 'rechazar') {
+      <app-button variant="danger" icono="block" [cargando]="enviando()" [disabled]="!puedeRechazar()" (clic)="confirmar()">
+        Rechazar solicitud
+      </app-button>
+    } @else {
+      <app-button variant="primary" [disabled]="true">Elegí una decisión</app-button>
+    }
+  </div>
+</app-modal>

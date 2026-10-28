@@ -161,6 +161,7 @@ function mapEquipoApiToVinculado(e: PropuestaEquipoApi): EquipoVinculado {
     subtipo:  e.subtipo ?? '',
     marca:    e.marca ?? '',
     modelo:   e.modelo ?? '',
+    esNuevo:  false,   // equipos ya guardados no se consideran "nuevos" al recargar
   };
 }
 

@@ -31,6 +31,7 @@
     [countCatalogo]="catalogoFiltrado().length + ' equipos'"
     [countSeleccion]="equipos().length + ' vinculados'"
     placeholderBuscar="Buscar por N/S, código, código TW, marca..."
+    [balanceado]="true"
     (buscar)="busqueda.set($event)"
     (agregar)="agregar()"
     (quitar)="quitar()"
@@ -40,16 +41,21 @@
       <table class="tabla-eq">
         <thead>
           <tr>
-            <th>#</th><th>LOCAL</th><th>TIPO</th><th>SUBTIPO</th>
+            <th class="col-num">#</th>
+            <th class="col-ns">N/S</th>
+            <th class="col-codtw">CÓD TW</th>
+            <th class="col-equipo">EQUIPO</th>
+            <th class="col-sede">SEDE</th>
           </tr>
         </thead>
         <tbody>
           @for (e of catalogoFiltrado(); track e.id; let i = $index) {
             <tr (click)="seleccionado.set(e.id)" [class.tabla-eq__fila--activa]="seleccionado() === e.id">
-              <td class="mono">{{ i + 1 }}</td>
-              <td class="celda-fuerte">{{ e.local }}</td>
-              <td>{{ e.tipo }}</td>
-              <td class="celda-subtipo">{{ e.subtipo }}</td>
+              <td class="mono col-num">{{ i + 1 }}</td>
+              <td class="mono col-ns">{{ e.numSerie }}</td>
+              <td class="mono celda-fuerte col-codtw">{{ e.codigoTw }}</td>
+              <td class="col-equipo">{{ e.marca }} {{ e.modelo }}</td>
+              <td class="celda-subtipo col-sede">{{ e.local }}</td>
             </tr>
           }
         </tbody>
@@ -68,17 +74,27 @@
         <table class="tabla-eq">
           <thead>
             <tr>
-              <th>#</th><th>LOCAL</th><th>TIPO</th><th>SUBTIPO</th><th>N/S</th>
+              <th class="col-num">#</th>
+              <th class="col-ns">N/S</th>
+              <th class="col-codtw">CÓD TW</th>
+              <th class="col-equipo">EQUIPO</th>
+              <th class="col-estado">ESTADO</th>
             </tr>
           </thead>
           <tbody>
             @for (e of equipos(); track e.idEquipo; let i = $index) {
               <tr (click)="seleccionadoProp.set(i)" [class.tabla-eq__fila--activa]="seleccionadoProp() === i">
-                <td class="mono">{{ i + 1 }}</td>
-                <td class="celda-fuerte">{{ e.local }}</td>
-                <td>{{ e.tipo }}</td>
-                <td class="celda-subtipo">{{ e.subtipo }}</td>
-                <td class="mono">{{ e.numSerie }}</td>
+                <td class="mono col-num">{{ i + 1 }}</td>
+                <td class="mono col-ns">{{ e.numSerie }}</td>
+                <td class="mono celda-fuerte col-codtw">{{ e.codigoTw }}</td>
+                <td class="col-equipo">{{ e.marca }} {{ e.modelo }}</td>
+                <td class="col-estado">
+                  @if (e.esNuevo) {
+                    <span class="chip-estado chip-estado--nuevo">Nuevo</span>
+                  } @else {
+                    <span class="chip-estado chip-estado--vinc">Vinculado</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>

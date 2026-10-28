@@ -27,39 +27,33 @@
     </div>
 
     <!-- ═══ Selector de acción ═══ -->
-    <div class="mef-accion">
-      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'vincular'">
-        <input type="radio" name="accion" [checked]="accion() === 'vincular'"
-               (change)="cambiarAccion('vincular')"
-               [disabled]="fila().candidatos.length === 0" />
-        <span class="mef-radio__texto">
-          <span class="mef-radio__titulo">Vincular a equipo existente</span>
-          <span class="mef-radio__sub">
-            @if (fila().candidatos.length === 0) {
-              No hay candidatos sugeridos en el inventario del cliente
-            } @else {
-              {{ fila().candidatos.length }} candidato{{ fila().candidatos.length > 1 ? 's' : '' }} sugerido{{ fila().candidatos.length > 1 ? 's' : '' }}
-            }
+    @if (mostrarSelectorAccion()) {
+      <div class="mef-accion">
+        <label class="mef-radio" [class.mef-radio--activo]="accion() === 'vincular'">
+          <input type="radio" name="accion" [checked]="accion() === 'vincular'"
+                 (change)="cambiarAccion('vincular')"
+                 [disabled]="fila().candidatos.length === 0" />
+          <span class="mef-radio__texto">
+            <span class="mef-radio__titulo">Vincular a equipo existente</span>
+            <span class="mef-radio__sub">
+              @if (fila().candidatos.length === 0) {
+                No hay candidatos sugeridos en el inventario del cliente
+              } @else {
+                {{ fila().candidatos.length }} candidato{{ fila().candidatos.length > 1 ? 's' : '' }} sugerido{{ fila().candidatos.length > 1 ? 's' : '' }}
+              }
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
 
-      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'crear'">
-        <input type="radio" name="accion" [checked]="accion() === 'crear'" (change)="cambiarAccion('crear')" />
-        <span class="mef-radio__texto">
-          <span class="mef-radio__titulo">Crear equipo nuevo</span>
-          <span class="mef-radio__sub">Registrar en el inventario del cliente</span>
-        </span>
-      </label>
-
-      <label class="mef-radio" [class.mef-radio--activo]="accion() === 'omitir'">
-        <input type="radio" name="accion" [checked]="accion() === 'omitir'" (change)="cambiarAccion('omitir')" />
-        <span class="mef-radio__texto">
-          <span class="mef-radio__titulo">Omitir esta fila</span>
-          <span class="mef-radio__sub">No importar este equipo</span>
-        </span>
-      </label>
-    </div>
+        <label class="mef-radio" [class.mef-radio--activo]="accion() === 'crear'">
+          <input type="radio" name="accion" [checked]="accion() === 'crear'" (change)="cambiarAccion('crear')" />
+          <span class="mef-radio__texto">
+            <span class="mef-radio__titulo">Crear equipo nuevo</span>
+            <span class="mef-radio__sub">Registrar en el inventario del cliente</span>
+          </span>
+        </label>
+      </div>
+    }
 
     <!-- ═══ Panel según acción ═══ -->
 
@@ -210,16 +204,6 @@
       </div>
     }
 
-    <!-- Omitir -->
-    @if (accion() === 'omitir') {
-      <div class="mef-panel mef-panel--omitir">
-        <span class="material-symbols-outlined">block</span>
-        <div>
-          <h4>Esta fila no se importará a la propuesta</h4>
-          <p>El equipo del Excel quedará sin acción. Podés volver a elegir otra acción antes de guardar.</p>
-        </div>
-      </div>
-    }
   </div>
 
   <div modalFooter class="mef-footer">

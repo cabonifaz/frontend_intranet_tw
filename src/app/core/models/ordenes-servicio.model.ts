@@ -75,6 +75,8 @@ export interface ItemBandejaOrdenServicio {
   idPropuesta:            number | null;
   numeroPropuesta:        string | null;         // ej. "PRO-0045-2026"
   versionPropuesta:       number | null;
+  idRequerimiento:        number | null;
+  numeroRequerimiento:    string | null;         // ej. "RQ-0045-2026"
   /** Para abrir los modales reutilizables de Documentos (HU-31) e Historial de Auditoría (HU-32). */
   idExpediente:           number | null;
   idResponsable:          number | null;
@@ -475,6 +477,8 @@ export interface ConceptoDetalleOs {
   clasificacion?:     string | null;    // mantenido por compat (clase genérica)
   tipo?:              string | null;    // ej. "Mantenimiento y Calibración"
   subtipo?:           string | null;    // ej. "De Plataforma"
+  /** Alcance / capacidad cotizado en la propuesta — se muestra como texto secundario. */
+  alcance?:           string | null;
   /** Códigos TW de los equipos a los que aplica. Vacío → "General". */
   equiposAplicados:   string[];
   /** Precargado desde la propuesta origen (no agregado manualmente). */

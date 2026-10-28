@@ -35,11 +35,12 @@ export interface EquipoVinculado {
   idEquipo:    number;
   numSerie:    string;
   codigoTw:    string;
-  local:       string;
+  local:       string;    // sede
   tipo:        string;
   subtipo:     string;
   marca:       string;
   modelo:      string;
+  esNuevo:     boolean;   // true si fue creado por importación XLS o manualmente
 }
 
 // ─── Estado completo de la propuesta en edición ──────────────────────────────

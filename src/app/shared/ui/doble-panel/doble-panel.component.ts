@@ -27,6 +27,8 @@ export class DoblePanelComponent {
   readonly placeholderBuscar = input<string>('Buscar...');
   readonly textoFlechaDer    = input<string>('Añadir');
   readonly textoFlechaIzq    = input<string>('Quitar');
+  /** Si true, ambos paneles ocupan el mismo ancho (útil cuando las dos tablas tienen la misma cantidad de columnas). */
+  readonly balanceado        = input<boolean>(false);
 
   busqueda = '';
 

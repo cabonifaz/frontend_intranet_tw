@@ -467,6 +467,7 @@ function mkItemBandeja(
     fechaEmision, emitida,
     idCliente, razonSocial, ruc,
     idPropuesta, numeroPropuesta, versionPropuesta,
+    idRequerimiento, numeroRequerimiento,
     idExpediente: idOs + 1000,
     idResponsable, responsable,
     numeroEquipos, numeroConceptos,
