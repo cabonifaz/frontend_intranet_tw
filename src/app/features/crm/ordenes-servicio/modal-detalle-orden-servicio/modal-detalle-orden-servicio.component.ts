@@ -65,8 +65,11 @@ export class ModalDetalleOrdenServicioComponent {
   readonly tituloModal = computed(() => {
     const d = this.detalle();
     const nombreTipo = d?.tipo === 'OM' ? 'Orden de Metrología' : 'Orden de Servicio';
-    return d ? `Detalle de ${nombreTipo} / ${d.numero}` : 'Detalle de OS/OM';
+    return d ? `Detalle de ${nombreTipo}` : 'Detalle de OS/OM';
   });
+
+  /** Número del documento (OS-000001) pintado en azul al lado del título. */
+  readonly numeroDoc = computed(() => this.detalle()?.numero ?? '');
 
   readonly subtituloModal = computed(() => {
     const d = this.detalle();
@@ -241,6 +244,22 @@ export class ModalDetalleOrdenServicioComponent {
       ejecutado:  'chip-ejec chip-ejec--ejecutado',
       observado:  'chip-ejec chip-ejec--observado',
     }[e] ?? 'chip-ejec';
+  }
+
+  /**
+   * El back manda `descripcion` concatenada ("MARCA MODELO · N° SERIE" o viceversa).
+   * Separamos por "·" y detectamos el N° serie por heurística: la parte sin espacios
+   * y con guiones típicos de código ("MT-PDX50-2024-00123"). Workaround hasta que el
+   * back exponga `numeroSerie` y `marcaModelo` por separado.
+   */
+  separarEquipo(descripcion: string): { serie: string; equipo: string } {
+    const partes = (descripcion ?? '').split(' · ').map(s => s.trim());
+    if (partes.length < 2) return { serie: '—', equipo: descripcion };
+    const esSerie = (s: string) => !s.includes(' ') && /[-\d]/.test(s);
+    const [a, b] = partes;
+    if (esSerie(a) && !esSerie(b)) return { serie: a, equipo: b };
+    if (esSerie(b) && !esSerie(a)) return { serie: b, equipo: a };
+    return { serie: b, equipo: a };   // fallback
   }
 
   conceptosLabel(codigos: string[]): string {

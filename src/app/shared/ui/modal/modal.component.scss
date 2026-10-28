@@ -108,13 +108,23 @@
   }
 }
 
+// Estilo consistente para TODOS los modales que proyectan contenido en el slot
+// [modalFooter]. Homologado con el modal-detalle-propuesta y modal-detalle-requerimiento.
 ::ng-deep .modal-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 22px;
-  border-top: 1px solid #E2E8F0;
-  background: #FAFBFC;
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 32px;
+  border-top: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  flex-shrink: 0;        // no se achica cuando el body es alto
+  flex-wrap: wrap;
+}
+::ng-deep .modal-footer__izq,
+::ng-deep .modal-footer__der {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }

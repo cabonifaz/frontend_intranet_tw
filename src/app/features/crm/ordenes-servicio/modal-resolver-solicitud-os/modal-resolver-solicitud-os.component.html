@@ -68,18 +68,22 @@
     }
   </div>
 
-  <div modalFooter class="mrs-footer">
-    <app-button variant="ghost" (clic)="onCerrar()">Cancelar</app-button>
-    @if (decision() === 'aprobar') {
-      <app-button variant="success" icono="check" [cargando]="enviando()" [disabled]="!puedeAprobar()" (clic)="confirmar()">
-        Aprobar solicitud
-      </app-button>
-    } @else if (decision() === 'rechazar') {
-      <app-button variant="danger" icono="block" [cargando]="enviando()" [disabled]="!puedeRechazar()" (clic)="confirmar()">
-        Rechazar solicitud
-      </app-button>
-    } @else {
-      <app-button variant="primary" [disabled]="true">Elegí una decisión</app-button>
-    }
+  <div modalFooter class="modal-footer">
+    <div class="modal-footer__izq">
+      <app-button variant="ghost" tamano="md" (clic)="onCerrar()">Cancelar</app-button>
+    </div>
+    <div class="modal-footer__der">
+      @if (decision() === 'aprobar') {
+        <app-button variant="primary" tamano="md" icono="check" [cargando]="enviando()" [disabled]="!puedeAprobar()" (clic)="confirmar()">
+          Aprobar solicitud
+        </app-button>
+      } @else if (decision() === 'rechazar') {
+        <app-button variant="danger" tamano="md" icono="block" [cargando]="enviando()" [disabled]="!puedeRechazar()" (clic)="confirmar()">
+          Rechazar solicitud
+        </app-button>
+      } @else {
+        <app-button variant="primary" tamano="md" [disabled]="true">Elegí una decisión</app-button>
+      }
+    </div>
   </div>
 </app-modal>

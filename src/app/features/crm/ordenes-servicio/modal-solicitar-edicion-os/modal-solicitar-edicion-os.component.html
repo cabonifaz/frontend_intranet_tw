@@ -29,7 +29,9 @@
       <label class="mse-label">
         Motivo de la edición <span class="mse-req">*</span>
       </label>
-      <select class="input-sistema" [(ngModel)]="idMotivoSel">
+      <select class="input-sistema"
+              [ngModel]="idMotivoSel()"
+              (ngModelChange)="idMotivoSel.set($event)">
         @for (m of motivos(); track m.idMotivo) {
           <option [ngValue]="m.idMotivo">{{ m.label }}</option>
         }
@@ -45,10 +47,11 @@
         <span class="chip-info chip-info--opcional">mínimo {{ minComentario }} caracteres</span>
       </div>
       <textarea class="input-sistema" rows="4"
-                [(ngModel)]="comentario"
+                [ngModel]="comentario()"
+                (ngModelChange)="comentario.set($event)"
                 [maxlength]="maxComentario"
                 placeholder="Explicá brevemente por qué necesitás modificar esta OS/OM. El Jefe Comercial revisará tu solicitud."></textarea>
-      <small class="mse-contador">{{ comentario.length }} / {{ maxComentario }} caracteres</small>
+      <small class="mse-contador">{{ comentario().length }} / {{ maxComentario }} caracteres</small>
     </div>
 
     <!-- Jefe destinatario -->

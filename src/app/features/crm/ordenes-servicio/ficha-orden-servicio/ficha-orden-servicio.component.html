@@ -223,6 +223,7 @@
               <th>CONCEPTO</th>
               <th>TIPO / SUBTIPO</th>
               <th>N° EQUIPOS APLICADOS</th>
+              @if (modo() === 'nueva') { <th>EN PROPUESTA</th> }
               <th style="width:48px;"></th>
             </tr>
           </thead>
@@ -264,6 +265,15 @@
                     </span>
                   }
                 </td>
+                @if (modo() === 'nueva') {
+                  <td>
+                    @if (esConceptoDePropuesta(c.codigo)) {
+                      <span class="chip-info chip-info--verde">Sí</span>
+                    } @else {
+                      <span class="chip-info chip-info--gris">No</span>
+                    }
+                  </td>
+                }
                 <td style="text-align:center;">
                   <button class="btn-quitar" title="Quitar concepto"
                           (click)="quitarConcepto(c.idConcepto, $event)">
@@ -278,9 +288,11 @@
     </app-seccion>
 
     <!-- ─── 3. EQUIPOS / INSTRUMENTOS ──────────────────────────────────── -->
+    <!-- overflowVisible: para que el popover "+ Vincular" no se corte por el overflow:hidden del card -->
     <app-seccion icono="precision_manufacturing"
                  titulo="3. Equipos / Instrumentos"
-                 subtitulo="Activos del cliente que serán intervenidos">
+                 subtitulo="Activos del cliente que serán intervenidos"
+                 [overflowVisible]="true">
       <div headerActions class="acciones-header">
         <app-button variant="ghost" tamano="sm" icono="upload_file" (clic)="abrirImportarExcel()">
           Importar Excel
@@ -307,6 +319,7 @@
               <th>MARCA MODELO</th>
               <th>UBICACIÓN</th>
               <th>ALCANCE</th>
+              @if (modo() === 'nueva') { <th>EN PROPUESTA</th> }
               <th>CONCEPTO(S)</th>
               <th style="width:48px;"></th>
             </tr>
@@ -328,6 +341,15 @@
                 </td>
                 <td>{{ e.ubicacion ?? '—' }}</td>
                 <td>{{ e.alcance ?? '—' }}</td>
+                @if (modo() === 'nueva') {
+                  <td>
+                    @if (esEquipoDePropuesta(e.idEquipo)) {
+                      <span class="chip-info chip-info--verde">Sí</span>
+                    } @else {
+                      <span class="chip-info chip-info--gris">No</span>
+                    }
+                  </td>
+                }
                 <td class="conceptos-cell">
                   <!-- Chips de conceptos ya vinculados -->
                   @for (codCon of e.conceptosAplicados; track codCon) {
@@ -475,6 +497,7 @@
         [idPropuesta]="idPropuestaActual()"
         [razonSocial]="razonSocial()"
         [idsEquiposAgregados]="idsEquiposYa()"
+        [idsEquiposDePropuesta]="idsEquiposDePropuestaOrigen()"
         (cerrar)="modalAgregarEquipoAbierto.set(false)"
         (agregados)="onEquiposAgregados($event)" />
     }
@@ -483,6 +506,8 @@
       <app-modal-importar-excel-os
         [idCliente]="idClienteActual()"
         [idOs]="edicion()?.detalle?.idOs ?? null"
+        [codigosTwDePropuesta]="codigosTwDePropuestaOrigen()"
+        [codigosConceptosDePropuesta]="codigosConceptosDePropuestaOrigen()"
         (cerrar)="modalImportarExcelAbierto.set(false)"
         (importado)="onExcelImportado($event)" />
     }

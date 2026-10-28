@@ -1,5 +1,5 @@
 <app-modal
-  [titulo]="'Detalle de Orden de Compra  /  ' + (cabecera()?.numeroOc ?? '')"
+  titulo="Detalle de Orden de Compra"
   [subtitulo]="subtituloModal()"
   icono="receipt_long"
   iconoColor="azul"
@@ -8,6 +8,8 @@
 
   @if (cabecera(); as c) {
     <span modalHeaderBadges class="oc-header-badges">
+      <span class="oc-titulo-sep">/</span>
+      <span class="oc-titulo-num">{{ c.numeroOc }}</span>
       <span class="badge {{ estadoChip().clase }}">● {{ estadoChip().label | uppercase }}</span>
       @if (c.esAutogenerada) {
         <span class="chip-autogenerada">
@@ -182,7 +184,7 @@
             @else { Asignación {{ asignadoPct() }}% }
           </span>
         </div>
-        <small class="cobertura__nota">{{ c.propuestasVinculadas }} propuesta(s) {{ c.propuestasVinculadas === 1 ? 'asociada' : 'asociadas' }} a esta Orden de Compra que {{ c.propuestasVinculadas === 1 ? 'cubre' : 'cubren' }} del monto total ({{ c.montoOc | moneda:c.monedaSimbolo }})</small>
+        <small class="cobertura__nota">{{ c.propuestasVinculadas }} {{ c.propuestasVinculadas === 1 ? 'propuesta asociada' : 'propuestas asociadas' }} a esta Orden de Compra que {{ c.propuestasVinculadas === 1 ? 'cubre' : 'cubren' }} del monto total ({{ c.montoOc | moneda:c.monedaSimbolo }})</small>
         <div class="cobertura__barra">
           @for (p of propuestas(); track p.idPropuesta) {
             <div class="cobertura__segmento" [style.flex]="p.pctOc"
@@ -469,23 +471,26 @@
 
   <!-- ── Footer ─────────────────────────────────────────────── -->
   @if (cabecera(); as c) {
-    <div modalFooter class="footer">
-      @if (c.tienePdf) {
-        <app-button variant="ghost" icono="picture_as_pdf" (clic)="verPdf()">Vista Previa PDF</app-button>
-      }
-      @if (propuestas().length > 0) {
-        <app-button variant="ghost" icono="open_in_new" (clic)="abrirPropuesta()">Abrir Propuesta</app-button>
-      }
-      <div class="footer__sep"></div>
-      @if (c.puedeAnular) {
-        <app-button variant="danger-ghost" icono="block" (clic)="anular()">Anular OC</app-button>
-      }
-      @if (c.puedeReemplazarPdf && c.estado === 'pendiente_reemplazo') {
-        <app-button variant="secondary" icono="swap_horiz" (clic)="irAReemplazarDocumento()">Reemplazar Documento</app-button>
-      }
-      @if (c.puedeAgregarPropuesta) {
-        <app-button variant="primary" icono="add" (clic)="editar()">+ Agregar Propuesta</app-button>
-      }
+    <div modalFooter class="modal-footer">
+      <div class="modal-footer__izq">
+        @if (c.tienePdf) {
+          <app-button variant="ghost" tamano="md" icono="picture_as_pdf" (clic)="verPdf()">Vista Previa PDF</app-button>
+        }
+        @if (propuestas().length > 0) {
+          <app-button variant="ghost" tamano="md" icono="open_in_new" (clic)="abrirPropuesta()">Abrir Propuesta</app-button>
+        }
+        @if (c.puedeAnular) {
+          <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="anular()">Anular OC</app-button>
+        }
+      </div>
+      <div class="modal-footer__der">
+        @if (c.puedeReemplazarPdf && c.estado === 'pendiente_reemplazo') {
+          <app-button variant="secondary" tamano="md" icono="swap_horiz" (clic)="irAReemplazarDocumento()">Reemplazar Documento</app-button>
+        }
+        @if (c.puedeAgregarPropuesta) {
+          <app-button variant="primary" tamano="md" icono="add" (clic)="editar()">+ Agregar Propuesta</app-button>
+        }
+      </div>
     </div>
   }
 </app-modal>

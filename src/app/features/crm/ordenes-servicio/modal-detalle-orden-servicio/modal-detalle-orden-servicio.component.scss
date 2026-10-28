@@ -1,4 +1,4 @@
-// ─── Header badges (chip tipo + chip estado al lado del titulo) ──────────
+// ─── Header badges (sep "/", número en azul, chip tipo, chip estado) ─────
 .mdo-header-badges {
   display: inline-flex;
   gap: 8px;
@@ -6,12 +6,29 @@
   margin-left: 10px;
 }
 
+// "/" separador entre "Detalle de Orden de Servicio" y el número
+.mdo-titulo-sep {
+  font-size: 15px;
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+// Número del documento (OS-000001) en azul vivo — homologado con detalle-requerimiento
+.mdo-titulo-num {
+  font-size: 15px;
+  font-weight: 900;
+  color: #2563EB;
+  margin-right: 4px;
+}
+
 .chip-tipo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: flex-start;      // no estirarse al ancho de la columna del grid
+  width: fit-content;
   min-width: 32px;
-  padding: 3px 8px;
+  padding: 3px 10px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 800;
@@ -71,11 +88,14 @@
   strong { font-weight: 700; }
 }
 
-// ─── Tabs: homologar padding al estilo de propuestas (texto centrado vertical) ──
+// ─── Tabs: pegados arriba (compensan padding-top del .modal__body)
+//    y fondo blanco para que no "flote" sobre el gris del body ─────────────
 :host ::ng-deep app-tabs {
   display: block;
-  margin-top: -20px;        // compensa el padding-top del body del modal shared
-                            // los tabs quedan pegados al borde inferior del header
+  margin: -24px -32px 0;         // sale a los bordes del body gris
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 0 20px;
 
   .tabs {
     scrollbar-width: none;              // Firefox
@@ -83,24 +103,39 @@
   }
 
   .tabs__tab {
-    padding: 14px 16px;    // top/bottom simétrico y más amplio (antes 10px)
+    padding: 14px 16px;
   }
+}
+
+// ─── Body del modal: fondo gris (homologado con detalle-propuesta y detalle-requerimiento) ──
+:host ::ng-deep .modal__body {
+  background: #F8FAFC;
+  padding: 24px 32px;
+  overflow-x: hidden;   // los tabs se salen con margin negativo; evita el scroll horizontal
 }
 
 // ─── Contenido general ───────────────────────────────────────────────────
 .mdo-contenido {
   padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
+// Cada sección es ahora un card blanco sobre fondo gris del body
 .mdo-seccion {
-  margin-bottom: 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 
     h3 {
       display: flex;
@@ -183,14 +218,12 @@
 }
 
 // ─── Grid de datos genéricos ─────────────────────────────────────────────
+// Dentro de un card blanco (.mdo-seccion); mismo estilo que .info-grid de
+// detalle-requerimiento y modal-detalle-propuesta.
 .mdo-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;
-  padding: 14px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  gap: 16px;
 
   > div {
     display: flex;
@@ -200,28 +233,34 @@
   }
 
   label {
-    font-size: 10px;
-    font-weight: 700;
-    color: #64748B;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94A3B8;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.4px;
   }
 
   span {
-    font-size: 13px;
-    color: #0F172A;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
 
     small {
       color: #94A3B8;
-      font-size: 11px;
+      font-size: 11.5px;
+      font-weight: 400;
       margin-left: 4px;
     }
   }
 }
 
+// Valor monospace azul (OS-000001, RUC, RQ-origen) — homologado con
+// .info-valor--mono de detalle-requerimiento ($azul = #2563EB).
 .mdo-mono {
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace !important;
-  font-size: 12px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #2563EB !important;
 }
 
 .mdo-link {
@@ -236,10 +275,6 @@
 }
 
 // ─── Avance por Equipos ──────────────────────────────────────────────────
-.mdo-seccion--avance {
-  .mdo-grid { background: #F0F9FF; border-color: #BAE6FD; }
-}
-
 .mdo-avance-head {
   padding: 10px 14px;
   margin-bottom: 10px;
@@ -284,15 +319,18 @@
 }
 
 // ─── Tabla ────────────────────────────────────────────────────────────────
-.mdo-tabla-wrap { overflow-x: auto; }
+// Está dentro del card blanco de la .mdo-seccion → no lleva border/radius propio.
+.mdo-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+}
 
 .mdo-tabla {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
   background: white;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
   overflow: hidden;
 
   thead th {
@@ -311,9 +349,16 @@
   tbody td {
     padding: 10px 12px;
     border-bottom: 1px solid #F1F5F9;
-    color: #0F172A;
+    color: #334155;        // slate-700: texto suave, no bold
+    font-weight: 400;
 
     &:last-child { border-right: none; }
+
+    // Dentro de la tabla, .mdo-mono respeta el tamaño de la fila (no 14px bold)
+    .mdo-mono, &.mdo-mono {
+      font-size: 12px !important;
+      font-weight: 400 !important;
+    }
   }
 
   tbody tr:last-child td { border-bottom: none; }
@@ -378,11 +423,8 @@
 }
 
 // ─── Observaciones ───────────────────────────────────────────────────────
+// Dentro de card blanca → sin fondo propio, solo texto.
 .mdo-observaciones {
-  padding: 16px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
   font-size: 13px;
   color: #0F172A;
   line-height: 1.6;
@@ -393,8 +435,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 20px;
-  background: #F8FAFC;
+  padding: 16px;
   border: 1px dashed #CBD5E1;
   border-radius: 10px;
   color: #64748B;
@@ -406,24 +447,7 @@
   p { margin: 4px 0 0; font-size: 11px; }
 }
 
-// ─── Footer con acciones (izquierda + derecha) ──────────────────────────
-.mdo-footer {
-  display: flex !important;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 22px !important;
-  border-top: 1px solid #E2E8F0;
-  background: #FAFBFC;
-
-  &__izq,
-  &__der {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-}
+// Footer: usa .modal-footer compartido del shared modal.component.scss
 
 // Línea de última actualización en el final del contenido
 .mdo-ultima-actualizacion {

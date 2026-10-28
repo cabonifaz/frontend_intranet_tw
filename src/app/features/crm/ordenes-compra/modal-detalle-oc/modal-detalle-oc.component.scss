@@ -1,6 +1,26 @@
+// ─── Body del modal: fondo gris (homologado con detalle-propuesta y detalle-requerimiento) ──
+:host ::ng-deep .modal__body {
+  background: #F8FAFC;
+  padding: 24px 32px;
+  overflow-x: hidden;   // los tabs se salen con margin negativo; evita el scroll horizontal
+}
+
 // Asegura que app-seccion ocupe ancho completo y haya espaciado entre secciones.
 app-seccion { display: block; }
-app-seccion + app-seccion { margin-top: 14px; }
+app-seccion + app-seccion { margin-top: 20px; }
+
+// ─── Separador "/" + número del documento (OC-AUTO-0011-2026 en azul vivo) ───
+.oc-titulo-sep {
+  font-size: 15px;
+  color: #94A3B8;
+  font-weight: 400;
+}
+.oc-titulo-num {
+  font-size: 15px;
+  font-weight: 900;
+  color: #2563EB;
+  margin-right: 4px;
+}
 
 // ─── Loading ────────────────────────────────────────────────────────────
 .oc-cargando {
@@ -130,7 +150,25 @@ app-seccion + app-seccion { margin-top: 14px; }
 }
 .kpi-sub   { font-size: 10px; color: #94a3b8; margin-top: 1px; }
 
-// ─── Tabs ────────────────────────────────────────────────────────────────
+// ─── Tabs: pegados a los bordes del body gris con fondo blanco (homologado con OS) ──
+:host ::ng-deep app-tabs {
+  display: block;
+  margin: 0 -32px 20px;        // sale a los bordes del body gris
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 0 20px;
+
+  .tabs {
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .tabs__tab {
+    padding: 14px 16px;
+  }
+}
+
+// ─── Tabs (legacy, por si queda algún uso directo) ──────────────────────
 .tabs {
   display: flex;
   gap: 2px;
@@ -206,11 +244,18 @@ app-seccion + app-seccion { margin-top: 14px; }
 .campo-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 
-  &__label { font-size: 10.5px; font-weight: 600; color: #64748b; letter-spacing: 0.3px; text-transform: uppercase; }
+  // Homologado con .info-label de detalle-requerimiento / modal-detalle-propuesta
+  &__label {
+    font-size: 11px;
+    font-weight: 400;
+    color: #94A3B8;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
   &__valor-wrap { display: flex; align-items: center; gap: 6px; }
-  &__valor { font-size: 13.5px; color: #0f172a; font-weight: 600; }
+  &__valor { font-size: 14px; color: #111827; font-weight: 600; }
 }
 
 .factura-check {
@@ -221,7 +266,8 @@ app-seccion + app-seccion { margin-top: 14px; }
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   border-radius: 10px;
-  margin-bottom: 14px;
+  margin-top: 20px;
+  margin-bottom: 20px;
   cursor: default;
 
   input[type="checkbox"] { accent-color: #2563eb; margin-top: 2px; }
@@ -246,9 +292,9 @@ app-seccion + app-seccion { margin-top: 14px; }
 .pdf-vacio {
   padding: 40px 20px;
   text-align: center;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 10px;
+  background: #FFFFFF;              // card blanca sobre el body gris
+  border: 1px dashed #CBD5E1;
+  border-radius: 12px;
   margin-bottom: 14px;
 
   .material-symbols-outlined { font-size: 48px; color: #94a3b8; }
@@ -258,11 +304,12 @@ app-seccion + app-seccion { margin-top: 14px; }
 
 // ─── Tab Propuestas Vinculadas ──────────────────────────────────────────
 .cobertura {
-  padding: 14px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: #FFFFFF;              // card blanca sobre el body gris
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 20px;
 
   &__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
     strong { font-size: 13px; color: #0f172a; }
@@ -623,14 +670,4 @@ app-seccion + app-seccion { margin-top: 14px; }
   }
 }
 
-// ─── Footer ─────────────────────────────────────────────────────────────
-.footer {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 22px !important;
-  border-top: 1px solid #e2e8f0;
-  background: #fafbfc;
-
-  &__sep { flex: 1; }
-}
+// Footer: usa .modal-footer compartido del shared modal.component.scss

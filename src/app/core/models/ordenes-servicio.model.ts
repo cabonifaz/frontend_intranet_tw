@@ -349,6 +349,8 @@ export interface EquipoCatalogoClienteOs {
 export type EstadoFilaImportacionOs = 'ok' | 'advertencia' | 'error';
 
 export interface FilaConceptoImportado {
+  /** idSuministro — necesario para persistir al guardar la OS/OM. */
+  idSuministro:    number | null;
   codigo:          string;
   descripcion:     string;
   estado:          EstadoFilaImportacionOs;
@@ -356,14 +358,23 @@ export interface FilaConceptoImportado {
 }
 
 export interface FilaEquipoImportado {
+  /** idEquipo del catálogo del cliente — necesario para persistir al guardar la OS/OM. */
+  idEquipo:              number | null;
   codigoTw:              string;
   tipo:                  ClasificacionEquipoOs;
   tipoLabel:             string;
   marca:                 string;
   modelo:                string;
   numSerie:              string;
+  alcance:               string | null;
   ubicacion:             string | null;
   conceptosAplicados:    string[];      // códigos de conceptos
+  // Columnas condicionales según tipo (para EquipoDetalleOs al convertir)
+  d?:                    string | null;
+  e?:                    string | null;
+  clase?:                string | null;
+  escala?:               string | null;
+  puntosCalibracion?:    string | null;
   estado:                EstadoFilaImportacionOs;
   mensaje?:              string;
 }

@@ -20,10 +20,12 @@ type TabModal = 'propuesta' | 'todos';
   styleUrl: './modal-agregar-equipo-os.component.scss',
 })
 export class ModalAgregarEquipoOsComponent implements OnInit {
-  readonly idCliente           = input.required<number>();
-  readonly idPropuesta         = input<number | null>(null);
-  readonly razonSocial         = input<string>('');
-  readonly idsEquiposAgregados = input<number[]>([]);
+  readonly idCliente             = input.required<number>();
+  readonly idPropuesta           = input<number | null>(null);
+  readonly razonSocial           = input<string>('');
+  readonly idsEquiposAgregados   = input<number[]>([]);
+  /** Ids de equipos cotizados en la propuesta (para marcar el chip "De la propuesta"). */
+  readonly idsEquiposDePropuesta = input<number[]>([]);
 
   readonly cerrar    = output<void>();
   readonly agregados = output<EquipoCatalogoClienteOs[]>();
@@ -69,8 +71,15 @@ export class ModalAgregarEquipoOsComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       const list = await this.svc.obtenerEquiposCatalogoCliente(this.idCliente(), this.idPropuesta() ?? undefined);
-      const ya = this.idsEquiposAgregados();
-      this.equipos.set(list.map(e => ({ ...e, yaAgregado: ya.includes(e.idEquipo) })));
+      const ya          = this.idsEquiposAgregados();
+      const dePropuesta = new Set(this.idsEquiposDePropuesta());
+      // Marcamos localmente los equipos de la propuesta porque el back no expone el flag
+      // `deLaPropuesta` en el DTO de equipos (sí lo tiene en conceptos).
+      this.equipos.set(list.map(e => ({
+        ...e,
+        yaAgregado:    ya.includes(e.idEquipo),
+        deLaPropuesta: dePropuesta.has(e.idEquipo),
+      })));
       if (this.equiposDePropuesta().length === 0) this.tab.set('todos');
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo cargar el catálogo del cliente.');

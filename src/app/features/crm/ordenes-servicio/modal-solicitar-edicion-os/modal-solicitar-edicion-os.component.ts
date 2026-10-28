@@ -34,14 +34,14 @@ export class ModalSolicitarEdicionOsComponent implements OnInit {
   readonly motivos      = signal<MotivoEdicionOs[]>([]);
   readonly jefe         = signal<JefeComercialOs | null>(null);
 
-  idMotivoSel: number | null = null;
-  comentario = '';
+  readonly idMotivoSel = signal<number | null>(null);
+  readonly comentario  = signal('');
 
   readonly minComentario = 20;
   readonly maxComentario = 500;
 
   readonly puedeEnviar = computed(() =>
-    this.idMotivoSel != null && this.comentario.trim().length >= this.minComentario,
+    this.idMotivoSel() != null && this.comentario().trim().length >= this.minComentario,
   );
 
   async ngOnInit(): Promise<void> {
@@ -52,7 +52,7 @@ export class ModalSolicitarEdicionOsComponent implements OnInit {
       ]);
       this.motivos.set(motivos);
       this.jefe.set(jefe);
-      if (motivos.length > 0) this.idMotivoSel = motivos[0].idMotivo;
+      if (motivos.length > 0) this.idMotivoSel.set(motivos[0].idMotivo);
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo cargar la información.');
     } finally {
@@ -66,8 +66,8 @@ export class ModalSolicitarEdicionOsComponent implements OnInit {
     try {
       await this.svc.solicitarEdicion({
         idOs:       this.idOs(),
-        idMotivo:   this.idMotivoSel!,
-        comentario: this.comentario.trim(),
+        idMotivo:   this.idMotivoSel()!,
+        comentario: this.comentario().trim(),
       });
       this.toast.exito(`Solicitud enviada al Jefe Comercial ${this.jefe()?.nombre}.`);
       this.enviada.emit();

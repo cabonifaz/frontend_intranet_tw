@@ -76,6 +76,13 @@ export class FichaOrdenServicioComponent implements OnInit {
   // Modo "editar"
   readonly edicion     = signal<PreparacionEdicionOs | null>(null);
 
+  // Equipos / conceptos originales de la propuesta — se cargan en ambos modos
+  // (en Nueva vienen de preparacion.equiposSugeridos; en Editar hacemos un fetch extra
+  // porque PreparacionEdicionOs no los expone). Workaround: back aún no marca DeLaPropuesta.
+  private readonly idsEquiposPropuestaOrigen   = signal<number[]>([]);
+  private readonly codigosEquiposPropuestaTw   = signal<string[]>([]);
+  private readonly codigosConceptosPropuesta   = signal<string[]>([]);
+
   // Form editable
   readonly idContactoSel = signal<number | null>(null);
   readonly fechaDesde    = signal<string>('');     // ISO YYYY-MM-DD
@@ -205,6 +212,32 @@ export class FichaOrdenServicioComponent implements OnInit {
         ?? null;
   }
 
+  /**
+   * Ids de equipos que están en la propuesta origen — se usa en el modal "Agregar equipo"
+   * para marcar los que vienen de la propuesta (el back no expone ese flag en el DTO).
+   */
+  idsEquiposDePropuestaOrigen(): number[] {
+    return (this.preparacion()?.equiposSugeridos ?? []).map(e => e.idEquipo);
+  }
+
+  /** Códigos TW de los equipos de la propuesta — se usa en el modal Importar Excel. */
+  codigosTwDePropuestaOrigen(): string[] {
+    return this.codigosEquiposPropuestaTw();
+  }
+
+  /** Códigos de los conceptos de la propuesta — se usa en el modal Importar Excel. */
+  codigosConceptosDePropuestaOrigen(): string[] {
+    return this.codigosConceptosPropuesta();
+  }
+
+  // ─── Flags "En propuesta" para las tablas de la ficha ────────────────────
+  esEquipoDePropuesta(idEquipo: number): boolean {
+    return this.idsEquiposPropuestaOrigen().includes(idEquipo);
+  }
+  esConceptoDePropuesta(codigo: string): boolean {
+    return this.codigosConceptosPropuesta().includes(codigo);
+  }
+
   async ngOnInit(): Promise<void> {
     const params = this.route.snapshot.params;
     if (params['idPropuesta']) {
@@ -229,6 +262,9 @@ export class FichaOrdenServicioComponent implements OnInit {
       }
       this.conceptos.set([...(p.conceptosSugeridos ?? [])]);
       this.equipos.set([...(p.equiposSugeridos ?? [])]);
+      this.idsEquiposPropuestaOrigen.set((p.equiposSugeridos ?? []).map(e => e.idEquipo));
+      this.codigosEquiposPropuestaTw.set((p.equiposSugeridos ?? []).map(e => e.codigoTw));
+      this.codigosConceptosPropuesta.set((p.conceptosSugeridos ?? []).map(c => c.codigo));
     } catch (e: any) {
       this.error.set(e?.message ?? 'No se pudo cargar la preparación de la OS/OM.');
     } finally {
@@ -252,6 +288,12 @@ export class FichaOrdenServicioComponent implements OnInit {
       }
       this.conceptos.set([...(d.conceptos ?? [])]);
       this.equipos.set([...(d.equipos ?? [])]);
+
+      // NOTA: en modo edición no sabemos qué equipos/conceptos venían de la propuesta origen
+      // porque PreparacionEdicionOs no expone esa info y prepararNueva() falla con "ya tiene OS".
+      // Pedido abierto a Bryan: incluir equiposPropuesta/conceptosPropuesta (o DeLaPropuesta
+      // en cada item) en PreparacionEdicionOs. Mientras tanto, la columna "EN PROPUESTA"
+      // se oculta en modo edición (ver template con [esModoEdicion]).
     } catch (e: any) {
       this.error.set(e?.message ?? 'No se pudo cargar la OS/OM para edición.');
     } finally {
@@ -302,10 +344,12 @@ export class FichaOrdenServicioComponent implements OnInit {
       };
 
       const r = await this.svc.guardar(req);
-      this.toast.exito(`${r.numero} registrada correctamente.`);
+      const accion = this.modo() === 'editar' ? 'actualizada' : 'registrada';
+      this.toast.exito(`${r.numero} ${accion} correctamente.`);
       this.router.navigate(['/crm/ordenes-servicio']);
     } catch (e: any) {
-      this.toast.error(e?.message ?? 'No se pudo registrar la OS/OM.');
+      const accion = this.modo() === 'editar' ? 'actualizar' : 'registrar';
+      this.toast.error(e?.message ?? `No se pudo ${accion} la OS/OM.`);
     } finally {
       this.emitiendo.set(false);
     }
@@ -414,11 +458,93 @@ export class FichaOrdenServicioComponent implements OnInit {
       .map(e => e.codigoTw);
   }
 
-  onExcelImportado(_evt: { analisis: AnalisisImportacionOsOm; estrategia: EstrategiaMergeImportacion }): void {
-    // Por simplicidad, en el mock cerramos el modal y mostramos toast.
-    // En producción, mapear filas del excel a conceptos/equipos y aplicar fusión/reemplazo.
+  onExcelImportado(evt: { analisis: AnalisisImportacionOsOm; estrategia: EstrategiaMergeImportacion }): void {
+    const { analisis: a, estrategia } = evt;
+
+    // Convierte filas del Excel a entidades del dominio (ConceptoDetalleOs / EquipoDetalleOs).
+    const conceptosNuevos: ConceptoDetalleOs[] = a.conceptos
+      .filter(c => c.idSuministro != null)
+      .map(c => ({
+        idConcepto:       c.idSuministro!,
+        codigo:           c.codigo,
+        descripcion:      c.descripcion,
+        clasificacion:    null,
+        equiposAplicados: [],   // se completa abajo al cruzar con equipos
+        deLaPropuesta:    false,
+      }));
+
+    const equiposNuevos: EquipoDetalleOs[] = a.equipos
+      .filter(e => e.idEquipo != null)
+      .map((e, i) => ({
+        item:               i + 1,
+        idEquipo:           e.idEquipo!,
+        clasificacion:      e.tipo,
+        clasificacionLabel: e.tipoLabel,
+        marca:              e.marca,
+        modelo:             e.modelo,
+        numSerie:           e.numSerie,
+        codigoTw:           e.codigoTw,
+        alcance:            e.alcance,
+        ubicacion:          e.ubicacion,
+        conceptosAplicados: e.conceptosAplicados,
+        d:                  e.d ?? null,
+        e:                  e.e ?? null,
+        clase:              e.clase ?? null,
+        escala:             e.escala ?? null,
+        puntosCalibracion:  e.puntosCalibracion ?? null,
+      }));
+
+    // Cruzar equipos ↔ conceptos: cada concepto reúne los códigos TW de equipos a los que aplica.
+    for (const c of conceptosNuevos) {
+      c.equiposAplicados = equiposNuevos
+        .filter(e => e.conceptosAplicados.includes(c.codigo))
+        .map(e => e.codigoTw);
+    }
+
+    if (estrategia === 'reemplazar') {
+      this.conceptos.set(conceptosNuevos);
+      this.equipos.set(equiposNuevos);
+    } else if (estrategia === 'fusionar') {
+      // Fusionar sin duplicar por idEquipo / idConcepto, pero actualizando las relaciones
+      // (conceptosAplicados / equiposAplicados) de los items que ya existían.
+      const indiceConceptosNuevos = new Map(conceptosNuevos.map(c => [c.idConcepto, c]));
+      const indiceEquiposNuevos   = new Map(equiposNuevos.map(e => [e.idEquipo, e]));
+
+      // Equipos: actualizar los existentes con los conceptosAplicados del Excel (unión);
+      // los nuevos se agregan al final numerados.
+      const equiposFusionados: EquipoDetalleOs[] = this.equipos().map(eExistente => {
+        const nuevo = indiceEquiposNuevos.get(eExistente.idEquipo);
+        if (!nuevo) return eExistente;
+        const union = Array.from(new Set([...eExistente.conceptosAplicados, ...nuevo.conceptosAplicados]));
+        return { ...eExistente, conceptosAplicados: union };
+      });
+      const equiposNuevosAgregados = equiposNuevos
+        .filter(e => !this.equipos().some(ex => ex.idEquipo === e.idEquipo));
+      equiposFusionados.push(...equiposNuevosAgregados.map((e, i) => ({
+        ...e,
+        item: equiposFusionados.length + i + 1,
+      })));
+      this.equipos.set(equiposFusionados);
+
+      // Conceptos: actualizar los existentes con los equiposAplicados del Excel (unión).
+      const conceptosFusionados: ConceptoDetalleOs[] = this.conceptos().map(cExistente => {
+        const nuevo = indiceConceptosNuevos.get(cExistente.idConcepto);
+        if (!nuevo) return cExistente;
+        const union = Array.from(new Set([...cExistente.equiposAplicados, ...nuevo.equiposAplicados]));
+        return { ...cExistente, equiposAplicados: union };
+      });
+      const conceptosNuevosAgregados = conceptosNuevos
+        .filter(c => !this.conceptos().some(cx => cx.idConcepto === c.idConcepto));
+      conceptosFusionados.push(...conceptosNuevosAgregados);
+      this.conceptos.set(conceptosFusionados);
+    }
+
     this.modalImportarExcelAbierto.set(false);
-    this.toast.exito('Importación aplicada.');
+    this.toast.exito(
+      estrategia === 'reemplazar'
+        ? `Reemplazados: ${equiposNuevos.length} equipos + ${conceptosNuevos.length} conceptos.`
+        : `Agregados: ${equiposNuevos.length} equipos + ${conceptosNuevos.length} conceptos.`,
+    );
   }
 
   onEdicionSolicitada(): void {

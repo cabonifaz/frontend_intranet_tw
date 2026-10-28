@@ -6,9 +6,11 @@
   ancho="xl"
   (cerrar)="onCerrar()">
 
-  <!-- Chips al lado del título -->
+  <!-- Chips al lado del título: "/ OS-000001" en azul + chip tipo + chip estado -->
   @if (detalle(); as d) {
     <span modalHeaderBadges class="mdo-header-badges">
+      <span class="mdo-titulo-sep">/</span>
+      <span class="mdo-titulo-num">{{ d.numero }}</span>
       <span [class]="claseChipTipo(d.tipo)">{{ d.tipo }}</span>
       <span class="badge {{ claseEstado(d.estadoGrupo) }}">● {{ d.estadoLabel | uppercase }}</span>
     </span>
@@ -48,13 +50,13 @@
     <!-- ═══ CONTENIDO ═══ -->
     <div class="mdo-contenido">
 
-      <!-- Loader del tab activo (lazy load) -->
+      <!-- Loader del tab activo (lazy load): REEMPLAZA el contenido mientras carga -->
       @if (cargandoTab()) {
         <div class="mdo-loading mdo-loading--tab">
           <div class="mdo-spinner"></div>
           <span>Cargando…</span>
         </div>
-      }
+      } @else {
 
       <!-- ─── Tab Resumen ─── -->
       @if (tabActivo() === 'resumen') {
@@ -68,10 +70,6 @@
 
           <div class="mdo-grid">
             <div><label>N° OS/OM</label><span class="mdo-mono">{{ d.datosGenerales.numero }}</span></div>
-            <div><label>Tipo</label>
-              <span [class]="claseChipTipo(d.tipo)">{{ d.datosGenerales.tipoLabel }}</span>
-            </div>
-
             <div><label>Fecha de Emisión</label>
               <span>{{ (d.datosGenerales.fechaEmision | date:'dd/MM/yyyy') || '—' }}</span>
             </div>
@@ -145,6 +143,7 @@
           <table class="mdo-tabla">
             <thead>
               <tr>
+                <th>N° Serie</th>
                 <th>Equipo / Instrumento</th>
                 <th>Estado</th>
                 <th>Fecha Ejecución</th>
@@ -153,7 +152,8 @@
             <tbody>
               @for (e of d.avancePorEquipos.equipos; track e.idEquipo) {
                 <tr>
-                  <td class="mdo-mono">{{ e.descripcion }}</td>
+                  <td>{{ separarEquipo(e.descripcion).serie }}</td>
+                  <td>{{ separarEquipo(e.descripcion).equipo }}</td>
                   <td><span [class]="claseEjecucion(e.estado)">{{ e.estadoLabel }}</span></td>
                   <td>
                     @if (e.fechaEjecucion) {
@@ -382,53 +382,47 @@
         </section>
       }
 
-      <!-- Línea de última actualización (al final del contenido, no en el footer) -->
-      @if (d.ultimaActualizacion) {
-        <div class="mdo-ultima-actualizacion">
-          Última actualización: {{ d.ultimaActualizacion | date:'dd/MM/yyyy HH:mm' }}
-          · por <strong>{{ d.usuarioUltimaActualizacion }}</strong>
-          @if (d.fuenteUltimaActualizacion) {
-            <span class="mdo-vacio"> ({{ d.fuenteUltimaActualizacion }})</span>
-          }
-        </div>
-      }
+      }  <!-- cierre del @else del loader -->
+
     </div>
 
-    <!-- ═══ FOOTER ═══ -->
-    <div modalFooter class="mdo-footer">
+  }
+
+  <!-- ═══ FOOTER (fuera del @if del body para que el slot [modalFooter] se proyecte correcto) ═══ -->
+  @if (detalle(); as d) {
+    <div modalFooter class="modal-footer">
       <!-- Izquierda: acciones informativas + anular -->
-      <div class="mdo-footer__izq">
-        <app-button variant="ghost" tamano="sm" icono="folder_open" (clic)="onDocumentos()">
+      <div class="modal-footer__izq">
+        <app-button variant="ghost" tamano="md" icono="folder_open" (clic)="onDocumentos()">
           Documentos
         </app-button>
-        <app-button variant="ghost" tamano="sm" icono="history" (clic)="onAuditoria()">
+        <app-button variant="ghost" tamano="md" icono="history" (clic)="onAuditoria()">
           Historial de Auditoría
         </app-button>
         @if (d.puedeAnular) {
-          <app-button variant="danger-ghost" tamano="sm" icono="block" (clic)="onAnular()">
+          <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="onAnular()">
             Anular
           </app-button>
         }
       </div>
 
       <!-- Derecha: acciones primarias -->
-      <div class="mdo-footer__der">
+      <div class="modal-footer__der">
         @if (d.puedeSolicitarEdicion) {
-          <app-button variant="secondary" tamano="sm" icono="edit_note" (clic)="onSolicitarEdicion()">
+          <app-button variant="secondary" tamano="md" icono="edit_note" (clic)="onSolicitarEdicion()">
             Solicitar Edición
           </app-button>
         }
         @if (d.puedeResolverSolicitud) {
-          <app-button variant="secondary" tamano="sm" icono="rule" (clic)="onResolverSolicitud()">
+          <app-button variant="secondary" tamano="md" icono="rule" (clic)="onResolverSolicitud()">
             Resolver Solicitud
           </app-button>
         }
         @if (d.puedeEditar) {
-          <app-button variant="primary" tamano="sm" icono="edit" (clic)="onEditar()">
+          <app-button variant="primary" tamano="md" icono="edit" (clic)="onEditar()">
             Editar
           </app-button>
         }
-        <app-button variant="primary" (clic)="onCerrar()">Cerrar</app-button>
       </div>
     </div>
   }

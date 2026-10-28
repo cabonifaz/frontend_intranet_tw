@@ -137,11 +137,11 @@
             <tr>
               <th>ESTADO</th>
               <th>TIPO</th>
-              <th>CÓDIGO TW</th>
-              <th>MARCA</th>
-              <th>MODELO</th>
               <th>N° SERIE</th>
+              <th>CÓDIGO TW</th>
+              <th>MARCA Y MODELO</th>
               <th>UBICACIÓN</th>
+              <th>EN PROPUESTA</th>
               <th>CONCEPTOS APLICADOS</th>
             </tr>
           </thead>
@@ -155,11 +155,17 @@
                   </span>
                 </td>
                 <td><span [class]="e.tipo === 'equipo' ? 'chip-info chip-info--azul' : 'chip-info chip-info--morado'">{{ e.tipoLabel }}</span></td>
-                <td class="mie-mono mie-mono--azul">{{ e.codigoTw }}</td>
-                <td>{{ e.marca }}</td>
-                <td>{{ e.modelo }}</td>
                 <td class="mie-mono">{{ e.numSerie }}</td>
+                <td class="mie-mono mie-mono--azul">{{ e.codigoTw }}</td>
+                <td>{{ e.marca }} {{ e.modelo }}</td>
                 <td>{{ e.ubicacion ?? '—' }}</td>
+                <td>
+                  @if (esTwDePropuesta(e.codigoTw)) {
+                    <span class="chip-info chip-info--verde">Sí</span>
+                  } @else {
+                    <span class="chip-info chip-info--gris">No</span>
+                  }
+                </td>
                 <td>
                   @for (c of e.conceptosAplicados; track c) {
                     <span class="chip-info chip-info--azul mie-concepto-chip">{{ c }}</span>
@@ -187,6 +193,7 @@
               <th>ESTADO</th>
               <th>CÓDIGO</th>
               <th>CONCEPTO (DESCRIPCIÓN)</th>
+              <th>EN PROPUESTA</th>
             </tr>
           </thead>
           <tbody>
@@ -199,6 +206,13 @@
                 </td>
                 <td class="mie-mono mie-mono--azul">{{ c.codigo }}</td>
                 <td>{{ c.descripcion }}</td>
+                <td>
+                  @if (esConceptoDePropuesta(c.codigo)) {
+                    <span class="chip-info chip-info--verde">Sí</span>
+                  } @else {
+                    <span class="chip-info chip-info--gris">No</span>
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -250,8 +264,8 @@
                     [disabled]="!puedeConfirmar()"
                     (clic)="confirmar()">
           Confirmar importación
-          @if (analisis(); as a) {
-            ({{ a.totalEquipos }} eq. + {{ a.totalConceptos }} conc.)
+          @if (analisis()) {
+            ({{ equiposImportables().length }} eq. + {{ conceptosImportables().length }} conc.)
           }
         </app-button>
       }

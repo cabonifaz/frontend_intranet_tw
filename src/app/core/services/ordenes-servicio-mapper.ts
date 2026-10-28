@@ -957,10 +957,11 @@ export interface AnalisisImportacionOsApi {
 
 function mapFilaConcepto(c: ConceptoImportacionOsApi): FilaConceptoImportado {
   return {
-    codigo:      c.codigo ?? c.texto,
-    descripcion: c.descripcion ?? c.texto,
-    estado:      c.estado as EstadoFilaImportacionOs,
-    mensaje:     c.mensaje ?? undefined,
+    idSuministro: c.idSuministro,
+    codigo:       c.codigo ?? c.texto,
+    descripcion:  c.descripcion ?? c.texto,
+    estado:       c.estado as EstadoFilaImportacionOs,
+    mensaje:      c.mensaje ?? undefined,
   };
 }
 
@@ -970,14 +971,21 @@ function mapFilaEquipo(e: EquipoImportacionOsApi, conceptosCodigos: Map<number, 
     .map(id => conceptosCodigos.get(id))
     .filter((c): c is string => !!c);
   return {
+    idEquipo:           eq?.idEquipo ?? null,
     codigoTw:           e.codigoTw,
     tipo:               (eq?.clasificacion ?? 'equipo') as ClasificacionEquipoOs,
     tipoLabel:          eq?.clasificacionLabel ?? '',
     marca:              eq?.marca ?? '',
     modelo:             eq?.modelo ?? '',
     numSerie:           eq?.numSerie ?? '',
+    alcance:            eq?.alcance ?? null,
     ubicacion:          eq?.ubicacion ?? null,
     conceptosAplicados: conceptosAplicadosCodigos.length ? conceptosAplicadosCodigos : e.conceptosTexto,
+    d:                  eq?.divisionMinima ?? null,
+    e:                  eq?.divisionVerif ?? null,
+    clase:              eq?.claseExactitud ?? null,
+    escala:             eq?.escala ?? null,
+    puntosCalibracion:  eq?.puntosCalibracion ?? null,
     estado:             e.estado as EstadoFilaImportacionOs,
     mensaje:            e.mensaje ?? undefined,
   };

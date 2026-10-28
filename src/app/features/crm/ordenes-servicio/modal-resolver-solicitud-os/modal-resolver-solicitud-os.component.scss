@@ -77,10 +77,10 @@
   }
 
   &--aprobar {
-    .material-symbols-outlined { color: #16A34A; }
+    .material-symbols-outlined { color: #2563EB; }
     &.mrs-opt--activa {
-      border-color: #16A34A;
-      background: #F0FDF4;
+      border-color: #2563EB;
+      background: #EFF6FF;
     }
   }
 
@@ -138,7 +138,4 @@
   }
 }
 
-.mrs-footer {
-  display: flex;
-  gap: 8px;
-}
+// Footer: usa .modal-footer compartido del shared modal.component.scss

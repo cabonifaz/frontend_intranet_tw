@@ -28,6 +28,10 @@ export class ModalImportarExcelOsComponent {
   readonly idCliente = input.required<number>();
   /** OS existente — opcional, solo si estamos editando una ya guardada. */
   readonly idOs      = input<number | null>(null);
+  /** Códigos TW de los equipos cotizados en la propuesta — para marcar "En propuesta: Sí". */
+  readonly codigosTwDePropuesta       = input<string[]>([]);
+  /** Códigos de los conceptos cotizados en la propuesta — para marcar "En propuesta: Sí". */
+  readonly codigosConceptosDePropuesta = input<string[]>([]);
   readonly cerrar     = output<void>();
   readonly importado = output<{ analisis: AnalisisImportacionOsOm; estrategia: EstrategiaMergeImportacion }>();
 
@@ -43,11 +47,34 @@ export class ModalImportarExcelOsComponent {
   readonly tabPreview   = signal<TabPreview>('equipos');
   readonly estrategia   = signal<EstrategiaMergeImportacion>('fusionar');
 
+  /**
+   * Cuántos equipos y conceptos se van a importar efectivamente
+   * (ignoramos los errores — los OK sí, los ambar también).
+   */
+  readonly equiposImportables = computed(
+    () => this.analisis()?.equipos.filter(e => e.estado !== 'error') ?? [],
+  );
+  readonly conceptosImportables = computed(
+    () => this.analisis()?.conceptos.filter(c => c.estado !== 'error') ?? [],
+  );
+
+  /** Habilitado cuando hay al menos 1 fila válida (y la estrategia no es cancelar). */
   readonly puedeConfirmar = computed(() =>
     this.analisis() != null
-    && this.analisis()!.resumenEquiposErrores === 0
+    && (this.equiposImportables().length + this.conceptosImportables().length) > 0
     && this.estrategia() !== 'cancelar',
   );
+
+  /** Sets para marcado rápido "En propuesta: Sí/No". */
+  readonly setCodigosTwPropuesta = computed(() => new Set(this.codigosTwDePropuesta()));
+  readonly setCodigosConceptosPropuesta = computed(() => new Set(this.codigosConceptosDePropuesta()));
+
+  esTwDePropuesta(codigoTw: string): boolean {
+    return this.setCodigosTwPropuesta().has(codigoTw);
+  }
+  esConceptoDePropuesta(codigo: string): boolean {
+    return this.setCodigosConceptosPropuesta().has(codigo);
+  }
 
   async descargarPlantilla(): Promise<void> {
     try {
@@ -126,13 +153,33 @@ export class ModalImportarExcelOsComponent {
     if (!a) return;
     this.confirmando.set(true);
     try {
-      // En producción, acá se llamaría al back para persistir
-      await new Promise(r => setTimeout(r, 400));
-      this.toast.exito(
-        `Importado: ${a.totalEquipos} equipos + ${a.totalConceptos} conceptos ` +
-        `(${this.estrategia() === 'fusionar' ? 'fusionado' : 'reemplazado'}).`,
-      );
-      this.importado.emit({ analisis: a, estrategia: this.estrategia() });
+      await new Promise(r => setTimeout(r, 300));
+      const equiposOk    = this.equiposImportables();
+      const conceptosOk  = this.conceptosImportables();
+      const equiposError = a.equipos.length - equiposOk.length;
+      const conceptosError = a.conceptos.length - conceptosOk.length;
+
+      // Entregamos a la ficha solo las filas sin error — las filas con error
+      // se ignoran silenciosamente (se avisa al usuario en el toast).
+      const analisisFiltrado: AnalisisImportacionOsOm = {
+        ...a,
+        equipos:   equiposOk,
+        conceptos: conceptosOk,
+        totalEquipos:          equiposOk.length,
+        totalConceptos:        conceptosOk.length,
+        resumenEquiposErrores: 0,
+      };
+
+      const partesToast: string[] = [
+        `${equiposOk.length} equipos + ${conceptosOk.length} conceptos`,
+        this.estrategia() === 'fusionar' ? 'fusionados' : 'reemplazados',
+      ];
+      if (equiposError + conceptosError > 0) {
+        partesToast.push(`(${equiposError + conceptosError} con error ignorados)`);
+      }
+      this.toast.exito('Importado: ' + partesToast.join(' '));
+
+      this.importado.emit({ analisis: analisisFiltrado, estrategia: this.estrategia() });
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo confirmar la importación.');
     } finally {

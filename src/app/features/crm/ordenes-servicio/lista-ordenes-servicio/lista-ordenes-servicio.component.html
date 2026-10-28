@@ -148,24 +148,26 @@
           </td>
           <td class="tabla__td--centro">
             <span class="chip-conteo chip-conteo--equipos">
-              {{ item.numeroEquipos }} equipos
+              {{ item.numeroEquipos }} {{ item.numeroEquipos === 1 ? 'equipo' : 'equipos' }}
             </span>
           </td>
           <td class="tabla__td--centro">
             <span class="chip-conteo chip-conteo--conceptos">
-              {{ item.numeroConceptos }} conceptos
+              {{ item.numeroConceptos }} {{ item.numeroConceptos === 1 ? 'concepto' : 'conceptos' }}
             </span>
           </td>
           <td>
-            <span class="badge {{ estadoChip(item.estadoGrupo, item.estadoLabel).clase }}">
-              {{ estadoChip(item.estadoGrupo, item.estadoLabel).label }}
-            </span>
-            @if (item.solicitudPendiente) {
-              <span class="chip-solicitud" title="Solicitud de edición pendiente de aprobación">
-                <span class="material-symbols-outlined">pending</span>
-                Edición pendiente
+            <span class="estado-wrap">
+              <span class="badge {{ estadoChip(item.estadoGrupo, item.estadoLabel).clase }}">
+                {{ estadoChip(item.estadoGrupo, item.estadoLabel).label }}
               </span>
-            }
+              @if (item.solicitudPendiente) {
+                <span class="chip-solicitud"
+                      data-tooltip="Solicitud de edición pendiente de aprobación">
+                  <span class="material-symbols-outlined">priority_high</span>
+                </span>
+              }
+            </span>
           </td>
           <td class="tabla__td--centro">
             <div class="tabla__acciones" (click)="$event.stopPropagation()">
