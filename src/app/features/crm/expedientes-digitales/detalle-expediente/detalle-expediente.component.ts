@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
@@ -11,6 +11,7 @@ import { ExpedientesDigitalesService } from '../../../../core/services/expedient
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { ExpedienteHelpersService } from './expediente-helpers.service';
+import { DrillPropuestaComponent } from './drill-downs/drill-propuesta/drill-propuesta.component';
 import {
   DetalleExpedienteDto,
   EtapaExpedienteDto,
@@ -68,9 +69,11 @@ export type DrillTabDto =
     ModalRepositorioDocumentosComponent,
     ModalAuditoriaExpedienteComponent,
     ModalReasignarResponsableComponent,
+    DrillPropuestaComponent,
   ],
   templateUrl: './detalle-expediente.component.html',
   styleUrl: './detalle-expediente.component.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class DetalleExpedienteComponent implements OnInit {
   private readonly svc     = inject(ExpedientesDigitalesService);
