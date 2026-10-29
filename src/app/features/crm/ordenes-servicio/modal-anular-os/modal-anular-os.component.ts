@@ -35,14 +35,14 @@ export class ModalAnularOsComponent implements OnInit {
   readonly motivos  = signal<MotivoAnulacionOs[]>([]);
   readonly impacto  = signal<ImpactoAnulacionOs | null>(null);
 
-  idMotivoSel: number | null = null;
-  justificacion = '';
+  readonly idMotivoSel  = signal<number | null>(null);
+  readonly justificacion = signal('');
 
   readonly minJustificacion = 20;
   readonly maxJustificacion = 500;
 
   readonly puedeAnular = computed(() =>
-    this.idMotivoSel != null && this.justificacion.trim().length >= this.minJustificacion,
+    this.idMotivoSel() != null && this.justificacion().trim().length >= this.minJustificacion,
   );
 
   async ngOnInit(): Promise<void> {
@@ -53,7 +53,7 @@ export class ModalAnularOsComponent implements OnInit {
       ]);
       this.motivos.set(motivos);
       this.impacto.set(impacto);
-      if (motivos.length > 0) this.idMotivoSel = motivos[0].idMotivo;
+      if (motivos.length > 0) this.idMotivoSel.set(motivos[0].idMotivo);
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo cargar la información.');
     } finally {
@@ -67,8 +67,8 @@ export class ModalAnularOsComponent implements OnInit {
     try {
       await this.svc.anular({
         idOs:          this.idOs(),
-        idMotivo:      this.idMotivoSel!,
-        justificacion: this.justificacion.trim(),
+        idMotivo:      this.idMotivoSel()!,
+        justificacion: this.justificacion().trim(),
       });
       this.toast.exito(`${this.numeroOs()} anulada correctamente.`);
       this.anulada.emit();

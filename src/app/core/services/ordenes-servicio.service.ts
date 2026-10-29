@@ -278,10 +278,8 @@ export class OrdenesServicioService {
       ),
     );
     if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar el catálogo de equipos.');
-    // Los equipos "de la propuesta" vienen marcados por el back si pasamos idPropuesta;
-    // acá no tenemos acceso a esa lista pivot — delegamos al back esa marca.
-    const idsEnPropuesta = new Set<number>();
-    return r.datos.items.map(e => mapEquipoCatalogoCliente(e, idsEnPropuesta));
+    // El back marca `deLaPropuesta` en cada equipo cuando se pasa idPropuesta.
+    return r.datos.items.map(mapEquipoCatalogoCliente);
   }
 
   // ───────────────────────────────────────────────────────────────────────

@@ -238,3 +238,27 @@
   &--os { background: #DBEAFE; color: #1D4ED8; }
   &--om { background: #EDE9FE; color: #6D28D9; }
 }
+
+// ─── Aviso dentro de la fila (ej. "ya tuvo OSs anuladas") ───────────────
+.mep-item__aviso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #1E40AF;
+
+  .material-symbols-outlined { font-size: 14px; }
+
+  // Variante ámbar para la Regla A (OSs activas + equipos pendientes)
+  &--ambar {
+    background: #FFFBEB;
+    border-color: #FDE68A;
+    color: #92400E;
+  }
+}

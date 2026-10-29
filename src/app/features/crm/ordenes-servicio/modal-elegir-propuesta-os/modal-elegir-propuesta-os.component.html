@@ -32,7 +32,7 @@
       </select>
     </div>
 
-    <p class="mep-ayuda">Solo se listan propuestas aceptadas sin OS/OM activa.</p>
+    <p class="mep-ayuda">Solo se listan la última versión aceptada de cada propuesta mientras le queden equipos pendientes de OS/OM.</p>
 
     <!-- Lista -->
     @if (propuestasFiltradas().length === 0) {
@@ -69,6 +69,15 @@
                   <span class="material-symbols-outlined">info</span>
                   Esta propuesta ya tuvo {{ p.intentosPrevios }} OS/OM anulada{{ p.intentosPrevios > 1 ? 's' : '' }} previas.
                 </div>
+              }
+              @if ((p.osActivasCount ?? 0) > 0 || (p.equiposPendientesCount ?? 0) >= 0) {
+                @if ((p.osActivasCount ?? 0) > 0) {
+                  <div class="mep-item__aviso mep-item__aviso--ambar">
+                    <span class="material-symbols-outlined">warning</span>
+                    Ya tiene {{ p.osActivasCount }} OS/OM activa{{ (p.osActivasCount ?? 0) > 1 ? 's' : '' }} ·
+                    {{ p.equiposPendientesCount ?? 0 }} equipo{{ (p.equiposPendientesCount ?? 0) === 1 ? '' : 's' }} pendiente{{ (p.equiposPendientesCount ?? 0) === 1 ? '' : 's' }}
+                  </div>
+                }
               }
             </div>
             <div class="mep-item__counts">

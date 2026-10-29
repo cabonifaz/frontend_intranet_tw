@@ -151,6 +151,10 @@ export interface PropuestaDisponibleOs {
   cantidadConceptos:   number;
   /** Si tuvo OS/OM anulada previa, cuántas (informativo). */
   intentosPrevios?:    number;
+  /** Regla A: OS/OM activas (no anuladas) de esta propuesta. */
+  osActivasCount?:         number;
+  /** Regla A: equipos cotizados aún sin una OS/OM activa. */
+  equiposPendientesCount?: number;
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -203,6 +207,11 @@ export interface PreparacionNuevaOs {
   // Precarga desde la propuesta (opcional — en HU-43 se podrán agregar/quitar)
   conceptosSugeridos:    ConceptoDetalleOs[];
   equiposSugeridos:      EquipoDetalleOs[];
+
+  /** Regla A: OS/OM activas que ya tiene esta propuesta (0 = primera OS). */
+  osActivas?:            number;
+  /** Regla A: equipos cotizados que todavía no están en una OS/OM activa. */
+  equiposPendientes?:    number;
 }
 
 /**
@@ -406,7 +415,9 @@ export type ClasificacionEquipoOs = 'equipo' | 'instrumento' | 'pesa';
 export interface AvanceEquipoOs {
   idEquipo:        number;
   codigoTw:        string;
-  descripcion:     string;              // ej. "GAL-ECJS-LB-006 · LOMA LCW-6000"
+  numeroSerie?:    string;              // ej. "GAL-ECJS-LB-006"
+  marcaModelo?:    string;              // ej. "LOMA LCW-6000"
+  descripcion:     string;              // ej. "GAL-ECJS-LB-006 · LOMA LCW-6000" (concatenado — legacy)
   estado:          EstadoEjecucionEquipo;
   estadoLabel:     string;
   fechaEjecucion?: string | null;       // ISO
@@ -456,6 +467,8 @@ export interface PropuestaOrigenOs {
   cantidadEquiposCotizados:   number;
   cantidadConceptosCotizados: number;
   condicionPago:            string | null;
+  /** Regla A: nº de OS/OM activas (no anuladas) generadas desde esta propuesta. */
+  osActivas?:               number;
 }
 
 /** Tab Equipos/Instrumentos — fila. */
@@ -472,6 +485,8 @@ export interface EquipoDetalleOs {
   ubicacion:         string | null;
   /** Códigos de los conceptos que aplican a este equipo. Si vacío → "General". */
   conceptosAplicados: string[];
+  /** Precargado desde la propuesta origen (no agregado manualmente). */
+  deLaPropuesta?:    boolean;
   // Columnas condicionales según tipo
   d?:                 string | null;    // resolución (si equipo)
   e?:                 string | null;    // escala verif (si equipo)
@@ -536,6 +551,7 @@ export interface SolicitudEdicionOs {
 export interface DetalleOrdenServicio {
   // Cabecera
   idOs:                   number;
+  idCliente?:             number;        // Necesario para modales (agregar equipo, importar excel) en modo edición
   tipo:                   TipoOrden;
   numero:                 string;
   estado:                 EstadoOrdenServicio;

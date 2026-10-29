@@ -63,6 +63,8 @@ export interface PropuestaDisponibleOsApi {
   simboloMoneda:       string | null;
   equiposCotizados:    number;
   conceptosCotizados:  number;
+  osActivasCount?:         number;
+  equiposPendientesCount?: number;
 }
 
 export interface PropuestasDisponiblesOsApi {
@@ -95,6 +97,7 @@ export interface PropuestaOrigenOsApi {
   equiposCotizados:   number;
   conceptosCotizados: number;
   condicionPago:      string | null;
+  osActivas?:         number;
 }
 
 export interface CertificadoOsApi {
@@ -113,7 +116,8 @@ export interface ConceptoOsApi {
   descripcion:      string;
   clasificacion:    string | null;
   alcance:          string | null;
-  sugerido:         boolean;
+  sugerido:         boolean;             // En edición viene siempre en false; usar deLaPropuesta
+  deLaPropuesta?:   boolean;             // Flag confiable para la columna "En propuesta"
   equiposAplicados: string[];
   general:          boolean;
 }
@@ -139,6 +143,7 @@ export interface EquipoOsApi {
   puntosCalibracion: string | null;
   valorNominal:      string | null;
   estadoEjecucion:   string | null;
+  deLaPropuesta?:    boolean;
 }
 
 export interface FichaOrdenServicioApi {
@@ -173,6 +178,10 @@ export interface FichaOrdenServicioApi {
   equipos:                EquipoOsApi[];
   observaciones:          string | null;
   certificado:            CertificadoOsApi | null;
+  /** Regla A: cantidad de OS/OM activas que ya tiene la propuesta origen. */
+  osActivas?:             number;
+  /** Regla A: equipos cotizados que aún no están en una OS/OM activa. */
+  equiposPendientes?:     number;
 }
 
 export interface EquipoGuardarOsApi {
@@ -219,6 +228,8 @@ export function mapPropuestaDisponibleOs(dto: PropuestaDisponibleOsApi): Propues
     comercial:           dto.responsable ?? '',
     cantidadEquipos:     dto.equiposCotizados,
     cantidadConceptos:   dto.conceptosCotizados,
+    osActivasCount:         dto.osActivasCount,
+    equiposPendientesCount: dto.equiposPendientesCount,
   };
 }
 
@@ -256,6 +267,7 @@ function mapPropuestaOrigen(p: PropuestaOrigenOsApi): PropuestaOrigenOs {
     cantidadEquiposCotizados:  p.equiposCotizados,
     cantidadConceptosCotizados: p.conceptosCotizados,
     condicionPago:             p.condicionPago,
+    osActivas:                 p.osActivas,
   };
 }
 
@@ -283,7 +295,7 @@ function mapConcepto(c: ConceptoOsApi): ConceptoDetalleOs {
     subtipo:          null,
     alcance:          c.alcance ?? null,
     equiposAplicados: c.equiposAplicados ?? [],
-    deLaPropuesta:    c.sugerido,
+    deLaPropuesta:    c.deLaPropuesta ?? c.sugerido ?? false,
   };
 }
 
@@ -305,6 +317,7 @@ function mapEquipo(e: EquipoOsApi, codigosConceptosPorCodigoTw: Map<string, stri
     alcance:            e.alcance,
     ubicacion:          e.ubicacion,
     conceptosAplicados: codigosConceptosPorCodigoTw.get(e.codigoTw) ?? [],
+    deLaPropuesta:      e.deLaPropuesta ?? false,
     d:                  e.divisionMinima,
     e:                  e.divisionVerif,
     clase:              e.claseExactitud,
@@ -351,6 +364,8 @@ export function mapFichaApiToPreparacionNueva(dto: FichaOrdenServicioApi): Prepa
     datosCertificadoDefault: mapCertificado(dto.certificado),
     conceptosSugeridos:      dto.conceptos.map(mapConcepto),
     equiposSugeridos:        dto.equipos.map(e => mapEquipo(e, idx)),
+    osActivas:               dto.osActivas,
+    equiposPendientes:       dto.equiposPendientes,
   };
 }
 
@@ -359,6 +374,7 @@ export function mapFichaApiToPreparacionEdicion(dto: FichaOrdenServicioApi): Pre
   const idx  = construirIndiceConceptosPorEquipo(dto.conceptos);
   const detalle = {
     idOs:                   dto.idOs ?? 0,
+    idCliente:              dto.idCliente,
     tipo,
     numero:                 dto.numero,
     estado:                 dto.estado as EstadoOrdenServicio,
@@ -420,7 +436,9 @@ export interface AvanceEquipoOsApi {
   clasificacionLabel: string;
   marca:              string;
   modelo:             string;
+  marcaModelo?:       string;        // ya armado por el back ("MARCA MODELO")
   numSerie:           string;
+  numeroSerie?:       string;        // ya armado por el back
   estadoEjecucion:    string;
   fechaEjecucion:     string | null;
   observacion:        string | null;
@@ -522,10 +540,14 @@ export interface ProgramacionOrdenServicioApi {
 // ─── Mappers Tabs → Front ────────────────────────────────────────────────────
 
 function mapAvanceEquipo(e: AvanceEquipoOsApi): AvanceEquipoOs {
-  const desc = [e.marca, e.modelo].filter(Boolean).join(' ') + (e.numSerie ? ` · ${e.numSerie}` : '');
+  const marcaModelo = e.marcaModelo ?? [e.marca, e.modelo].filter(Boolean).join(' ');
+  const numeroSerie = e.numeroSerie ?? e.numSerie ?? '';
+  const desc = marcaModelo + (numeroSerie ? ` · ${numeroSerie}` : '');
   return {
     idEquipo:       e.idEquipo,
     codigoTw:       e.codigoTw,
+    numeroSerie,
+    marcaModelo,
     descripcion:    desc || e.codigoTw,
     estado:         e.estadoEjecucion as EstadoEjecucionEquipo,
     estadoLabel:    labelEstadoEjecucion(e.estadoEjecucion),
@@ -892,10 +914,7 @@ export function mapConceptoCatalogo(dto: ConceptoCatalogoOsApi): ConceptoCatalog
  * Catálogo de equipos del cliente. El back usa `EquipoOsApi` como base;
  * el front le agrega metadata de "ya está en otra OS activa" / "de la propuesta".
  */
-export function mapEquipoCatalogoCliente(
-  dto: EquipoOsApi,
-  idsYaEnPropuesta: Set<number>,
-): EquipoCatalogoClienteOs {
+export function mapEquipoCatalogoCliente(dto: EquipoOsApi): EquipoCatalogoClienteOs {
   return {
     idEquipo:            dto.idEquipo,
     clasificacion:       dto.clasificacion as ClasificacionEquipoOs,
@@ -907,7 +926,7 @@ export function mapEquipoCatalogoCliente(
     alcance:             dto.alcance ?? null,
     ubicacion:           dto.ubicacion ?? null,
     estado:              'disponible',   // el back excluye los que ya están en otra OS activa, así que todo lo que llega es disponible
-    deLaPropuesta:       idsYaEnPropuesta.has(dto.idEquipo),
+    deLaPropuesta:       dto.deLaPropuesta ?? false,
   };
 }
 

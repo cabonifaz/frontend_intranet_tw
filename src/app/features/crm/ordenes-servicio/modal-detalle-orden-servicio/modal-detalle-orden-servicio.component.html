@@ -152,8 +152,8 @@
             <tbody>
               @for (e of d.avancePorEquipos.equipos; track e.idEquipo) {
                 <tr>
-                  <td>{{ separarEquipo(e.descripcion).serie }}</td>
-                  <td>{{ separarEquipo(e.descripcion).equipo }}</td>
+                  <td>{{ e.numeroSerie || '—' }}</td>
+                  <td>{{ e.marcaModelo || e.descripcion }}</td>
                   <td><span [class]="claseEjecucion(e.estado)">{{ e.estadoLabel }}</span></td>
                   <td>
                     @if (e.fechaEjecucion) {
@@ -202,6 +202,10 @@
 
             <div><label>N° de Equipos Cotizados</label><span>{{ d.propuestaOrigen.cantidadEquiposCotizados }}</span></div>
             <div><label>N° de Conceptos Cotizados</label><span>{{ d.propuestaOrigen.cantidadConceptosCotizados }}</span></div>
+
+            @if (d.propuestaOrigen.osActivas != null) {
+              <div><label>OS/OM Activas desde esta Propuesta</label><span>{{ d.propuestaOrigen.osActivas }}</span></div>
+            }
           </div>
         </section>
       }

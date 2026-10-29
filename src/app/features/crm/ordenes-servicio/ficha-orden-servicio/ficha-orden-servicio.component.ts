@@ -76,10 +76,8 @@ export class FichaOrdenServicioComponent implements OnInit {
   // Modo "editar"
   readonly edicion     = signal<PreparacionEdicionOs | null>(null);
 
-  // Equipos / conceptos originales de la propuesta — se cargan en ambos modos
-  // (en Nueva vienen de preparacion.equiposSugeridos; en Editar hacemos un fetch extra
-  // porque PreparacionEdicionOs no los expone). Workaround: back aún no marca DeLaPropuesta.
-  private readonly idsEquiposPropuestaOrigen   = signal<number[]>([]);
+  // Códigos TW y de conceptos de la propuesta origen — se usan en el modal "Importar Excel"
+  // para marcar visualmente qué filas del Excel ya estaban en la propuesta.
   private readonly codigosEquiposPropuestaTw   = signal<string[]>([]);
   private readonly codigosConceptosPropuesta   = signal<string[]>([]);
 
@@ -212,14 +210,6 @@ export class FichaOrdenServicioComponent implements OnInit {
         ?? null;
   }
 
-  /**
-   * Ids de equipos que están en la propuesta origen — se usa en el modal "Agregar equipo"
-   * para marcar los que vienen de la propuesta (el back no expone ese flag en el DTO).
-   */
-  idsEquiposDePropuestaOrigen(): number[] {
-    return (this.preparacion()?.equiposSugeridos ?? []).map(e => e.idEquipo);
-  }
-
   /** Códigos TW de los equipos de la propuesta — se usa en el modal Importar Excel. */
   codigosTwDePropuestaOrigen(): string[] {
     return this.codigosEquiposPropuestaTw();
@@ -230,13 +220,8 @@ export class FichaOrdenServicioComponent implements OnInit {
     return this.codigosConceptosPropuesta();
   }
 
-  // ─── Flags "En propuesta" para las tablas de la ficha ────────────────────
-  esEquipoDePropuesta(idEquipo: number): boolean {
-    return this.idsEquiposPropuestaOrigen().includes(idEquipo);
-  }
-  esConceptoDePropuesta(codigo: string): boolean {
-    return this.codigosConceptosPropuesta().includes(codigo);
-  }
+  // Las columnas "En propuesta" de las tablas leen directamente `e.deLaPropuesta`
+  // / `c.deLaPropuesta` que ahora manda el back en edición y en nueva.
 
   async ngOnInit(): Promise<void> {
     const params = this.route.snapshot.params;
@@ -262,7 +247,6 @@ export class FichaOrdenServicioComponent implements OnInit {
       }
       this.conceptos.set([...(p.conceptosSugeridos ?? [])]);
       this.equipos.set([...(p.equiposSugeridos ?? [])]);
-      this.idsEquiposPropuestaOrigen.set((p.equiposSugeridos ?? []).map(e => e.idEquipo));
       this.codigosEquiposPropuestaTw.set((p.equiposSugeridos ?? []).map(e => e.codigoTw));
       this.codigosConceptosPropuesta.set((p.conceptosSugeridos ?? []).map(c => c.codigo));
     } catch (e: any) {
@@ -368,7 +352,7 @@ export class FichaOrdenServicioComponent implements OnInit {
   readonly idsEquiposYa       = computed(() => this.equipos().map(e => e.idEquipo));
 
   readonly idClienteActual = computed(() =>
-    this.preparacion()?.idCliente ?? 0,
+    this.preparacion()?.idCliente ?? this.edicion()?.detalle.idCliente ?? 0,
   );
 
   abrirAgregarConcepto(): void { this.modalAgregarConceptoAbierto.set(true); }
@@ -560,7 +544,7 @@ export class FichaOrdenServicioComponent implements OnInit {
 
   // Datos para los modales
   obtenerIdClienteParaModal(): number {
-    return this.preparacion()?.idCliente ?? this.edicion()?.detalle.idOs ?? 0;
+    return this.idClienteActual();
   }
 
   // ─── Helpers UI ──────────────────────────────────────────────────────────

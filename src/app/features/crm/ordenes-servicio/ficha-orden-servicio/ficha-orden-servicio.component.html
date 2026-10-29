@@ -52,6 +52,18 @@
       </div>
     }
 
+    <!-- Banner Regla A: la propuesta ya tiene OSs activas, se precargaron solo los equipos pendientes -->
+    @if (modo() === 'nueva' && (preparacion()?.osActivas ?? 0) > 0) {
+      <div class="banner-regla-a">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <strong>Esta propuesta ya tiene {{ preparacion()?.osActivas }} OS/OM activa{{ (preparacion()?.osActivas ?? 0) > 1 ? 's' : '' }}.</strong>
+          Se precargaron únicamente los {{ preparacion()?.equiposPendientes ?? 0 }} equipo{{ (preparacion()?.equiposPendientes ?? 0) === 1 ? '' : 's' }} pendiente{{ (preparacion()?.equiposPendientes ?? 0) === 1 ? '' : 's' }} de la propuesta.
+          Los conceptos se precargan completos.
+        </div>
+      </div>
+    }
+
     <!-- ─── 1. DATOS DEL CLIENTE Y ORIGEN ──────────────────────────────── -->
     <app-seccion icono="apartment"
                  titulo="1. Datos del Cliente y Origen"
@@ -223,7 +235,7 @@
               <th>CONCEPTO</th>
               <th>TIPO / SUBTIPO</th>
               <th>N° EQUIPOS APLICADOS</th>
-              @if (modo() === 'nueva') { <th>EN PROPUESTA</th> }
+              <th>EN PROPUESTA</th>
               <th style="width:48px;"></th>
             </tr>
           </thead>
@@ -265,15 +277,13 @@
                     </span>
                   }
                 </td>
-                @if (modo() === 'nueva') {
-                  <td>
-                    @if (esConceptoDePropuesta(c.codigo)) {
-                      <span class="chip-info chip-info--verde">Sí</span>
-                    } @else {
-                      <span class="chip-info chip-info--gris">No</span>
-                    }
-                  </td>
-                }
+                <td>
+                  @if (c.deLaPropuesta) {
+                    <span class="chip-info chip-info--verde">Sí</span>
+                  } @else {
+                    <span class="chip-info chip-info--gris">No</span>
+                  }
+                </td>
                 <td style="text-align:center;">
                   <button class="btn-quitar" title="Quitar concepto"
                           (click)="quitarConcepto(c.idConcepto, $event)">
@@ -319,7 +329,7 @@
               <th>MARCA MODELO</th>
               <th>UBICACIÓN</th>
               <th>ALCANCE</th>
-              @if (modo() === 'nueva') { <th>EN PROPUESTA</th> }
+              <th>EN PROPUESTA</th>
               <th>CONCEPTO(S)</th>
               <th style="width:48px;"></th>
             </tr>
@@ -341,15 +351,13 @@
                 </td>
                 <td>{{ e.ubicacion ?? '—' }}</td>
                 <td>{{ e.alcance ?? '—' }}</td>
-                @if (modo() === 'nueva') {
-                  <td>
-                    @if (esEquipoDePropuesta(e.idEquipo)) {
-                      <span class="chip-info chip-info--verde">Sí</span>
-                    } @else {
-                      <span class="chip-info chip-info--gris">No</span>
-                    }
-                  </td>
-                }
+                <td>
+                  @if (e.deLaPropuesta) {
+                    <span class="chip-info chip-info--verde">Sí</span>
+                  } @else {
+                    <span class="chip-info chip-info--gris">No</span>
+                  }
+                </td>
                 <td class="conceptos-cell">
                   <!-- Chips de conceptos ya vinculados -->
                   @for (codCon of e.conceptosAplicados; track codCon) {
@@ -497,7 +505,6 @@
         [idPropuesta]="idPropuestaActual()"
         [razonSocial]="razonSocial()"
         [idsEquiposAgregados]="idsEquiposYa()"
-        [idsEquiposDePropuesta]="idsEquiposDePropuestaOrigen()"
         (cerrar)="modalAgregarEquipoAbierto.set(false)"
         (agregados)="onEquiposAgregados($event)" />
     }

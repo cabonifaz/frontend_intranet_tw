@@ -73,7 +73,9 @@
       <label class="mao-label">
         Motivo de anulación <span class="mao-req">*</span>
       </label>
-      <select class="input-sistema" [(ngModel)]="idMotivoSel">
+      <select class="input-sistema"
+              [ngModel]="idMotivoSel()"
+              (ngModelChange)="idMotivoSel.set($event)">
         @for (m of motivos(); track m.idMotivo) {
           <option [ngValue]="m.idMotivo">{{ m.label }}</option>
         }
@@ -90,10 +92,11 @@
         <span class="chip-info chip-info--opcional">mínimo {{ minJustificacion }} caracteres</span>
       </div>
       <textarea class="input-sistema" rows="4"
-                [(ngModel)]="justificacion"
+                [ngModel]="justificacion()"
+                (ngModelChange)="justificacion.set($event)"
                 [maxlength]="maxJustificacion"
                 placeholder="Explicá con detalle por qué se anula esta OS/OM. Esta justificación quedará registrada en la auditoría del expediente."></textarea>
-      <small class="mao-contador">{{ justificacion.length }} / {{ maxJustificacion }} caracteres</small>
+      <small class="mao-contador">{{ justificacion().length }} / {{ maxJustificacion }} caracteres</small>
     </div>
   }
 
