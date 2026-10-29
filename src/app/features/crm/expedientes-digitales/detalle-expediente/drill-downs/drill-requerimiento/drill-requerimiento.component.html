@@ -1,0 +1,139 @@
+<app-seccion icono="description" titulo="Datos del Requerimiento"
+             subtitulo="Información recibida del cliente que originó el expediente.">
+  <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+              (clic)="irAlRequerimiento.emit(drill().datos.idRequerimiento)">
+    Ir al Módulo RQ
+  </app-button>
+  <div class="info-grid">
+    <div class="info-item"><small>N° RQ</small><strong class="valor-codigo">{{ drill().datos.numero }}</strong></div>
+    <div class="info-item"><small>Fecha Recepción</small><strong>{{ drill().datos.fechaRequerida ? (drill().datos.fechaRequerida | date:'dd/MM/yyyy') : '—' }}</strong></div>
+    <div class="info-item"><small>Área de Servicio</small><strong>{{ drill().datos.areaServicio ?? '—' }}</strong></div>
+    <div class="info-item">
+      <small>Grado de Necesidad</small>
+      @if (drill().datos.gradoNecesidad) {
+        <span class="chip-estado chip-estado--{{ helpers.severidadGradoNecesidad(drill().datos.gradoNecesidad) }}">
+          {{ drill().datos.gradoNecesidad | titlecase }}
+        </span>
+      } @else { <strong>—</strong> }
+    </div>
+    <div class="info-item"><small>Fecha Registro</small><strong>{{ drill().datos.fechaRegistro ? (drill().datos.fechaRegistro | date:'dd/MM/yyyy') : '—' }}</strong></div>
+    <div class="info-item">
+      <small>Estado</small>
+      @if (drill().datos.estado) {
+        <span class="chip-estado chip-estado--{{ helpers.severidadEstado(drill().datos.estado) }}">
+          {{ drill().datos.estadoNombre ?? helpers.humanizarEstado(drill().datos.estado) }}
+        </span>
+      } @else { <strong>—</strong> }
+    </div>
+  </div>
+  @if (drill().datos.descripcion) {
+    <div class="descripcion-bloque">
+      <small>DESCRIPCIÓN</small>
+      <p>{{ drill().datos.descripcion }}</p>
+    </div>
+  }
+</app-seccion>
+
+<app-seccion icono="person" titulo="Contacto y Cliente">
+  <div class="card-contacto-cliente">
+    <div class="card-contacto-cliente__logo">
+      <span class="material-symbols-outlined">business</span>
+    </div>
+    <div class="card-contacto-cliente__texto">
+      <strong>{{ drill().datos.razonSocial ?? '—' }}</strong>
+      <small>RUC {{ drill().datos.ruc ?? '—' }}</small>
+    </div>
+  </div>
+
+  <div class="info-grid info-grid--contacto">
+    <div class="info-item">
+      <small>NOMBRE</small>
+      <strong>{{ drill().datos.contactoNombre ?? '—' }}</strong>
+      @if (drill().datos.contactoCargo) { <small class="cargo">{{ drill().datos.contactoCargo }}</small> }
+    </div>
+    <div class="info-item">
+      <small>CORREO</small>
+      <strong class="valor-link">{{ drill().datos.contactoCorreo ?? '—' }}</strong>
+      @if (drill().datos.contactoTelefono) { <small>{{ drill().datos.contactoTelefono }}</small> }
+    </div>
+  </div>
+
+  @if (drill().datos.sedeNombre || drill().datos.sedeUbicacion) {
+    <div class="sede-operativa">
+      <span class="material-symbols-outlined">location_on</span>
+      <span><strong>Sede operativa:</strong> {{ drill().datos.sedeNombre ?? '—' }}@if (drill().datos.sedeUbicacion) { - {{ drill().datos.sedeUbicacion }} }</span>
+    </div>
+  }
+</app-seccion>
+
+@if (drill().adjuntos.length > 0) {
+  <app-seccion icono="attach_file" titulo="Archivos adjuntos del RQ" [subtitulo]="drill().adjuntos.length + ' archivo(s)'">
+    <div class="lista-archivos">
+      @for (a of drill().adjuntos; track a.clave) {
+        <div class="archivo-item">
+          <span class="archivo-item__icono material-symbols-outlined">{{ helpers.iconoArchivo(a.tipo) }}</span>
+          <div class="archivo-item__texto">
+            <strong>{{ a.nombreArchivo ?? a.clave }}</strong>
+            <small>{{ helpers.tamanoLegible(a.tamanoBytes) }}{{ a.fecha ? ' · ' + (a.fecha | date:'dd/MM/yyyy') : '' }}{{ a.usuario ? ' · ' + a.usuario : '' }}</small>
+          </div>
+          <div class="archivo-item__acciones">
+            <app-button variant="ghost" tamano="sm" icono="visibility" (clic)="verArchivo.emit(a.clave)">Ver</app-button>
+            <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarArchivo.emit({ clave: a.clave, nombre: a.nombreArchivo })">Descargar</app-button>
+          </div>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+@if (drill().timeline.length > 0) {
+  <app-seccion icono="timeline" titulo="Timeline del RQ" [subtitulo]="drill().timeline.length + ' evento(s)'">
+    <div class="tl">
+      @for (ev of drill().timeline; track $index) {
+        <div class="tl__item">
+          <span [class]="'tl__badge tl__badge--' + helpers.colorEventoTimeline(ev.tipo, ev.titulo)">
+            <span class="material-symbols-outlined">{{ helpers.iconoEventoTimeline(ev.tipo, ev.titulo) }}</span>
+          </span>
+          <div class="tl__body">
+            <div class="tl__head">
+              <strong class="tl__fecha">{{ helpers.formatearFechaCorta(ev.fecha) }}</strong>
+              <span class="tl__sep">·</span>
+              <strong class="tl__titulo">{{ ev.titulo ?? ev.tipo }}</strong>
+              @if (ev.usuario) {
+                <span class="tl__sep">·</span>
+                <span class="tl__user">{{ ev.usuario }}</span>
+              }
+            </div>
+            @if (ev.descripcion) { <p class="tl__desc">{{ ev.descripcion }}</p> }
+          </div>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+@if (drill().propuestas.length > 0) {
+  <app-seccion icono="request_quote" titulo="Propuestas generadas desde este RQ" [subtitulo]="drill().propuestas.length + ' propuesta(s)'">
+    <div class="lista-propuestas-gen">
+      @for (p of drill().propuestas; track p.idPropuesta) {
+        <div class="propuesta-gen">
+          <div class="propuesta-gen__cab">
+            <strong class="valor-codigo">{{ p.numero }} v{{ p.version }}</strong>
+            <span class="chip-estado chip-estado--{{ helpers.severidadEstadoPropuesta(p.estado) }}">{{ helpers.humanizarEstado(p.estado) }}</span>
+            @if (p.responsable) { <small>· RF: {{ p.responsable }}</small> }
+          </div>
+          <div class="propuesta-gen__meta">
+            @if (p.fechaEnvio) { <small>Enviada: {{ p.fechaEnvio | date:'dd/MM/yyyy' }}</small> }
+            @if (p.fechaAceptacion) { <small>· Aceptada: {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</small> }
+            @if (p.fechaRechazo) { <small>· Rechazada: {{ p.fechaRechazo | date:'dd/MM/yyyy' }}</small> }
+            <strong class="propuesta-gen__monto">{{ p.simboloMoneda }} {{ p.total | number:'1.2-2' }}</strong>
+            <app-button variant="ghost" tamano="sm" icono="open_in_new" (clic)="irALaPropuesta.emit(p.idPropuesta)">
+              Ir al módulo original
+            </app-button>
+          </div>
+          @if (p.motivoRechazo) { <small class="propuesta-gen__motivo">Motivo rechazo: "{{ p.motivoRechazo }}"</small> }
+        </div>
+      }
+    </div>
+  </app-seccion>
+}

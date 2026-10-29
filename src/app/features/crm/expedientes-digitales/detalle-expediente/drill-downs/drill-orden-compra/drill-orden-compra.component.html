@@ -1,0 +1,255 @@
+<!-- 0. Barra de pills de OCs -->
+@if (drill().ordenesCompra.length > 1) {
+  <div class="prop-pills-bar">
+    <div class="prop-pills-group">
+      <small>Ver orden de compra:</small>
+      @for (oc of drill().ordenesCompra; track oc.idOc) {
+        <button type="button"
+                class="pill-prop"
+                [class.pill-prop--activa]="oc.seleccionada"
+                (click)="cambiarOcMostrada.emit(oc.idOc)">
+          {{ oc.numeroOc }}@if (oc.esAutogenerada) { <small> · auto</small> }
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- 1. Datos de la Orden de Compra -->
+@if (drill().datos; as oc) {
+  <app-seccion icono="receipt_long" [titulo]="'Datos de la Orden de Compra ' + oc.numeroOc">
+    <div headerActions class="header-acciones-grupo">
+      <span class="chip-estado chip-estado--{{ helpers.estadoOcClass(oc.estado) }}">
+        {{ helpers.humanizarEstado(oc.estado) }}
+      </span>
+      <app-button variant="ghost" tamano="sm" icono="open_in_new"
+                  (clic)="irALaOc.emit(oc.idOc)">
+        Ir al Módulo OC
+      </app-button>
+    </div>
+    <div class="info-grid info-grid--2cols">
+      <div class="info-item"><small>Código OC</small><strong class="valor-codigo">{{ oc.numeroOc }}</strong></div>
+      <div class="info-item"><small>Monto total</small><strong class="valor-monto">{{ oc.simboloMoneda }} {{ oc.montoTotal | number:'1.2-2' }}</strong></div>
+      <div class="info-item"><small>Fecha emisión</small><strong>{{ oc.fechaEmision ? (oc.fechaEmision | date:'dd/MM/yyyy') : '—' }}</strong></div>
+      <div class="info-item"><small>Monto asignado</small><strong>{{ oc.simboloMoneda }} {{ oc.montoAsignado | number:'1.2-2' }}</strong></div>
+      <div class="info-item"><small>Fecha recepción</small><strong>{{ oc.fechaRecepcion ? (oc.fechaRecepcion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong></div>
+      <div class="info-item">
+        <small>Saldo OC</small>
+        <strong>{{ oc.simboloMoneda }} {{ oc.saldo | number:'1.2-2' }}
+          @if (oc.montoTotal && oc.montoAsignado != null) {
+            <span class="porcentaje-ok">· {{ ((oc.montoAsignado / oc.montoTotal) * 100) | number:'1.0-0' }}% completado</span>
+          }
+        </strong>
+      </div>
+      <div class="info-item"><small>Moneda</small><strong>{{ oc.moneda ?? '—' }}</strong></div>
+      <div class="info-item"><small>Forma de pago</small><strong>{{ oc.formaPago ?? '—' }}</strong></div>
+      <div class="info-item"><small>Responsable</small><strong>{{ oc.responsable ?? '—' }}</strong></div>
+      <div class="info-item"><small>IGV</small><strong>{{ oc.igvIncluido ? ('Incluido (' + (oc.igvPct ?? 0) + '%)') : 'No incluido' }}</strong></div>
+    </div>
+
+    <!-- Bloques informativos adicionales -->
+    @if (oc.facturaIgualOc) {
+      <div class="info-bloque info-bloque--azul">
+        <span class="material-symbols-outlined">check_circle</span>
+        <small><strong>La factura tendrá exactamente lo mismo que la OC</strong> · El cliente confirmó esta validación.</small>
+      </div>
+    }
+    @if (oc.reemplazadaPor) {
+      <div class="info-bloque info-bloque--neutral">
+        <span class="material-symbols-outlined">swap_horiz</span>
+        <small><span class="valor-codigo">{{ oc.numeroOc }}</span> fue reemplazada por <span class="valor-codigo">{{ oc.reemplazadaPor }}</span>@if (oc.fechaReemplazo) { <span> el {{ oc.fechaReemplazo | date:'dd/MM/yyyy' }}</span> }.</small>
+      </div>
+    }
+
+    <!-- Botones de documento PDF -->
+    @if (oc.clavePdf) {
+      <div class="oc-doc-acciones">
+        <app-button variant="ghost" tamano="sm" icono="visibility"
+                    (clic)="verArchivo.emit(oc.clavePdf)">Ver PDF</app-button>
+        <app-button variant="ghost" tamano="sm" icono="download"
+                    (clic)="descargarArchivo.emit({ clave: oc.clavePdf, nombre: oc.numeroOc + '.pdf' })">Descargar</app-button>
+      </div>
+    }
+
+    @if (oc.observaciones) {
+      <div class="descripcion-bloque">
+        <small>OBSERVACIONES</small>
+        <p>{{ oc.observaciones }}</p>
+      </div>
+    }
+  </app-seccion>
+}
+
+<!-- 2. Validación por IA -->
+@if (drill().validaciones.length > 0 || drill().campos.length > 0) {
+  <app-seccion icono="auto_awesome" titulo="Validación por IA" [subtitulo]="difsIa() + ' diferencias detectadas'">
+    <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                (clic)="irALaOc.emit(drill().datos?.idOc)">
+      Ver Validación Completa
+    </app-button>
+
+    @if (resultadoGlobalIa() === 'ok') {
+      <div class="alerta-ia alerta-ia--verde">
+        <span class="material-symbols-outlined">check_circle</span>
+        <div>
+          <strong>Validación completa · Sin diferencias</strong>
+          <small>La IA no detectó diferencias entre la OC y la(s) propuesta(s) aceptada(s).</small>
+        </div>
+      </div>
+    } @else {
+      <div [class]="'alerta-ia alerta-ia--' + (resultadoGlobalIa() === 'critico' ? 'rojo' : 'ambar')">
+        <span class="material-symbols-outlined">{{ resultadoGlobalIa() === 'critico' ? 'error' : 'warning' }}</span>
+        <div>
+          <strong>{{ resultadoGlobalIa() === 'critico' ? 'Diferencias críticas' : 'Validación parcial · Requiere revisión comercial' }}</strong>
+          <small>La IA detectó {{ difsIa() }} diferencia(s) en la OC comparada con la(s) propuesta(s) aceptada(s).</small>
+        </div>
+      </div>
+    }
+
+    @if (drill().campos.length > 0) {
+      <table class="tabla-validacion">
+        <thead>
+          <tr><th>Campo</th><th>Severidad</th><th>Mensaje</th></tr>
+        </thead>
+        <tbody>
+          @for (c of drill().campos; track $index) {
+            <tr>
+              <td class="celda-campo">
+                <strong>{{ c.etiqueta ?? c.campo }}</strong>
+                @if (c.valorOc || c.valorPropuesta) {
+                  <small class="valores">
+                    <span>OC: {{ c.valorOc ?? '—' }}</span> ·
+                    <span>Propuesta: {{ c.valorPropuesta ?? '—' }}</span>
+                  </small>
+                }
+              </td>
+              <td>
+                <span [class]="'chip-estado chip-estado--' + helpers.severidadClass(c.severidad)">
+                  <span class="material-symbols-outlined">{{ helpers.iconoSeveridad(c.severidad) }}</span>
+                  {{ helpers.labelSeveridad(c.severidad) }}
+                </span>
+              </td>
+              <td class="celda-mensaje">{{ c.mensaje ?? '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </app-seccion>
+}
+
+<!-- 3. Propuestas Vinculadas (Sub-aplicaciones) -->
+@if (drill().validaciones.length > 0) {
+  <app-seccion icono="hub" titulo="Propuestas Vinculadas (Sub-aplicaciones)" [subtitulo]="drill().validaciones.length + ' propuesta(s)'">
+    @if (drill().datos; as oc) {
+      <div class="oc-resumen-montos">
+        <div class="oc-resumen-montos__item">
+          <small>MONTO OC</small>
+          <strong>{{ oc.simboloMoneda }} {{ oc.montoTotal | number:'1.2-2' }}</strong>
+        </div>
+        <div class="oc-resumen-montos__item">
+          <small>ASIGNADO</small>
+          <strong>{{ oc.simboloMoneda }} {{ oc.montoAsignado | number:'1.2-2' }}</strong>
+        </div>
+        <div class="oc-resumen-montos__item">
+          <small>SALDO OC</small>
+          <strong>{{ oc.simboloMoneda }} {{ oc.saldo | number:'1.2-2' }}</strong>
+        </div>
+        @if (oc.montoTotal && oc.montoAsignado != null) {
+          <span class="chip-estado chip-estado--ok">
+            <span class="material-symbols-outlined">check_circle</span>
+            {{ ((oc.montoAsignado / oc.montoTotal) * 100) | number:'1.0-0' }}% completado
+          </span>
+        }
+      </div>
+    }
+
+    <div class="sub-aplicaciones">
+      @for (v of drill().validaciones; track v.idPropuesta) {
+        <div class="sub-aplicacion">
+          <div class="sub-aplicacion__head">
+            <span class="chip-codigo">{{ v.propuesta }}</span>
+            <span class="chip-estado chip-estado--{{ helpers.resultadoClass(v.resultadoIa) }}">
+              {{ v.resultadoIa ? helpers.humanizarEstado(v.resultadoIa) : 'Sin validar' }}
+            </span>
+            @if (v.deEsteExpediente) {
+              <span class="chip-estado chip-estado--neutral">De este expediente</span>
+            } @else {
+              <span class="chip-estado chip-estado--warning">Externa (otra propuesta)</span>
+            }
+            <app-button variant="ghost" tamano="sm" icono="open_in_new" class="sub-aplicacion__btn"
+                        (clic)="irALaPropuesta.emit(v.idPropuesta)">
+              Ir al módulo original
+            </app-button>
+          </div>
+
+          <div class="sub-aplicacion__montos">
+            <small>MONTO ASIGNADO</small>
+            <strong>{{ drill().datos?.simboloMoneda }} {{ v.montoAsignado | number:'1.2-2' }}
+              @if (v.porcentajeOc != null) {
+                <small>({{ v.porcentajeOc | number:'1.1-1' }}% de la OC)</small>
+              }
+            </strong>
+          </div>
+
+          @if (v.porcentajeOc != null) {
+            <div class="progress-bar">
+              <div class="progress-bar__fill" [style.width.%]="v.porcentajeOc"></div>
+            </div>
+          }
+
+          @if (v.sugerencia || v.dictamen) {
+            <small class="sub-aplicacion__nota">{{ v.sugerencia ?? v.dictamen }}</small>
+          }
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+<!-- 4. Timeline de la Orden de Compra -->
+@if (drill().timeline.length > 0) {
+  <app-seccion icono="timeline" titulo="Timeline de la Orden de Compra" [subtitulo]="drill().timeline.length + ' evento(s)'">
+    <div class="tl">
+      @for (ev of drill().timeline; track $index) {
+        <div class="tl__item">
+          <span [class]="'tl__badge tl__badge--' + helpers.colorEventoTimeline(ev.accion, ev.titulo)">
+            <span class="material-symbols-outlined">{{ helpers.iconoEventoTimeline(ev.accion, ev.titulo) }}</span>
+          </span>
+          <div class="tl__body">
+            <div class="tl__head">
+              <strong class="tl__fecha">{{ helpers.formatearFechaCorta(ev.fecha) }}</strong>
+              <span class="tl__sep">·</span>
+              <strong class="tl__titulo">{{ ev.titulo ?? ev.accion }}</strong>
+              @if (ev.usuario) {
+                <span class="tl__sep">·</span>
+                <span class="tl__user">{{ ev.usuario }}{{ ev.automaticoIa ? ' (IA)' : '' }}</span>
+              }
+            </div>
+            @if (ev.descripcion) { <p class="tl__desc">{{ ev.descripcion }}</p> }
+          </div>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+<!-- 5. OSs Cubiertas por esta OC — resumen compacto -->
+<app-seccion
+  icono="engineering"
+  titulo="Órdenes de Servicio Cubiertas"
+  [subtitulo]="(drill().ordenesServicioCubiertas ?? 0) + ' OS(s) cubiertas por esta OC'">
+  @if ((drill().ordenesServicioCubiertas ?? 0) === 0) {
+    <small class="aviso-sin-datos">Esta OC todavía no cubre ninguna OS.</small>
+  } @else {
+    <div class="oss-resumen">
+      <span class="chip-estado chip-estado--neutral">
+        <span class="material-symbols-outlined">engineering</span>
+        {{ drill().ordenesServicioCubiertas }} OS cubiertas
+      </span>
+      <small class="aviso-sin-datos">
+        El detalle de cada OS (con la propuesta de origen) se ve en el tab <strong>Propuesta</strong>.
+      </small>
+    </div>
+  }
+</app-seccion>

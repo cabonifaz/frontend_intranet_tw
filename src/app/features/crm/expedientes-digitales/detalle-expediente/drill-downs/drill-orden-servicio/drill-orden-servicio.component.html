@@ -1,0 +1,84 @@
+@if (drill().ordenesServicio.length > 1) {
+  <app-seccion icono="engineering" titulo="Órdenes de servicio" [subtitulo]="drill().ordenesServicio.length + ' OS.'">
+    <div class="pills-propuesta">
+      @for (os of drill().ordenesServicio; track os.idOs) {
+        <span class="pill-propuesta" [class.pill-propuesta--activa]="os.seleccionada">
+          {{ os.numero }} <small>· {{ os.estado }}</small>
+        </span>
+      }
+    </div>
+  </app-seccion>
+}
+
+@if (drill().datos; as os) {
+  <app-seccion icono="engineering" [titulo]="'OS ' + os.numero">
+    <div class="info-grid">
+      <div class="info-item"><small>Estado</small><strong>{{ os.estado }}</strong></div>
+      <div class="info-item"><small>Fecha ejecución</small><strong>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</strong></div>
+      <div class="info-item"><small>Hora inicio</small><strong>{{ os.horaInicio ?? '—' }}</strong></div>
+      <div class="info-item"><small>Hora fin estimada</small><strong>{{ os.horaFinEstimada ?? '—' }}</strong></div>
+      <div class="info-item"><small>Tipo servicio</small><strong>{{ os.tipoServicio ?? '—' }}</strong></div>
+      <div class="info-item"><small>Sede</small><strong>{{ os.sede ?? '—' }}</strong></div>
+      <div class="info-item"><small>Técnico principal</small><strong>{{ os.tecnicoPrincipal ?? '—' }}</strong></div>
+      <div class="info-item"><small>Responsable comercial</small><strong>{{ os.responsableComercial ?? '—' }}</strong></div>
+      <div class="info-item"><small>Costo estimado</small><strong>{{ os.costoTotalEstimado | number:'1.2-2' }}</strong></div>
+      <div class="info-item"><small>Confirmación cliente</small><strong>{{ os.confirmacionCliente ? 'Sí' : 'Pendiente' }}</strong></div>
+    </div>
+    @if (os.notasOperativas) { <div class="descripcion-bloque"><small>NOTAS</small><p>{{ os.notasOperativas }}</p></div> }
+  </app-seccion>
+}
+
+@if (drill().personal.length > 0) {
+  <app-seccion icono="group" titulo="Personal asignado" [subtitulo]="drill().personal.length + ' técnico(s).'">
+    <ul class="lista-simple">
+      @for (p of drill().personal; track p.idUsuario) {
+        <li><strong>{{ p.nombre }}</strong><small>{{ p.rolEnServicio ?? p.cargo ?? '—' }}{{ p.estadoSsoma ? ' · SSOMA: ' + p.estadoSsoma : '' }}</small></li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().equipos.length > 0) {
+  <app-seccion icono="precision_manufacturing" titulo="Equipos asignados" [subtitulo]="drill().equipos.length + ' equipo(s).'">
+    <ul class="lista-simple">
+      @for (eq of drill().equipos; track eq.idEquipo) {
+        <li>
+          <strong>{{ eq.marca ?? '—' }} {{ eq.modelo ?? '' }}</strong>
+          <small>N° {{ eq.numeroSerie ?? '—' }}{{ eq.codigoTw ? ' · ' + eq.codigoTw : '' }}{{ eq.tipoIntervencion ? ' · ' + eq.tipoIntervencion : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().gastos.length > 0) {
+  <app-seccion icono="account_balance_wallet" titulo="Gastos / Viáticos" [subtitulo]="drill().gastos.length + ' gasto(s).'">
+    <table class="tabla-simple">
+      <thead><tr><th>Tipo</th><th>Concepto</th><th class="num">Monto</th><th>Estado</th><th>Usuario</th></tr></thead>
+      <tbody>
+        @for (g of drill().gastos; track g.idGasto) {
+          <tr>
+            <td>{{ g.tipo ?? '—' }}</td>
+            <td>{{ g.concepto ?? g.descripcion ?? '—' }}</td>
+            <td class="num">{{ g.simboloMoneda }} {{ g.monto | number:'1.2-2' }}</td>
+            <td>{{ g.estado ?? '—' }}</td>
+            <td>{{ g.usuario ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+}
+
+@if (drill().ordenesMetrologia.length > 0) {
+  <app-seccion icono="rule" titulo="Órdenes de Metrología">
+    <ul class="lista-simple">
+      @for (om of drill().ordenesMetrologia; track om.idOm) {
+        <li>
+          <strong>{{ om.numero }}</strong>
+          <small>{{ om.estado ?? '—' }}{{ om.numeroCertificado ? ' · Cert. ' + om.numeroCertificado : '' }}{{ om.metrologo ? ' · ' + om.metrologo : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}

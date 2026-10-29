@@ -1,0 +1,62 @@
+@if (drill().calendario.length > 0) {
+  <app-seccion icono="event_available" titulo="Calendario de OSs" [subtitulo]="drill().calendario.length + ' programada(s).'">
+    <table class="tabla-simple">
+      <thead><tr><th>OS</th><th>Estado</th><th>Fecha</th><th>Hora</th><th>Técnico</th><th>Sede</th><th>Confirmación</th></tr></thead>
+      <tbody>
+        @for (c of drill().calendario; track c.idOs) {
+          <tr>
+            <td>{{ c.numero }}</td>
+            <td>{{ c.estado }}</td>
+            <td>{{ c.fechaEjecucion ? (c.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</td>
+            <td>{{ c.horaInicio ?? '—' }} - {{ c.horaFinEstimada ?? '—' }}</td>
+            <td>{{ c.tecnicoPrincipal ?? '—' }}</td>
+            <td>{{ c.sede ?? '—' }}</td>
+            <td>{{ c.confirmacionCliente ? 'OK' : 'Pendiente' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+}
+
+@if (drill().recursos.length > 0) {
+  <app-seccion icono="construction" titulo="Recursos reservados" [subtitulo]="drill().recursos.length + ' recurso(s).'">
+    <ul class="lista-simple">
+      @for (r of drill().recursos; track $index) {
+        <li><strong>{{ r.tipoRecurso }}{{ r.os ? ' · ' + r.os : '' }}</strong><small>{{ r.recurso ?? '—' }}{{ r.estado ? ' · ' + r.estado : '' }}</small></li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().backlog.length > 0) {
+  <app-seccion icono="pending_actions" titulo="Backlog" [subtitulo]="drill().backlog.length + ' pendiente(s).'">
+    <table class="tabla-simple">
+      <thead><tr><th>OS/OM</th><th>Prioridad</th><th>Técnico sugerido</th><th>Fecha límite</th><th>Estado</th></tr></thead>
+      <tbody>
+        @for (b of drill().backlog; track b.idBacklog) {
+          <tr>
+            <td>{{ b.os ?? b.om ?? '—' }}</td>
+            <td>{{ b.prioridad ?? '—' }}</td>
+            <td>{{ b.tecnicoSugerido ?? '—' }}</td>
+            <td>{{ b.fechaLimite ? (b.fechaLimite | date:'dd/MM/yyyy') : '—' }}</td>
+            <td>{{ b.estado ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+}
+
+@if (drill().presalida.length > 0) {
+  <app-seccion icono="checklist" titulo="Checklist de presalida" [subtitulo]="drill().presalida.length + ' item(s).'">
+    <ul class="lista-simple">
+      @for (p of drill().presalida; track $index) {
+        <li>
+          <strong>{{ p.descripcion ?? '—' }}{{ p.os ? ' · ' + p.os : '' }}</strong>
+          <small>{{ p.confirmado ? ('Confirmado' + (p.confirmadoPor ? ' por ' + p.confirmadoPor : '')) : 'Pendiente' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}

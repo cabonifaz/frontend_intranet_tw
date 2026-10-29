@@ -1,0 +1,73 @@
+// Estilos del drill-down de Visto Bueno extraídos del detalle-expediente.component.scss.
+// Esta componente usa ViewEncapsulation.None para que estas clases sean globales
+// y para reutilizar las clases helper del padre (chip-estado, info-grid, card-aprobador,
+// descripcion-bloque, tl, responsable-mini, prop-pills-bar).
+
+// ─── VB: chip de SLA cumplido/vencido ────────────────────────────────────
+// Variante del chip-estado para la línea de SLA al pie del Estado VB.
+.vb-chip-sla {
+  margin-top: 10px;
+  padding: 6px 12px;
+  font-size: 12px; font-weight: 700;
+
+  .material-symbols-outlined { font-size: 16px; }
+  small { font-weight: 500; opacity: 0.85; margin-left: 2px; }
+}
+
+// ─── Fila de SLA al pie del Estado VB ───────────────────────────────────
+.vb-sla-row { display: flex; margin-top: 10px; }
+
+// ─── VB: chip de versión reutilizable en el timeline ────────────────────
+.decision-vb__version {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
+  background: #f1f5f9; color: #475569;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+// ─── VB: métricas en 4 bloques ──────────────────────────────────────────
+.metricas-vb {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr 1fr; }
+}
+
+.metrica-vb {
+  padding: 14px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+
+  &__valor {
+    font-size: 28px; color: #0f172a; font-weight: 800;
+    font-variant-numeric: tabular-nums; line-height: 1;
+
+    .unit { font-size: 16px; color: #64748b; margin-left: 2px; }
+
+    &--ambar { color: #d97706; }
+  }
+
+  small { font-size: 10.5px; color: #64748b; font-weight: 700; letter-spacing: 0.3px; }
+
+  &--ok {
+    background: #f0fdf4; border-color: #bbf7d0;
+    .metrica-vb__valor { color: #16a34a; }
+    small { color: #166534; }
+  }
+}
+
+.metricas-vb__footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11.5px; color: #64748b;
+
+  strong { color: #0f172a; }
+}
+
+// ─── VB: sublabel en métricas (ej. "desde solicitud hasta aprobación") ───
+.metrica-vb__sublabel {
+  font-size: 9.5px; color: #94a3b8;
+  text-align: center; line-height: 1.3; margin-top: 2px;
+  font-weight: 500; letter-spacing: 0.2px;
+}

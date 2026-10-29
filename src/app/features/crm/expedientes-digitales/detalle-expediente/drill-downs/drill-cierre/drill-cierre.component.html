@@ -1,0 +1,50 @@
+@if (drill().resumen; as r) {
+  <app-seccion icono="task_alt" titulo="Resumen de cierre" [subtitulo]="r.estadoCierre | uppercase">
+    <div class="info-grid">
+      <div class="info-item"><small>Estado</small><strong>{{ r.estadoCierre }}</strong></div>
+      <div class="info-item"><small>Fecha cierre</small><strong>{{ r.fechaCierre ? (r.fechaCierre | date:'dd/MM/yyyy') : '—' }}</strong></div>
+      <div class="info-item"><small>Informes</small><strong>{{ r.informesAprobados }} / {{ r.informes }}</strong></div>
+      <div class="info-item"><small>Conformes</small><strong>{{ r.conformes }}</strong></div>
+      <div class="info-item"><small>Observadas</small><strong>{{ r.observadas }}</strong></div>
+    </div>
+  </app-seccion>
+}
+
+@if (drill().informes.length > 0) {
+  <app-seccion icono="description" titulo="Informes técnicos" [subtitulo]="drill().informes.length + ' informe(s).'">
+    <ul class="lista-simple">
+      @for (i of drill().informes; track i.idInforme) {
+        <li>
+          <strong>{{ i.numero }} v{{ i.version }}{{ i.os ? ' · ' + i.os : '' }}</strong>
+          <small>{{ i.estado }}{{ i.tecnico ? ' · ' + i.tecnico : '' }}{{ i.revisor ? ' · revisor ' + i.revisor : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().conformidades.length > 0) {
+  <app-seccion icono="verified" titulo="Conformidades del cliente" [subtitulo]="drill().conformidades.length + ' conformidad(es).'">
+    <ul class="lista-simple">
+      @for (c of drill().conformidades; track c.idConformidad) {
+        <li>
+          <strong>{{ c.informe ?? c.os ?? '—' }} · {{ c.tipo ?? '—' }}</strong>
+          <small>{{ c.estado ?? '—' }}{{ c.contacto ? ' · ' + c.contacto : '' }}{{ c.registradoEn ? ' · ' + (c.registradoEn | date:'dd/MM/yyyy') : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().certificados.length > 0) {
+  <app-seccion icono="workspace_premium" titulo="Certificados" [subtitulo]="drill().certificados.length + ' certificado(s).'">
+    <ul class="lista-simple">
+      @for (c of drill().certificados; track $index) {
+        <li>
+          <strong>{{ c.numero }}{{ c.numeroCertificado ? ' · ' + c.numeroCertificado : '' }}</strong>
+          <small>{{ c.estado ?? '—' }}{{ c.fechaEmision ? ' · ' + (c.fechaEmision | date:'dd/MM/yyyy') : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}

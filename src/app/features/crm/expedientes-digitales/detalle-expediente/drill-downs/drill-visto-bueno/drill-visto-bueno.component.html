@@ -1,0 +1,224 @@
+<!-- 0. Barra de pills de propuestas -->
+@if (drill().propuestas.length > 1) {
+  <div class="prop-pills-bar">
+    <div class="prop-pills-group">
+      <small>Ver propuesta:</small>
+      @for (p of drill().propuestas; track p.numero + '-' + p.version) {
+        <button type="button"
+                class="pill-prop"
+                [class.pill-prop--activa]="p.seleccionada"
+                (click)="cambiarPropuestaVb.emit(p.numero)">
+          {{ p.numero }} v{{ p.version }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- 1. Estado Actual del Visto Bueno -->
+@if (drill().estado; as e) {
+  <app-seccion icono="verified" [titulo]="'Estado Actual del Visto Bueno de ' + (e.numero ?? '—')">
+    <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                (clic)="irAVistoBueno.emit(e.idVb)">
+      Ir al Módulo VB
+    </app-button>
+    <div class="info-grid">
+      <div class="info-item"><small>Propuesta en revisión</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionRevision ?? '—' }}</strong></div>
+      <div class="info-item">
+        <small>Aprobador asignado</small>
+        <div class="responsable-mini">
+          <span class="responsable-mini__avatar">{{ helpers.iniciales(e.aprobador) }}</span>
+          <strong>{{ e.aprobador ?? 'Pendiente' }}</strong>
+        </div>
+      </div>
+      <div class="info-item"><small>Propuesta aprobada</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionAprobada ?? '—' }}</strong></div>
+      <div class="info-item">
+        <small>Fecha solicitud</small>
+        <strong>{{ e.fechaSolicitud ? (e.fechaSolicitud | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+        @if (e.slaHoras) { <small class="sublabel">SLA {{ e.slaHoras }}h</small> }
+      </div>
+      <div class="info-item">
+        <small>Estado VB</small>
+        @if (e.estadoVb) {
+          <span class="chip-estado chip-estado--{{ helpers.severidadEstadoVb(e.estadoVb) }}">
+            {{ helpers.humanizarEstado(e.estadoVb) }}
+          </span>
+        } @else { <strong>—</strong> }
+      </div>
+      <div class="info-item"><small>Monto aprobado</small><strong class="valor-monto">{{ e.simboloMoneda }} {{ e.montoAprobado | number:'1.2-2' }}</strong></div>
+      <div class="info-item">
+        <small>Fecha aprobación</small>
+        <strong>{{ e.fechaAprobacion ? (e.fechaAprobacion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+      </div>
+    </div>
+    @if (e.dentroSla != null && e.horasHabiles != null) {
+      <div class="vb-sla-row">
+        <span class="chip-estado chip-estado--{{ e.dentroSla ? 'ok' : 'critical' }} vb-chip-sla">
+          <span class="material-symbols-outlined">{{ e.dentroSla ? 'check_circle' : 'warning' }}</span>
+          {{ e.dentroSla ? 'Cumplido' : 'Fuera de SLA' }} en {{ e.horasHabiles }}h
+          @if (e.slaHoras && e.dentroSla) {
+            <small>({{ (e.slaHoras - e.horasHabiles) }}h antes del SLA)</small>
+          }
+        </span>
+      </div>
+    }
+    @if (e.comentario) {
+      <div class="descripcion-bloque"><small>COMENTARIO</small><p>{{ e.comentario }}</p></div>
+    }
+  </app-seccion>
+}
+
+<!-- 2. Historial de Decisiones por Versión -->
+@if (drill().decisiones.length > 0) {
+  <app-seccion icono="history" titulo="Historial de Decisiones por Versión" [subtitulo]="drill().decisiones.length + ' decisión(es) registrada(s)'">
+    <div class="tl">
+      @for (d of drill().decisiones; track d.idVb) {
+        <div class="tl__item">
+          <span [class]="'tl__badge tl__badge--' + helpers.estadoDecisionClass(d.estado)">
+            <span class="material-symbols-outlined">{{ helpers.iconoDecision(d.estado) }}</span>
+          </span>
+          <div class="tl__body">
+            <div class="tl__head">
+              <strong class="tl__fecha">{{ d.fechaRespuesta ? (d.fechaRespuesta | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+              @if (d.aprobador) {
+                <span class="tl__user">
+                  <span class="tl__user-avatar">{{ helpers.iniciales(d.aprobador) }}</span>
+                  {{ d.aprobador }}
+                </span>
+              }
+              <span class="decision-vb__version">v{{ d.version }}</span>
+              <span class="chip-estado chip-estado--{{ helpers.estadoDecisionClass(d.estado) }}">
+                {{ helpers.labelDecision(d.estado) }}
+              </span>
+            </div>
+            @if (d.motivoRechazo) {
+              <p class="tl__desc tl__desc--motivo"><strong>Motivo:</strong> {{ d.motivoRechazo }}</p>
+            }
+            @if (d.comentario) {
+              <p class="tl__desc">{{ d.comentario }}</p>
+            }
+            @if (d.horasRevision != null && d.horasRevision > 0) {
+              <small class="tl__ref">{{ d.horasRevision }}h de revisión</small>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+<!-- 3. Aprobador Actual -->
+@if (drill().estado; as e) {
+  <app-seccion icono="person" titulo="Aprobador Actual">
+    <div class="card-aprobador" [class.card-aprobador--pendiente]="!e.aprobador">
+      <div class="card-aprobador__principal">
+        <div class="card-aprobador__avatar">
+          @if (e.aprobador) {
+            {{ helpers.iniciales(e.aprobador) }}
+          } @else {
+            <span class="material-symbols-outlined">person_off</span>
+          }
+        </div>
+        <div class="card-aprobador__nombre">
+          <div class="card-aprobador__nombre-row">
+            <strong>{{ e.aprobador ?? 'Pendiente de asignar' }}</strong>
+            @if (e.aprobador) {
+              <span class="chip-estado chip-estado--{{ (e.estadoAprobador ?? 'activo') === 'activo' ? 'ok' : 'warning' }}">
+                {{ (e.estadoAprobador ?? 'activo') === 'activo' ? 'Activo' : 'Inactivo' }}
+              </span>
+              @if (e.aprobadorPorDefecto === true) {
+                <span class="chip-estado chip-estado--neutral" title="Aprobador por defecto (jefe directo o suplente)">
+                  <span class="material-symbols-outlined">manage_accounts</span>
+                  Por defecto
+                </span>
+              } @else if (e.aprobadorPorDefecto === false) {
+                <span class="chip-estado chip-estado--warning" title="Fue reasignado manualmente">
+                  <span class="material-symbols-outlined">swap_horiz</span>
+                  Reasignado
+                </span>
+              }
+            } @else {
+              <span class="chip-estado chip-estado--warning">Sin asignar</span>
+            }
+          </div>
+          @if (e.cargoAprobador) { <small>{{ e.cargoAprobador }}</small> }
+          @if (e.esJefeDirectoComercial && e.comercial) {
+            <small class="card-aprobador__supervisor">
+              <span class="material-symbols-outlined">verified_user</span>
+              Es el supervisor directo de {{ e.comercial }}
+            </small>
+          }
+        </div>
+        @if (e.correoAprobador) {
+          <app-button variant="ghost" tamano="sm" icono="mail" class="card-aprobador__mail-btn">{{ e.correoAprobador }}</app-button>
+        }
+      </div>
+      <div class="card-aprobador__grid">
+        <div class="card-aprobador__item">
+          <span class="material-symbols-outlined">mail</span>
+          <div>
+            <small>Correo</small>
+            <strong class="valor-link">{{ e.correoAprobador ?? '—' }}</strong>
+          </div>
+        </div>
+        <div class="card-aprobador__item">
+          <span class="material-symbols-outlined">phone</span>
+          <div>
+            <small>Teléfono</small>
+            <strong>{{ e.telefonoAprobador ?? '—' }}</strong>
+          </div>
+        </div>
+        <div class="card-aprobador__item">
+          <span class="material-symbols-outlined">domain</span>
+          <div>
+            <small>Área</small>
+            <strong>{{ e.areaAprobador ?? '—' }}</strong>
+          </div>
+        </div>
+      </div>
+      @if (e.aprobador) {
+        <div class="card-aprobador__footer">
+          <span class="material-symbols-outlined">task_alt</span>
+          <small>
+            Fecha asignación como aprobador: <strong>{{ e.fechaSolicitud ? (e.fechaSolicitud | date:'dd/MM/yyyy') : '—' }}</strong>
+            @if (e.fechaSolicitud) { <span class="hace">({{ helpers.diasHace(e.fechaSolicitud) }})</span> }
+          </small>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+<!-- 4. Métricas de Aprobación -->
+@if (drill().metricas; as m) {
+  <app-seccion icono="query_stats" titulo="Métricas de Aprobación">
+    <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                (clic)="irAVistoBueno.emit(drill().estado?.idVb)">
+      Ir al Módulo VB
+    </app-button>
+    <div class="metricas-vb">
+      <div class="metrica-vb">
+        <strong class="metrica-vb__valor">{{ m.versionesTotales }}</strong>
+        <small>VERSIONES TOTALES</small>
+      </div>
+      <div class="metrica-vb">
+        <strong class="metrica-vb__valor metrica-vb__valor--ambar">{{ m.versionesDevueltas }}</strong>
+        <small>VERSIONES DEVUELTAS</small>
+      </div>
+      <div class="metrica-vb">
+        <strong class="metrica-vb__valor">{{ m.diasTotales ?? '—' }}<small class="unit">d</small></strong>
+        <small>TIEMPO TOTAL</small>
+        <span class="metrica-vb__sublabel">(desde solicitud hasta aprobación)</span>
+      </div>
+      <div class="metrica-vb metrica-vb--ok">
+        <strong class="metrica-vb__valor">{{ m.decisionesEnSla }}</strong>
+        <small>CUMPLIDO</small>
+      </div>
+    </div>
+    @if (m.diasPromedioRevision != null) {
+      <div class="metricas-vb__footer">
+        <small>Promedio de tiempo por revisión: <strong>{{ m.diasPromedioRevision }} día(s)</strong></small>
+      </div>
+    }
+  </app-seccion>
+}

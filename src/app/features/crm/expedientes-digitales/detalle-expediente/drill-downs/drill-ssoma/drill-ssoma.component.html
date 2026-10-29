@@ -1,0 +1,58 @@
+@if (drill().resumen; as r) {
+  <app-seccion icono="health_and_safety" titulo="Resumen SSOMA" [subtitulo]="'Estado global: ' + r.estadoGlobal">
+    <div class="info-grid">
+      <div class="info-item"><small>Personal</small><strong>{{ r.personal }}</strong></div>
+      <div class="info-item"><small>Habilitados</small><strong>{{ r.habilitados }}</strong></div>
+      <div class="info-item"><small>Pendientes</small><strong>{{ r.pendientes }}</strong></div>
+      <div class="info-item"><small>Bloqueados</small><strong>{{ r.bloqueados }}</strong></div>
+      <div class="info-item"><small>Observados</small><strong>{{ r.observados }}</strong></div>
+      <div class="info-item"><small>Vencidos</small><strong>{{ r.vencidos }}</strong></div>
+    </div>
+  </app-seccion>
+}
+
+@if (drill().checklist.length > 0) {
+  <app-seccion icono="checklist" titulo="Checklist por técnico" [subtitulo]="drill().checklist.length + ' línea(s).'">
+    <table class="tabla-simple">
+      <thead><tr><th>OS</th><th>Técnico</th><th>Rol</th><th>Requisito</th><th>Estado</th><th>Vence</th></tr></thead>
+      <tbody>
+        @for (c of drill().checklist; track $index) {
+          <tr>
+            <td>{{ c.os ?? '—' }}</td>
+            <td>{{ c.tecnico ?? '—' }}</td>
+            <td>{{ c.rolEnServicio ?? '—' }}</td>
+            <td>{{ c.requisito ?? '—' }}</td>
+            <td>{{ c.estadoDocumento ?? c.estadoSsoma ?? '—' }}</td>
+            <td>{{ c.fechaVencimiento ? (c.fechaVencimiento | date:'dd/MM/yyyy') : '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+}
+
+@if (drill().documentos.length > 0) {
+  <app-seccion icono="description" titulo="Documentos SSOMA" [subtitulo]="drill().documentos.length + ' documento(s).'">
+    <ul class="lista-simple">
+      @for (d of drill().documentos; track d.clave) {
+        <li>
+          <strong>{{ d.nombreArchivo ?? d.tipo ?? '—' }}</strong>
+          <small>v{{ d.version }} · {{ d.estado ?? '—' }}{{ d.fechaVencimiento ? ' · vence ' + (d.fechaVencimiento | date:'dd/MM/yyyy') : '' }}{{ d.tecnico ? ' · ' + d.tecnico : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().requisitosCliente.length > 0) {
+  <app-seccion icono="rule" titulo="Requisitos del cliente" [subtitulo]="drill().requisitosCliente.length + ' requisito(s).'">
+    <ul class="lista-simple">
+      @for (r of drill().requisitosCliente; track r.idRequisito) {
+        <li>
+          <strong>{{ r.requisito ?? '—' }}</strong>
+          <small>{{ r.esObligatorio ? 'Obligatorio' : 'Opcional' }}{{ r.bloqueaServicio ? ' · bloquea servicio' : '' }}{{ r.sede ? ' · ' + r.sede : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}

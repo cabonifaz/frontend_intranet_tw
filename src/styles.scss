@@ -643,3 +643,212 @@ app-tabla-paginada {
 
   .material-symbols-outlined { font-size: 18px; }
 }
+
+
+/* ─── Timeline list (.tl) — extraído de detalle-expediente para evitar budget overflow.
+ * Usado por detalle-expediente padre y drill-propuesta / drill-visto-bueno.
+ * Todos esos componentes tienen ViewEncapsulation.None, así que esto sigue siendo global. */
+
+.tl {
+  display: flex; flex-direction: column; gap: 22px;
+  position: relative;
+
+  &__item {
+    display: flex; gap: 12px;
+    position: relative;
+
+    // Línea conectora vertical: nace debajo del badge y llega al siguiente
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 28px; height: calc(100% + 10px);
+      width: 2px;
+      background: #e2e8f0;
+      z-index: 0;
+    }
+  }
+
+  &__badge {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0; position: relative; z-index: 1;
+    background: #dbeafe; color: #2563eb;
+    margin-top: 2px;
+
+    .material-symbols-outlined {
+      font-size: 14px; line-height: 1;
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+
+    // Alineado con los tonos pastel del resto del sistema (chip-estado).
+    &--verde  { background: #dcfce7; color: #16a34a; }
+    &--rojo   { background: #fee2e2; color: #dc2626; }
+    &--azul   { background: #dbeafe; color: #2563eb; }
+    &--morado { background: #ede9fe; color: #7c3aed; }
+    &--ambar  { background: #fef3c7; color: #d97706; }
+    &--gris   { background: #f1f5f9; color: #475569; }
+  }
+
+  &__body {
+    flex: 1; display: flex; flex-direction: column; gap: 2px;
+  }
+
+  &__head {
+    display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  }
+
+  &__fecha {
+    font-size: 12.5px; color: #0f172a; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__sep { color: #cbd5e1; font-size: 12px; font-weight: 400; }
+
+  &__titulo { font-size: 12.5px; color: #0f172a; font-weight: 600; }
+
+  &__user {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #475569; font-weight: 600;
+  }
+
+  &__user-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    background: #dbeafe; color: #1d4ed8;
+    border-radius: 50%;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+  }
+
+  &__user-cargo {
+    color: #94a3b8; font-size: 11px; font-weight: 500; font-style: italic;
+  }
+
+  &__desc {
+    margin: 2px 0 0; font-size: 11.5px; color: #475569; line-height: 1.5;
+  }
+
+  &__ref {
+    font-size: 10.5px; color: #94a3b8; font-family: 'SF Mono', monospace;
+  }
+}
+
+
+/* --- .decision --- extraido de detalle-expediente */
+
+.decision {
+  padding: 14px 16px;
+  border-radius: 10px; border: 1px solid #e2e8f0;
+  background: #ffffff;
+
+  &__header {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  &__badge {
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  &__version {
+    font-size: 13px; color: #0f172a; font-family: 'SF Mono', monospace;
+  }
+  &__fecha {
+    margin-left: auto;
+    font-size: 11px; color: #64748b; font-weight: 600;
+  }
+  &__responsable {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: #475569;
+    margin-bottom: 8px;
+    .material-symbols-outlined { font-size: 15px; color: #94a3b8; }
+    strong { color: #0f172a; }
+  }
+  &__comentario {
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    background: #f8fafc; border-radius: 8px;
+    font-size: 12px; color: #334155; line-height: 1.5;
+  }
+  &__cambios {
+    margin-top: 8px;
+    small {
+      display: block;
+      font-size: 10.5px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+    ul {
+      margin: 0; padding-left: 20px;
+      font-size: 12px; color: #334155;
+      li { margin-bottom: 3px; }
+    }
+  }
+
+  // Variantes por tipo
+  &--aprobado  { background: #f0fdf4; border-color: #86efac;
+    .decision__badge { background: #dcfce7; color: #166534; }
+  }
+  &--observado { background: #fffbeb; border-color: #fde68a;
+    .decision__badge { background: #fef3c7; color: #92400e; }
+  }
+  &--rechazado { background: #fef2f2; border-color: #fecaca;
+    .decision__badge { background: #fee2e2; color: #991b1b; }
+  }
+}
+
+
+/* --- .card-aprobador --- extraido de detalle-expediente */
+
+.card-aprobador {
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 14px;
+
+  &__principal {
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  &__avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #dbeafe; color: #1d4ed8;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.3px;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 22px; font-weight: 400; }
+  }
+
+  // Variante cuando el aprobador aún no está asignado
+  &--pendiente {
+    .card-aprobador__avatar { background: #cbd5e1; color: #475569; }
+    .card-aprobador__nombre-row strong { color: #94a3b8; font-style: italic; }
+  }
+
+  &__nombre {
+    display: flex; flex-direction: column; gap: 2px;
+    flex: 1;
+    small  { font-size: 12px; color: #64748b; }
+  }
+
+  &__grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    padding-top: 12px; border-top: 1px solid #e2e8f0;
+
+    @media (max-width: 760px) { grid-template-columns: 1fr; }
+  }
+
+  &__item {
+    display: flex; align-items: flex-start; gap: 8px;
+
+    .material-symbols-outlined { font-size: 18px; color: #64748b; margin-top: 2px; }
+    div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    small  { font-size: 10.5px; color: #64748b; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+    strong { font-size: 12.5px; color: #0f172a; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  }
+}

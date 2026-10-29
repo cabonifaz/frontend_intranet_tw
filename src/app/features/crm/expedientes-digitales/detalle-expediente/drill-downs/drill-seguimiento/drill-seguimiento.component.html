@@ -1,0 +1,285 @@
+<!-- 0. Barra de pills de propuestas -->
+@if (drill().propuestas.length > 1) {
+  <div class="prop-pills-bar">
+    <div class="prop-pills-group">
+      <small>Ver seguimiento:</small>
+      @for (p of drill().propuestas; track p.numero + '-' + p.version) {
+        <button type="button"
+                class="pill-prop"
+                [class.pill-prop--activa]="p.seleccionada"
+                (click)="cambiarPropuestaSeguimiento.emit(p.numero)">
+          {{ p.numero }} v{{ p.version }}
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- 1. Estado Actual del Seguimiento -->
+@if (drill().estado; as e) {
+  <app-seccion icono="phone_in_talk" [titulo]="'Estado Actual del Seguimiento de ' + (e.numero ?? '—')">
+    <app-button headerActions variant="ghost" tamano="sm" icono="open_in_new"
+                (clic)="irAlSeguimiento.emit()">
+      Ir al Módulo Seguimiento
+    </app-button>
+    <div class="info-grid">
+      <div class="info-item"><small>Propuesta en seguimiento</small><strong class="valor-codigo">{{ e.numero }} v{{ e.version ?? '—' }}</strong></div>
+      <div class="info-item">
+        <small>Comercial a cargo</small>
+        <div class="responsable-mini">
+          <span class="responsable-mini__avatar">{{ helpers.iniciales(e.comercial) }}</span>
+          <div class="responsable-mini__texto">
+            <strong>{{ e.comercial ?? '—' }}</strong>
+            @if (e.cargoComercial) { <small>{{ helpers.titleCase(e.cargoComercial) }}</small> }
+          </div>
+        </div>
+      </div>
+      <div class="info-item">
+        <small>Estado global</small>
+        @if (e.estadoSeguimiento) {
+          <span class="chip-estado chip-estado--{{ helpers.resultadoClass(e.estadoSeguimiento) }}">
+            {{ helpers.humanizarEstado(e.estadoSeguimiento) }}
+          </span>
+        } @else { <strong>—</strong> }
+      </div>
+      <div class="info-item">
+        <small>Contacto cliente</small>
+        <div class="responsable-mini">
+          <span class="responsable-mini__avatar">{{ helpers.iniciales(e.contacto) }}</span>
+          <div class="responsable-mini__texto">
+            <strong>{{ e.contacto ?? '—' }}</strong>
+            @if (e.cargoContacto) { <small>{{ helpers.titleCase(e.cargoContacto) }}</small> }
+          </div>
+        </div>
+      </div>
+      <div class="info-item"><small>Fecha de envío</small><strong>{{ e.fechaEnvio ? (e.fechaEnvio | date:'dd/MM/yyyy') : '—' }}</strong></div>
+      <div class="info-item">
+        <small>Última interacción</small>
+        <strong>{{ e.ultimaInteraccion ? helpers.formatearFechaCorta(e.ultimaInteraccion) : '—' }}</strong>
+      </div>
+      <div class="info-item"><small>Fecha de aceptación</small><strong>{{ e.fechaCierre ? (e.fechaCierre | date:'dd/MM/yyyy') : '—' }}</strong></div>
+      <div class="info-item"><small>Total interacciones</small><strong>{{ e.totalInteracciones }}</strong></div>
+      <div class="info-item">
+        <small>Días seguimiento</small>
+        <strong>
+          @if (e.diasSeguimiento != null) {
+            {{ e.diasSeguimiento }} día(s)
+          } @else { — }
+        </strong>
+      </div>
+      <div class="info-item">
+        <small>SLA de seguimiento</small>
+        @if (e.slaCumplido != null) {
+          <span class="chip-estado chip-estado--{{ e.slaCumplido ? 'ok' : 'critical' }}">
+            <span class="material-symbols-outlined">{{ e.slaCumplido ? 'check_circle' : 'warning' }}</span>
+            {{ e.slaCumplido ? 'Cumplido' : 'Fuera de SLA' }}
+            @if (e.diasSeguimiento != null) { en {{ e.diasSeguimiento }} día(s) }
+          </span>
+        } @else {
+          <strong>—</strong>
+        }
+      </div>
+    </div>
+  </app-seccion>
+}
+
+<!-- 2. Timeline de Interacciones -->
+@if (drill().interacciones.length > 0) {
+  <app-seccion icono="forum" titulo="Timeline de Interacciones" [subtitulo]="drill().interacciones.length + ' interacción(es)'">
+    <div class="tl">
+      @for (i of drill().interacciones; track $index) {
+        <div class="tl__item">
+          <span class="tl__badge tl__badge--{{ helpers.colorInteraccion(i.tipo, i.resultado) }}">
+            <span class="material-symbols-outlined">{{ helpers.iconoInteraccion(i.tipo) }}</span>
+          </span>
+          <div class="tl__body">
+            <div class="tl__head">
+              <strong class="tl__fecha">{{ i.fecha ? (i.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+              @if (i.usuario) {
+                <span class="tl__user">
+                  <span class="tl__user-avatar">{{ helpers.iniciales(i.usuario) }}</span>
+                  {{ i.usuario }}
+                </span>
+              }
+              @if (i.canal) {
+                <span class="chip-canal">
+                  <span class="material-symbols-outlined">{{ helpers.iconoCanal(i.canal) }}</span>
+                  {{ helpers.titleCase(i.canal) }}
+                </span>
+              }
+              @if (i.resultado) {
+                <span class="chip-estado chip-estado--{{ helpers.severidadResultadoInteraccion(i.resultado) }}">
+                  {{ helpers.humanizarEstado(i.resultado) }}
+                </span>
+              }
+            </div>
+            <strong class="tl__titulo">
+              @if (i.resultado === 'aceptacion') {
+                Aceptación de propuesta
+              } @else {
+                {{ i.titulo ?? helpers.titleCase(i.tipo) }}
+              }
+            </strong>
+            @if (i.destinatario) {
+              <p class="tl__desc"><strong>Para:</strong> {{ i.destinatario }}</p>
+            }
+            @if (i.asunto) {
+              <p class="tl__desc"><strong>Asunto:</strong> {{ i.asunto }}</p>
+            }
+            @if (i.detalle) {
+              <p class="tl__desc">{{ i.detalle }}</p>
+            }
+            @if (i.resumenCuerpo && i.resumenCuerpo !== i.detalle) {
+              <p class="tl__desc tl__desc--resumen">{{ i.resumenCuerpo }}</p>
+            }
+            @if (i.tipoAceptacion) {
+              <small class="tl__ref">
+                <span class="material-symbols-outlined">check_circle</span>
+                Aceptación: {{ helpers.humanizarEstado(i.tipoAceptacion) }}
+              </small>
+            }
+            @if (i.proximaAccion || i.duracionMinutos) {
+              <div class="tl__pies">
+                @if (i.proximaAccion) {
+                  <span class="chip-pie">
+                    <span class="material-symbols-outlined">event</span>
+                    <span>Próxima acción: <strong>{{ i.proximaAccion }}</strong>@if (i.proximaAccionFecha) { · {{ i.proximaAccionFecha | date:'dd/MM/yyyy' }} }</span>
+                  </span>
+                }
+                @if (i.duracionMinutos) {
+                  <span class="chip-pie">
+                    <span class="material-symbols-outlined">schedule</span>
+                    {{ i.duracionMinutos }} min
+                  </span>
+                }
+              </div>
+            }
+            @if (i.adjuntos && i.adjuntos.length > 0) {
+              <div class="tl__adjuntos">
+                @for (a of i.adjuntos; track a.clave) {
+                  <button type="button" class="chip-archivo" (click)="verArchivo.emit(a.clave)">
+                    <span class="material-symbols-outlined">{{ helpers.iconoArchivo(a.tipo) }}</span>
+                    {{ a.nombreArchivo ?? a.clave }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </app-seccion>
+}
+
+<!-- 3. Resultado del Seguimiento -->
+@if (drill().resultado; as r) {
+  <app-seccion icono="task_alt" titulo="Resultado del Seguimiento">
+    <span headerActions class="chip-estado chip-estado--{{ helpers.resultadoClass(r.resultado) }}">
+      <span class="material-symbols-outlined">{{ r.resultado === 'aceptacion' ? 'check_circle' : (r.resultado === 'rechazo' ? 'cancel' : 'pending') }}</span>
+      Cerrado · {{ helpers.humanizarEstado(r.resultado) }}
+    </span>
+    <div class="info-grid">
+      <div class="info-item">
+        <small>Resultado</small>
+        <span class="chip-estado chip-estado--{{ helpers.resultadoClass(r.resultado) }}">
+          {{ helpers.humanizarEstado(r.resultado) }}
+        </span>
+      </div>
+      <div class="info-item">
+        <small>Registrado por</small>
+        <div class="responsable-mini">
+          <span class="responsable-mini__avatar">{{ helpers.iniciales(r.registradoPor) }}</span>
+          <strong>{{ r.registradoPor ?? '—' }}</strong>
+        </div>
+      </div>
+      <div class="info-item"><small>Fecha de cierre</small><strong>{{ r.fechaCierre ? (r.fechaCierre | date:'dd/MM/yyyy HH:mm') : '—' }}</strong></div>
+      <div class="info-item"><small>Tipo de evidencia</small><strong>{{ r.tipoEvidencia ?? r.canal ?? '—' }}</strong></div>
+      @if (r.montoComprometido) {
+        <div class="info-item"><small>Monto propuesta</small><strong class="valor-monto">{{ r.simboloMoneda }} {{ r.montoComprometido | number:'1.2-2' }}</strong></div>
+      }
+    </div>
+
+    @if (r.comentario) {
+      <div class="descripcion-bloque">
+        <small>COMENTARIO DEL CIERRE</small>
+        <p>{{ r.comentario }}</p>
+      </div>
+    }
+    @if (r.motivoRechazo) {
+      <div class="descripcion-bloque descripcion-bloque--rojo">
+        <small>MOTIVO DE RECHAZO</small>
+        <p>{{ r.motivoRechazo }}</p>
+      </div>
+    }
+
+    @if (drill().evidencias.length > 0) {
+      <div class="evidencias-bloque">
+        <small>EVIDENCIAS ADJUNTAS</small>
+        <div class="lista-archivos">
+          @for (ev of drill().evidencias; track ev.clave) {
+            <div class="archivo-item">
+              <span class="archivo-item__icono material-symbols-outlined">{{ helpers.iconoArchivo(ev.tipo) }}</span>
+              <div class="archivo-item__texto">
+                <strong>{{ ev.nombreArchivo ?? ev.clave }}</strong>
+                <small>{{ helpers.tamanoLegible(ev.tamanoBytes) }}{{ ev.fecha ? ' · ' + (ev.fecha | date:'dd/MM/yyyy') : '' }}</small>
+              </div>
+              <div class="archivo-item__acciones">
+                <app-button variant="ghost" tamano="sm" icono="visibility" (clic)="verArchivo.emit(ev.clave)">Ver</app-button>
+                <app-button variant="ghost" tamano="sm" icono="download" (clic)="descargarArchivo.emit({ clave: ev.clave, nombre: ev.nombreArchivo })">Descargar</app-button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </app-seccion>
+}
+
+<!-- 4. Comercial Responsable del Seguimiento -->
+@if (drill().estado?.comercial; as com) {
+  <app-seccion icono="support_agent" titulo="Comercial Responsable del Seguimiento">
+    <span headerActions class="chip-estado chip-estado--neutral">
+      <span class="dot"></span> Responsable automático
+    </span>
+    <div class="card-aprobador">
+      <div class="card-aprobador__principal">
+        <div class="card-aprobador__avatar">{{ helpers.iniciales(com) }}</div>
+        <div class="card-aprobador__nombre">
+          <div class="card-aprobador__nombre-row">
+            <strong>{{ com }}</strong>
+          </div>
+          @if (drill().estado?.cargoComercial) { <small>{{ helpers.titleCase(drill().estado!.cargoComercial) }}</small> }
+        </div>
+      </div>
+      <div class="card-aprobador__grid">
+        <div class="card-aprobador__item">
+          <span class="material-symbols-outlined">mail</span>
+          <div>
+            <small>Correo corporativo</small>
+            <strong class="valor-link">{{ drill().estado?.correoComercial ?? '—' }}</strong>
+          </div>
+        </div>
+        <div class="card-aprobador__item">
+          <span class="material-symbols-outlined">phone</span>
+          <div>
+            <small>Teléfono</small>
+            <strong>{{ helpers.formatearTelefono(drill().estado?.telefonoComercial) }}</strong>
+          </div>
+        </div>
+        @if (drill().estado?.areaComercial) {
+          <div class="card-aprobador__item">
+            <span class="material-symbols-outlined">domain</span>
+            <div>
+              <small>Área</small>
+              <strong>{{ helpers.titleCase(drill().estado!.areaComercial!) }}</strong>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="card-aprobador__footer card-aprobador__footer--nota">
+        <span class="material-symbols-outlined">info</span>
+        <small>Comercial responsable de la propuesta <strong>{{ drill().estado?.numero }}</strong>, encargado del seguimiento hasta su cierre.</small>
+      </div>
+    </div>
+  </app-seccion>
+}

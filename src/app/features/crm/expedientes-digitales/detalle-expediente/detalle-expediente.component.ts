@@ -12,6 +12,15 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
 import { ExpedienteHelpersService } from './expediente-helpers.service';
 import { DrillPropuestaComponent } from './drill-downs/drill-propuesta/drill-propuesta.component';
+import { DrillVistoBuenoComponent } from './drill-downs/drill-visto-bueno/drill-visto-bueno.component';
+import { DrillSsomaComponent } from './drill-downs/drill-ssoma/drill-ssoma.component';
+import { DrillProgramacionComponent } from './drill-downs/drill-programacion/drill-programacion.component';
+import { DrillEjecucionComponent } from './drill-downs/drill-ejecucion/drill-ejecucion.component';
+import { DrillCierreComponent } from './drill-downs/drill-cierre/drill-cierre.component';
+import { DrillOrdenServicioComponent } from './drill-downs/drill-orden-servicio/drill-orden-servicio.component';
+import { DrillRequerimientoComponent } from './drill-downs/drill-requerimiento/drill-requerimiento.component';
+import { DrillOrdenCompraComponent } from './drill-downs/drill-orden-compra/drill-orden-compra.component';
+import { DrillSeguimientoComponent } from './drill-downs/drill-seguimiento/drill-seguimiento.component';
 import {
   DetalleExpedienteDto,
   EtapaExpedienteDto,
@@ -70,6 +79,15 @@ export type DrillTabDto =
     ModalAuditoriaExpedienteComponent,
     ModalReasignarResponsableComponent,
     DrillPropuestaComponent,
+    DrillVistoBuenoComponent,
+    DrillSsomaComponent,
+    DrillProgramacionComponent,
+    DrillEjecucionComponent,
+    DrillCierreComponent,
+    DrillOrdenServicioComponent,
+    DrillRequerimientoComponent,
+    DrillOrdenCompraComponent,
+    DrillSeguimientoComponent,
   ],
   templateUrl: './detalle-expediente.component.html',
   styleUrl: './detalle-expediente.component.scss',

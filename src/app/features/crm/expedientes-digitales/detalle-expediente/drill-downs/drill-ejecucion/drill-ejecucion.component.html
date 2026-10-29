@@ -1,0 +1,73 @@
+@if (drill().ordenesServicio.length > 0) {
+  <app-seccion icono="play_circle" titulo="OSs en ejecución" [subtitulo]="drill().ordenesServicio.length + ' OS.'">
+    <table class="tabla-simple">
+      <thead><tr><th>OS</th><th>Estado</th><th>Fecha</th><th>Técnico</th><th>Hora inicio</th><th>Hora fin</th></tr></thead>
+      <tbody>
+        @for (os of drill().ordenesServicio; track os.idOs) {
+          <tr>
+            <td>{{ os.numero }}</td>
+            <td>{{ os.estado }}</td>
+            <td>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</td>
+            <td>{{ os.tecnicoPrincipal ?? '—' }}</td>
+            <td>{{ os.horaLlegadaReal ?? os.horaInicio ?? '—' }}</td>
+            <td>{{ os.horaFinReal ?? '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </app-seccion>
+}
+
+@if (drill().eventosCampo.length > 0) {
+  <app-seccion icono="my_location" titulo="Eventos de campo" [subtitulo]="drill().eventosCampo.length + ' evento(s).'">
+    <ul class="timeline-list">
+      @for (ev of drill().eventosCampo; track ev.idEvento) {
+        <li>
+          <small>{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</small>
+          <strong>{{ ev.tipoEvento ?? '—' }}{{ ev.os ? ' · ' + ev.os : '' }}</strong>
+          @if (ev.notas) { <p>{{ ev.notas }}</p> }
+          <small class="user">{{ ev.usuario ?? '—' }}{{ ev.sincronizado ? '' : ' · pendiente sync' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().evidencias.length > 0) {
+  <app-seccion icono="photo_library" titulo="Evidencias" [subtitulo]="drill().evidencias.length + ' evidencia(s).'">
+    <ul class="lista-simple">
+      @for (e of drill().evidencias; track e.clave) {
+        <li>
+          <strong>{{ e.nombreArchivo ?? e.tipoEvidencia ?? '—' }}</strong>
+          <small>{{ e.fecha | date:'dd/MM/yyyy HH:mm' }}{{ e.validacionIa ? ' · IA: ' + e.validacionIa : '' }}{{ e.usuario ? ' · ' + e.usuario : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().incidencias.length > 0) {
+  <app-seccion icono="warning" titulo="Incidencias" [subtitulo]="drill().incidencias.length + ' incidencia(s).'">
+    <ul class="lista-simple">
+      @for (i of drill().incidencias; track i.idIncidencia) {
+        <li>
+          <strong>{{ i.tipo ?? '—' }}{{ i.nivelAlerta ? ' · ' + i.nivelAlerta : '' }}</strong>
+          <small>{{ i.descripcion ?? '—' }} · {{ i.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}{{ i.usuario ? ' · ' + i.usuario : '' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
+
+@if (drill().demoras.length > 0) {
+  <app-seccion icono="schedule" titulo="Demoras" [subtitulo]="drill().demoras.length + ' demora(s).'">
+    <ul class="lista-simple">
+      @for (d of drill().demoras; track d.idDemora) {
+        <li>
+          <strong>{{ d.motivo ?? '—' }}{{ d.duracionMinutos ? ' · ' + d.duracionMinutos + ' min' : '' }}</strong>
+          <small>{{ d.descripcion ?? '—' }} · {{ d.fechaRegistro | date:'dd/MM/yyyy HH:mm' }}</small>
+        </li>
+      }
+    </ul>
+  </app-seccion>
+}
