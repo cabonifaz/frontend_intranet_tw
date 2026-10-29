@@ -10,6 +10,7 @@ import { ModalReasignarResponsableComponent } from '../modal-reasignar-responsab
 import { ExpedientesDigitalesService } from '../../../../core/services/expedientes-digitales.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { breadcrumbCrm } from '../../../../core/constants/breadcrumbs';
+import { ExpedienteHelpersService } from './expediente-helpers.service';
 import {
   DetalleExpedienteDto,
   EtapaExpedienteDto,
@@ -72,10 +73,11 @@ export type DrillTabDto =
   styleUrl: './detalle-expediente.component.scss',
 })
 export class DetalleExpedienteComponent implements OnInit {
-  private readonly svc    = inject(ExpedientesDigitalesService);
-  private readonly route  = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly toast  = inject(ToastService);
+  private readonly svc     = inject(ExpedientesDigitalesService);
+  private readonly route   = inject(ActivatedRoute);
+  private readonly router  = inject(Router);
+  private readonly toast   = inject(ToastService);
+  protected readonly helpers = inject(ExpedienteHelpersService);
 
   readonly breadcrumb    = breadcrumbCrm('Expedientes Digitales', 'Detalle');
   readonly idExpediente  = signal<number>(0);
@@ -249,14 +251,7 @@ export class DetalleExpedienteComponent implements OnInit {
 
   // ─── Helpers UI ────────────────────────────────────────────────
 
-  claseEstadoChip(sev?: string | null): string {
-    switch (sev) {
-      case 'ok':       return 'chip-estado--ok';
-      case 'warning':  return 'chip-estado--warning';
-      case 'critical': return 'chip-estado--critical';
-      default:         return 'chip-estado--neutral';
-    }
-  }
+  claseEstadoChip(sev?: string | null): string { return this.helpers.claseEstadoChip(sev); }
 
   abrirDocumentos(): void { this.modalDocumentos.set(true); }
   abrirAuditoria(): void  { this.modalAuditoria.set(true); }
@@ -319,53 +314,11 @@ export class DetalleExpedienteComponent implements OnInit {
     }
   }
 
-  /** Severidad semántica del grado de necesidad del RQ (ALTA, MEDIA, BAJA). */
-  severidadGradoNecesidad(grado?: string | null): string {
-    const g = (grado ?? '').toLowerCase();
-    if (g === 'alta' || g === 'urgente' || g === 'critica') return 'critical';
-    if (g === 'media' || g === 'normal') return 'warning';
-    if (g === 'baja' || g === 'baja_prioridad') return 'ok';
-    return 'neutral';
-  }
-
-  /** Severidad del resultado de una interacción de seguimiento. */
-  severidadResultadoInteraccion(resultado?: string | null): string {
-    const r = (resultado ?? '').toLowerCase();
-    if (['contactado_exitosamente', 'aceptacion', 'aceptada', 'aceptado', 'cerrado_aceptacion', 'confirmado', 'exitoso', 'exitosa', 'completado'].includes(r)) return 'ok';
-    if (['sin_respuesta', 'no_contactado', 'no_disponible', 'pendiente', 'buzon', 'reagendado'].includes(r)) return 'warning';
-    if (['rechazo', 'rechazada', 'rechazado', 'cerrado_rechazo', 'cancelado', 'perdido', 'error'].includes(r)) return 'critical';
-    return 'neutral';
-  }
-
-  /** Severidad para el chip del campo `validacion` corto de una OC vinculada. */
-  severidadValidacionOc(resultadoIa?: string | null, validacion?: string | null): string {
-    const r = (resultadoIa ?? '').toLowerCase();
-    const v = (validacion ?? '').toLowerCase();
-    if (r === 'ok' || v === 'ok') return 'ok';
-    if (r === 'critico' || v.includes('crítica') || v.includes('critica')) return 'critical';
-    if (r === 'advertencia' || v.includes('parcial') || v.includes('observa')) return 'warning';
-    if (v === 'pendiente') return 'neutral';
-    return 'neutral';
-  }
-
-  /** Severidad semántica del estado del Visto Bueno. */
-  severidadEstadoVb(estado?: string | null): string {
-    const e = (estado ?? '').toLowerCase();
-    if (['aprobado', 'aprobada'].includes(e)) return 'ok';
-    if (['rechazado', 'rechazada'].includes(e)) return 'critical';
-    if (['devuelto', 'devuelta', 'devuelto_para_cambios', 'pendiente'].includes(e)) return 'warning';
-    if (['sin_solicitud'].includes(e)) return 'neutral';
-    return 'neutral';
-  }
-
-  /** Severidad semántica del estado de una propuesta generada. */
-  severidadEstadoPropuesta(estado?: string | null): string {
-    const e = (estado ?? '').toLowerCase();
-    if (['aceptada', 'aceptado', 'aprobada', 'aprobado', 'ganada'].includes(e)) return 'ok';
-    if (['rechazada', 'rechazado', 'perdida', 'anulada', 'anulado', 'revocada'].includes(e)) return 'critical';
-    if (['enviada', 'enviado', 'en_revision', 'borrador', 'pendiente', 'por_enviar'].includes(e)) return 'warning';
-    return 'neutral';
-  }
+  severidadGradoNecesidad(grado?: string | null): string { return this.helpers.severidadGradoNecesidad(grado); }
+  severidadResultadoInteraccion(resultado?: string | null): string { return this.helpers.severidadResultadoInteraccion(resultado); }
+  severidadValidacionOc(resultadoIa?: string | null, validacion?: string | null): string { return this.helpers.severidadValidacionOc(resultadoIa, validacion); }
+  severidadEstadoVb(estado?: string | null): string { return this.helpers.severidadEstadoVb(estado); }
+  severidadEstadoPropuesta(estado?: string | null): string { return this.helpers.severidadEstadoPropuesta(estado); }
 
   async exportar(): Promise<void> {
     this.exportando.set(true);
@@ -411,83 +364,16 @@ export class DetalleExpedienteComponent implements OnInit {
     return (this.detalle()?.entidades ?? []).filter(e => e.clavePadre === clave);
   }
 
-  /** Iniciales a partir de un nombre completo (helper para el avatar). */
-  iniciales(nombre: string | null | undefined): string {
-    if (!nombre) return '?';
-    return nombre.split(' ').filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-  }
-
-  /** Color del avatar según el rol del responsable. */
-  /** Formato "Hoy dd/MM HH:mm" si es hoy, sino "dd/MM HH:mm". */
-  formatearFechaCorta(fecha?: string | null): string {
-    if (!fecha) return '—';
-    const d = new Date(fecha);
-    const hoy = new Date();
-    const esHoy = d.toDateString() === hoy.toDateString();
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${esHoy ? 'Hoy ' : ''}${dd}/${mm} ${hh}:${min}`;
-  }
-
-  /** Icono según el tipo + título del evento. */
-  iconoEventoTimeline(tipo?: string | null, titulo?: string | null): string {
-    const t = ((tipo ?? '') + ' ' + (titulo ?? '')).toLowerCase();
-    if (t.includes('autogener')) return 'auto_awesome';
-    if (t.includes('valid') && !t.includes('invalid')) return 'verified';
-    if (t.includes('observ')) return 'warning';
-    if (t.includes('reemplaz')) return 'swap_horiz';
-    if (t.includes('convertid') || t.includes('conversion')) return 'swap_horiz';
-    if (t.includes('aprob') || t.includes('aceptad') || t.includes('visto bueno')) return 'check';
-    if (t.includes('rechaz')) return 'close';
-    if (t.includes('anulad')) return 'cancel';
-    if (t.includes('documento') || t.includes('adjunt') || t.includes('archivo') || t.includes('attach')) return 'description';
-    if (t.includes('enviad')) return 'send';
-    if (t.includes('solicit')) return 'help';
-    if (t.includes('revoc')) return 'undo';
-    if (t.includes('vincul') || t.includes('asign')) return 'link';
-    if (t.includes('creado') || t.includes('creacion') || t.includes('creada') || t.includes('registr')) return 'add';
-    if (t.includes('edici') || t.includes('modif') || t.includes('edit')) return 'edit';
-    return 'bolt';
-  }
-
-  /** Color del badge según tipo + título. */
-  /** Un valor luce como código real (RQ-xxx, PROP-xxx, OC-xxx, 4500-77002) y no como un tipo snake_case. */
-  esCodigoEntidad(valor?: string | null): boolean {
-    if (!valor) return false;
-    // Códigos tienen guión y al menos un dígito; tipos snake_case son todo minúsculas con underscore.
-    return /-/.test(valor) && /\d/.test(valor) && !/^[a-z_]+$/.test(valor);
-  }
-
-  /** Color del chip de etapa en la actividad reciente / timeline. */
-  chipEtapa(etapa?: string | null): string {
-    const e = (etapa ?? '').toLowerCase();
-    if (e.includes('rq') || e.includes('requer')) return 'azul';
-    if (e.includes('propuest')) return 'violeta';
-    if (e.includes('vb') || e.includes('visto')) return 'violeta';
-    if (e.includes('seg')) return 'cian';
-    if (e.includes('oc') || e.includes('compra')) return 'ambar';
-    if (e.includes('os') || e.includes('servicio') || e.includes('ejec')) return 'verde';
-    if (e.includes('ssoma')) return 'rojo';
-    if (e.includes('prog')) return 'cian';
-    if (e.includes('cierre')) return 'neutro';
-    return 'neutro';
-  }
-
-  colorEventoTimeline(tipo?: string | null, titulo?: string | null): string {
-    const t = ((tipo ?? '') + ' ' + (titulo ?? '')).toLowerCase();
-    if (t.includes('aprob') || t.includes('aceptad') || t.includes('convertid') || (t.includes('valid') && !t.includes('invalid'))) return 'verde';
-    if (t.includes('rechaz') || t.includes('anulad') || t.includes('error') || t.includes('critic')) return 'rojo';
-    if (t.includes('revoc') || t.includes('solicit') || t.includes('observ') || t.includes('reemplaz') || t.includes('autogener')) return 'ambar';
-    return 'azul';
-  }
-
-  /** Devuelve los números de propuesta distintos entre todas las versiones (ej. ['PROP-000001', 'PROP-000002']). */
+  iniciales(nombre: string | null | undefined): string { return this.helpers.iniciales(nombre); }
+  formatearFechaCorta(fecha?: string | null): string { return this.helpers.formatearFechaCorta(fecha); }
+  iconoEventoTimeline(tipo?: string | null, titulo?: string | null): string { return this.helpers.iconoEventoTimeline(tipo, titulo); }
+  esCodigoEntidad(valor?: string | null): boolean { return this.helpers.esCodigoEntidad(valor); }
+  chipEtapa(etapa?: string | null): string { return this.helpers.chipEtapa(etapa); }
+  colorEventoTimeline(tipo?: string | null, titulo?: string | null): string { return this.helpers.colorEventoTimeline(tipo, titulo); }
   propuestasDistintas(
     versiones: import('../../../../core/models/expedientes-digitales.model').VersionPropuestaExpedienteDto[],
   ): string[] {
-    return [...new Set(versiones.map(v => v.numero))];
+    return this.helpers.propuestasDistintas(versiones);
   }
 
   irAlVistoBueno(idVb?: number | null): void {
@@ -512,14 +398,7 @@ export class DetalleExpedienteComponent implements OnInit {
     void this.router.navigate(['/operaciones/ordenes-servicio', id]);
   }
 
-  /** Severidad del estado de una OS. */
-  severidadEstadoOs(estado?: string | null): string {
-    const e = (estado ?? '').toLowerCase();
-    if (['ejecutada', 'completada', 'cerrada', 'conformada'].includes(e)) return 'ok';
-    if (['anulada', 'cancelada', 'rechazada'].includes(e)) return 'critical';
-    if (['programada', 'confirmada', 'en_ruta', 'en_ejecucion', 'en_curso', 'pendiente_conformidad'].includes(e)) return 'warning';
-    return 'neutral';
-  }
+  severidadEstadoOs(estado?: string | null): string { return this.helpers.severidadEstadoOs(estado); }
 
   /** Cambia la OC mostrada en el tab OC. */
   async cambiarOcMostrada(idOc: number): Promise<void> {
@@ -581,95 +460,24 @@ export class DetalleExpedienteComponent implements OnInit {
     }
   }
 
-  /** idPropuesta de la primera versión visible del grupo (para pills "Ver propuestas"). */
   primeraVersionDePropuesta(
     numero: string,
     versiones: import('../../../../core/models/expedientes-digitales.model').VersionPropuestaExpedienteDto[],
   ): number {
-    const match = versiones.find(v => v.numero === numero);
-    return match?.idPropuesta ?? 0;
+    return this.helpers.primeraVersionDePropuesta(numero, versiones);
   }
 
-  /**
-   * Las 9 secciones del wizard. El back devuelve el array `seccionesActivas` con las keys activas.
-   * Lo que viene en el array = activa. Lo que no → no activa.
-   */
-  /** Icono Material Symbols para cada sección del wizard de propuestas. */
-  iconoSeccionWizard(clave: string): string {
-    const mapa: Record<string, string> = {
-      configuracion:       'tune',
-      propuesta:           'request_quote',
-      opcionales:          'add_circle',
-      detalle:             'description',
-      recomendaciones:     'lightbulb',
-      forma_pago:          'payments',
-      suministros_cliente: 'inventory_2',
-      condiciones:         'gavel',
-      listado_equipos:     'precision_manufacturing',
-    };
-    return mapa[clave] ?? 'check_box';
+  iconoSeccionWizard(clave: string): string { return this.helpers.iconoSeccionWizard(clave); }
+
+  configuracionServicio(seccionesJson?: string | null, equiposVinculados = 0, suministrosCliente = 0) {
+    return this.helpers.configuracionServicio(seccionesJson, equiposVinculados, suministrosCliente);
   }
 
-  configuracionServicio(seccionesJson?: string | null, equiposVinculados = 0, suministrosCliente = 0): {
-    incluidas: number;
-    total: number;
-    items: { clave: string; nombre: string; numero: number; incluido: boolean; obligatoria: boolean; detalle?: string }[];
-  } | null {
-    const definicion = [
-      { clave: 'configuracion',       numero: 1, nombre: 'Configuración',         obligatoria: true  },
-      { clave: 'propuesta',           numero: 2, nombre: 'Propuesta',             obligatoria: true  },
-      { clave: 'opcionales',          numero: 3, nombre: 'Opcionales',            obligatoria: false },
-      { clave: 'detalle',             numero: 4, nombre: 'Detalle (Textos Base)', obligatoria: false },
-      { clave: 'recomendaciones',     numero: 5, nombre: 'Recomendaciones',       obligatoria: false },
-      { clave: 'forma_pago',          numero: 6, nombre: 'Forma de Pago',         obligatoria: true  },
-      { clave: 'suministros_cliente', numero: 7, nombre: 'Suministros Cliente',   obligatoria: false },
-      { clave: 'condiciones',         numero: 8, nombre: 'Condiciones',           obligatoria: false },
-      { clave: 'listado_equipos',     numero: 9, nombre: 'Listado de Equipos',    obligatoria: true  },
-    ];
-
-    const activas = new Set<string>();
-    try {
-      const parsed = seccionesJson ? JSON.parse(seccionesJson) : [];
-      if (Array.isArray(parsed)) parsed.forEach(k => activas.add(String(k)));
-    } catch { /* ignore */ }
-
-    const items = definicion.map(d => {
-      let detalle: string | undefined;
-      if (d.clave === 'listado_equipos' && equiposVinculados > 0) {
-        detalle = `${equiposVinculados} equipo${equiposVinculados > 1 ? 's' : ''}`;
-      } else if (d.clave === 'suministros_cliente' && suministrosCliente > 0) {
-        detalle = `${suministrosCliente} suministro${suministrosCliente > 1 ? 's' : ''}`;
-      }
-      return { ...d, incluido: activas.has(d.clave), detalle };
-    });
-
-    return {
-      incluidas: items.filter(i => i.incluido).length,
-      total: items.length,
-      items,
-    };
-  }
-
-  /** Devuelve "hace N días" o "hoy" según la fecha. */
-  diasHace(fecha?: string | null): string {
-    if (!fecha) return '';
-    const dias = Math.max(0, Math.floor((Date.now() - new Date(fecha).getTime()) / (1000 * 60 * 60 * 24)));
-    if (dias === 0) return 'hoy';
-    if (dias === 1) return 'hace 1 día';
-    return `hace ${dias} días`;
-  }
+  diasHace(fecha?: string | null): string { return this.helpers.diasHace(fecha); }
 
   // ── Helpers del tab OC ──────────────────────────────────────────
 
-  /** Clase CSS pastel para el estado de la OC. */
-  estadoOcClass(estado?: string | null): string {
-    const t = (estado ?? '').toLowerCase();
-    if (t.includes('validada')) return 'ok';
-    if (t.includes('observada') || t.includes('parcial')) return 'warning';
-    if (t.includes('anulada') || t.includes('rechaz')) return 'critical';
-    if (t.includes('autogenerada') || t.includes('pendiente')) return 'neutral';
-    return 'neutral';
-  }
+  estadoOcClass(estado?: string | null): string { return this.helpers.estadoOcClass(estado); }
 
   /** Nº de diferencias detectadas por la IA (suma de advertencias + críticas). */
   difsIa(): number {
@@ -690,218 +498,29 @@ export class DetalleExpedienteComponent implements OnInit {
     return 'ok';
   }
 
-  severidadClass(sev?: string | null): string {
-    const s = (sev ?? '').toLowerCase();
-    if (s === 'ok' || s === 'coincide') return 'ok';
-    if (s === 'advertencia' || s === 'diferencia') return 'warning';
-    if (s === 'critico' || s === 'rechazo') return 'critical';
-    return 'neutral';
-  }
-
-  iconoSeveridad(sev?: string | null): string {
-    const s = (sev ?? '').toLowerCase();
-    if (s === 'ok' || s === 'coincide') return 'check_circle';
-    if (s === 'critico') return 'error';
-    if (s === 'advertencia' || s === 'diferencia') return 'warning';
-    return 'help';
-  }
-
-  labelSeveridad(sev?: string | null): string {
-    const s = (sev ?? '').toLowerCase();
-    if (s === 'ok' || s === 'coincide') return 'Coincide';
-    if (s === 'critico') return 'Crítico';
-    if (s === 'advertencia' || s === 'diferencia') return 'Diferencia';
-    if (s === 'sin_dato') return 'Sin dato';
-    return sev ?? '—';
-  }
-
-  /** Humaniza un estado tipo "CERRADO_ACEPTACION" → "Cerrado · Aceptación". */
-  /** Severidad semántica a partir del estado para pintar el chip con color pastel. */
-  severidadEstado(estado?: string | null): string {
-    if (!estado) return 'neutral';
-    const e = estado.toLowerCase();
-    if (['aceptado', 'aceptacion', 'aprobado', 'validada', 'completado', 'activo', 'con_propuesta', 'ejecutado', 'cerrado', 'cerradoaceptacion', 'ok', 'verde', 'programada'].includes(e)) return 'ok';
-    if (['pendiente', 'pendiente_reemplazo', 'en_revision', 'observada', 'observado', 'en_curso', 'borrador', 'enviada', 'enviado', 'postergado', 'validacion_parcial', 'autogenerada'].includes(e)) return 'warning';
-    if (['anulada', 'anulado', 'rechazado', 'rechazo', 'revocada', 'revocado', 'cerradorechazo', 'bloqueado', 'critico', 'vencido'].includes(e)) return 'critical';
-    return 'neutral';
-  }
-
-  /** Nombre corto para la píldora de tipo de entidad (RQ, PROP, OC, OS, OM). */
-  tipoCortoEntidad(tipo?: string | null): string {
-    const t = (tipo || '').toLowerCase();
-    if (t === 'requerimiento' || t === 'rq') return 'RQ';
-    if (t === 'propuesta') return 'PROP';
-    if (t === 'orden_compra' || t === 'oc') return 'OC';
-    if (t === 'orden_servicio' || t === 'os') return 'OS';
-    if (t === 'orden_metrologia' || t === 'om') return 'OM';
-    return (tipo ?? '—').toUpperCase().replace(/_/g, ' ');
-  }
-
-  /** Modifier CSS para la píldora de tipo (rq, propuesta, oc, os, om). */
-  cssTipoEntidad(tipo?: string | null): string {
-    const t = (tipo || '').toLowerCase();
-    if (t === 'requerimiento' || t === 'rq') return 'rq';
-    if (t === 'propuesta') return 'propuesta';
-    if (t === 'orden_compra' || t === 'oc') return 'oc';
-    if (t === 'orden_servicio' || t === 'os') return 'os';
-    if (t === 'orden_metrologia' || t === 'om') return 'om';
-    return 'neutro';
-  }
-
-  humanizarEstado(estado?: string | null): string {
-    if (!estado) return '—';
-    const tildes: Record<string, string> = {
-      aceptacion: 'Aceptación',
-      rechazo: 'Rechazo',
-      cerrado: 'Cerrado',
-      cerradoaceptacion: 'Cerrado · Aceptación',
-      cerradorechazo: 'Cerrado · Rechazo',
-      activo: 'Activo',
-      sinseguimiento: 'Sin seguimiento',
-      postergado: 'Postergado',
-    };
-    const normalizado = estado.toLowerCase().replace(/[_\s]/g, '');
-    return tildes[normalizado] ?? estado
-      .toLowerCase()
-      .split('_')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' · ');
-  }
-
-  /** Formatea un teléfono peruano típico (9 dígitos) a "+51 999 999 999". */
-  formatearTelefono(tel?: string | null): string {
-    if (!tel) return '—';
-    const limpio = tel.replace(/\s|-|\+/g, '');
-    if (limpio.length === 9) return `+51 ${limpio.slice(0, 3)} ${limpio.slice(3, 6)} ${limpio.slice(6)}`;
-    if (limpio.length === 11 && limpio.startsWith('51')) {
-      const sinCod = limpio.slice(2);
-      return `+51 ${sinCod.slice(0, 3)} ${sinCod.slice(3, 6)} ${sinCod.slice(6)}`;
-    }
-    return tel;
-  }
-
-  /** TitleCase simple: "ADMIN" → "Admin", "SUPERINTENDENTE DE PLANTA" → "Superintendente De Planta". */
-  titleCase(txt?: string | null): string {
-    if (!txt) return '—';
-    // Palabras de 2-3 letras que se mantienen en mayúsculas (siglas comunes).
-    const siglas = new Set(['TI', 'HR', 'QA', 'IT', 'OC', 'OS', 'RQ', 'VB', 'IA', 'PE', 'RRHH', 'TIC', 'SST', 'SSO', 'SSOMA', 'GTH', 'GAF', 'CEO', 'CFO', 'CTO', 'COO', 'ERP', 'CRM']);
-    return txt
-      .split(/\s+/)
-      .map(w => {
-        const up = w.toUpperCase();
-        if (siglas.has(up)) return up;
-        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-      })
-      .join(' ');
-  }
+  severidadClass(sev?: string | null): string { return this.helpers.severidadClass(sev); }
+  iconoSeveridad(sev?: string | null): string { return this.helpers.iconoSeveridad(sev); }
+  labelSeveridad(sev?: string | null): string { return this.helpers.labelSeveridad(sev); }
+  severidadEstado(estado?: string | null): string { return this.helpers.severidadEstado(estado); }
+  tipoCortoEntidad(tipo?: string | null): string { return this.helpers.tipoCortoEntidad(tipo); }
+  cssTipoEntidad(tipo?: string | null): string { return this.helpers.cssTipoEntidad(tipo); }
+  humanizarEstado(estado?: string | null): string { return this.helpers.humanizarEstado(estado); }
+  formatearTelefono(tel?: string | null): string { return this.helpers.formatearTelefono(tel); }
+  titleCase(txt?: string | null): string { return this.helpers.titleCase(txt); }
 
   // ── Helpers de Interacciones del Seguimiento ────────────────────
 
-  /** Icono según el tipo de interacción. */
-  iconoInteraccion(tipo?: string | null): string {
-    const t = (tipo ?? '').toLowerCase();
-    if (t.includes('llamada'))  return 'call';
-    if (t.includes('correo'))   return 'mail';
-    if (t.includes('visita'))   return 'storefront';
-    if (t.includes('reunion'))  return 'groups';
-    if (t.includes('propuesta') || t.includes('envi')) return 'send';
-    if (t.includes('acept'))    return 'check_circle';
-    if (t.includes('rechaz'))   return 'cancel';
-    return 'chat';
-  }
-
-  /** Color del badge/card de la interacción según tipo + resultado. */
-  colorInteraccion(tipo?: string | null, resultado?: string | null): string {
-    const r = (resultado ?? '').toLowerCase();
-    if (r.includes('acept')) return 'verde';
-    if (r.includes('rechaz')) return 'rojo';
-    const t = (tipo ?? '').toLowerCase();
-    if (t.includes('llamada'))  return 'ambar';
-    if (t.includes('visita') || t.includes('reunion')) return 'morado';
-    return 'azul';
-  }
-
-  /** Icono según el canal de comunicación. */
-  iconoCanal(canal?: string | null): string {
-    const c = (canal ?? '').toLowerCase();
-    if (c.includes('correo') || c.includes('mail')) return 'mail';
-    if (c.includes('telef') || c.includes('llamad')) return 'call';
-    if (c.includes('whats')) return 'chat';
-    if (c.includes('visita') || c.includes('presencial')) return 'location_on';
-    return 'send';
-  }
-
-  /** Clase para el resultado del seguimiento. */
-  resultadoClass(resultado?: string | null): string {
-    const r = (resultado ?? '').toLowerCase();
-    if (r.includes('acept')) return 'ok';
-    if (r.includes('rechaz')) return 'critical';
-    if (r.includes('posterg')) return 'warning';
-    return 'neutral';
-  }
-
-  /** Clase CSS para el card de decisión según el estado del VB. */
-  estadoDecisionClass(estado?: string | null): string {
-    const t = (estado ?? '').toLowerCase();
-    if (t.includes('aprob'))  return 'ok';
-    if (t.includes('rechaz')) return 'critical';
-    if (t.includes('devuel') || t.includes('observ')) return 'warning';
-    return 'neutral';
-  }
-
-  /** Icono Material Symbols para el estado de una decisión de VB. */
-  iconoDecision(estado?: string | null): string {
-    const t = (estado ?? '').toLowerCase();
-    if (t.includes('aprob'))  return 'check';
-    if (t.includes('rechaz')) return 'close';
-    if (t.includes('devuel') || t.includes('observ')) return 'undo';
-    return 'help';
-  }
-
-  /** Etiqueta legible para el estado de una decisión de VB (corta). */
-  labelDecision(estado?: string | null): string {
-    const t = (estado ?? '').toLowerCase();
-    if (t.includes('aprob'))  return 'Aprobada';
-    if (t.includes('rechaz')) return 'Rechazada';
-    if (t.includes('devuel') || t.includes('observ')) return 'Devuelta para ajustes';
-    return estado ?? '';
-  }
-
-  iconoArchivo(tipo?: string | null): string {
-    const t = (tipo ?? '').toLowerCase();
-    if (t.includes('pdf')) return 'picture_as_pdf';
-    if (t.includes('xls') || t.includes('excel') || t.includes('sheet')) return 'table_chart';
-    if (t.includes('doc') || t.includes('word')) return 'description';
-    if (t.includes('eml') || t.includes('mail')) return 'mail';
-    if (t.includes('jpg') || t.includes('png') || t.includes('image')) return 'image';
-    return 'draft';
-  }
-
-  tamanoLegible(bytes?: number | null): string {
-    if (!bytes || bytes <= 0) return '—';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  }
-
-  colorResponsable(rol: string): string {
-    switch (rol) {
-      case 'comercial':    return 'azul';
-      case 'operaciones':  return 'verde';
-      case 'ssoma':        return 'rojo';
-      case 'tecnico':      return 'morado';
-      default:             return 'gris';
-    }
-  }
-
-  nombreRol(rol?: string | null): string {
-    const r = (rol ?? '').toLowerCase();
-    if (r === 'comercial')   return 'COMERCIAL';
-    if (r === 'operaciones') return 'OPERACIONES';
-    if (r === 'ssoma')       return 'SSOMA';
-    if (r === 'tecnico')     return 'TÉCNICO';
-    return (rol ?? '').toUpperCase();
-  }
+  iconoInteraccion(tipo?: string | null): string { return this.helpers.iconoInteraccion(tipo); }
+  colorInteraccion(tipo?: string | null, resultado?: string | null): string { return this.helpers.colorInteraccion(tipo, resultado); }
+  iconoCanal(canal?: string | null): string { return this.helpers.iconoCanal(canal); }
+  resultadoClass(resultado?: string | null): string { return this.helpers.resultadoClass(resultado); }
+  estadoDecisionClass(estado?: string | null): string { return this.helpers.estadoDecisionClass(estado); }
+  iconoDecision(estado?: string | null): string { return this.helpers.iconoDecision(estado); }
+  labelDecision(estado?: string | null): string { return this.helpers.labelDecision(estado); }
+  iconoArchivo(tipo?: string | null): string { return this.helpers.iconoArchivo(tipo); }
+  tamanoLegible(bytes?: number | null): string { return this.helpers.tamanoLegible(bytes); }
+  colorResponsable(rol: string): string { return this.helpers.colorResponsable(rol); }
+  nombreRol(rol?: string | null): string { return this.helpers.nombreRol(rol); }
 
   iconoEtapa(): string {
     const map: Record<string, string> = {
