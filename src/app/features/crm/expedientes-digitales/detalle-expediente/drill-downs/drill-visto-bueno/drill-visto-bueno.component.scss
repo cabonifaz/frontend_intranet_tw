@@ -1,7 +1,10 @@
 // Estilos del drill-down de Visto Bueno extraídos del detalle-expediente.component.scss.
 // Esta componente usa ViewEncapsulation.None para que estas clases sean globales
-// y para reutilizar las clases helper del padre (chip-estado, info-grid, card-aprobador,
-// descripcion-bloque, tl, responsable-mini, prop-pills-bar).
+// y para reutilizar las clases helper del padre (chip-estado, info-grid,
+// descripcion-bloque, responsable-mini, prop-pills-bar).
+// NOTA: el bloque base `.card-aprobador` y la mayor parte del `.tl` viven en
+// drill-seguimiento (que también los usa). Aquí solo quedan sus refinamientos
+// específicos de VB (nombre-row, mail-btn, supervisor, footer, etc.).
 
 // ─── VB: chip de SLA cumplido/vencido ────────────────────────────────────
 // Variante del chip-estado para la línea de SLA al pie del Estado VB.
@@ -24,6 +27,32 @@
   font-size: 11px; font-weight: 700; letter-spacing: 0.2px;
   background: #f1f5f9; color: #475569;
   font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+// ─── VB: refinamientos del card aprobador ────────────────────────────────
+.card-aprobador__nombre-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.card-aprobador__mail-btn {
+  margin-left: auto;
+}
+.card-aprobador__supervisor {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 4px;
+  color: #16a34a; font-size: 11px; font-weight: 600;
+  .material-symbols-outlined { font-size: 14px; }
+}
+
+.card-aprobador__footer {
+  display: flex; align-items: center; gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(37, 99, 235, 0.1);
+  color: #475569;
+
+  .material-symbols-outlined { font-size: 16px; color: #16a34a; }
+  small { font-size: 11.5px; }
+  strong { color: #0f172a; font-weight: 600; }
+  .hace { color: #94a3b8; margin-left: 4px; }
 }
 
 // ─── VB: métricas en 4 bloques ──────────────────────────────────────────

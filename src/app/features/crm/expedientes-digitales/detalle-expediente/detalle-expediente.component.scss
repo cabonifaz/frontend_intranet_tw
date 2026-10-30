@@ -108,6 +108,62 @@ app-seccion + app-seccion { margin-top: 14px; }
   overflow-y: visible;    // dejar visible el halo del círculo activo
 }
 
+.pipeline-paso {
+  all: unset; cursor: pointer; position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  flex: 1; min-width: 72px; text-align: center;
+
+  // Línea continua horizontal entre pasos (menos en el último).
+  // Se dibuja desde el centro del círculo actual hacia el siguiente.
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 23px;              // (48px / 2) - 1px, pasa justo por el centro del círculo
+    left: calc(50% + 28px); // sale del borde derecho del círculo
+    right: calc(-50% + 28px);
+    height: 2px;
+    background: #e2e8f0;    // color default (pendiente)
+    z-index: 0;
+  }
+
+  // La línea toma el color del paso ACTUAL (origen del tramo).
+  &--completado:not(:last-child)::after { background: #86efac; }
+
+  &__circulo {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: #f1f5f9; color: #94a3b8;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #e2e8f0;
+    transition: all 0.15s;
+    position: relative; z-index: 1;   // sobre la línea
+    .material-symbols-outlined { font-size: 22px; }
+  }
+  &__label { font-size: 11px; font-weight: 600; color: #64748b; position: relative; z-index: 1; }
+  &__badge {
+    position: absolute; top: -4px; right: calc(50% - 28px);
+    background: #ef4444; color: #fff;
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; text-align: center;
+    z-index: 2;
+  }
+
+  &--completado .pipeline-paso__circulo { background: #dcfce7; color: #16a34a; border-color: #86efac; }
+  &--bloqueado  .pipeline-paso__circulo { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+  &--pendiente  .pipeline-paso__circulo { background: #f8fafc; color: #cbd5e1; border-color: #e2e8f0; border-style: dashed; }
+
+  // Tab seleccionado: azul lleno con halo. Prevalece sobre cualquier color de estado.
+  &--seleccionado .pipeline-paso__circulo {
+    background: #2563eb; color: #ffffff; border-color: #2563eb;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+  }
+  &--seleccionado .pipeline-paso__label { color: #1e40af; font-weight: 700; }
+
+  &:hover:not(&--pendiente) .pipeline-paso__circulo { transform: translateY(-1px); }
+}
+
 // ─── Vista Panorámica ──────────────────────────────────────────────
 .panorama {
   display: grid;
@@ -453,29 +509,348 @@ app-seccion + app-seccion { margin-top: 14px; }
   strong { font-size: 13px; color: #0f172a; }
 }
 
-// NOTA: Las secciones Resumen económico, Configuración del servicio (cfg-item)
-// y Aviso pendiente se movieron a drill-downs/drill-propuesta/drill-propuesta.component.scss
-// como parte del refactor para bajar el budget del .scss del padre (fase 2).
+// NOTA: Las secciones Resumen económico, Configuración del servicio (cfg-item),
+// Aviso pendiente, oss-vinculadas/os-vinc y ocs-vinculadas/oc-vinc viven en
+// drill-downs/drill-propuesta/drill-propuesta.component.scss (fase 2).
+// Las métricas VB, card-aprobador refinamientos, vb-chip-sla, vb-sla-row,
+// decision-vb__version y metrica-vb__sublabel viven en
+// drill-downs/drill-visto-bueno/drill-visto-bueno.component.scss.
+// El bloque `.tl` (timeline estilo prototipo) + sus variantes --motivo/--resumen
+// vive en drill-downs/drill-seguimiento/drill-seguimiento.component.scss.
+// El bloque `.card-aprobador` grande vive en drill-seguimiento también
+// (ViewEncapsulation.None hace que esté disponible globalmente).
+
+.valor-monto { color: #16a34a; font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
 
 // ─── VB: sublabel en info-item (ej. "SLA 24h" bajo la fecha) ─────────────
 .info-item .sublabel { font-size: 10.5px; color: #94a3b8; font-weight: 500; margin-top: 2px; }
-.valor-monto { color: #16a34a; font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; }
 
-// ─── VB: chip de SLA cumplido/vencido ────────────────────────────────────
-// Variante del chip-estado para la línea de SLA al pie del Estado VB.
-.vb-chip-sla {
-  margin-top: 10px;
-  padding: 6px 12px;
-  font-size: 12px; font-weight: 700;
-
-  .material-symbols-outlined { font-size: 16px; }
-  small { font-weight: 500; opacity: 0.85; margin-left: 2px; }
+.info-grid .info-item .cargo {
+  font-size: 11px; color: #94a3b8; font-weight: 500; display: block; margin-top: 2px;
 }
 
-// ─── Fila de SLA al pie del Estado VB ───────────────────────────────────
-.vb-sla-row { display: flex; margin-top: 10px; }
+// Dentro de un info-item el chip-estado no debe estirar a la columna
+.info-item > .chip-estado { align-self: flex-start; width: fit-content; }
 
-// ─── VB: chip de versión reutilizable en el timeline ────────────────────
+// Responsable mini con texto estructurado (nombre + cargo en title case).
+.responsable-mini__texto {
+  display: flex; flex-direction: column; gap: 1px; min-width: 0;
+  strong { font-size: 13px; color: #0f172a; font-weight: 700; line-height: 1.2; }
+  // El cargo va en title case neutro — anula el uppercase heredado de .info-item small.
+  small {
+    font-size: 11.5px; color: #64748b; font-weight: 500;
+    text-transform: none; letter-spacing: 0;
+  }
+}
+
+// ─── Variantes de info-grid compartidas ─────────────────────────────────
+.info-grid--2cols {
+  grid-template-columns: 1fr 1fr;
+  @media (max-width: 760px) { grid-template-columns: 1fr; }
+}
+.info-grid--contacto { grid-template-columns: 1fr 1fr; }
+.info-grid--4 {
+  grid-template-columns: repeat(4, 1fr) !important;
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr) !important; }
+  @media (max-width: 500px) { grid-template-columns: 1fr !important; }
+}
+
+// ─── Card de contacto cliente (propuesta, requerimiento) ─────────────────
+.card-contacto-cliente {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  margin-bottom: 14px;
+
+  &__logo {
+    width: 44px; height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #dbeafe; color: #1e40af;
+    border-radius: 8px;
+    .material-symbols-outlined { font-size: 24px; }
+  }
+
+  &__texto {
+    display: flex; flex-direction: column; gap: 2px;
+    strong { font-size: 14px; color: #0f172a; }
+    small  { font-size: 11.5px; color: #64748b; font-family: 'SF Mono', monospace; }
+  }
+}
+
+.sede-operativa {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px;
+  font-size: 12.5px; color: #475569;
+  .material-symbols-outlined { font-size: 18px; color: #2563eb; }
+  strong { color: #0f172a; font-weight: 600; }
+}
+
+.sede-direccion { color: #94a3b8; font-weight: 500; }
+
+// ─── Lista de archivos (RQ, propuesta, seguimiento) ─────────────────────
+.lista-archivos { display: flex; flex-direction: column; gap: 8px; }
+
+.archivo-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  &__icono { font-size: 28px; color: #dc2626; flex-shrink: 0; }
+
+  &__texto {
+    flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    strong { font-size: 13px; color: #0f172a; overflow: hidden; text-overflow: ellipsis; }
+    small  { font-size: 11.5px; color: #64748b; }
+  }
+
+  &__acciones { display: flex; gap: 4px; }
+}
+
+// ─── Chips compartidos ──────────────────────────────────────────────────
+.chip-codigo {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px;
+  background: #f1f5f9; color: #0f172a;
+  border-radius: 6px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: 0.2px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.aviso-sin-datos {
+  display: block; padding: 10px 2px;
+  color: #94a3b8; font-size: 12px; font-style: italic;
+}
+
+// ─── Lista y tabla simple (cierre, ejecución, OS, programación, SSOMA) ──
+.lista-simple {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+
+  li {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 8px 12px;
+    background: #F8FAFC;
+    border-radius: 6px;
+
+    strong { font-size: 13px; color: #0F172A; }
+    small  { font-size: 11.5px; color: #64748B; }
+    small.user  { font-style: italic; }
+    p.motivo { color: #991b1b; font-style: italic; margin: 4px 0 0; font-size: 11.5px; }
+  }
+}
+
+.tabla-simple {
+  width: 100%; border-collapse: collapse; font-size: 12.5px;
+
+  thead th {
+    text-align: left;
+    padding: 8px 10px;
+    background: #F8FAFC; color: #64748B;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #E2E8F0;
+
+    &.num { text-align: right; }
+  }
+
+  tbody td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #F1F5F9;
+    color: #0F172A;
+
+    &.num { text-align: right; font-variant-numeric: tabular-nums; }
+    small { color: #64748B; font-weight: 500; }
+  }
+}
+
+// ─── Pills de propuesta (OS) ────────────────────────────────────────────
+.pills-propuesta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill-propuesta {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px;
+  background: #F1F5F9; color: #475569;
+  border-radius: 999px; font-size: 12px; font-weight: 600;
+
+  small { color: inherit; opacity: 0.7; font-weight: 500; }
+
+  &--activa { background: #DBEAFE; color: #1E40AF; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Clases compartidas usadas por el PADRE en Tab Resumen
+// (duplicadas acá porque los drill-* no están renderizados al cargar Resumen)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Timeline estilo prototipo (línea conectora + badges circulares) ─────
+.tl {
+  display: flex; flex-direction: column; gap: 22px;
+  position: relative;
+
+  &__item {
+    display: flex; gap: 12px;
+    position: relative;
+
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 28px; height: calc(100% + 10px);
+      width: 2px;
+      background: #e2e8f0;
+      z-index: 0;
+    }
+  }
+
+  &__badge {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0; position: relative; z-index: 1;
+    background: #dbeafe; color: #2563eb;
+    margin-top: 2px;
+
+    .material-symbols-outlined {
+      font-size: 14px; line-height: 1;
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+
+    &--verde  { background: #dcfce7; color: #16a34a; }
+    &--rojo   { background: #fee2e2; color: #dc2626; }
+    &--azul   { background: #dbeafe; color: #2563eb; }
+    &--morado { background: #ede9fe; color: #7c3aed; }
+    &--ambar  { background: #fef3c7; color: #d97706; }
+    &--gris   { background: #f1f5f9; color: #475569; }
+  }
+
+  &__body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+
+  &__head {
+    display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  }
+
+  &__fecha {
+    font-size: 12.5px; color: #0f172a; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__sep { color: #cbd5e1; font-size: 12px; font-weight: 400; }
+  &__titulo { font-size: 12.5px; color: #0f172a; font-weight: 600; }
+
+  &__user {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #475569; font-weight: 600;
+  }
+
+  &__user-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    background: #dbeafe; color: #1d4ed8;
+    border-radius: 50%;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+  }
+
+  &__user-cargo {
+    color: #94a3b8; font-size: 11px; font-weight: 500; font-style: italic;
+  }
+
+  &__desc {
+    margin: 2px 0 0; font-size: 11.5px; color: #475569; line-height: 1.5;
+  }
+
+  &__ref {
+    font-size: 10.5px; color: #94a3b8; font-family: 'SF Mono', monospace;
+  }
+}
+
+.tl__desc--motivo {
+  color: #991b1b !important;
+  font-style: italic;
+  strong { color: #991b1b; font-weight: 700; margin-right: 4px; }
+}
+
+.tl__desc--resumen {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  padding-left: 10px;
+  border-left: 2px solid #e2e8f0;
+}
+
+.tl__adjuntos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tl__pies { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+
+// ─── Card aprobador (reusada en Resumen y VB) ─────────────────────
+.card-aprobador {
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 14px;
+
+  &__principal {
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  &__avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #dbeafe; color: #1d4ed8;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.3px;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 22px; font-weight: 400; }
+  }
+
+  &--pendiente {
+    .card-aprobador__avatar { background: #cbd5e1; color: #475569; }
+    .card-aprobador__nombre-row strong { color: #94a3b8; font-style: italic; }
+  }
+
+  &__nombre {
+    display: flex; flex-direction: column; gap: 2px;
+    flex: 1;
+    small { font-size: 12px; color: #64748b; }
+  }
+
+  &__grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    padding-top: 12px; border-top: 1px solid #e2e8f0;
+
+    @media (max-width: 760px) { grid-template-columns: 1fr; }
+  }
+
+  &__item {
+    display: flex; align-items: flex-start; gap: 8px;
+
+    .material-symbols-outlined { font-size: 18px; color: #64748b; margin-top: 2px; }
+    div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    small  { font-size: 10.5px; color: #64748b; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+    strong { font-size: 12.5px; color: #0f172a; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  }
+}
+
+.card-aprobador__nombre-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.card-aprobador__mail-btn { margin-left: auto; }
+.card-aprobador__supervisor {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 4px;
+  color: #16a34a; font-size: 11px; font-weight: 600;
+  .material-symbols-outlined { font-size: 14px; }
+}
+.card-aprobador__footer {
+  display: flex; align-items: center; gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(37, 99, 235, 0.1);
+  color: #475569;
+}
+
+// ─── Decision VB version chip ─────────────────────────────────────
 .decision-vb__version {
   display: inline-flex; align-items: center;
   padding: 3px 10px; border-radius: 6px;
@@ -484,23 +859,12 @@ app-seccion + app-seccion { margin-top: 14px; }
   font-family: 'SF Mono', 'Consolas', monospace;
 }
 
-// Variante itálica roja para `tl__desc` que representa un motivo de rechazo.
-.tl__desc--motivo {
-  color: #991b1b !important;
-  font-style: italic;
-  strong { color: #991b1b; font-weight: 700; margin-right: 4px; }
-}
-
-// NOTA: Las secciones oss-vinculadas / os-vinc y ocs-vinculadas / oc-vinc
-// se movieron a drill-downs/drill-propuesta/drill-propuesta.component.scss (fase 2).
-
-// ─── VB: métricas en 4 bloques ──────────────────────────────────────────
+// ─── Métricas VB (reusadas en Resumen) ────────────────────────────
 .metricas-vb {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
 
   @media (max-width: 900px) { grid-template-columns: 1fr 1fr; }
 }
-
 .metrica-vb {
   padding: 14px;
   background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
@@ -523,69 +887,15 @@ app-seccion + app-seccion { margin-top: 14px; }
     small { color: #166534; }
   }
 }
-
-.metricas-vb__footer {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
-  font-size: 11.5px; color: #64748b;
-
-  strong { color: #0f172a; }
-}
-
-// ─── VB: refinamientos del card aprobador ────────────────────────────────
-.card-aprobador__nombre-row {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-}
-.card-aprobador__mail-btn {
-  margin-left: auto;
-}
-.card-aprobador__supervisor {
-  display: inline-flex; align-items: center; gap: 4px;
-  margin-top: 4px;
-  color: #16a34a; font-size: 11px; font-weight: 600;
-  .material-symbols-outlined { font-size: 14px; }
-}
-
-.card-aprobador__footer {
-  display: flex; align-items: center; gap: 6px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(37, 99, 235, 0.1);
-  color: #475569;
-
-  .material-symbols-outlined { font-size: 16px; color: #16a34a; }
-  small { font-size: 11.5px; }
-  strong { color: #0f172a; font-weight: 600; }
-  .hace { color: #94a3b8; margin-left: 4px; }
-}
-
-// ─── VB: sublabel en métricas (ej. "desde solicitud hasta aprobación") ───
 .metrica-vb__sublabel {
   font-size: 9.5px; color: #94a3b8;
   text-align: center; line-height: 1.3; margin-top: 2px;
   font-weight: 500; letter-spacing: 0.2px;
 }
-
-.info-grid .info-item .cargo {
-  font-size: 11px; color: #94a3b8; font-weight: 500; display: block; margin-top: 2px;
-}
-
-// ─── Refinamientos post-feedback Seguimiento ─────────────────────────────
-
-// Dentro de un info-item el chip-estado no debe estirar a la columna
-.info-item > .chip-estado { align-self: flex-start; width: fit-content; }
-
-// Responsable mini con texto estructurado (nombre + cargo en title case)
-.responsable-mini {
-  display: inline-flex; align-items: center; gap: 8px;
-
-  &__texto {
-    display: flex; flex-direction: column; gap: 1px; min-width: 0;
-    strong { font-size: 13px; color: #0f172a; font-weight: 700; line-height: 1.2; }
-    // El cargo va en title case neutro — anula el uppercase heredado de .info-item small.
-    small {
-      font-size: 11.5px; color: #64748b; font-weight: 500;
-      text-transform: none; letter-spacing: 0;
-    }
-  }
+.metricas-vb__footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11.5px; color: #64748b;
+  strong { color: #0f172a; }
 }

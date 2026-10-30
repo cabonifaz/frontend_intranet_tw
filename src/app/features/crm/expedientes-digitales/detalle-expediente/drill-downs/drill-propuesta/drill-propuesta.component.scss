@@ -193,3 +193,23 @@
     .meta-ambar { color: #d97706; font-weight: 600; }
   }
 }
+
+// ─── Propuesta: meta-rojo / meta-ambar también a nivel raíz ─────────────
+.meta-rojo  { color: #dc2626; font-weight: 600; }
+.meta-ambar { color: #d97706; font-weight: 600; }
+
+// ─── Propuesta: pill-ver (chip de versión navegable) ────────────────────
+.pill-ver {
+  display: inline-flex; align-items: center;
+  width: 32px; height: 24px; justify-content: center;
+  border: 0; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  background: #f1f5f9; color: #475569;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+
+  &:hover { background: #e2e8f0; color: #0f172a; }
+  &--activa { background: #2563eb; color: #fff;
+    &:hover { background: #1d4ed8; color: #fff; }
+  }
+}

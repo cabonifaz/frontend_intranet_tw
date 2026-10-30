@@ -1,1 +1,229 @@
-// Estilos específicos del drill-down Seguimiento.
+// Estilos del drill-down de Seguimiento.
+// ViewEncapsulation.None, por lo que estas clases también están disponibles para
+// otros drill-downs que las consuman (p.ej. VB usa card-aprobador y tl).
+
+// ─── Timeline estilo prototipo (línea conectora + badges circulares) ─────
+// Compartido con VB, Propuesta, Requerimiento y OC.
+.tl {
+  display: flex; flex-direction: column; gap: 22px;
+  position: relative;
+
+  &__item {
+    display: flex; gap: 12px;
+    position: relative;
+
+    // Línea conectora vertical: nace debajo del badge y llega al siguiente
+    &:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 28px; height: calc(100% + 10px);
+      width: 2px;
+      background: #e2e8f0;
+      z-index: 0;
+    }
+  }
+
+  &__badge {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0; position: relative; z-index: 1;
+    background: #dbeafe; color: #2563eb;
+    margin-top: 2px;
+
+    .material-symbols-outlined {
+      font-size: 14px; line-height: 1;
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+
+    &--verde  { background: #dcfce7; color: #16a34a; }
+    &--rojo   { background: #fee2e2; color: #dc2626; }
+    &--azul   { background: #dbeafe; color: #2563eb; }
+    &--morado { background: #ede9fe; color: #7c3aed; }
+    &--ambar  { background: #fef3c7; color: #d97706; }
+    &--gris   { background: #f1f5f9; color: #475569; }
+  }
+
+  &__body {
+    flex: 1; display: flex; flex-direction: column; gap: 2px;
+  }
+
+  &__head {
+    display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  }
+
+  &__fecha {
+    font-size: 12.5px; color: #0f172a; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__sep { color: #cbd5e1; font-size: 12px; font-weight: 400; }
+
+  &__titulo { font-size: 12.5px; color: #0f172a; font-weight: 600; }
+
+  &__user {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #475569; font-weight: 600;
+  }
+
+  &__user-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    background: #dbeafe; color: #1d4ed8;
+    border-radius: 50%;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.2px;
+  }
+
+  &__user-cargo {
+    color: #94a3b8; font-size: 11px; font-weight: 500; font-style: italic;
+  }
+
+  &__desc {
+    margin: 2px 0 0; font-size: 11.5px; color: #475569; line-height: 1.5;
+  }
+
+  &__ref {
+    font-size: 10.5px; color: #94a3b8; font-family: 'SF Mono', monospace;
+  }
+}
+
+// Variante itálica roja para `tl__desc` que representa un motivo de rechazo.
+.tl__desc--motivo {
+  color: #991b1b !important;
+  font-style: italic;
+  strong { color: #991b1b; font-weight: 700; margin-right: 4px; }
+}
+
+// Resumen del cuerpo del correo (más pequeño y en gris).
+.tl__desc--resumen {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  padding-left: 10px;
+  border-left: 2px solid #e2e8f0;
+}
+
+// Fila de adjuntos dentro de un timeline item.
+.tl__adjuntos {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 4px;
+}
+
+// Fila de "pies" (próxima acción, duración) debajo del título del tl.
+.tl__pies {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 2px;
+}
+
+// ─── Chip compacto para el canal de la interacción ──────────────────────
+.chip-canal {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  background: #f1f5f9; color: #475569;
+  border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.2px;
+
+  .material-symbols-outlined { font-size: 12px; color: #64748b; }
+}
+
+// ─── Chip "pie" (próxima acción, duración, etc.) ────────────────────────
+.chip-pie {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+  color: #64748b;
+  font-size: 11px; font-weight: 500;
+
+  strong { color: #0f172a; font-weight: 600; margin: 0 2px; }
+
+  .material-symbols-outlined { font-size: 13px; color: #94a3b8; }
+}
+
+// ─── Chip clicable para abrir un adjunto ────────────────────────────────
+.chip-archivo {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: #f1f5f9; color: #475569;
+  border: 1px solid #e2e8f0; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+
+  &:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+
+  .material-symbols-outlined { font-size: 13px; }
+}
+
+// ─── Card del aprobador / comercial responsable ─────────────────────────
+// Base compartida con VB (que añade sus propios refinamientos).
+.card-aprobador {
+  padding: 16px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 14px;
+
+  &__principal {
+    display: flex; align-items: center; gap: 14px;
+  }
+
+  &__avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #dbeafe; color: #1d4ed8;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; letter-spacing: 0.3px;
+    flex-shrink: 0;
+
+    .material-symbols-outlined { font-size: 22px; font-weight: 400; }
+  }
+
+  &--pendiente {
+    .card-aprobador__avatar { background: #cbd5e1; color: #475569; }
+    .card-aprobador__nombre-row strong { color: #94a3b8; font-style: italic; }
+  }
+
+  &__nombre {
+    display: flex; flex-direction: column; gap: 2px;
+    flex: 1;
+    small  { font-size: 12px; color: #64748b; }
+  }
+
+  &__grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    padding-top: 12px; border-top: 1px solid #e2e8f0;
+
+    @media (max-width: 760px) { grid-template-columns: 1fr; }
+  }
+
+  &__item {
+    display: flex; align-items: flex-start; gap: 8px;
+
+    .material-symbols-outlined { font-size: 18px; color: #64748b; margin-top: 2px; }
+    div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    small  { font-size: 10.5px; color: #64748b; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+    strong { font-size: 12.5px; color: #0f172a; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  }
+}
+
+// Nota del footer del card del comercial responsable — texto plano sin links.
+.card-aprobador__footer--nota {
+  * { text-decoration: none !important; }
+  small { color: #475569; }
+  strong { color: #0f172a; font-family: 'SF Mono', monospace; font-size: 11px; }
+}
+
+// ─── Seguimiento: descripcion-bloque variante roja ──────────────────────
+.descripcion-bloque--rojo {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+  small { color: #991b1b !important; }
+  p { color: #7f1d1d; }
+}
+
+// ─── Evidencias del cierre ──────────────────────────────────────────────
+.evidencias-bloque {
+  margin-top: 10px;
+  small { font-size: 10.5px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; display: block; margin-bottom: 6px; }
+}

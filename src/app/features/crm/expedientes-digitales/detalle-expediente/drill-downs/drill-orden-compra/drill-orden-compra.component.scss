@@ -1,1 +1,163 @@
-// Estilos específicos del drill-down Orden de Compra.
+// Estilos del drill-down Orden de Compra.
+// ViewEncapsulation.None → estas clases son globales en runtime.
+
+// ─── OC: grupo de acciones del header (chip + botón) ─────────────────────
+.header-acciones-grupo {
+  display: inline-flex; align-items: center; gap: 8px;
+}
+
+// ─── OC: resumen compacto de OSs cubiertas ──────────────────────────────
+.oss-resumen {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+}
+
+// ─── OC: porcentaje OK junto al monto facturado ─────────────────────────
+.porcentaje-ok {
+  font-size: 11.5px; color: #16a34a; font-weight: 600;
+  text-transform: none !important; letter-spacing: 0;
+  margin-left: 2px;
+}
+
+// ─── OC: bloques informativos (factura igual OC / reemplazo) ─────────────
+.info-bloque {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+
+  .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+  small { font-size: 11.5px; line-height: 1.5; }
+  strong { font-weight: 700; }
+  .valor-codigo { font-family: 'SF Mono', monospace; font-size: 11px; }
+
+  &--azul    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+               .material-symbols-outlined { color: #2563eb; } }
+  &--neutral { background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569;
+               .material-symbols-outlined { color: #64748b; } }
+}
+
+// ─── OC: acciones de documento PDF ──────────────────────────────────────
+.oc-doc-acciones {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+// ─── OC: alerta de validación IA ────────────────────────────────────────
+.alerta-ia {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+
+  .material-symbols-outlined { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  div { display: flex; flex-direction: column; gap: 2px; }
+  strong { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+  small { font-size: 11.5px; line-height: 1.5; }
+
+  &--ambar { background: #fffbeb; border: 1px solid #fde68a; color: #92400e;
+             .material-symbols-outlined { color: #d97706; } }
+  &--rojo  { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
+             .material-symbols-outlined { color: #dc2626; } }
+  &--verde { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534;
+             .material-symbols-outlined { color: #16a34a; } }
+}
+
+// ─── OC: tabla de validación campo por campo ────────────────────────────
+.tabla-validacion {
+  width: 100%;
+  border-collapse: collapse;
+
+  thead th {
+    text-align: left; padding: 8px 10px;
+    background: #f8fafc; color: #64748b;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  tbody td {
+    padding: 10px; border-bottom: 1px solid #f1f5f9;
+    font-size: 12.5px; color: #0f172a; vertical-align: middle;
+  }
+
+  .celda-campo {
+    strong { display: block; font-size: 12.5px; color: #0f172a; }
+    .valores {
+      display: block; margin-top: 2px;
+      font-size: 10.5px; color: #94a3b8; font-weight: 500;
+      text-transform: none; letter-spacing: 0;
+      span { color: #64748b; }
+    }
+  }
+
+  .celda-mensaje { font-size: 11.5px; color: #475569; }
+
+  .chip-estado {
+    width: fit-content;
+    font-size: 10.5px; padding: 2px 8px;
+    .material-symbols-outlined { font-size: 13px; }
+  }
+}
+
+// ─── OC: resumen de montos (barra con 3 bloques + chip) ─────────────────
+.oc-resumen-montos {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 24px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  &__item {
+    display: flex; flex-direction: column; gap: 2px;
+    small { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+    strong { font-size: 15px; color: #0f172a; font-weight: 800; font-variant-numeric: tabular-nums; }
+  }
+
+  .chip-estado { margin-left: auto; }
+}
+
+// ─── OC: sub-aplicaciones (propuestas vinculadas) ───────────────────────
+.sub-aplicaciones { display: flex; flex-direction: column; gap: 10px; }
+
+.sub-aplicacion {
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 10px;
+
+  &__head {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+
+  &__btn { margin-left: auto; }
+
+  &__montos {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    small { font-size: 10.5px; font-weight: 700; color: #64748b; letter-spacing: 0.3px; }
+    strong {
+      font-size: 14px; color: #0f172a; font-weight: 700; font-variant-numeric: tabular-nums;
+      small {
+        font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0; text-transform: none;
+        margin-left: 4px;
+      }
+    }
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-bar__fill {
+    background: linear-gradient(90deg, #93c5fd 0%, #bae6fd 100%);
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  &__nota { font-size: 11.5px; color: #64748b; font-style: italic; }
+}
