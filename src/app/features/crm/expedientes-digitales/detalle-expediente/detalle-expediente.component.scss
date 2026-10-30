@@ -127,7 +127,12 @@ app-seccion + app-seccion { margin-top: 14px; }
   }
 
   // La línea toma el color del paso ACTUAL (origen del tramo).
-  &--completado:not(:last-child)::after { background: #86efac; }
+  // Cualquier etapa con actividad registrada (completado, en_curso, bloqueado, cancelado)
+  // propaga la línea en verde — significa que el flujo ya pasó por ahí.
+  &--completado:not(:last-child)::after,
+  &--en_curso:not(:last-child)::after,
+  &--bloqueado:not(:last-child)::after,
+  &--cancelado:not(:last-child)::after { background: #86efac; }
 
   &__circulo {
     width: 48px; height: 48px;
@@ -150,9 +155,16 @@ app-seccion + app-seccion { margin-top: 14px; }
     z-index: 2;
   }
 
-  &--completado .pipeline-paso__circulo { background: #dcfce7; color: #16a34a; border-color: #86efac; }
-  &--bloqueado  .pipeline-paso__circulo { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
-  &--pendiente  .pipeline-paso__circulo { background: #f8fafc; color: #cbd5e1; border-color: #e2e8f0; border-style: dashed; }
+  // Cualquier etapa con actividad registrada (sea completada, en curso,
+  // bloqueada o cancelada) se pinta en verde: el flujo ya llegó a ese paso.
+  &--completado .pipeline-paso__circulo,
+  &--en_curso   .pipeline-paso__circulo,
+  &--bloqueado  .pipeline-paso__circulo,
+  &--cancelado  .pipeline-paso__circulo { background: #dcfce7; color: #16a34a; border-color: #86efac; }
+
+  // Pendiente y no aplica: gris con borde dasheado (todavía no llegó o no corresponde).
+  &--pendiente  .pipeline-paso__circulo,
+  &--no_aplica  .pipeline-paso__circulo { background: #f8fafc; color: #cbd5e1; border-color: #e2e8f0; border-style: dashed; }
 
   // Tab seleccionado: azul lleno con halo. Prevalece sobre cualquier color de estado.
   &--seleccionado .pipeline-paso__circulo {
@@ -161,7 +173,7 @@ app-seccion + app-seccion { margin-top: 14px; }
   }
   &--seleccionado .pipeline-paso__label { color: #1e40af; font-weight: 700; }
 
-  &:hover:not(&--pendiente) .pipeline-paso__circulo { transform: translateY(-1px); }
+  &:hover:not(&--pendiente):not(&--no_aplica) .pipeline-paso__circulo { transform: translateY(-1px); }
 }
 
 // ─── Vista Panorámica ──────────────────────────────────────────────
