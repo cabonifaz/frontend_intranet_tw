@@ -84,6 +84,7 @@
       <thead>
         <tr>
           <th>Usuario</th>
+          <th>Usuario App</th>
           <th>Rol</th>
           <th>Anexo</th>
           <th>Último Acceso</th>
@@ -102,6 +103,19 @@
                       <div class="usuario-info__correo">{{ u.correo }}</div>
                     </div>
                   </div>
+                </td>
+                <td>
+                  @if (u.nombreUsuario) {
+                    <div class="usuario-app">
+                      <span class="usuario-app__nombre">{{ u.nombreUsuario }}</span>
+                      <span class="chip-app">
+                        <span class="material-symbols-outlined">phone_android</span>
+                        CON APP
+                      </span>
+                    </div>
+                  } @else {
+                    <span class="usuario-app__guion">—</span>
+                  }
                 </td>
                 <td>
                   <span class="badge-rol">{{ u.rolSistemaLabel }}</span>

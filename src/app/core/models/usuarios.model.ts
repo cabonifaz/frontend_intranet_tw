@@ -8,6 +8,11 @@ export interface UsuarioListaItem {
   telefono: string | null;
   anexo?: string | null;
   troncal?: string | null;
+  area?: string | null;
+  // Nombre de usuario para login en la app móvil (solo los del área Servicio Técnico).
+  // Si no viene (null/vacío), el usuario solo tiene acceso a la intranet.
+  nombreUsuario?: string | null;
+  canalAcceso?:   string | null;   // 'intranet' | 'todos'
   estado: string;
   ultimoAcceso: string | null;
   fechaCreacion: string;
@@ -56,6 +61,8 @@ export interface GuardarUsuarioRequest {
   anexo?:         string | null;     // Anexo completo (troncal + interno 3 dígitos)
   cargo:          string | null;
   area:           string | null;
+  // Nombre de usuario para app móvil. null si el usuario no es del área Servicio Técnico.
+  nombreUsuario:  string | null;
   rolSistema:     string;
   sedeOperativa:  string | null;
   idSupervisorDirecto:  number | null;

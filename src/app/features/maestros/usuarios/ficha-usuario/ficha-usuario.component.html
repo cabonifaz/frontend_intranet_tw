@@ -212,7 +212,63 @@
 
         </app-seccion>
 
-        <!-- SECCIÓN 03 — solo para rol Metrología (Jefe de Metrología o Metrólogo) -->
+        <!-- SECCIÓN 03 — solo para área Servicio Técnico (HU-83 intranet + HU-01 móvil) -->
+        @if (areaRequiereApp()) {
+          <app-seccion
+            icono="phone_android"
+            [titulo]="numAppMobile() + '. Acceso a la App Mobile'"
+            subtitulo="El técnico ingresará a la app móvil con este usuario y la misma contraseña corporativa que recibe por correo."
+            badgeTexto="App Mobile"
+            badgeVariant="azul"
+          >
+            <div class="campo">
+              <label class="campo__label">Nombre de usuario (app) *</label>
+              <div class="campo-usuario-app">
+                <input class="campo__input" type="text" formControlName="nombreUsuario"
+                       placeholder="ej. juan.perez" maxlength="32" autocomplete="off" />
+                <app-button variant="secondary" tamano="md" icono="refresh"
+                            ariaLabel="Regenerar sugerencia" title="Regenerar sugerencia desde nombre y apellido"
+                            (clic)="regenerarNombreUsuario()" />
+              </div>
+
+              @if (formulario.get('nombreUsuario')?.touched && formulario.get('nombreUsuario')?.hasError('pattern')) {
+                <span class="campo__error">Solo minúsculas, números y puntos. Sin espacios ni acentos.</span>
+              } @else if (validandoNombreUsuario()) {
+                <small class="campo__hint">Verificando disponibilidad…</small>
+              } @else if (nombreUsuarioDisponible() === false) {
+                <span class="campo__error">
+                  Este nombre ya está en uso.
+                  @if (sugerenciaNombreUsuario()) {
+                    <button type="button" class="link-sugerencia" (click)="aplicarSugerenciaNombreUsuario()">
+                      Usar <strong>{{ sugerenciaNombreUsuario() }}</strong>
+                    </button>
+                  }
+                </span>
+              } @else if (nombreUsuarioDisponible() === true && formulario.get('nombreUsuario')?.value) {
+                <small class="campo__ok">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  Disponible
+                </small>
+              } @else {
+                <small class="campo__ayuda">
+                  Formato <strong>nombre.apellido</strong> (minúsculas, sin acentos ni espacios). Se autocompleta a partir del nombre y apellido.
+                </small>
+              }
+            </div>
+
+            @if (!esNuevo() && nombreUsuarioOriginal() && nombreUsuarioOriginal() !== formulario.get('nombreUsuario')?.value) {
+              <div class="aviso-usuario-cambio">
+                <span class="material-symbols-outlined">warning</span>
+                <div>
+                  <strong>El técnico deberá usar el nuevo usuario en su próxima sesión del app.</strong>
+                  <small>Las sesiones activas se mantendrán hasta que expiren por tiempo.</small>
+                </div>
+              </div>
+            }
+          </app-seccion>
+        }
+
+        <!-- SECCIÓN 03 (alt.) — solo para rol Metrología (Jefe de Metrología o Metrólogo) -->
         @if (rolRequiereInacal()) {
           <app-seccion
             icono="workspace_premium"

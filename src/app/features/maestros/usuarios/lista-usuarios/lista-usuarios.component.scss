@@ -127,3 +127,42 @@
   font-style: italic;
   margin-top: 8px;
 }
+
+// ─── Columna "Usuario App" (HU-83 + HU-01 móvil) ─────────────────────────
+.usuario-app {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+
+  &__nombre {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12.5px;
+    color: #0f172a;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  &__guion {
+    color: #cbd5e1;
+    font-size: 14px;
+  }
+}
+
+.chip-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+
+  .material-symbols-outlined {
+    font-size: 12px;
+    font-variation-settings: 'FILL' 1;
+  }
+}

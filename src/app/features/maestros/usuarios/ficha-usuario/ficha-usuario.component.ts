@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UsuariosService } from '../../../../core/services/usuarios.service';
@@ -124,6 +125,14 @@ export class FichaUsuarioComponent implements OnInit {
   // Área actualmente seleccionada (sync con form para que el computed reaccione)
   readonly areaActual      = signal<string>('');
 
+  // Validación de nombre de usuario para app móvil (ping al back con debounce).
+  // Estados: null = no validado aún · true = disponible · false = ocupado.
+  readonly validandoNombreUsuario   = signal(false);
+  readonly nombreUsuarioDisponible  = signal<boolean | null>(null);
+  readonly sugerenciaNombreUsuario  = signal<string>('');
+  // Valor original en modo editar: para detectar cambios y mostrar warning.
+  readonly nombreUsuarioOriginal    = signal<string>('');
+
   // Cargos filtrados por área seleccionada (CARGO_USUARIO.String3 === area actual).
   // Si no hay área elegida, no muestra nada → fuerza al usuario a elegir área primero.
   readonly cargosFiltrados = computed(() => {
@@ -156,6 +165,10 @@ export class FichaUsuarioComponent implements OnInit {
     // Cargo pasó a texto libre (2026-10-05). Max 80 chars, requerido.
     cargo:            ['', [Validators.required, Validators.maxLength(80)]],
     area:             ['', Validators.required],
+    // Nombre de usuario para login en la app móvil (solo cuando area = servicio_tecnico).
+    // Formato: nombre.apellido (minúsculas, sin acentos, sin espacios). Autogenerado al tipear.
+    // La unicidad se valida contra el back con debounce.
+    nombreUsuario:    ['', [Validators.maxLength(32), Validators.pattern(/^[a-z0-9.]+$/)]],
     rolSistema:            ['', Validators.required],
     // Sede operativa oculta del front por pedido del cliente (2026-10-05).
     // Default 'lima' — en BD queda la estructura por si se reactiva más adelante.
@@ -210,11 +223,19 @@ export class FichaUsuarioComponent implements OnInit {
   // La métrica correcta es el área, no el rol.
   readonly rolRequiereInacal = computed(() => this.areaActual() === 'metrologia');
 
-  // Numeración dinámica de secciones (depende de qué secciones estén visibles por rol).
-  // Secciones 1 y 2 siempre están. 3 (INACAL) solo metrológico. 4 (Seguridad) siempre.
-  // 5 (Suplencias) solo comercial en modo editar. Nunca coexisten INACAL + Suplencias.
+  // Acceso a la App Mobile: solo para usuarios del área Servicio Técnico.
+  // Son los únicos que operan en campo con la app móvil (HU-01 móvil, HU-83 intranet).
+  // Al guardar con este área, el back setea canal_acceso = 'todos' automáticamente.
+  readonly areaRequiereApp = computed(() => this.areaActual() === 'servicio_tecnico');
+
+  // Numeración dinámica de secciones (depende de qué secciones estén visibles por rol/área).
+  // Secciones 1 y 2 siempre están. 3 (INACAL ó App Mobile — mutuamente exclusivas) según área.
+  // 4 (Seguridad) siempre. 5 (Suplencias) solo con rol asignado y en modo editar.
   readonly numInacal     = computed(() => this.rolRequiereInacal() ? 3 : null);
-  readonly numSeguridad  = computed(() => this.rolRequiereInacal() ? 4 : 3);
+  readonly numAppMobile  = computed(() => this.areaRequiereApp() ? 3 : null);
+  readonly numSeguridad  = computed(() =>
+    (this.rolRequiereInacal() || this.areaRequiereApp()) ? 4 : 3,
+  );
   readonly numSuplencias = computed(() => {
     if (this.esNuevo() || !this.esRolComercial()) return null;
     // Comercial no es metrológico → INACAL no está → Suplencias es la siguiente de Seguridad
@@ -279,6 +300,37 @@ export class FichaUsuarioComponent implements OnInit {
           this.formulario.get('cargo')?.setValue('', { emitEvent: false });
         }
         this.areaActual.set(nuevaArea);
+        // Si deja de ser Servicio Técnico, limpiar nombreUsuario para no mandar basura al back.
+        // Si se vuelve Servicio Técnico (en modo crear), autogenerar sugerencia inicial.
+        if (nuevaArea !== 'servicio_tecnico') {
+          this.formulario.get('nombreUsuario')?.setValue('', { emitEvent: false });
+          this.nombreUsuarioDisponible.set(null);
+        } else if (this.esNuevo() && !this.formulario.get('nombreUsuario')?.value) {
+          this.autogenerarNombreUsuario();
+        }
+      });
+
+    // Nombre y apellido: autogenerar/sugerir nombreUsuario mientras se escribe (modo crear).
+    this.formulario.get('nombre')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.esNuevo() && this.areaRequiereApp()) this.autogenerarNombreUsuario();
+      });
+    this.formulario.get('apellido')?.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.esNuevo() && this.areaRequiereApp()) this.autogenerarNombreUsuario();
+      });
+
+    // Validación de unicidad del nombreUsuario con debounce (ping al back).
+    this.formulario.get('nombreUsuario')?.valueChanges
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        debounceTime(500),
+        distinctUntilChanged(),
+      )
+      .subscribe(v => {
+        this.validarUnicidadNombreUsuario(v ?? '');
       });
 
     try {
@@ -333,6 +385,7 @@ export class FichaUsuarioComponent implements OnInit {
           anexoInterno:                 this.descomponerAnexo(u.anexo).interno,
           cargo:                        u.cargo,
           area:                         u.area,
+          nombreUsuario:                u.nombreUsuario ?? '',
           rolSistema:                   u.rolSistema,
           sedeOperativa:                u.sedeOperativa,
           idSupervisorDirecto:          u.idSupervisorDirecto,
@@ -344,6 +397,8 @@ export class FichaUsuarioComponent implements OnInit {
           enviarCredencialesCorreo:     u.enviarCredencialesCorreo,
           autenticacion2fa:             u.autenticacion2fa,
         });
+        // Guardar el nombre de usuario original para detectar cambios (warning en edición).
+        this.nombreUsuarioOriginal.set(u.nombreUsuario ?? '');
       } else {
         this.regenerarContrasena();
       }
@@ -619,6 +674,9 @@ export class FichaUsuarioComponent implements OnInit {
         anexo:                        this.componerAnexo(v.anexoTroncal, v.anexoInterno),
         cargo:                        v.cargo?.trim() || null,
         area:                         v.area || null,
+        // Nombre de usuario para app móvil. Solo se manda cuando area = servicio_tecnico;
+        // en otras áreas lo mandamos vacío y el back dejará canal_acceso = 'intranet'.
+        nombreUsuario:                v.area === 'servicio_tecnico' ? (v.nombreUsuario?.trim() || null) : null,
         rolSistema:                   v.rolSistema,
         sedeOperativa:                v.sedeOperativa,
         idSupervisorDirecto:          v.idSupervisorDirecto || null,
@@ -771,5 +829,80 @@ export class FichaUsuarioComponent implements OnInit {
     if (!fecha) return 'Sin límite';
     const d = new Date(fecha);
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // ─── Acceso a la App Mobile (HU-83 + HU-01 móvil) ───────────────────────────
+
+  /** Normaliza un texto a slug válido: minúsculas, sin acentos, sin espacios ni símbolos. */
+  private normalizarParaUsername(s: string): string {
+    return (s ?? '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')  // quita acentos
+      .replace(/[^a-z0-9]/g, '')
+      .trim();
+  }
+
+  /**
+   * Genera una sugerencia de nombre de usuario con formato `nombre.apellido`
+   * usando la primera palabra del nombre y del apellido.
+   * Se dispara automáticamente al escribir nombre/apellido o al elegir el área técnico.
+   */
+  autogenerarNombreUsuario(): void {
+    const nombreCrudo   = this.formulario.get('nombre')?.value   ?? '';
+    const apellidoCrudo = this.formulario.get('apellido')?.value ?? '';
+    const nombre   = this.normalizarParaUsername(nombreCrudo.split(/\s+/)[0]   ?? '');
+    const apellido = this.normalizarParaUsername(apellidoCrudo.split(/\s+/)[0] ?? '');
+    if (!nombre || !apellido) return;
+    const sugerencia = `${nombre}.${apellido}`.slice(0, 32);
+    this.formulario.get('nombreUsuario')?.setValue(sugerencia);  // dispara la validación de unicidad
+  }
+
+  /** Botón "Regenerar" del template: fuerza re-cálculo sobre lo que esté tipeado en nombre/apellido. */
+  regenerarNombreUsuario(): void {
+    this.autogenerarNombreUsuario();
+  }
+
+  /**
+   * Valida la unicidad contra el back con debounce. El back responde:
+   *   { disponible: boolean, sugerencia?: string }  → si está ocupado, viene una variante libre (ej. juan.perez2).
+   * En modo editar excluimos el propio idUsuario para no colisionar con uno mismo.
+   */
+  private async validarUnicidadNombreUsuario(valor: string): Promise<void> {
+    const vTrim = (valor ?? '').trim();
+    // Sin valor o fuera de contexto técnico: resetear el indicador.
+    if (!vTrim || !this.areaRequiereApp()) {
+      this.nombreUsuarioDisponible.set(null);
+      this.sugerenciaNombreUsuario.set('');
+      return;
+    }
+    // Si el formato ya es inválido, no gastamos red.
+    if (this.formulario.get('nombreUsuario')?.hasError('pattern')) {
+      this.nombreUsuarioDisponible.set(null);
+      return;
+    }
+    // En editar, si no cambió respecto al original, está disponible por definición.
+    if (!this.esNuevo() && vTrim === this.nombreUsuarioOriginal()) {
+      this.nombreUsuarioDisponible.set(true);
+      this.sugerenciaNombreUsuario.set('');
+      return;
+    }
+    this.validandoNombreUsuario.set(true);
+    try {
+      const idExcluir = this.esNuevo() ? undefined : this.idUsuario;
+      const r = await this.usuariosSvc.validarNombreUsuario(vTrim, idExcluir);
+      this.nombreUsuarioDisponible.set(r.disponible);
+      this.sugerenciaNombreUsuario.set(r.sugerencia ?? '');
+    } catch {
+      // Fallo del back: dejar neutro para no bloquear al admin.
+      this.nombreUsuarioDisponible.set(null);
+    } finally {
+      this.validandoNombreUsuario.set(false);
+    }
+  }
+
+  /** Aplica la sugerencia alternativa (ej. juan.perez2) al campo. */
+  aplicarSugerenciaNombreUsuario(): void {
+    const s = this.sugerenciaNombreUsuario();
+    if (s) this.formulario.get('nombreUsuario')?.setValue(s);
   }
 }

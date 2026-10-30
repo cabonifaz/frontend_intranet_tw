@@ -125,6 +125,35 @@ export class UsuariosService {
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
   }
 
+  /**
+   * Valida unicidad del `nombre_usuario` para la app móvil (HU-83 + HU-01 móvil).
+   * - `nombre` ya debe venir normalizado (minúsculas, formato nombre.apellido).
+   * - `excluirIdUsuario` se usa en modo editar para no colisionar con uno mismo.
+   * - El back responde: { disponible: boolean, sugerencia?: string }.
+   *   Si está ocupado, la sugerencia es una variante libre (ej. "juan.perez2").
+   */
+  async validarNombreUsuario(
+    nombre: string,
+    excluirIdUsuario?: number,
+  ): Promise<{ disponible: boolean; sugerencia?: string }> {
+    if (USAR_MOCK) {
+      // Mock local: considera "cristopher" ocupado para pruebas.
+      const ocupados = new Set(['cristopher']);
+      const disponible = !ocupados.has(nombre);
+      return { disponible, sugerencia: disponible ? undefined : `${nombre}2` };
+    }
+    const params: Record<string, string> = { nombre };
+    if (excluirIdUsuario) params['excluirIdUsuario'] = String(excluirIdUsuario);
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<{ disponible: boolean; sugerencia?: string }>>(
+        `${this.base}/usuarios/validar-nombre-usuario`,
+        { params },
+      ),
+    );
+    if (!r.datos) throw new Error(r.mensaje);
+    return r.datos;
+  }
+
   generarContrasenaTemporal(): string {
     const may  = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
     const min  = 'abcdefghijkmnpqrstuvwxyz';
