@@ -1,4 +1,13 @@
 <app-modal [titulo]="codigo() || 'Vista previa PDF'" ancho="xl" (cerrar)="cerrar.emit()">
+  <!-- Observación 26 v3 (feedback 2026-11-03): botón "← Volver" opcional en la
+       esquina superior izquierda, solo visible cuando se abrió desde otro modal.
+       Usa el slot `modalHeaderStart` del app-modal. -->
+  @if (mostrarVolver()) {
+    <app-button modalHeaderStart variant="ghost" tamano="sm" icono="arrow_back"
+                (clic)="volver.emit()">
+      Volver
+    </app-button>
+  }
   <div class="pdf-preview">
     @if (cargando()) {
       <div class="pdf-preview__estado">

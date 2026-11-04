@@ -25,7 +25,13 @@ export class ModalPreviewPdfComponent implements OnInit, OnDestroy {
 
   readonly codigo      = input<string>('');
   readonly idPropuesta = input<number>(0);
+  /** Observación 26 v3 (feedback 2026-11-03): cuando el PDF se abrió desde un
+   *  modal anterior (ej. detalle VB), el padre pasa `mostrarVolver=true` para
+   *  que aparezca un botón "← Volver" en la esquina superior izquierda del
+   *  header. El `(cerrar)` cierra todo; `(volver)` vuelve al modal anterior. */
+  readonly mostrarVolver = input<boolean>(false);
   readonly cerrar      = output<void>();
+  readonly volver      = output<void>();
 
   readonly cargando = signal(true);
   readonly error    = signal<string>('');

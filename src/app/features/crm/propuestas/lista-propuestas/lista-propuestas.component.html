@@ -135,11 +135,13 @@
                           ariaLabel="Ver detalle" title="Ver detalle"
                           (clic)="verDetalle(item.idPropuesta)" />
               @if (!esAnulada(item)) {
-                <ng-container *twSiPermiso="item.estado === 'borrador' ? 'propuesta_guardar' : 'propuesta_nueva_version'">
+                <!-- Observación 24 (31/10): estado `por_enviar` también se edita en la misma versión
+                     (NO es nueva versión). Usa ícono `edit` y evalúa permiso `propuesta_guardar`. -->
+                <ng-container *twSiPermiso="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'propuesta_guardar' : 'propuesta_nueva_version'">
                   <app-button variant="ghost" tamano="sm"
-                              [icono]="item.estado === 'borrador' ? 'edit' : 'sync'" [soloIcon]="true"
-                              [ariaLabel]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
-                              [title]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                              [icono]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'edit' : 'sync'" [soloIcon]="true"
+                              [ariaLabel]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'Editar' : 'Generar nueva versión'"
+                              [title]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'Editar' : 'Generar nueva versión'"
                               (clic)="editarPropuesta(item)" />
                 </ng-container>
               }
@@ -189,6 +191,32 @@
     (continuar)="onConfirmarNuevaVersion($event)"
     (cerrar)="nuevaVersionCtx.set(null)"
   />
+}
+
+<!-- ── Observación 24 (31/10): confirmación de edición post-VB ────────────── -->
+@if (confirmarEdicionPostVbCtx(); as ctx) {
+  <app-modal titulo="Editar propuesta aprobada" ancho="md" (cerrar)="onCancelarEdicionPostVb()">
+    <div class="edicion-post-vb">
+      <div class="edicion-post-vb__aviso">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <strong>La propuesta {{ ctx.codigoPropuesta }} · {{ ctx.version }} ya fue aprobada por VB.</strong>
+          <p>
+            Al editarla, volverá al estado <strong>BORRADOR</strong> y deberá pasar
+            nuevamente por el flujo de Visto Bueno antes de enviarla al cliente.
+            <br />
+            La misma versión se mantiene (no se crea v2).
+          </p>
+        </div>
+      </div>
+      <div class="edicion-post-vb__acciones">
+        <app-button variant="ghost" (clic)="onCancelarEdicionPostVb()">Cancelar</app-button>
+        <app-button variant="primary" icono="edit" (clic)="onConfirmarEdicionPostVb()">
+          Editar y volver a BORRADOR
+        </app-button>
+      </div>
+    </div>
+  </app-modal>
 }
 
 <!-- ── HU-09 Modal Detalle de Propuesta ──────────────────────────────────── -->

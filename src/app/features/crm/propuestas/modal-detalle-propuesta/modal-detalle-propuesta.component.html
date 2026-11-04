@@ -58,12 +58,8 @@
                     @if (c.observaciones) {
                       <div class="tt-row">{{ c.observaciones }}</div>
                     }
-                    @if (c.fechaLimite) {
-                      <div class="tt-row">
-                        <strong>Límite:</strong> {{ c.fechaLimite | date:'dd/MM/yyyy HH:mm' }}
-                        @if (c.vencida) { <span class="tt-vencida">VENCIDA</span> }
-                      </div>
-                    }
+                    <!-- Observación 27 (31/10): fecha límite eliminada del flujo. -->
+
                   </span>
                 </span>
               }
@@ -688,13 +684,7 @@
                   {{ c.solicitadoEn ? (c.solicitadoEn | date:"dd/MM/yyyy · HH:mm") : '—' }}
                 </div>
               </div>
-              <div class="info-item">
-                <div class="info-label">FECHA LÍMITE</div>
-                <div class="info-valor">
-                  {{ c.fechaLimite ? (c.fechaLimite | date:"dd/MM/yyyy · HH:mm") : '—' }}
-                  @if (c.vencida) { <span class="pill-vencido">VENCIDA</span> }
-                </div>
-              </div>
+              <!-- Observación 27 (31/10): bloque "FECHA LÍMITE" eliminado. -->
               <div class="info-item">
                 <div class="info-label">RESPONSABLE DE CORREGIR</div>
                 <div class="info-valor">{{ c.nombreResponsable || '—' }}</div>
@@ -784,11 +774,10 @@
               }
             }
           } @else {
-            <!-- Modo Aprobador (HU-15): acciones de VB. Las 3 son del supervisor con propuesta_vb_resolver. -->
+            <!-- Modo Aprobador (HU-15): acciones de VB.
+                 Observación 28 (31/10): se quitó la acción "Rechazar". Solo quedan
+                 "Solicitar Corrección" y "Aprobar". -->
             <ng-container *twSiPermiso="'propuesta_vb_resolver'">
-              <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
-                Rechazar
-              </app-button>
               <app-button variant="secondary" tamano="md" icono="edit" (clic)="accionAprobador.emit('solicitar_correccion')">
                 Solicitar Corrección
               </app-button>

@@ -148,3 +148,33 @@
 }
 
 // Nota: tabla-error, paginación y keyframes los provee app-tabla-paginada.
+
+// ── Observación 24 (31/10): modal de confirmación "editar post-VB" ─────────
+.edicion-post-vb {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 4px 4px 8px;
+
+  &__aviso {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+    color: #1E40AF;
+
+    .material-symbols-outlined { font-size: 24px; color: #2563EB; flex-shrink: 0; }
+
+    strong { color: #0F172A; display: block; margin-bottom: 4px; }
+    p      { margin: 0; color: #475569; font-size: 13px; line-height: 1.5; }
+    p strong { display: inline; color: #1E40AF; font-weight: 700; }
+  }
+
+  &__acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}

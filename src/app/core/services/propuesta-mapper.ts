@@ -14,7 +14,6 @@ import {
   EquipoVinculado,
   crearDraftVacio,
 } from '../models/propuesta-detalle.model';
-import { TipoPropuesta } from '../models/propuestas.model';
 import {
   DatosNuevaPropuestaApi,
   GuardarPropuestaDtoApi,
@@ -82,9 +81,10 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
       condicionesServicio:  d.seccionesActivas.includes('condiciones'),
       listadoEquipos:       true,
     },
-    tipoPropuesta:         (d.tipoServicio as TipoPropuesta | '') || '',
+    tipoPropuesta:         d.tipoServicio ?? '',
     responsableTecnico:    d.nombreResponsable ?? '',
     requiereTercerizacion: d.esTercerizado,
+    idClienteTercero:      d.idClienteTercero ?? null,
     terceroEmpresa:        d.terceroRazonSocial ?? '',
     terceroRuc:            d.terceroRuc ?? '',
     terceroDireccion:      d.terceroDireccion ?? '',
@@ -133,6 +133,14 @@ export function prellenarDraftDesdeRq(datos: DatosNuevaPropuestaApi): PropuestaD
     razonSocial:         datos.razonSocial,
     ruc:                 datos.ruc,
     contacto:            datos.nombreContacto ?? '',
+    idContacto:          datos.idContacto,
+    correoContacto:      null,  // se completa al cargar el dropdown en la configuración
+    // Observación 12 (31/10): "Referencia" se precarga con el detalle del RQ y queda no editable en la UI.
+    referencia:          datos.descripcion ?? '',
+    // Observaciones 10 y 20 (31/10): flags heredados del RQ que condicionan opciones del wizard.
+    esAcreditacionRq:       !!datos.esAcreditacion,
+    condicionPagoClienteRq: datos.condicionPagoCliente ?? null,
+    condicionPagoCodigoRq:  datos.condicionPagoCodigo ?? null,
   };
 }
 
@@ -262,6 +270,7 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     seccionesActivas,
 
     esTercerizado:      draft.requiereTercerizacion,
+    idClienteTercero:   draft.idClienteTercero ?? null,
     terceroRuc:         draft.terceroRuc        || null,
     terceroRazonSocial: draft.terceroEmpresa    || null,
     terceroDireccion:   draft.terceroDireccion  || null,

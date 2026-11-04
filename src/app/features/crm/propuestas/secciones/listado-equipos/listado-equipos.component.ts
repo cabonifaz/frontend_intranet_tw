@@ -19,6 +19,7 @@ interface EquipoCatalogo {
   modelo:    string;
   numSerie:  string;
   codigoTw:  string;
+  estado:    string;   // Observación 21: estado real del maestro
 }
 
 @Component({
@@ -54,6 +55,7 @@ export class ListadoEquiposComponent implements OnInit {
         modelo:    e.modelo,
         numSerie:  e.numSerie,
         codigoTw:  e.codigoTw,
+        estado:    e.estado,
       }));
       this.catalogo.set(items);
     } catch { /* silencioso */ }
@@ -93,6 +95,7 @@ export class ListadoEquiposComponent implements OnInit {
         marca:    e.marca,
         modelo:   e.modelo,
         esNuevo:  false,
+        estado:   e.estado,    // Observación 21: estado real del maestro
       } as EquipoVinculado],
     });
   }
@@ -144,6 +147,15 @@ export class ListadoEquiposComponent implements OnInit {
         marca:    e.marca,
         modelo:   e.modelo,
         esNuevo:  e.resultado === 'creado',
+        // Observación 21 (31/10, fix 2026-11-03): en BD el estado del equipo
+        // solo es `Activo` o `Inactivo`. Para los creados en esta importación
+        // añadimos la marca visual "Nuevo" (no es un estado del maestro).
+        //   - `creado`       → "Nuevo" (recién nace en esta importación)
+        //   - `reutilizado`  → "Activo" (ya existía)
+        //   - `vinculado`    → usa el `estado` del back si viene; si no, "Activo"
+        //                       (pedido #4 al back: exponer `estado` en EquipoImportado)
+        estado:   (e as unknown as { estado?: string | null }).estado
+                    ?? (e.resultado === 'creado' ? 'Nuevo' : 'Activo'),
       }));
 
     this.draftSvc.actualizar({

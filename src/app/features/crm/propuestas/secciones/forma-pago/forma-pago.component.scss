@@ -208,3 +208,26 @@
 
   &:hover { background: #EFF6FF; }
 }
+
+// Observación 20 (31/10): hint sobre la condición de pago precargada desde la ficha del cliente.
+.hint-cliente {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 8px 0 16px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  color: #1E3A8A;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  small { color: #475569; }
+}

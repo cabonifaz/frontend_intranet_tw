@@ -77,7 +77,9 @@
             </span>
           </div>
         }
-        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+        <!-- Observación 22 (31/10): modal también en modo local para la sección opcionales. -->
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()"
+                [disabled]="draftSvc.subtotalOpcionalesBruto() <= 0">
           <span class="material-symbols-outlined">percent</span>
           {{ (draftSvc.draft().descuentoOpcionales ?? 0) > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
         </button>
@@ -106,10 +108,11 @@
   </app-doble-panel>
 </app-seccion>
 
-@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+@if (modalDescuentoAbierto()) {
   <app-modal-descuento-global
-    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    [idPropuesta]="draftSvc.draft().idPropuesta"
     [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version + ' · Opcionales'"
+    [subtotalLocal]="draftSvc.subtotalOpcionalesBruto()"
     [seccion]="'opcionales'"
     (cerrar)="cerrarModalDescuento()"
     (aplicado)="onDescuentoAplicado($event)"

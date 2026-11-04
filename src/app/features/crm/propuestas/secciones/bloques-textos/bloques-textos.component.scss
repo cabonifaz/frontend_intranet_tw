@@ -144,16 +144,12 @@
       display: flex;
       gap: 4px;
       align-items: center;
-      padding-left: 30px;
+      padding-left: 18px;
       position: relative;
 
-      &::before {
-        content: '•';
-        position: absolute;
-        left: 18px;
-        top: 4px;
-        color: #94A3B8;
-      }
+      // Observación 19 v3 (feedback 2026-11-03): el bullet "•" + el handle
+      // drag_indicator se duplicaban. Dejamos solo el handle, que ya funciona
+      // como marcador visual de la viñeta además de ser el asa para arrastrarla.
 
       input,
       textarea {
@@ -179,6 +175,51 @@
 
     // Alinea el botón de eliminar al tope del textarea cuando ocupa varias líneas
     li > app-button { align-self: flex-start; margin-top: 2px; }
+  }
+
+  // Observación 19 v3 (feedback 2026-11-03): handle de drag.
+  //   - En GRUPOS: aparece sólo al hover de la card (en reposo = invisible).
+  //   - En VIÑETAS: siempre visible, reemplaza el bullet "•" como marcador.
+  &__drag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: #CBD5E1;
+    opacity: 0;                  // oculto en reposo para los grupos
+    cursor: grab;
+    transition: color 0.15s, opacity 0.15s;
+
+    &:hover { color: #64748B; }
+    &:active { cursor: grabbing; }
+
+    .material-symbols-outlined { font-size: 18px; }
+
+    // Para las viñetas el handle SIEMPRE se ve: hace de marcador visual.
+    &--vineta {
+      opacity: 1;
+      width: 16px;
+      height: 16px;
+      align-self: flex-start;
+      margin-top: 3px;
+      color: #94A3B8;
+
+      .material-symbols-outlined { font-size: 14px; }
+    }
+  }
+
+  // Al hacer hover sobre la card del grupo aparece su handle.
+  &:hover &__drag { opacity: 1; color: #94A3B8; }
+
+  // Estado "siendo arrastrado": un poco translúcido, para que el usuario vea la referencia.
+  &--dragging {
+    opacity: 0.4;
+  }
+
+  &__vineta--dragging {
+    opacity: 0.4;
   }
 }
 

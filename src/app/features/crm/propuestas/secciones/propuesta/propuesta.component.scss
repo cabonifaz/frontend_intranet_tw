@@ -106,9 +106,16 @@
   }
 
   // Ajustes finos de ancho por columna:
-  // Alcance (col 2) y Ptos Calib (col 3) son más angostas.
+  // Alcance (col 2) y Ptos Calib (col 3).
   th:nth-child(2), td:nth-child(2) { width: 90px; max-width: 90px; }  // Alcance
-  th:nth-child(3), td:nth-child(3) { width: 60px; max-width: 60px; }  // Ptos Calib
+  // Observación 17 (31/10): la columna "Ptos Calib" quedaba muy angosta (60px) y cortaba el texto.
+  // Se amplía el ancho a 130px y se aumenta el padding vertical para que el valor completo quede visible.
+  th:nth-child(3), td:nth-child(3) {
+    width: 130px;
+    max-width: 130px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
   // V. Unit (col 6) un poco más ancha para montos de 4-5 dígitos
   th:nth-child(6), td:nth-child(6) { width: 85px; input { max-width: 85px; } }
 

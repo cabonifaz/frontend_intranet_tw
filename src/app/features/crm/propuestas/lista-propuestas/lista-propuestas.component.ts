@@ -30,6 +30,7 @@ import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tab
 import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
+import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 
 @Component({
   selector: 'app-lista-propuestas',
@@ -38,7 +39,7 @@ import { SiPermisoDirective } from '../../../../core/directives/si-permiso.direc
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
     ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent, ModalSolicitarRevocacionComponent, ModalEnviarClienteComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
-    DetalleRequerimientoComponent, SiPermisoDirective,
+    DetalleRequerimientoComponent, SiPermisoDirective, ModalComponent,
   ],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
@@ -325,15 +326,46 @@ export class ListaPropuestasComponent implements OnInit {
     if (item.estado === 'borrador') {
       // Borrador → se puede editar la misma versión directamente.
       this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
-    } else {
-      // Ya fue enviada a VB o más allá → abre modal "Crear nueva versión".
-      this.cargarMotivosNuevaVersion();
-      this.nuevaVersionCtx.set({
+      return;
+    }
+    // Observación 24 (31/10): si la propuesta ya fue aprobada por VB y está "Por Enviar"
+    // (es decir, aún no se envió al cliente), el comercial puede editar la MISMA versión.
+    // Al guardar, el back la devuelve a BORRADOR y hay que mandarla a VB nuevamente.
+    // Mostramos una confirmación para que el comercial entienda el impacto.
+    if ((item.estado as string) === 'por_enviar') {
+      this.confirmarEdicionPostVbCtx.set({
         idPropuesta:     item.idPropuesta,
         codigoPropuesta: item.codigo,
-        versionActual:   this.parsearVersion(item.version),
+        version:         item.version,
       });
+      return;
     }
+    // Resto (pendiente, por_vb, aceptada, rechazada, …) → abre modal "Crear nueva versión".
+    this.cargarMotivosNuevaVersion();
+    this.nuevaVersionCtx.set({
+      idPropuesta:     item.idPropuesta,
+      codigoPropuesta: item.codigo,
+      versionActual:   this.parsearVersion(item.version),
+    });
+  }
+
+  // ── Observación 24: confirmación de edición post-VB ────────────────────────
+  readonly confirmarEdicionPostVbCtx = signal<{
+    idPropuesta:     number;
+    codigoPropuesta: string;
+    version:         string;
+  } | null>(null);
+
+  onConfirmarEdicionPostVb(): void {
+    const ctx = this.confirmarEdicionPostVbCtx();
+    if (!ctx) return;
+    this.confirmarEdicionPostVbCtx.set(null);
+    // El back ya revierte a borrador al guardar; el front solo navega al wizard.
+    this.router.navigate(['/crm/propuestas', ctx.idPropuesta, 'editar']);
+  }
+
+  onCancelarEdicionPostVb(): void {
+    this.confirmarEdicionPostVbCtx.set(null);
   }
 
   /** Modal "crear nueva versión" → llama al back y navega al wizard. */

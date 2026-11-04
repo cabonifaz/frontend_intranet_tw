@@ -105,7 +105,10 @@
             </span>
           </div>
         }
-        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+        <!-- Observación 22 (31/10): el botón ya no está condicionado a que la propuesta esté guardada.
+             Si aún no hay idPropuesta, el modal entra en "modo local" (persiste al draft; se sincroniza con el back al guardar). -->
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()"
+                [disabled]="draftSvc.subtotalBruto() <= 0">
           <span class="material-symbols-outlined">percent</span>
           {{ draftSvc.descuentoGlobal() > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
         </button>
@@ -131,10 +134,11 @@
   </app-doble-panel>
 </app-seccion>
 
-@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+@if (modalDescuentoAbierto()) {
   <app-modal-descuento-global
-    [idPropuesta]="draftSvc.draft().idPropuesta!"
+    [idPropuesta]="draftSvc.draft().idPropuesta"
     [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [subtotalLocal]="draftSvc.subtotalBruto()"
     (cerrar)="cerrarModalDescuento()"
     (aplicado)="onDescuentoAplicado($event)"
   />

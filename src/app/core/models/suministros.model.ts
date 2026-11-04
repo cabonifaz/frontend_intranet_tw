@@ -15,6 +15,9 @@ export interface SuministroListaItem {
   estado:           string;
   esActivoEnCatalogo: boolean;
   usarEnPropuestas:   boolean;
+  /** Observación 18 (31/10): procedimientos técnicos asociados al suministro (texto "código - título"). */
+  primerProcedimiento?:     string | null;
+  segundoProcedimiento?:    string | null;
 }
 
 export interface ProcedimientoAsociado {

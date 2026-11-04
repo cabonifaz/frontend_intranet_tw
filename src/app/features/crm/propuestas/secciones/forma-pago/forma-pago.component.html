@@ -59,6 +59,16 @@
       Agregar forma de pago
     </app-button>
 
+    @if (draftSvc.draft().condicionPagoClienteRq; as condicionCliente) {
+      <div class="hint-cliente">
+        <span class="material-symbols-outlined">info</span>
+        <span>
+          <strong>Condición de pago habitual del cliente:</strong> {{ condicionCliente }}
+          <small>— Se precargó como hito. Puedes editarla, dividirla o agregar más hitos.</small>
+        </span>
+      </div>
+    }
+
     <div class="cuotas">
       @for (c of cuotas(); track c.id; let i = $index) {
         <div class="cuota">
@@ -70,12 +80,18 @@
             <span>%</span>
           </div>
           @if (condicionesPago().length > 0) {
+            <!-- Observación 20 (fix 2026-11-03): usamos [selected] en cada option
+                 (más robusto que [value] en el select al renderizar dinámicamente)
+                 y agregamos una opción sintética si la descripción actual no está
+                 en el catálogo. -->
             <select class="cuota__desc"
-                    [value]="c.descripcion"
                     (change)="actualizarCuota(c.id, 'descripcion', $any($event.target).value)">
-              <option value="">Selecciona condición...</option>
+              <option value="" [selected]="!c.descripcion">Selecciona condición...</option>
+              @if (c.descripcion && !esDelCatalogo(c.descripcion)) {
+                <option [value]="c.descripcion" selected>{{ c.descripcion }}</option>
+              }
               @for (cp of condicionesPago(); track cp.codigo) {
-                <option [value]="cp.codigo">{{ cp.nombre }}</option>
+                <option [value]="cp.codigo" [selected]="cp.codigo === c.descripcion">{{ cp.nombre }}</option>
               }
             </select>
           } @else {

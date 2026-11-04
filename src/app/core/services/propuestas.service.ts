@@ -74,6 +74,11 @@ export interface DatosNuevaPropuestaApi {
   prioridadLabel:      string | null;
   descripcion:         string;
   propuestaExistente:  { idPropuesta: number; numero: string; version: number; estado: string } | null;
+  // Observaciones 31/10: campos nuevos del RQ que condicionan el wizard de la propuesta.
+  esAcreditacion?:       boolean;   // RQ marca "Proyecto entra al sistema de acreditación" → habilita "Servicio metrológico"
+  cantidadAdjuntos?:     number;    // informativo (hard stop del RQ ya validó al crearlo)
+  condicionPagoCliente?: string | null;  // texto de la ficha del cliente, para precargar Forma de pago
+  condicionPagoCodigo?:  string | null;  // código en CONDICION_PAGO para seleccionar la opción
 }
 
 export interface GuardarPropuestaResultadoApi {
@@ -165,6 +170,8 @@ export interface PropuestaDetalleApi {
   seccionesActivas:    string[];
 
   esTercerizado:       boolean;
+  /** Observación 15 (31/10): id del cliente del maestro, cuando el tercero se eligió desde la BD. */
+  idClienteTercero?:   number | null;
   terceroRuc:          string | null;
   terceroRazonSocial:  string | null;
   terceroDireccion:    string | null;
@@ -217,6 +224,8 @@ export interface GuardarPropuestaDtoApi {
   seccionesActivas:   string[] | null;
 
   esTercerizado:      boolean;
+  /** Observación 15 (31/10): id del cliente del maestro cuando el tercero se eligió desde la BD. */
+  idClienteTercero?:  number | null;
   terceroRuc:         string | null;
   terceroRazonSocial: string | null;
   terceroDireccion:   string | null;

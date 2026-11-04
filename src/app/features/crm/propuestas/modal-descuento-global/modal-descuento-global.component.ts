@@ -24,12 +24,21 @@ export class ModalDescuentoGlobalComponent {
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly toast      = inject(ToastService);
 
-  readonly idPropuesta = input.required<number>();
+  /** Observación 22 (31/10): id de la propuesta ya persistida. Si es `null` el
+   *  modal opera en **modo local**: el descuento se calcula contra `subtotalLocal`
+   *  y se emite al padre para que lo guarde en el draft, sin llamar al back
+   *  (se sincroniza al guardar la propuesta por primera vez). */
+  readonly idPropuesta = input<number | null>(null);
   readonly codigo      = input<string>('');
+  /** Subtotal calculado en memoria por el padre, requerido en modo local. */
+  readonly subtotalLocal = input<number>(0);
   /** 'principal' usa los endpoints HU-11. 'opcionales' usa los paralelos de la migración 48. */
   readonly seccion     = input<'principal' | 'opcionales'>('principal');
   readonly cerrar      = output<void>();
   readonly aplicado    = output<DescuentoResultado>();
+
+  /** Si no hay idPropuesta todavía, trabajamos solo con el draft. */
+  readonly modoLocal = computed(() => !this.idPropuesta());
 
   readonly tipo         = signal<'porcentaje' | 'monto'>('porcentaje');
   readonly valor        = signal<number>(0);
@@ -65,21 +74,61 @@ export class ModalDescuentoGlobalComponent {
     });
   }
 
-  /** Delegadores: eligen el endpoint principal o el de opcionales según el input [seccion]. */
-  private previsualizar(dto: { tipo: 'porcentaje' | 'monto' | 'ninguno'; valor: number; idMotivoDescuento?: number | null }) {
+  /** Delegadores: eligen el endpoint principal o el de opcionales según el input [seccion].
+   *  Si el modal está en modo local (sin idPropuesta aún), calculamos todo en memoria. */
+  private previsualizar(dto: { tipo: 'porcentaje' | 'monto' | 'ninguno'; valor: number; idMotivoDescuento?: number | null }): Promise<DescuentoResultado> {
+    if (this.modoLocal()) return Promise.resolve(this.calcularLocal(dto));
+    const id = this.idPropuesta()!;
     return this.seccion() === 'opcionales'
-      ? this.svc.previsualizarDescuentoOpcionales(this.idPropuesta(), dto)
-      : this.svc.previsualizarDescuento(this.idPropuesta(), dto);
+      ? this.svc.previsualizarDescuentoOpcionales(id, dto)
+      : this.svc.previsualizarDescuento(id, dto);
   }
-  private aplicarApi(dto: { tipo: 'porcentaje' | 'monto'; valor: number; idMotivoDescuento?: number | null }) {
+  private aplicarApi(dto: { tipo: 'porcentaje' | 'monto'; valor: number; idMotivoDescuento?: number | null }): Promise<DescuentoResultado> {
+    if (this.modoLocal()) return Promise.resolve(this.calcularLocal(dto));
+    const id = this.idPropuesta()!;
     return this.seccion() === 'opcionales'
-      ? this.svc.aplicarDescuentoOpcionales(this.idPropuesta(), dto)
-      : this.svc.aplicarDescuento(this.idPropuesta(), dto);
+      ? this.svc.aplicarDescuentoOpcionales(id, dto)
+      : this.svc.aplicarDescuento(id, dto);
   }
-  private quitarApi() {
+  private quitarApi(): Promise<DescuentoResultado> {
+    if (this.modoLocal()) return Promise.resolve(this.calcularLocal({ tipo: 'ninguno', valor: 0 }));
+    const id = this.idPropuesta()!;
     return this.seccion() === 'opcionales'
-      ? this.svc.quitarDescuentoOpcionales(this.idPropuesta())
-      : this.svc.quitarDescuento(this.idPropuesta());
+      ? this.svc.quitarDescuentoOpcionales(id)
+      : this.svc.quitarDescuento(id);
+  }
+
+  /** Observación 22 (31/10): cálculo local del resultado cuando la propuesta aún no se guardó. */
+  private calcularLocal(dto: { tipo: 'porcentaje' | 'monto' | 'ninguno'; valor: number; idMotivoDescuento?: number | null }): DescuentoResultado {
+    const subtotal = this.subtotalLocal() || 0;
+    let descuentoNuevo = 0;
+    let porcentaje: number | null = null;
+    if (dto.tipo === 'porcentaje' && dto.valor > 0) {
+      porcentaje = dto.valor;
+      descuentoNuevo = subtotal * (dto.valor / 100);
+    } else if (dto.tipo === 'monto' && dto.valor > 0) {
+      descuentoNuevo = Math.min(dto.valor, subtotal);
+      porcentaje = subtotal > 0 ? (descuentoNuevo / subtotal) * 100 : null;
+    }
+    const igvPct = 18;
+    const igvNuevo = (subtotal - descuentoNuevo) * (igvPct / 100);
+    return {
+      subtotalActual:     subtotal,
+      descuentoActual:    0,
+      porcentajeActual:   null,
+      igvActual:          subtotal * (igvPct / 100),
+      totalActual:        subtotal * (1 + igvPct / 100),
+
+      tipo:               dto.tipo === 'ninguno' ? 'ninguno' : dto.tipo,
+      porcentaje,
+      descuentoNuevo,
+      subtotalNuevo:      subtotal - descuentoNuevo,
+      igvNuevo,
+      totalNuevo:         subtotal - descuentoNuevo + igvNuevo,
+      igvPct,
+
+      idMotivoDescuento:  dto.idMotivoDescuento ?? null,
+    } as DescuentoResultado;
   }
 
   async ngOnInit(): Promise<void> {

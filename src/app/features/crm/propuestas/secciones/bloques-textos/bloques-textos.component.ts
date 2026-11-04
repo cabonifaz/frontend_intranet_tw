@@ -125,6 +125,92 @@ export class BloquesTextosComponent {
 
   totalVinetas = computed(() => this.grupos().reduce((acc, g) => acc + g.vinetas.length, 0));
 
+  // Observación 19 (31/10): el cliente pidió poder reordenar los textos del detalle
+  // moviéndolos arriba / abajo. Se aplica tanto a GRUPOS como a VIÑETAS dentro de cada
+  // grupo. El componente es compartido por Detalle, Recomendaciones, Suministros
+  // Cliente y Condiciones, así que todas las secciones ganan el reordenamiento.
+  // Observación 19 v2 (feedback 2026-11-03): el usuario pidió quitar las flechas
+  // ↑↓ (muy cargado junto al botón X) y reemplazarlas por drag-and-drop puro.
+  // Usamos HTML5 nativo para no sumar dependencias (@angular/cdk).
+
+  /** Qué item se está arrastrando. */
+  readonly dragState = signal<
+    | { kind: 'grupo'; grupoId: string }
+    | { kind: 'vineta'; grupoId: string; vinetaId: string }
+    | null
+  >(null);
+
+  // Signals derivadas: evitan el problema de type-narrowing de Angular en el
+  // template cuando se accede a campos de una union por múltiples llamadas
+  // a dragState() consecutivas.
+  readonly dragGrupoId  = computed(() => {
+    const d = this.dragState();
+    return d?.kind === 'grupo' ? d.grupoId : null;
+  });
+  readonly dragVinetaId = computed(() => {
+    const d = this.dragState();
+    return d?.kind === 'vineta' ? d.vinetaId : null;
+  });
+
+  onDragStartGrupo(ev: DragEvent, grupoId: string): void {
+    this.dragState.set({ kind: 'grupo', grupoId });
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', grupoId);
+    }
+  }
+
+  onDragStartVineta(ev: DragEvent, grupoId: string, vinetaId: string): void {
+    ev.stopPropagation();
+    this.dragState.set({ kind: 'vineta', grupoId, vinetaId });
+    if (ev.dataTransfer) {
+      ev.dataTransfer.effectAllowed = 'move';
+      ev.dataTransfer.setData('text/plain', vinetaId);
+    }
+  }
+
+  onDragOver(ev: DragEvent): void {
+    ev.preventDefault();
+    if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+  }
+
+  onDragEnd(): void { this.dragState.set(null); }
+
+  onDropGrupo(ev: DragEvent, targetGrupoId: string): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const d = this.dragState();
+    this.dragState.set(null);
+    if (!d || d.kind !== 'grupo' || d.grupoId === targetGrupoId) return;
+    const grupos = this.grupos();
+    const srcIdx = grupos.findIndex(g => g.id === d.grupoId);
+    const dstIdx = grupos.findIndex(g => g.id === targetGrupoId);
+    if (srcIdx < 0 || dstIdx < 0) return;
+    const copia = [...grupos];
+    const [movido] = copia.splice(srcIdx, 1);
+    copia.splice(dstIdx, 0, movido);
+    this.updateDraft(copia);
+  }
+
+  onDropVineta(ev: DragEvent, grupoId: string, targetVinetaId: string): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const d = this.dragState();
+    this.dragState.set(null);
+    if (!d || d.kind !== 'vineta' || d.grupoId !== grupoId || d.vinetaId === targetVinetaId) return;
+    const grupos = this.grupos().map(g => {
+      if (g.id !== grupoId) return g;
+      const srcIdx = g.vinetas.findIndex(v => v.id === d.vinetaId);
+      const dstIdx = g.vinetas.findIndex(v => v.id === targetVinetaId);
+      if (srcIdx < 0 || dstIdx < 0) return g;
+      const copia = [...g.vinetas];
+      const [movida] = copia.splice(srcIdx, 1);
+      copia.splice(dstIdx, 0, movida);
+      return { ...g, vinetas: copia };
+    });
+    this.updateDraft(grupos);
+  }
+
   // Ajusta la altura del textarea al contenido para que el texto largo
   // se vea en varias líneas sin recorte.
   autogrow(el: HTMLTextAreaElement): void {

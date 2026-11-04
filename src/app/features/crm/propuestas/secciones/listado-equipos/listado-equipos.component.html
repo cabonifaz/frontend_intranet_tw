@@ -89,11 +89,14 @@
                 <td class="mono celda-fuerte col-codtw">{{ e.codigoTw }}</td>
                 <td class="col-equipo">{{ e.marca }} {{ e.modelo }}</td>
                 <td class="col-estado">
-                  @if (e.esNuevo) {
-                    <span class="chip-estado chip-estado--nuevo">Nuevo</span>
-                  } @else {
-                    <span class="chip-estado chip-estado--vinc">Vinculado</span>
-                  }
+                  <!-- Observación 21 (fix 2026-11-03): BD solo tiene Activo/Inactivo.
+                       Nuevo = marca visual del front para equipos creados en esta importación. -->
+                  <span class="chip-estado"
+                        [class.chip-estado--nuevo]="(e.estado || '') === 'Nuevo'"
+                        [class.chip-estado--activo]="(e.estado || '') === 'Activo'"
+                        [class.chip-estado--inactivo]="(e.estado || '') === 'Inactivo'">
+                    {{ e.estado || '—' }}
+                  </span>
                 </td>
               </tr>
             }

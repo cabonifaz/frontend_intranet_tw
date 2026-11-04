@@ -160,17 +160,12 @@ export class PropuestaWizardComponent implements OnInit {
         const esDelMismoRq = borrador?.idRequerimiento === idRequerimiento &&
                              (borrador?.idPropuesta ?? null) === null;
 
-        if (esDelMismoRq && !flagResumido) {
-          // Hay borrador para este RQ y no se resolvió aún → mostramos modal.
-          this.pendienteCargarRq = idRequerimiento;
-          this.borradorDisponible.set({ fechaGuardado: borrador!.ultimaModificacion });
-          this.draftSvc.cargarDesdeStorage('nueva');
-          // La signal se carga ya para que mientras el modal esté abierto el sidebar
-          // y los campos no quede en blanco. Si descarta, hard-reload resetea todo.
-        } else if (esDelMismoRq && flagResumido) {
-          // Usuario ya eligió "Restaurar" en esta sesión → cargar directo sin preguntar.
+        if (esDelMismoRq) {
+          // Observación 9 (31/10): cargar el borrador directamente sin preguntar.
+          // Antes había un modal "¿Restaurar o empezar de cero?"; ahora ya no se muestra.
           sessionStorage.removeItem('tw-propuesta-wizard-resumido');
           this.draftSvc.cargarDesdeStorage('nueva');
+          this.toast.exito('Se restauró tu último borrador automáticamente.');
         } else {
           // Sin borrador útil → cargar fresco desde el RQ.
           if (borrador) this.draftSvc.limpiarStorage('nueva');
@@ -244,8 +239,19 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  /** Cancelar: siempre vuelve a la bandeja de propuestas, sin importar el paso actual. */
+  /** Cancelar: siempre vuelve a la bandeja de propuestas, sin importar el paso actual.
+   *  Feedback 2026-11-03: descarta el borrador autoguardado (localStorage) Y
+   *  resetea el draft en memoria para que al entrar a "Nueva propuesta" otra
+   *  vez el formulario arranque limpio. */
   cancelar(): void {
+    const draft = this.draftSvc.draft();
+    if (this.esNuevo()) {
+      this.draftSvc.limpiarStorage('nueva');
+      sessionStorage.removeItem('tw-propuesta-wizard-resumido');
+    } else if (draft.idPropuesta != null) {
+      this.draftSvc.limpiarStorage(String(draft.idPropuesta));
+    }
+    this.draftSvc.resetear();
     this.router.navigate(['/crm/propuestas']);
   }
 
