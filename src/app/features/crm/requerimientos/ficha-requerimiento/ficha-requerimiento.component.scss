@@ -261,6 +261,15 @@ $blanco:     #FFFFFF;
   gap: 16px;
 }
 
+// Grid 2x2 para las 4 tarjetas de Contacto y Cliente (observación 31/10:
+// "Cliente principal, Sede, Contacto directo y Contacto secundario" se muestran en bloques balanceados
+// para que no quede 3 arriba + 1 debajo).
+.cards-cliente-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 .campo {
   display: flex;
   flex-direction: column;
@@ -558,6 +567,14 @@ $p-baja:  #10B981;
   display: flex;
   gap: 24px;
   flex-wrap: wrap;
+}
+
+// Grid 2x2 para los 4 checkboxes de "Contacto y Cliente" (observación 31/10:
+// Notificar por correo · Requiere visita técnica · Cliente con deuda · Proyecto entra a acreditación).
+.checks-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
 }
 
 .check-item {

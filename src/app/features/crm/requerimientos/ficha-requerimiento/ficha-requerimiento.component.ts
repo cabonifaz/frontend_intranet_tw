@@ -10,6 +10,7 @@ import {
   CatalogoItem,
   RequerimientoFicha,
   GuardarRequerimientoComando,
+  AdjuntoRequerimiento,
 } from '../../../../core/models/crm.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
@@ -36,6 +37,7 @@ interface BorradorRequerimiento {
   cliente: ClienteSeleccionado | null;
   sede: SedeSeleccionada | null;
   contacto: ContactoSeleccionado | null;
+  contactoSecundario: ContactoSeleccionado | null;
 }
 
 @Component({
@@ -61,12 +63,50 @@ export class FichaRequerimientoComponent implements OnInit {
   readonly origenes    = signal<CatalogoItem[]>([]);
   readonly areas       = signal<CatalogoItem[]>([]);
   readonly prioridades = signal<CatalogoItem[]>([]);
-  readonly mostrarModalCliente   = signal(false);
-  readonly mostrarModalSede      = signal(false);
-  readonly mostrarModalContacto  = signal(false);
-  readonly cliente    = signal<ClienteSeleccionado | null>(null);
-  readonly sede       = signal<SedeSeleccionada | null>(null);
-  readonly contacto   = signal<ContactoSeleccionado | null>(null);
+  readonly mostrarModalCliente            = signal(false);
+  readonly mostrarModalSede               = signal(false);
+  readonly mostrarModalContacto           = signal(false);
+  readonly mostrarModalContactoSecundario = signal(false);
+  readonly cliente             = signal<ClienteSeleccionado | null>(null);
+  readonly sede                = signal<SedeSeleccionada | null>(null);
+  readonly contacto            = signal<ContactoSeleccionado | null>(null);
+  readonly contactoSecundario  = signal<ContactoSeleccionado | null>(null);
+
+  /**
+   * Flujo encadenado Cliente → Sede → Contacto (observación 31/10: reducir clicks).
+   * Se activa al cambiar / elegir cliente (que resetea sede y contacto).
+   * Mientras está activo, al confirmar cliente se abre sede, al confirmar sede se abre contacto,
+   * y los modales de sede/contacto auto-seleccionan si solo hay 1 opción disponible.
+   */
+  readonly flujoEncadenado = signal(false);
+
+  /** Adjuntos del RQ (observación 31/10). Obligatorios cuando el RQ entra a acreditación. */
+  readonly adjuntos          = signal<AdjuntoRequerimiento[]>([]);
+  /** Archivos seleccionados antes de crear el RQ; se suben automáticamente justo después del guardado. */
+  readonly archivosPendientes = signal<File[]>([]);
+  readonly subiendoAdjuntos  = signal(false);
+  readonly errorAdjuntos     = signal('');
+
+  /** Formatos aceptados por el back (foto, video, correo, PDF, Office, texto, zip). */
+  readonly ADJUNTOS_ACCEPT =
+    'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.msg,.eml,.zip';
+  readonly ADJUNTOS_TAMANO_MAX_MB = 50;
+  readonly ADJUNTOS_POR_RQ_MAX    = 20;
+  readonly ADJUNTOS_POR_SUBIDA_MAX = 10;
+
+  /**
+   * Hard stop (observación 31/10): si el proyecto entra al sistema de acreditación, los adjuntos son obligatorios.
+   * En creación cuentan los archivos pendientes de subir; en edición cuentan los ya persistidos.
+   */
+  acreditacionSinAdjuntos(): boolean {
+    if (this.formulario.get('esAcreditacion')?.value !== true) return false;
+    return this.adjuntos().length === 0 && this.archivosPendientes().length === 0;
+  }
+
+  /** Total de adjuntos considerando los ya subidos y los pendientes de la creación. */
+  totalAdjuntos(): number {
+    return this.adjuntos().length + this.archivosPendientes().length;
+  }
 
   readonly esSoloLectura = computed(() => {
     const estado = this.ficha()?.estado;
@@ -173,6 +213,7 @@ export class FichaRequerimientoComponent implements OnInit {
     notificarCorreo: [false],
     requiereVisita:  [false],
     clienteDeuda:    [false],
+    esAcreditacion:  [false],
   });
 
   // Autoguardado + dirty + borrador en un composable. snapshotFn custom porque
@@ -183,16 +224,18 @@ export class FichaRequerimientoComponent implements OnInit {
     destroyRef:  this.destroyRef,
     rutaVuelta:  '/crm/requerimientos',
     snapshotFn:  () => ({
-      form:     this.formulario.getRawValue(),
-      cliente:  this.cliente(),
-      sede:     this.sede(),
-      contacto: this.contacto(),
+      form:               this.formulario.getRawValue(),
+      cliente:            this.cliente(),
+      sede:               this.sede(),
+      contacto:           this.contacto(),
+      contactoSecundario: this.contactoSecundario(),
     }),
     restoreFn: (data) => {
       this.formulario.patchValue(data.form, { emitEvent: false });
       this.cliente.set(data.cliente);
       this.sede.set(data.sede);
       this.contacto.set(data.contacto);
+      this.contactoSecundario.set(data.contactoSecundario ?? null);
     },
   });
 
@@ -218,15 +261,20 @@ export class FichaRequerimientoComponent implements OnInit {
         if (f.idContacto) {
           this.contacto.set({ idContacto: f.idContacto, nombres: f.nombreContacto ?? '', cargo: null });
         }
+        if (f.idContactoSecundario) {
+          this.contactoSecundario.set({ idContacto: f.idContactoSecundario, nombres: f.nombreContactoSecundario ?? '', cargo: null });
+        }
+        this.adjuntos.set(f.adjuntos ?? []);
         this.formulario.patchValue({
           idOrigen:        f.idOrigen,
           idArea:          f.idArea,
           idPrioridad:     f.idPrioridad,
-          fechaNecesidad:  f.fechaNecesidad ? f.fechaNecesidad.substring(0, 10) : '',
+          fechaNecesidad:  f.fechaNecesidad ? f.fechaNecesidad.substring(0, 16) : '',
           descripcion:     f.descripcion,
           notificarCorreo: f.notificarCorreo,
           requiereVisita:  f.requiereVisita,
           clienteDeuda:    f.clienteDeuda,
+          esAcreditacion:  f.esAcreditacion,
         });
         if (this.esSoloLectura()) {
           this.formulario.disable();
@@ -246,48 +294,210 @@ export class FichaRequerimientoComponent implements OnInit {
     }
   }
 
+  /** Abrir el modal de Cliente arrancando el flujo encadenado (Cliente → Sede → Contacto). */
+  abrirSeleccionCliente(): void {
+    this.flujoEncadenado.set(true);
+    this.mostrarModalCliente.set(true);
+  }
+
   onClienteConfirmado(sel: ClienteSeleccionado): void {
     this.cliente.set(sel);
     this.mostrarModalCliente.set(false);
     this.sede.set(null);
     this.contacto.set(null);
+    this.contactoSecundario.set(null);
     this.autosave.marcarCambio();
+    // Encadenar al modal de sede (reduce clicks: ya no hay que buscar el botón).
+    if (this.flujoEncadenado()) {
+      this.mostrarModalSede.set(true);
+    }
   }
 
   onSedeConfirmada(sel: SedeSeleccionada): void {
     this.sede.set(sel);
     this.mostrarModalSede.set(false);
-    this.contacto.set(null);
+    // Si el usuario cambió solo la sede, no reseteamos el contacto (contacto depende del cliente, no de la sede).
     this.autosave.marcarCambio();
+    // Encadenar al modal de contacto cuando venimos del flujo "elegir cliente".
+    if (this.flujoEncadenado()) {
+      this.mostrarModalContacto.set(true);
+    }
   }
 
   onContactoConfirmado(sel: ContactoSeleccionado): void {
     this.contacto.set(sel);
     this.mostrarModalContacto.set(false);
     this.autosave.marcarCambio();
+    // Encadenar al modal del contacto secundario (opcional) cuando venimos del flujo "elegir cliente".
+    // El flag `flujoEncadenado` se mantiene activo para que el modal del secundario también
+    // auto-seleccione si solo queda 1 contacto, y para cerrarse automático si no queda ninguno.
+    if (this.flujoEncadenado()) {
+      this.mostrarModalContactoSecundario.set(true);
+    }
+  }
+
+  /**
+   * Cierre del modal (X / Esc / cancelar) en medio del flujo encadenado:
+   * lo elegido queda guardado, los pasos siguientes quedan vacíos para completar luego.
+   */
+  cancelarFlujoEncadenado(): void {
+    this.flujoEncadenado.set(false);
+  }
+
+  onContactoSecundarioConfirmado(sel: ContactoSeleccionado): void {
+    this.contactoSecundario.set(sel);
+    this.mostrarModalContactoSecundario.set(false);
+    this.flujoEncadenado.set(false);
+    this.autosave.marcarCambio();
+  }
+
+  quitarContactoSecundario(): void {
+    this.contactoSecundario.set(null);
+    this.autosave.marcarCambio();
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Adjuntos del RQ (observación 31/10)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  async onArchivosSeleccionados(fileList: FileList | null, inputEl?: HTMLInputElement): Promise<void> {
+    this.errorAdjuntos.set('');
+    if (!fileList || fileList.length === 0) return;
+
+    const archivos = Array.from(fileList);
+
+    // Validaciones de tope por subida y por RQ (cuentan tanto los subidos como los pendientes).
+    if (archivos.length > this.ADJUNTOS_POR_SUBIDA_MAX) {
+      this.errorAdjuntos.set(`Puedes subir hasta ${this.ADJUNTOS_POR_SUBIDA_MAX} archivos a la vez.`);
+      if (inputEl) inputEl.value = '';
+      return;
+    }
+    if (this.totalAdjuntos() + archivos.length > this.ADJUNTOS_POR_RQ_MAX) {
+      const disp = Math.max(0, this.ADJUNTOS_POR_RQ_MAX - this.totalAdjuntos());
+      this.errorAdjuntos.set(`Este requerimiento ya tiene ${this.totalAdjuntos()} adjuntos. Puedes agregar ${disp} más (máximo ${this.ADJUNTOS_POR_RQ_MAX}).`);
+      if (inputEl) inputEl.value = '';
+      return;
+    }
+    const grande = archivos.find(a => a.size > this.ADJUNTOS_TAMANO_MAX_MB * 1024 * 1024);
+    if (grande) {
+      this.errorAdjuntos.set(`"${grande.name}" supera el tamaño máximo de ${this.ADJUNTOS_TAMANO_MAX_MB} MB.`);
+      if (inputEl) inputEl.value = '';
+      return;
+    }
+
+    // En modo creación guardamos los archivos en memoria y los subimos justo después de crear el RQ.
+    if (this.esNuevo()) {
+      this.archivosPendientes.update(list => [...list, ...archivos]);
+      this.autosave.marcarCambio();
+      if (inputEl) inputEl.value = '';
+      return;
+    }
+
+    this.subiendoAdjuntos.set(true);
+    try {
+      const lista = await this.crmSvc.subirAdjuntosRequerimiento(this.idRequerimiento, archivos);
+      this.adjuntos.set(lista);
+      this.toastSvc.exito(archivos.length === 1 ? 'Adjunto subido.' : `${archivos.length} adjuntos subidos.`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'No se pudieron subir los adjuntos.';
+      this.errorAdjuntos.set(msg);
+    } finally {
+      this.subiendoAdjuntos.set(false);
+      if (inputEl) inputEl.value = '';
+    }
+  }
+
+  quitarArchivoPendiente(indice: number): void {
+    this.archivosPendientes.update(list => list.filter((_, i) => i !== indice));
+    this.autosave.marcarCambio();
+  }
+
+  verAdjunto(a: AdjuntoRequerimiento): void {
+    window.open(this.crmSvc.urlAdjuntoRequerimiento(a.idDocumento), '_blank', 'noopener');
+  }
+
+  async eliminarAdjunto(a: AdjuntoRequerimiento): Promise<void> {
+    const esAcred = this.formulario.get('esAcreditacion')?.value === true;
+    if (esAcred && this.adjuntos().length === 1) {
+      this.errorAdjuntos.set('No puedes quitar el último adjunto: el proyecto entra al sistema de acreditación.');
+      return;
+    }
+    if (!confirm(`¿Quitar el adjunto "${a.nombreArchivo}"?`)) return;
+    this.errorAdjuntos.set('');
+    try {
+      await this.crmSvc.eliminarAdjuntoRequerimiento(a.idDocumento);
+      this.adjuntos.update(list => list.filter(x => x.idDocumento !== a.idDocumento));
+      this.toastSvc.exito('Adjunto eliminado.');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'No se pudo eliminar el adjunto.';
+      this.errorAdjuntos.set(msg);
+    }
+  }
+
+  formatearTamano(bytes: number | null): string {
+    if (!bytes || bytes <= 0) return '—';
+    if (bytes < 1024)        return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  iconoAdjunto(a: AdjuntoRequerimiento): string {
+    const t = (a.tipoContenido ?? '').toLowerCase();
+    const n = a.nombreArchivo.toLowerCase();
+    if (t.startsWith('image/'))  return 'image';
+    if (t.startsWith('video/'))  return 'movie';
+    if (t.includes('pdf'))       return 'picture_as_pdf';
+    if (t.includes('zip') || n.endsWith('.zip')) return 'folder_zip';
+    if (n.endsWith('.msg') || n.endsWith('.eml')) return 'mail';
+    if (/\.(docx?|rtf)$/.test(n))  return 'description';
+    if (/\.(xlsx?|csv)$/.test(n))  return 'table_chart';
+    if (/\.(pptx?)$/.test(n))      return 'slideshow';
+    return 'attach_file';
   }
 
   async guardar(): Promise<void> {
     if (this.formulario.invalid || !this.cliente() || this.guardando() || this.autosave.guardandoBorrador()) return;
+    if (this.acreditacionSinAdjuntos()) {
+      this.error.set('Al entrar al sistema de acreditación debes adjuntar al menos un documento antes de guardar.');
+      return;
+    }
     this.guardando.set(true);
     this.error.set('');
     try {
       const v = this.formulario.value;
       const cmd: GuardarRequerimientoComando = {
-        idRequerimiento: this.idRequerimiento,
-        idCliente:       this.cliente()!.idCliente,
-        idSede:          this.sede()?.idSede ?? null,
-        idContacto:      this.contacto()?.idContacto ?? null,
-        idOrigen:        Number(v.idOrigen),
-        idArea:          Number(v.idArea),
-        idPrioridad:     Number(v.idPrioridad),
-        fechaNecesidad:  v.fechaNecesidad || null,
-        descripcion:     v.descripcion,
-        notificarCorreo: v.notificarCorreo,
-        requiereVisita:  v.requiereVisita,
-        clienteDeuda:    v.clienteDeuda,
+        idRequerimiento:      this.idRequerimiento,
+        idCliente:            this.cliente()!.idCliente,
+        idSede:               this.sede()?.idSede ?? null,
+        idContacto:           this.contacto()?.idContacto ?? null,
+        idOrigen:             Number(v.idOrigen),
+        idArea:               Number(v.idArea),
+        idPrioridad:          Number(v.idPrioridad),
+        fechaNecesidad:       v.fechaNecesidad || null,
+        descripcion:          v.descripcion,
+        notificarCorreo:      v.notificarCorreo,
+        requiereVisita:       v.requiereVisita,
+        clienteDeuda:         v.clienteDeuda,
+        idContactoSecundario: this.contactoSecundario()?.idContacto ?? null,
+        esAcreditacion:       v.esAcreditacion,
       };
-      await this.crmSvc.guardarRequerimiento(cmd);
+      const idGuardado = await this.crmSvc.guardarRequerimiento(cmd);
+
+      // Si estábamos creando y hay archivos pendientes, subirlos ahora que ya existe el RQ.
+      const pendientes = this.archivosPendientes();
+      if (this.esNuevo() && idGuardado > 0 && pendientes.length > 0) {
+        try {
+          await this.crmSvc.subirAdjuntosRequerimiento(idGuardado, pendientes);
+          this.archivosPendientes.set([]);
+        } catch (adjErr: unknown) {
+          const adjMsg = adjErr instanceof Error ? adjErr.message : 'No se pudieron subir los adjuntos.';
+          this.toastSvc.error(`Requerimiento creado, pero fallaron los adjuntos: ${adjMsg}. Puedes volver a intentarlo editándolo.`);
+          this.autosave.limpiarTrasGuardado();
+          this.router.navigate(['/crm/requerimientos', idGuardado]);
+          return;
+        }
+      }
+
       this.autosave.limpiarTrasGuardado();
       const msg = this.esNuevo()
         ? 'Requerimiento creado exitosamente.'

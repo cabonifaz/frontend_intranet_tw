@@ -11,8 +11,11 @@ import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tab
 import { BadgeEstadoComponent }  from '../../../../shared/ui/badge-estado/badge-estado.component';
 import { PermisoDirective } from '../../../../shared/directives/permiso.directive';
 import { ESTADO, ESTADO_OPCIONES } from '../../../../core/constants/estados';
+import { CarteraClientesComponent } from '../cartera-clientes/cartera-clientes.component';
 
 const POR_PAGINA = 20;
+
+type TabClientes = 'lista' | 'cartera';
 
 @Component({
   selector: 'app-lista-clientes',
@@ -23,7 +26,8 @@ const POR_PAGINA = 20;
     FiltrosBarComponent,
     TablaPaginadaComponent,
     BadgeEstadoComponent,
-    PermisoDirective
+    PermisoDirective,
+    CarteraClientesComponent,
   ],
   templateUrl: './lista-clientes.component.html',
   styleUrl: './lista-clientes.component.scss',
@@ -42,6 +46,11 @@ export class ListaClientesComponent implements OnInit {
   readonly breadcrumb = breadcrumbMaestros('Clientes');
 
   readonly estadoOpciones = ESTADO_OPCIONES;
+
+  /** Tab activo del Mantenimiento de Clientes (observación 31/10: Cartera de clientes). */
+  readonly tabActivo = signal<TabClientes>('lista');
+
+  cambiarTab(tab: TabClientes): void { this.tabActivo.set(tab); }
 
   busqueda = '';
   estadoFiltro = '';

@@ -262,3 +262,48 @@ export interface ConsultaRuc {
   advertencias:     string[];
   clienteExistente: ClienteExistenteRuc | null;
 }
+
+// ─── Cartera de clientes (observación 31/10) ───────────────────────────────
+
+export interface ClienteCartera {
+  idCliente:    number;
+  razonSocial:  string;
+  ruc:          string | null;
+  estado:       string | null;
+  idComercial:  number | null;
+  comercial:    string | null;
+  asignadoEn:   string | null;
+  asignadoPor:  string | null;
+}
+
+export interface ComercialCartera {
+  id:        number;
+  nombre:    string;
+  cargo:     string | null;
+  clientes:  number;
+}
+
+export interface CarteraClientes {
+  items:        ClienteCartera[];
+  total:        number;
+  pagina:       number;
+  porPagina:    number;
+  comerciales:  ComercialCartera[];
+  /** true cuando el usuario tiene la acción `cartera_asignar` (Administrador). */
+  puedeAsignar: boolean;
+}
+
+export interface FiltrosCartera {
+  idComercial?: number | null;
+  busqueda?:    string;
+  /** Vacío | 'todos' | 'asignados' | 'sin_asignar'. */
+  asignacion?:  '' | 'todos' | 'asignados' | 'sin_asignar';
+  pagina?:      number;
+  porPagina?:   number;
+}
+
+export interface AsignarCarteraComando {
+  /** null o 0 = quitar los clientes de la cartera (desasignar). */
+  idComercial: number | null;
+  idsClientes: number[];
+}

@@ -9,6 +9,7 @@ import {
   RequerimientoFicha,
   GuardarRequerimientoComando,
   AnularRequerimientoComando,
+  AdjuntoRequerimiento,
 } from '../models/crm.model';
 
 const TIMEOUT_MS = 30_000;
@@ -89,6 +90,49 @@ export class CrmService {
       );
       if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
       return r.datos ?? 0;
+    } catch (e) {
+      throw e instanceof HttpErrorResponse
+        ? new Error(e.error?.mensaje ?? e.statusText)
+        : e;
+    }
+  }
+
+  /**
+   * Sube adjuntos a un RQ (observación 31/10). El back acepta hasta 10 por subida, 50 MB cada uno,
+   * máximo 20 por RQ. Devuelve la lista actualizada de adjuntos del RQ.
+   */
+  async subirAdjuntosRequerimiento(idRq: number, archivos: File[]): Promise<AdjuntoRequerimiento[]> {
+    const form = new FormData();
+    for (const a of archivos) form.append('archivos', a, a.name);
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaApi<AdjuntoRequerimiento[]>>(
+          `${this.base}/requerimientos/${idRq}/adjuntos`, form
+        ).pipe(timeout(TIMEOUT_MS * 2))
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+      return r.datos ?? [];
+    } catch (e) {
+      throw e instanceof HttpErrorResponse
+        ? new Error(e.error?.mensaje ?? e.statusText)
+        : e;
+    }
+  }
+
+  /** URL pública (con cookie de sesión) para ver/descargar un adjunto del RQ. */
+  urlAdjuntoRequerimiento(idDocumento: number): string {
+    return `${this.base}/requerimientos/adjuntos/${idDocumento}`;
+  }
+
+  /** Elimina un adjunto del RQ. Si el RQ entra a acreditación, el back no permite quitar el último. */
+  async eliminarAdjuntoRequerimiento(idDocumento: number): Promise<void> {
+    try {
+      const r = await firstValueFrom(
+        this.http.delete<RespuestaApi<void>>(
+          `${this.base}/requerimientos/adjuntos/${idDocumento}`
+        ).pipe(timeout(TIMEOUT_MS))
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
     } catch (e) {
       throw e instanceof HttpErrorResponse
         ? new Error(e.error?.mensaje ?? e.statusText)
