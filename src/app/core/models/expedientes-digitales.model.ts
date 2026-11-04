@@ -807,6 +807,9 @@ export interface DatosOsExpedienteDto {
   estado:                 string;
   fechaCreacion?:         string | null;
   fechaEjecucion?:        string | null;
+  // Observación 34/35 (31/10): rango tentativo definido al crear la OS.
+  fechaProgramadaDesde?:  string | null;
+  fechaProgramadaHasta?:  string | null;
   horaInicio?:            string | null;
   horaFinEstimada?:       string | null;
   horaLlegadaReal?:       string | null;

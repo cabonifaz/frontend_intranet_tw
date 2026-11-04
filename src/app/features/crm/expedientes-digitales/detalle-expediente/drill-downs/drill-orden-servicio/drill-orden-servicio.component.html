@@ -11,18 +11,59 @@
 }
 
 @if (drill().datos; as os) {
-  <app-seccion icono="engineering" [titulo]="'OS ' + os.numero">
+  <!-- Observación 35 (31/10): el detalle de la OS en el expediente mostraba
+       pocos datos y no incluía el rango tentativo. Se enriquece con rango,
+       dirección de sede, horas reales y datos de confirmación del cliente. -->
+  <app-seccion icono="engineering" [titulo]="'OS ' + os.numero" [subtitulo]="os.tipoServicio ?? ''">
     <div class="info-grid">
       <div class="info-item"><small>Estado</small><strong>{{ os.estado }}</strong></div>
+      <div class="info-item"><small>Fecha de creación</small><strong>{{ os.fechaCreacion ? (os.fechaCreacion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong></div>
+      <div class="info-item"><small>Generada por</small><strong>{{ os.generadoPor ?? '—' }}</strong></div>
+
+      <div class="info-item">
+        <small>Rango tentativo</small>
+        <strong>
+          @if (os.fechaProgramadaDesde || os.fechaProgramadaHasta) {
+            {{ os.fechaProgramadaDesde ? (os.fechaProgramadaDesde | date:'dd/MM/yyyy') : '—' }}
+            →
+            {{ os.fechaProgramadaHasta ? (os.fechaProgramadaHasta | date:'dd/MM/yyyy') : '—' }}
+          } @else { — }
+        </strong>
+      </div>
       <div class="info-item"><small>Fecha ejecución</small><strong>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</strong></div>
-      <div class="info-item"><small>Hora inicio</small><strong>{{ os.horaInicio ?? '—' }}</strong></div>
-      <div class="info-item"><small>Hora fin estimada</small><strong>{{ os.horaFinEstimada ?? '—' }}</strong></div>
-      <div class="info-item"><small>Tipo servicio</small><strong>{{ os.tipoServicio ?? '—' }}</strong></div>
-      <div class="info-item"><small>Sede</small><strong>{{ os.sede ?? '—' }}</strong></div>
+      <div class="info-item">
+        <small>Hora inicio / fin estimada</small>
+        <strong>{{ os.horaInicio ?? '—' }}{{ os.horaFinEstimada ? ' – ' + os.horaFinEstimada : '' }}</strong>
+      </div>
+
+      @if (os.horaLlegadaReal || os.horaFinReal) {
+        <div class="info-item">
+          <small>Hora inicio / fin real</small>
+          <strong>{{ os.horaLlegadaReal ?? '—' }}{{ os.horaFinReal ? ' – ' + os.horaFinReal : '' }}</strong>
+        </div>
+      }
+
+      <div class="info-item">
+        <small>Sede</small>
+        <strong>{{ os.sede ?? '—' }}</strong>
+        @if (os.sedeDireccion) { <small class="sublabel">{{ os.sedeDireccion }}</small> }
+      </div>
       <div class="info-item"><small>Técnico principal</small><strong>{{ os.tecnicoPrincipal ?? '—' }}</strong></div>
       <div class="info-item"><small>Responsable comercial</small><strong>{{ os.responsableComercial ?? '—' }}</strong></div>
       <div class="info-item"><small>Costo estimado</small><strong>{{ os.costoTotalEstimado | number:'1.2-2' }}</strong></div>
-      <div class="info-item"><small>Confirmación cliente</small><strong>{{ os.confirmacionCliente ? 'Sí' : 'Pendiente' }}</strong></div>
+
+      <div class="info-item">
+        <small>Confirmación cliente</small>
+        <strong>{{ os.confirmacionCliente ? 'Confirmada' : 'Pendiente' }}</strong>
+        @if (os.fechaConfirmacion) { <small class="sublabel">{{ os.fechaConfirmacion | date:'dd/MM/yyyy HH:mm' }}</small> }
+      </div>
+      @if (os.canalConfirmacion || os.contactoConfirma) {
+        <div class="info-item">
+          <small>Confirmada por</small>
+          <strong>{{ os.contactoConfirma ?? '—' }}</strong>
+          @if (os.canalConfirmacion) { <small class="sublabel">vía {{ os.canalConfirmacion }}</small> }
+        </div>
+      }
     </div>
     @if (os.notasOperativas) { <div class="descripcion-bloque"><small>NOTAS</small><p>{{ os.notasOperativas }}</p></div> }
   </app-seccion>

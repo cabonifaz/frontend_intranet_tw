@@ -264,8 +264,11 @@ export class FichaOrdenServicioComponent implements OnInit {
       this.edicion.set(ed);
       const d = ed.detalle;
       this.idContactoSel.set(ed.idContactoActual);
-      this.fechaDesde.set(d.datosGenerales.fechaProgramadaDesde ?? '');
-      this.fechaHasta.set(d.datosGenerales.fechaProgramadaHasta ?? '');
+      // Observación 34 (31/10): el input type="date" espera "YYYY-MM-DD".
+      // El back devuelve ISO con hora ("2026-10-15T00:00:00..."), lo que hacía
+      // que el input se renderizara vacío → el rango tentativo se perdía al editar.
+      this.fechaDesde.set(this.soloFecha(d.datosGenerales.fechaProgramadaDesde));
+      this.fechaHasta.set(this.soloFecha(d.datosGenerales.fechaProgramadaHasta));
       this.observaciones.set(d.observaciones ?? '');
       if (d.tipo === 'OM' && d.datosCertificado) {
         this.datosCertificado.set({ ...d.datosCertificado });
@@ -283,6 +286,13 @@ export class FichaOrdenServicioComponent implements OnInit {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  /** Observación 34 (31/10): normaliza una fecha ISO del back al formato
+   *  "YYYY-MM-DD" que esperan los `<input type="date">`. */
+  private soloFecha(iso?: string | null): string {
+    if (!iso) return '';
+    return iso.split('T')[0] || '';
   }
 
   // ─── Handlers ────────────────────────────────────────────────────────────

@@ -398,6 +398,11 @@ export function mapFichaApiToPreparacionEdicion(dto: FichaOrdenServicioApi): Pre
       numeroRequerimiento:  dto.numeroRq,
       numeroPropuesta:      dto.propuesta.numero,
       versionPropuesta:     dto.propuesta.version,
+      // Observación 34 (fix 2026-11-03): el rango tentativo se perdía al editar
+      // porque el mapper no lo copiaba a `datosGenerales`. El back SÍ lo devuelve
+      // en la raíz (`dto.fechaProgramadaDesde/Hasta`), solo faltaba pasarlo.
+      fechaProgramadaDesde: dto.fechaProgramadaDesde,
+      fechaProgramadaHasta: dto.fechaProgramadaHasta,
     } as any,
     avancePorEquipos: { total: dto.equipos.length, ejecutados: 0, pendientes: dto.equipos.length } as any,
     propuestaOrigen: mapPropuestaOrigen(dto.propuesta),
