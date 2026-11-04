@@ -207,7 +207,21 @@
     [modoAprobador]="true"
     (cerrar)="cerrarDetalle()"
     (accionAprobador)="onAccionDetalle($event)"
+    (accion)="onAccionPdf($any($event))"
     (verVersion)="idDetalleAbierto.set($event)"
+  />
+}
+
+<!-- ── Observación 26 v3 (feedback 2026-11-03): Vista Previa PDF desde el
+     detalle VB. Muestra botón "← Volver" en el header para regresar al
+     modal detalle; la "X"/Cerrar cierra todo sin reabrir. -->
+@if (idPdfAbierto(); as id) {
+  <app-modal-preview-pdf
+    [idPropuesta]="id"
+    [codigo]="codigoPdfAbierto()"
+    [mostrarVolver]="true"
+    (volver)="volverADetalleDesdePdf()"
+    (cerrar)="cerrarPdfCompleto()"
   />
 }
 
@@ -227,13 +241,7 @@
   />
 }
 
-@if (rechazarCtx(); as ctx) {
-  <app-modal-rechazar-vb
-    [contexto]="ctx"
-    (cerrar)="rechazarCtx.set(null)"
-    (confirmado)="onResolverConfirmado($event.idPropuesta, $event.dto, 'Propuesta rechazada.')"
-  />
-}
+<!-- Observación 28 (31/10): modal "Rechazar" eliminado del flujo. -->
 
 @if (solicitarCorreccionCtx(); as ctx) {
   <app-modal-solicitar-correccion

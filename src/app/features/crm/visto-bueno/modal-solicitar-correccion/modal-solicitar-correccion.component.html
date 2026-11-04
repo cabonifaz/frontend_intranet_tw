@@ -38,22 +38,18 @@
       <small class="msc__hint">Mínimo 10 caracteres ({{ observaciones().length }}/10)</small>
     </div>
 
-    <div class="msc__row">
-      <div class="msc__campo">
-        <label>RESPONSABLE</label>
-        <div class="msc__responsable">
-          <span class="msc__responsable-avatar">
-            {{ (contexto().comercial.charAt(0) + (contexto().comercial.split(' ')[1]?.charAt(0) ?? '')).toUpperCase() }}
-          </span>
-          <div class="msc__responsable-info">
-            <small>Asignar a:</small>
-            <strong>{{ contexto().comercial }}</strong>
-          </div>
+    <!-- Observación 27 (31/10): se quitó el campo "Fecha límite de corrección".
+         El back ya acepta `fechaLimite = null` (migración 84). -->
+    <div class="msc__campo">
+      <label>RESPONSABLE</label>
+      <div class="msc__responsable">
+        <span class="msc__responsable-avatar">
+          {{ (contexto().comercial.charAt(0) + (contexto().comercial.split(' ')[1]?.charAt(0) ?? '')).toUpperCase() }}
+        </span>
+        <div class="msc__responsable-info">
+          <small>Asignar a:</small>
+          <strong>{{ contexto().comercial }}</strong>
         </div>
-      </div>
-      <div class="msc__campo">
-        <label>FECHA LÍMITE DE CORRECCIÓN *</label>
-        <input type="datetime-local" [ngModel]="fechaLimite()" (ngModelChange)="fechaLimite.set($event)" />
       </div>
     </div>
 
