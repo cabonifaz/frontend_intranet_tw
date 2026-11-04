@@ -91,6 +91,15 @@ export class ModalRegistrarSeguimientoComponent {
   /** Oculta la sección "Programar próxima acción" cuando el user eligió mantener la pendiente. */
   readonly ocultaProgramar = computed(() => this.comportamientoPendiente() === 'mantener');
 
+  /** Feedback 2026-11-04: el responsable siempre es el usuario actual; mostramos su nombre
+   *  en un input readonly en lugar de un select con todos los usuarios. */
+  readonly nombreResponsableActual = computed(() => {
+    const d = this.datos();
+    if (!d) return '';
+    const yo = d.responsables.find(r => r.esUsuarioActual);
+    return yo ? `${yo.nombre} (Yo)` : '';
+  });
+
   /** Al Ejecutar ahora, el tipo queda bloqueado SI se autorellenó un canal.
    *  Si el código es PRIMER_SEGUIMIENTO (sin canal específico), el usuario elige libremente. */
   readonly tipoBloqueado = computed(() =>

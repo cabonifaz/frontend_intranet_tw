@@ -147,15 +147,14 @@ export class ListadoEquiposComponent implements OnInit {
         marca:    e.marca,
         modelo:   e.modelo,
         esNuevo:  e.resultado === 'creado',
-        // Observación 21 (31/10, fix 2026-11-03): en BD el estado del equipo
-        // solo es `Activo` o `Inactivo`. Para los creados en esta importación
-        // añadimos la marca visual "Nuevo" (no es un estado del maestro).
-        //   - `creado`       → "Nuevo" (recién nace en esta importación)
-        //   - `reutilizado`  → "Activo" (ya existía)
-        //   - `vinculado`    → usa el `estado` del back si viene; si no, "Activo"
-        //                       (pedido #4 al back: exponer `estado` en EquipoImportado)
-        estado:   (e as unknown as { estado?: string | null }).estado
-                    ?? (e.resultado === 'creado' ? 'Nuevo' : 'Activo'),
+        // Observación 21 (fix 2026-11-04): el back ahora devuelve `estadoEquipoLabel`
+        // (Vigente | Inactivo | Borrador). Los creados en esta importación los
+        // sobrescribimos como "Nuevo" (marca visual del front, no estado del maestro).
+        estado:   e.resultado === 'creado'
+                    ? 'Nuevo'
+                    : ((e as unknown as { estadoEquipoLabel?: string | null }).estadoEquipoLabel
+                       ?? (e as unknown as { estado?: string | null }).estado
+                       ?? 'Activo'),
       }));
 
     this.draftSvc.actualizar({

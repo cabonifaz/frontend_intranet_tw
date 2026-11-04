@@ -96,28 +96,68 @@
     &:hover { background: #F8FAFC; }
   }
 
+  // Observación 18 v2 (feedback 2026-11-04): celda de descripción con wrap
+  // para que el texto completo + procedimientos se vean en varias líneas.
   .celda-desc {
     color: #475569;
-    min-width: 220px;
-    max-width: 260px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    min-width: 250px;
+    max-width: 300px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.4;
+    vertical-align: top;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
 
   // Ajustes finos de ancho por columna:
   // Alcance (col 2) y Ptos Calib (col 3).
-  th:nth-child(2), td:nth-child(2) { width: 90px; max-width: 90px; }  // Alcance
-  // Observación 17 (31/10): la columna "Ptos Calib" quedaba muy angosta (60px) y cortaba el texto.
-  // Se amplía el ancho a 130px y se aumenta el padding vertical para que el valor completo quede visible.
+  th:nth-child(2), td:nth-child(2) { width: 90px; min-width: 90px; max-width: 90px; }  // Alcance
+  // Observación 17 v2 (feedback 2026-11-04): Ptos Calib ahora es textarea multi-línea.
   th:nth-child(3), td:nth-child(3) {
-    width: 130px;
-    max-width: 130px;
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
     padding-top: 10px;
     padding-bottom: 10px;
+    vertical-align: top;
   }
-  // V. Unit (col 6) un poco más ancha para montos de 4-5 dígitos
-  th:nth-child(6), td:nth-child(6) { width: 85px; input { max-width: 85px; } }
+
+  // Alcance (col 2) también multi-línea, con celda alineada arriba.
+  td:nth-child(2) { vertical-align: top; padding-top: 10px; padding-bottom: 10px; }
+
+  // Textarea editable multi-línea para Alcance y Ptos Calib. Crece verticalmente
+  // conforme se escribe. `field-sizing: content` + rows=1 arrancan en 1 línea.
+  textarea.celda-textarea {
+    width: 100%;
+    min-height: 22px;
+    padding: 2px 4px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 12px;
+    color: inherit;
+    font-family: inherit;
+    line-height: 1.4;
+    resize: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    field-sizing: content;
+    box-sizing: border-box;
+
+    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; color: #0F172A; }
+    &:hover:not(:focus) { background: #FFFFFF; border-color: #E2E8F0; }
+  }
+  // CANT y FREC: inputs numéricos pequeños.
+  th:nth-child(4), td:nth-child(4) { width: 45px; min-width: 45px; max-width: 45px; }
+  th:nth-child(5), td:nth-child(5) { width: 45px; min-width: 45px; max-width: 45px; }
+  // V. Unit
+  th:nth-child(6), td:nth-child(6) { width: 60px; min-width: 60px; max-width: 60px; input { max-width: 60px; } }
+  // DCTO %
+  th:nth-child(7), td:nth-child(7) { width: 60px; min-width: 60px; max-width: 60px; input { max-width: 60px; } }
+  // SUBTOTAL
+  th:nth-child(8), td:nth-child(8) { width: 75px; min-width: 75px; max-width: 75px; }
 
   // Inputs "invisibles" por defecto — se muestran como texto plano hasta
   // hover/focus para que ambas tablas se sientan iguales en reposo.

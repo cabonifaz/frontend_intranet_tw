@@ -30,7 +30,7 @@ export class BloquesTextosComponent {
   readonly filtroPlaceholder = input<string>('Filtrar...');
   readonly categoriaFiltro   = input<string>('Textos Base');
   readonly textosCatalogo    = input<TextoCatalogo[]>([]);
-  readonly campoDraft        = input.required<'bloquesDetalle' | 'bloquesRecomendaciones' | 'bloquesSuministrosCliente'>();
+  readonly campoDraft        = input.required<'bloquesDetalle' | 'bloquesRecomendaciones' | 'bloquesSuministrosCliente' | 'bloquesCondiciones'>();
 
   readonly cambios = output<GrupoBloque[]>();
 

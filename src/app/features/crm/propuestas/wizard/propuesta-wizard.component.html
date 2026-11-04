@@ -194,26 +194,17 @@
   <div class="ficha-footer">
     <div class="wizard__footer">
       <div class="wizard__footer-izq">
-        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
-          Cancelar
-        </app-button>
         @if (!esPrimerPaso) {
           <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="irAnterior()">
             Atrás
           </app-button>
         }
+        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
+          Cancelar
+        </app-button>
       </div>
       <div class="wizard__footer-der">
-        <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
-        @if (!esNuevo() && draftSvc.draft().esEditable) {
-          <app-button variant="ghost" tamano="md" icono="save"
-                      [disabled]="guardando()"
-                      [cargando]="guardando()"
-                      (clic)="guardarCambios()">
-            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
-          </app-button>
-        }
-
+        <!-- Anular propuesta (feedback 2026-11-04: siempre visible en edición). -->
         @if (!esNuevo() && draftSvc.draft().esEditable && draftSvc.draft().idPropuesta) {
           <app-button variant="danger-ghost" tamano="md" icono="block"
                       (clic)="abrirAnular()">
@@ -226,6 +217,16 @@
           Vista Previa PDF
         </app-button>
 
+        <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
+        @if (!esNuevo() && draftSvc.draft().esEditable) {
+          <app-button variant="ghost" tamano="md" icono="save"
+                      [disabled]="guardando()"
+                      [cargando]="guardando()"
+                      (clic)="guardarCambios()">
+            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+          </app-button>
+        }
+
         <!-- No último paso: Continuar al siguiente -->
         @if (!esUltimoPaso()) {
           <app-button variant="primary" tamano="md" iconoDer="arrow_forward"
@@ -233,18 +234,18 @@
             Continuar
           </app-button>
         } @else if (draftSvc.draft().esEditable) {
-          <!-- Último paso: en create → "Generar Propuesta". En edit → "Enviar a Visto Bueno". -->
+          <!-- Último paso: en create → "Generar Propuesta". En edit → "Guardar y enviar a VB". -->
           @if (esNuevo()) {
-            <app-button variant="success" tamano="md" icono="task_alt"
+            <app-button variant="primary" tamano="md" icono="task_alt"
                         [disabled]="guardando()"
                         [cargando]="guardando()"
                         (clic)="generarPropuesta()">
               {{ guardando() ? 'Generando...' : 'Generar Propuesta' }}
             </app-button>
           } @else {
-            <app-button variant="success" tamano="md" icono="send"
+            <app-button variant="primary" tamano="md" icono="send"
                         (clic)="enviarAVistoBueno()">
-              Enviar a Visto Bueno
+              Guardar y enviar a VB
             </app-button>
           }
         }

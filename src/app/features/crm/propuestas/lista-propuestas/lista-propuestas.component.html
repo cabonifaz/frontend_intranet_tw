@@ -135,21 +135,33 @@
                           ariaLabel="Ver detalle" title="Ver detalle"
                           (clic)="verDetalle(item.idPropuesta)" />
               @if (!esAnulada(item)) {
-                <!-- Observación 24 (31/10): estado `por_enviar` también se edita en la misma versión
-                     (NO es nueva versión). Usa ícono `edit` y evalúa permiso `propuesta_guardar`. -->
-                <ng-container *twSiPermiso="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'propuesta_guardar' : 'propuesta_nueva_version'">
-                  <app-button variant="ghost" tamano="sm"
-                              [icono]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'edit' : 'sync'" [soloIcon]="true"
-                              [ariaLabel]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'Editar' : 'Generar nueva versión'"
-                              [title]="(item.estado === 'borrador' || $any(item.estado) === 'por_enviar') ? 'Editar' : 'Generar nueva versión'"
+                <!-- Observación 24 (31/10) + feedback 2026-11-04:
+                     • borrador / por_enviar → ícono Editar (edición en misma versión).
+                     • aprobado               → ícono Editar también (post-VB vuelve a borrador al guardar).
+                     • aceptado / rechazado / vencida → ícono Nueva Versión (solo si cliente lo solicita). -->
+                @if (item.estado === 'borrador' || $any(item.estado) === 'por_enviar' || esAprobadoItem(item)) {
+                  <app-button *twSiPermiso="'propuesta_guardar'"
+                              variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                              ariaLabel="Editar" title="Editar"
                               (clic)="editarPropuesta(item)" />
-                </ng-container>
+                } @else {
+                  <app-button *twSiPermiso="'propuesta_nueva_version'"
+                              variant="ghost" tamano="sm" icono="sync" [soloIcon]="true"
+                              ariaLabel="Generar nueva versión" title="Generar nueva versión"
+                              (clic)="editarPropuesta(item)" />
+                }
               }
               @if (item.estado === 'borrador') {
                 <app-button *twSiPermiso="'propuesta_enviar_vb'"
                             variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
                             ariaLabel="Enviar a Visto Bueno" title="Enviar a Visto Bueno"
                             (clic)="enviarAVistoBueno(item.idPropuesta)" />
+              }
+              @if (esAprobadoItem(item)) {
+                <app-button *twSiPermiso="'propuesta_enviar_cliente'"
+                            variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
+                            ariaLabel="Enviar al Cliente" title="Enviar al Cliente"
+                            (clic)="enviarAlCliente(item.idPropuesta)" />
               }
             </div>
           </td>

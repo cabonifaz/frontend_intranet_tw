@@ -88,7 +88,7 @@
         <div class="campo">
           <label>CONTACTO</label>
           <select [ngModel]="idContacto()" (ngModelChange)="idContacto.set($event)">
-            <option [ngValue]="null">—</option>
+            <option [ngValue]="null">Seleccione...</option>
             @for (c of d.contactos; track c.idContacto) {
               <option [ngValue]="c.idContacto">{{ c.nombres }}</option>
             }
@@ -187,21 +187,19 @@
           <div class="campo">
             <label>PRIORIDAD</label>
             <select [ngModel]="idPrioridadProxima()" (ngModelChange)="idPrioridadProxima.set($event)">
-              <option [ngValue]="null">—</option>
+              <option [ngValue]="null">Seleccione...</option>
               @for (p of d.prioridades; track p.id) {
                 <option [ngValue]="p.id">{{ p.nombre }}</option>
               }
             </select>
           </div>
-          <div class="campo campo--full">
+          <!-- Feedback 2026-11-04: el responsable siempre es el usuario actual,
+               así que se muestra como campo informativo (no editable). -->
+          <div class="campo">
             <label>RESPONSABLE</label>
-            <select [ngModel]="idResponsableProxima()" (ngModelChange)="idResponsableProxima.set($event)">
-              <option [ngValue]="null">—</option>
-              @for (r of d.responsables; track r.id) {
-                <option [ngValue]="r.id">{{ r.nombre }}{{ r.esUsuarioActual ? ' (Yo)' : '' }}</option>
-              }
-            </select>
+            <input type="text" readonly [value]="nombreResponsableActual()" />
           </div>
+          <div class="campo"></div>
         </div>
       }
     </div>

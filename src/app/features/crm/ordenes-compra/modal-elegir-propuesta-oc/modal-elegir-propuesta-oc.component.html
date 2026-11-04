@@ -3,74 +3,95 @@
   subtitulo="Selecciona la propuesta aceptada a la que vincularás la OC"
   icono="receipt_long"
   iconoColor="azul"
-  ancho="md"
+  ancho="lg"
   (cerrar)="onCerrar()">
 
-  @if (cargando()) {
-    <div class="cargando">
-      <span class="material-symbols-outlined spin">progress_activity</span>
-      Cargando propuestas aceptadas...
-    </div>
-  } @else if (propuestas().length === 0) {
-    <div class="vacio">
-      <span class="material-symbols-outlined">inbox</span>
-      <h4>No hay propuestas aceptadas disponibles</h4>
-      <p>Primero cierra una propuesta con aceptación en el módulo <strong>Seguimiento</strong>.</p>
-    </div>
-  } @else {
-    <!-- Observación 33 (31/10): tabs para filtrar por "con OC autogenerada" o no. -->
-    <div class="tabs-mini">
-      <button type="button" class="tab-mini"
-              [class.tab-mini--activa]="tabActiva() === 'todas'"
-              (click)="tabActiva.set('todas')">
-        Todas <span class="tab-mini__badge">{{ conteos().todas }}</span>
-      </button>
-      <button type="button" class="tab-mini"
-              [class.tab-mini--activa]="tabActiva() === 'sin_auto'"
-              (click)="tabActiva.set('sin_auto')">
-        Pendientes sin autogenerada <span class="tab-mini__badge">{{ conteos().sin_auto }}</span>
-      </button>
-      <button type="button" class="tab-mini"
-              [class.tab-mini--activa]="tabActiva() === 'con_auto'"
-              (click)="tabActiva.set('con_auto')">
-        Con OC autogenerada <span class="tab-mini__badge">{{ conteos().con_auto }}</span>
-      </button>
-    </div>
-
-    <p class="ayuda">
-      Se listan propuestas aceptadas por el cliente con saldo por cubrir.
-      Si eliges una con <strong>OC autogenerada</strong>, se reemplazará al registrar la OC real.
-    </p>
-
-    @if (propuestasFiltradas().length === 0) {
-      <div class="vacio">
-        <span class="material-symbols-outlined">filter_alt_off</span>
-        <p>No hay propuestas en esta pestaña.</p>
+  <div class="elegir-body">
+    @if (cargando()) {
+      <div class="estado">
+        <span class="material-symbols-outlined estado__spinner">progress_activity</span>
+        Cargando propuestas aceptadas...
+      </div>
+    } @else if (propuestas().length === 0) {
+      <div class="estado">
+        <span class="material-symbols-outlined">inbox</span>
+        <h4>No hay propuestas aceptadas disponibles</h4>
+        <p>Primero cierra una propuesta con aceptación en el módulo <strong>Seguimiento</strong>.</p>
       </div>
     } @else {
-      <div class="lista">
-        @for (p of propuestasFiltradas(); track p.idPropuesta) {
-          <button class="item" (click)="seleccionar(p)">
-            <div class="item__info">
-              <strong>{{ p.numero }} v{{ p.version }}</strong>
-              <span>{{ p.razonSocial }}</span>
-              <small>{{ p.numeroRq ?? '—' }} · Aceptada {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</small>
-              @if (p.numeroOcAutogenerada) {
-                <small class="item__auto">
-                  <span class="material-symbols-outlined">bolt</span>
-                  OC autogenerada: {{ p.numeroOcAutogenerada }}
-                </small>
-              }
-            </div>
-            <div class="item__montos">
-              <span class="item__label">Saldo por cubrir</span>
-              <strong>{{ formatearMonto(p.saldo, p.monedaSimbolo) }}</strong>
-              <small>de {{ formatearMonto(p.total, p.monedaSimbolo) }}</small>
-            </div>
-            <span class="material-symbols-outlined">chevron_right</span>
-          </button>
-        }
+      <!-- Buscador por propuesta / cliente / RUC -->
+      <div class="buscador">
+        <span class="material-symbols-outlined">search</span>
+        <input type="text"
+               placeholder="Buscar por N° propuesta, cliente o RUC..."
+               [ngModel]="busqueda()"
+               (ngModelChange)="busqueda.set($event)" />
       </div>
+
+      <!-- Observación 33 (31/10): tabs para filtrar por "con OC autogenerada" o no. -->
+      <div class="tabs">
+        <button type="button" class="tab"
+                [class.tab--activa]="tabActiva() === 'todas'"
+                (click)="tabActiva.set('todas')">
+          Todas <span class="tab__badge">{{ conteos().todas }}</span>
+        </button>
+        <button type="button" class="tab"
+                [class.tab--activa]="tabActiva() === 'sin_auto'"
+                (click)="tabActiva.set('sin_auto')">
+          Pendientes sin autogenerada <span class="tab__badge">{{ conteos().sin_auto }}</span>
+        </button>
+        <button type="button" class="tab"
+                [class.tab--activa]="tabActiva() === 'con_auto'"
+                (click)="tabActiva.set('con_auto')">
+          Con OC autogenerada <span class="tab__badge">{{ conteos().con_auto }}</span>
+        </button>
+      </div>
+
+      <div class="ayuda">
+        <span class="material-symbols-outlined">info</span>
+        <span>
+          Se listan propuestas aceptadas por el cliente con saldo por cubrir.
+          Si eliges una con <strong>OC autogenerada</strong>, se reemplazará al registrar la OC real.
+        </span>
+      </div>
+
+      @if (propuestasFiltradas().length === 0) {
+        <div class="estado">
+          <span class="material-symbols-outlined">filter_alt_off</span>
+          <p>No hay propuestas en esta pestaña.</p>
+        </div>
+      } @else {
+        <ul class="prop-lista">
+          @for (p of propuestasFiltradas(); track p.idPropuesta) {
+            <li class="prop-item" (click)="seleccionar(p)">
+              <div class="prop-item__col-iz">
+                <div class="prop-item__cabecera">
+                  <span class="prop-item__numero">{{ p.numero }}</span>
+                  <span class="prop-item__ver">v{{ p.version }}</span>
+                  @if (p.numeroOcAutogenerada) {
+                    <span class="prop-item__auto" [title]="'OC autogenerada: ' + p.numeroOcAutogenerada">
+                      <span class="material-symbols-outlined">bolt</span>
+                      {{ p.numeroOcAutogenerada }}
+                    </span>
+                  }
+                </div>
+                <span class="prop-item__cliente">{{ p.razonSocial }}</span>
+                <div class="prop-item__meta">
+                  <span class="prop-item__rq">{{ p.numeroRq ?? '—' }}</span>
+                  <span class="prop-item__sep">·</span>
+                  <span class="prop-item__fecha">Aceptada {{ p.fechaAceptacion | date:'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
+              <div class="prop-item__col-der">
+                <span class="prop-item__label">Saldo por cubrir</span>
+                <strong class="prop-item__saldo">{{ formatearMonto(p.saldo, p.monedaSimbolo) }}</strong>
+                <small class="prop-item__total">de {{ formatearMonto(p.total, p.monedaSimbolo) }}</small>
+              </div>
+              <span class="material-symbols-outlined prop-item__chevron">chevron_right</span>
+            </li>
+          }
+        </ul>
+      }
     }
-  }
+  </div>
 </app-modal>

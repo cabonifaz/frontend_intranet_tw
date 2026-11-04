@@ -53,16 +53,20 @@ export class PropuestaComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.cargandoCatalogo.set(true);
     try {
-      // Observación 16 (31/10): pedimos todos los suministros activos (sin filtro "usar en propuestas").
-      // Temporalmente dejamos `true` hasta que el back arregle el DTO `SuministroListaItemDto`
-      // (campo `IdPrimerProcedimiento` tipeado como `long?` pero la columna de BD contiene strings).
-      // Pedido activo #3 en `mensajes-back-observaciones-sprint-3-4.md`.
-      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', true, 1, 200);
+      // Observación 16 (31/10, fix 2026-11-04): el back ya devuelve `idPrimerProcedimiento`
+      // / `idSegundoProcedimiento` como string (es el código del procedimiento) y
+      // `primerProcedimiento` / `segundoProcedimiento` vienen como "CÓDIGO - Título".
+      // Pedimos TODOS los activos sin filtro `soloEnPropuestas` y hasta 1000.
+      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', false, 1, 1000);
       const items: SumCatalogo[] = r.items.map(s => {
-        // Observación 18 (31/10): incluir procedimientos técnicos en la descripción del suministro.
-        const procedimientos = [s.primerProcedimiento, s.segundoProcedimiento].filter(p => !!p);
-        const descripcion = procedimientos.length > 0
-          ? `${s.descripcion}\nProcedimientos: ${procedimientos.join(' · ')}`
+        // Observación 18 (v2 2026-11-04): abreviación compacta "Prcdmt 1" / "Prcdmt 2"
+        // en lugar de "Procedimientos:". Si el back expone más datos (autor, norma,
+        // versión, año, descripción) vendrían en el mismo campo tras el código.
+        const lineas: string[] = [];
+        if (s.primerProcedimiento)   lineas.push(`Prcdmt 1: ${s.primerProcedimiento}`);
+        if (s.segundoProcedimiento)  lineas.push(`Prcdmt 2: ${s.segundoProcedimiento}`);
+        const descripcion = lineas.length > 0
+          ? `${s.descripcion}\n${lineas.join('\n')}`
           : s.descripcion;
         return {
           id:          s.idSuministro,

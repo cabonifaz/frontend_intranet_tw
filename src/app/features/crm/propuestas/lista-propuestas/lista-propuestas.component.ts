@@ -315,6 +315,18 @@ export class ListaPropuestasComponent implements OnInit {
     return (item.estado as string) === 'anulado';
   }
 
+  /** Feedback 2026-11-04: una propuesta APROBADA se trata igual que por_enviar
+   *  (editable en misma versión con confirmación — el back revierte a borrador al guardar). */
+  esAprobadoItem(item: PropuestaListaItem): boolean {
+    const e = (item.estado as string);
+    return e === 'aprobado' || e === 'aprobada';
+  }
+
+  /** Acción directa de la lista para propuestas APROBADAS → abrir modal "Enviar al Cliente". */
+  enviarAlCliente(id: number): void {
+    this.idEnviarClienteAbierto.set(id);
+  }
+
   editarPropuesta(item: PropuestaListaItem): void {
     // Nota: EstadoPropuesta no está sincronizado con los estados reales del back ('anulado',
     // 'pendiente_vb', etc.) — por eso comparamos como string.
@@ -328,16 +340,11 @@ export class ListaPropuestasComponent implements OnInit {
       this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
       return;
     }
-    // Observación 24 (31/10): si la propuesta ya fue aprobada por VB y está "Por Enviar"
-    // (es decir, aún no se envió al cliente), el comercial puede editar la MISMA versión.
-    // Al guardar, el back la devuelve a BORRADOR y hay que mandarla a VB nuevamente.
-    // Mostramos una confirmación para que el comercial entienda el impacto.
-    if ((item.estado as string) === 'por_enviar') {
-      this.confirmarEdicionPostVbCtx.set({
-        idPropuesta:     item.idPropuesta,
-        codigoPropuesta: item.codigo,
-        version:         item.version,
-      });
+    // Observación 24 (31/10) + feedback 2026-11-04: si la propuesta ya fue aprobada
+    // por VB (estados 'aprobado' o 'por_enviar'), el comercial entra directo al wizard.
+    // La confirmación "volverá a BORRADOR" se muestra al guardar, no al entrar.
+    if ((item.estado as string) === 'por_enviar' || this.esAprobadoItem(item)) {
+      this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
       return;
     }
     // Resto (pendiente, por_vb, aceptada, rechazada, …) → abre modal "Crear nueva versión".

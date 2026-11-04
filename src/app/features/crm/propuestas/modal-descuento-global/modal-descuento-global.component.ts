@@ -34,11 +34,22 @@ export class ModalDescuentoGlobalComponent {
   readonly subtotalLocal = input<number>(0);
   /** 'principal' usa los endpoints HU-11. 'opcionales' usa los paralelos de la migración 48. */
   readonly seccion     = input<'principal' | 'opcionales'>('principal');
+  /** Feedback 2026-11-04: forzar modo local aunque exista idPropuesta. Esto evita
+   *  tocar el back al aplicar descuento durante la edición del wizard; el valor
+   *  solo queda en el draft y se persiste al "Guardar cambios". Si el usuario
+   *  cancela, nada cambia en BD. */
+  readonly forzarLocal = input<boolean>(false);
+  /** Valores actuales del descuento para pre-llenar el formulario en modo local
+   *  (el back solo los sabría en el flujo "legacy" cuando el modal consulta al
+   *  endpoint de previsualizar). */
+  readonly descuentoActualPct   = input<number | null>(null);
+  readonly descuentoActualMonto = input<number | null>(null);
+  readonly idMotivoActual       = input<number | null>(null);
   readonly cerrar      = output<void>();
   readonly aplicado    = output<DescuentoResultado>();
 
-  /** Si no hay idPropuesta todavía, trabajamos solo con el draft. */
-  readonly modoLocal = computed(() => !this.idPropuesta());
+  /** Si no hay idPropuesta todavía, o el padre fuerza local, trabajamos solo con el draft. */
+  readonly modoLocal = computed(() => this.forzarLocal() || !this.idPropuesta());
 
   readonly tipo         = signal<'porcentaje' | 'monto'>('porcentaje');
   readonly valor        = signal<number>(0);
@@ -146,6 +157,21 @@ export class ModalDescuentoGlobalComponent {
           this.valor.set(prevActual.porcentajeActual ?? prevActual.descuentoActual);
           this.idMotivo.set(prevActual.idMotivoDescuento ?? null);
         }
+      }
+      // Feedback 2026-11-04: en modo local el "descuento actual" vive en el draft,
+      // no en el back. Pre-llenamos el formulario con los inputs del padre.
+      if (this.modoLocal()) {
+        const pct = this.descuentoActualPct();
+        const monto = this.descuentoActualMonto();
+        if (pct != null && pct > 0) {
+          this.tipo.set('porcentaje');
+          this.valor.set(pct);
+        } else if (monto != null && monto > 0) {
+          this.tipo.set('monto');
+          this.valor.set(monto);
+        }
+        const idm = this.idMotivoActual();
+        if (idm != null) this.idMotivo.set(idm);
       }
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'Error al cargar el descuento.');

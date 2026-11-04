@@ -341,11 +341,15 @@ export class PropuestaWizardComponent implements OnInit {
   readonly modalAnularAbierto   = signal(false);
   readonly modalPreviewPdfAbierto = signal(false);
 
-  enviarAVistoBueno(): void {
+  /** Feedback 2026-11-04: ahora "Guardar y enviar a VB" primero persiste los cambios
+   *  y solo si se guardan correctamente abre el modal de envío. */
+  async enviarAVistoBueno(): Promise<void> {
     if (!this.draftSvc.draft().idPropuesta) {
       this.toast.error('Guarda la propuesta antes de enviarla a Visto Bueno.');
       return;
     }
+    const ok = await this.persistir();
+    if (!ok) return;
     this.modalEnviarVbAbierto.set(true);
   }
   cerrarEnviarVb(): void { this.modalEnviarVbAbierto.set(false); }

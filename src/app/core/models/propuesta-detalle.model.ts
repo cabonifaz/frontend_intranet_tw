@@ -141,8 +141,9 @@ export interface PropuestaDraft {
   // 7 - Suministros del Cliente
   bloquesSuministrosCliente: GrupoBloque[];
 
-  // 8 - Condiciones del Servicio
-  clausulasContrato: { id: string; titulo?: string; texto: string }[];
+  // 8 - Condiciones del Servicio (feedback 2026-11-04: ahora usa bloques
+  // jerárquicos — mismo patrón que Detalle, Recomendaciones y Suministros).
+  bloquesCondiciones: GrupoBloque[];
 
   // 9 - Listado de Equipos vinculados
   equiposVinculados: EquipoVinculado[];
@@ -219,7 +220,7 @@ export function crearDraftVacio(): PropuestaDraft {
     cuotas: [],
 
     bloquesSuministrosCliente: [],
-    clausulasContrato: [],
+    bloquesCondiciones: [],
     equiposVinculados: [],
 
     ultimaModificacion: new Date().toISOString(),

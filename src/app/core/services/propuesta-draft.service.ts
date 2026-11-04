@@ -109,7 +109,7 @@ export class PropuestaDraftService {
       d.bloquesDetalle.length > 0 ||
       d.bloquesRecomendaciones.length > 0 ||
       d.bloquesSuministrosCliente.length > 0 ||
-      d.clausulasContrato.length > 0 ||
+      d.bloquesCondiciones.length > 0 ||
       d.equiposVinculados.length > 0 ||
       (d.referencia?.trim().length ?? 0) > 0 ||
       (d.notasGenerales?.trim().length ?? 0) > 0 ||

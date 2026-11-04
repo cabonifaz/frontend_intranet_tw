@@ -59,12 +59,15 @@
               [class.tabla-editable__fila--activa]="seleccionadoLinea() === $index">
               <td class="celda-desc">{{ l.descripcion }}</td>
               <td>
-                <input type="text" [value]="l.alcance"
-                       (change)="actualizarLinea($index, 'alcance', $any($event.target).value)" />
+                <!-- Observación 17/18 v2 (feedback 2026-11-04): textareas con wrap. -->
+                <textarea class="celda-textarea" rows="1"
+                          [value]="l.alcance"
+                          (change)="actualizarLinea($index, 'alcance', $any($event.target).value)"></textarea>
               </td>
               <td>
-                <input type="text" [value]="l.ptosCalibracion"
-                       (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)" />
+                <textarea class="celda-textarea" rows="1"
+                          [value]="l.ptosCalibracion"
+                          (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)"></textarea>
               </td>
               <td>
                 <input type="number" min="1" [value]="l.cantidad"
@@ -139,6 +142,10 @@
     [idPropuesta]="draftSvc.draft().idPropuesta"
     [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
     [subtotalLocal]="draftSvc.subtotalBruto()"
+    [forzarLocal]="true"
+    [descuentoActualPct]="draftSvc.draft().descuentoPct"
+    [descuentoActualMonto]="draftSvc.draft().descuentoMonto"
+    [idMotivoActual]="draftSvc.draft().idMotivoDescuento"
     (cerrar)="cerrarModalDescuento()"
     (aplicado)="onDescuentoAplicado($event)"
   />

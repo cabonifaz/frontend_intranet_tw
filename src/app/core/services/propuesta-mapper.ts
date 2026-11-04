@@ -95,11 +95,8 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
     bloquesDetalle:            agruparTextos(d.textos, 'detalle'),
     bloquesRecomendaciones:    agruparTextos(d.textos, 'recomendaciones'),
     bloquesSuministrosCliente: agruparTextos(d.textos, 'suministros_cliente'),
-
-    clausulasContrato: d.textos
-      .filter(t => t.seccion === 'condiciones' && t.tipo === 'vineta')
-      .sort((a, b) => a.orden - b.orden)
-      .map(t => ({ id: 'c_' + (t.id ?? Math.random()), texto: t.texto ?? '' })),
+    // Feedback 2026-11-04: condiciones ahora también usa bloques jerárquicos.
+    bloquesCondiciones:        agruparTextos(d.textos, 'condiciones'),
 
     tipoMoneda:         MONEDA_ID_A_CODIGO[d.idMoneda] ?? 'USD',
     tipoCambio:         Number(d.tipoCambio ?? 3.75),
@@ -217,14 +214,7 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     ...aplanarGrupos(draft.bloquesDetalle,             'detalle'),
     ...aplanarGrupos(draft.bloquesRecomendaciones,     'recomendaciones'),
     ...aplanarGrupos(draft.bloquesSuministrosCliente, 'suministros_cliente'),
-    ...draft.clausulasContrato.map((c, i): PropuestaTextoApi => ({
-      id:          null,
-      seccion:     'condiciones',
-      tipo:        'vineta',
-      texto:       c.texto,
-      idTextoBase: null,
-      orden:       i + 1,
-    })),
+    ...aplanarGrupos(draft.bloquesCondiciones,          'condiciones'),
   ];
 
   const formasPago: PropuestaFormaPagoApi[] = draft.cuotas.map((c, i) => ({

@@ -62,6 +62,11 @@ export interface ClienteDetalle {
   idCategoria: number | null;
   nombreCategoria: string | null;
   estado: string;
+  // Observación 4 (31/10, back 2026-11-04): Cartera asignada desde la ficha.
+  idComercialCartera?: number | null;
+  comercialCartera?: string | null;
+  carteraAsignadoEn?: string | null;
+  carteraAsignadoPor?: string | null;
 }
 
 export interface GuardarClienteRequest {
@@ -87,6 +92,11 @@ export interface GuardarClienteRequest {
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
   idCategoria: number | null;
+  /** Observación 4 (31/10, back 2026-11-04): id del comercial en la cartera.
+   *  OJO: `null` o `0` = quitar de la cartera. La ficha debe mandar SIEMPRE el
+   *  valor actual del select, si no, desasigna por error.
+   *  Solo se aplica si el usuario tiene permiso `cartera_asignar`. */
+  idComercialCartera?: number | null;
 }
 
 export interface CambiarEstadoClienteRequest {
