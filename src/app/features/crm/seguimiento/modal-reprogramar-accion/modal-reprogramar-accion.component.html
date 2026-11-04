@@ -67,14 +67,22 @@
             }
           </select>
         </div>
+        <!-- Observación 31 (31/10, fix 2026-11-03): el responsable es siempre el
+             usuario actual (quien programa la acción). Se muestra como texto fijo,
+             sin select, para evitar que se cambie por error. -->
         <div class="campo">
           <label>RESPONSABLE</label>
-          <select [ngModel]="idResponsable()" (ngModelChange)="idResponsable.set($event)">
-            <option [ngValue]="null">—</option>
+          <div class="responsable-fijo">
+            <span class="material-symbols-outlined">person</span>
             @for (r of d.responsables; track r.id) {
-              <option [ngValue]="r.id">{{ r.nombre }}{{ r.esUsuarioActual ? ' (Yo)' : '' }}</option>
+              @if (r.id === idResponsable()) {
+                <strong>{{ r.nombre }}{{ r.esUsuarioActual ? ' (Yo)' : '' }}</strong>
+              }
             }
-          </select>
+            @if (idResponsable() == null) {
+              <strong class="responsable-fijo--placeholder">—</strong>
+            }
+          </div>
         </div>
       </div>
     </div>

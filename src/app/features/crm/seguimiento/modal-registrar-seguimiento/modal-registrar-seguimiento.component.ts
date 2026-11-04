@@ -136,7 +136,14 @@ export class ModalRegistrarSeguimientoComponent {
       this.datos.set(d);
       // Prefills
       if (d.cabecera.fechaServidor) this.fechaInteraccion.set(d.cabecera.fechaServidor.substring(0, 16));
+      // Observación 31 (31/10, fix 2026-11-03): el Contacto siempre debe venir del back,
+      // vinculado a la propuesta (o al RQ si aún no hay propuesta). No se inventa desde
+      // el cliente. Si el back no lo manda, es un bug suyo → pedido #7 al back.
       if (d.cabecera.idContacto) this.idContacto.set(d.cabecera.idContacto);
+
+      // Observación 31 (31/10): Responsable de la próxima acción = usuario actual.
+      const yoMismo = d.responsables.find(r => r.esUsuarioActual)?.id ?? null;
+      if (yoMismo != null) this.idResponsableProxima.set(yoMismo);
       // Para correo precargar from a usuario y para a contacto principal
       if (d.cabecera.correoContacto) this.correoPara.set(d.cabecera.correoContacto);
       // Si hay borrador reusar

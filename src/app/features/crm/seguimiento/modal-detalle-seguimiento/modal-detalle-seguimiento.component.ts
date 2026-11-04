@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
@@ -33,6 +33,17 @@ export class ModalDetalleSeguimientoComponent {
   readonly error    = signal('');
   readonly datos    = signal<DetalleSeguimiento | null>(null);
   readonly tab      = signal<Tab>('resumen');
+
+  /** Observación 32 (31/10, fix 2026-11-03): "Interacción" = acción manual
+   *  registrada con el cliente (llamada, correo manual, reunión, visita,
+   *  whatsapp…). Esos eventos del timeline tienen tipo = 'seguimiento'.
+   *  Los demás eventos (vb aprobado, propuesta enviada automática, OC
+   *  registrada, cierre aceptación) son del sistema y NO cuentan. */
+  readonly interaccionesReales = computed<number>(() => {
+    const d = this.datos();
+    const timeline = d?.timeline ?? [];
+    return timeline.filter(ev => ev.tipo === 'seguimiento').length;
+  });
 
   readonly tabsDef: TabDef[] = [
     { codigo: 'resumen',           label: 'Resumen' },

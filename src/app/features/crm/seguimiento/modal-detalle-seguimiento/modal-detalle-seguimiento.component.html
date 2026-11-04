@@ -96,7 +96,8 @@
             </div>
             <div class="info-item">
               <div class="info-label">INTERACCIONES</div>
-              <div class="info-valor">{{ d.cabecera.interacciones }}</div>
+              <!-- Observación 32 (31/10): contador recalculado en el front desde el timeline real. -->
+              <div class="info-valor">{{ interaccionesReales() }}</div>
             </div>
           </div>
         </div>

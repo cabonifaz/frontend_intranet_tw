@@ -364,6 +364,8 @@ export interface ReprogramarAccionRequest {
   fecha?:         string | null;
   idPrioridad?:   number | null;
   idResponsable?: number | null;
+  /** Observación 31 (31/10): contacto del cliente al que se dirige la acción. */
+  idContacto?:    number | null;
   idMotivo?:      number | null;
   detalle?:       string | null;
   minutosAntesNotificar?: number | null;  // Notificación anticipada: 5/10/15/20/30/60 min
