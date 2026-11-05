@@ -12,23 +12,11 @@
       <span>Cargando catálogo…</span>
     </div>
   } @else {
-    <!-- Tabs -->
-    <div class="mac-tabs">
-      <button class="mac-tabs__item"
-              [class.activa]="tab() === 'propuesta'"
-              [disabled]="conceptosDePropuesta().length === 0"
-              (click)="cambiarTab('propuesta')">
-        <span class="material-symbols-outlined">description</span>
-        De la propuesta
-        <span class="mac-tabs__count">{{ conceptosDePropuesta().length }}</span>
-      </button>
-      <button class="mac-tabs__item"
-              [class.activa]="tab() === 'todos'"
-              (click)="cambiarTab('todos')">
-        <span class="material-symbols-outlined">library_books</span>
-        Todos los del catálogo
-        <span class="mac-tabs__count">{{ conceptos().length }}</span>
-      </button>
+    <!-- Encabezado: solo conceptos de la propuesta origen -->
+    <div class="mac-origen">
+      <span class="material-symbols-outlined">description</span>
+      <span>Conceptos de la propuesta</span>
+      <span class="mac-origen__count">{{ conceptosDePropuesta().length }}</span>
     </div>
 
     <!-- Filtros -->

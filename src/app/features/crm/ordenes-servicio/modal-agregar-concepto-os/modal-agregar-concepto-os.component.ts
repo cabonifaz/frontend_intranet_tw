@@ -7,11 +7,10 @@ import { OrdenesServicioService } from '../../../../core/services/ordenes-servic
 import { ToastService } from '../../../../core/services/toast.service';
 import { ConceptoCatalogoOs } from '../../../../core/models/ordenes-servicio.model';
 
-type TabModal = 'propuesta' | 'todos';
-
 /**
  * HU-43 — Modal "Agregar Concepto del Servicio".
- * 2 tabs: "De la propuesta" (precargados) + "Todos" (catálogo maestros completo).
+ * Ticket #4435: solo muestra los conceptos de la propuesta origen (se quitó
+ * el tab "Todos del catálogo" para evitar vincular conceptos ajenos a la OS).
  */
 @Component({
   selector: 'app-modal-agregar-concepto-os',
@@ -32,25 +31,23 @@ export class ModalAgregarConceptoOsComponent implements OnInit {
   readonly cargando    = signal(true);
   readonly conceptos   = signal<ConceptoCatalogoOs[]>([]);
   readonly seleccionados = signal<Set<number>>(new Set());
-  readonly tab         = signal<TabModal>('propuesta');
 
   busqueda = '';
   tipoSel = '';
-
-  readonly tipos = computed(() => {
-    const set = new Set(this.conceptos().map(c => c.tipo).filter(Boolean) as string[]);
-    return [...set].sort();
-  });
 
   readonly conceptosDePropuesta = computed(() =>
     this.conceptos().filter(c => c.deLaPropuesta),
   );
 
+  readonly tipos = computed(() => {
+    const set = new Set(this.conceptosDePropuesta().map(c => c.tipo).filter(Boolean) as string[]);
+    return [...set].sort();
+  });
+
   readonly conceptosFiltrados = computed(() => {
     const q = this.busqueda.toLowerCase().trim();
     const t = this.tipoSel;
-    const base = this.tab() === 'propuesta' ? this.conceptosDePropuesta() : this.conceptos();
-    return base.filter(c =>
+    return this.conceptosDePropuesta().filter(c =>
       (!q || c.codigo.toLowerCase().includes(q) || c.descripcion.toLowerCase().includes(q))
       && (!t || c.tipo === t),
     );
@@ -67,19 +64,11 @@ export class ModalAgregarConceptoOsComponent implements OnInit {
       const list = await this.svc.obtenerConceptosCatalogo(this.idPropuesta() ?? undefined);
       const ya = this.codigosYaAgregados();
       this.conceptos.set(list.map(c => ({ ...c, yaAgregado: ya.includes(c.codigo) })));
-      // Si hay conceptos de la propuesta, por default arranco en ese tab; si no, salto a "todos"
-      if (this.conceptosDePropuesta().length === 0) this.tab.set('todos');
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo cargar el catálogo.');
     } finally {
       this.cargando.set(false);
     }
-  }
-
-  cambiarTab(t: TabModal): void {
-    this.tab.set(t);
-    this.tipoSel = '';
-    this.busqueda = '';
   }
 
   toggle(c: ConceptoCatalogoOs): void {
