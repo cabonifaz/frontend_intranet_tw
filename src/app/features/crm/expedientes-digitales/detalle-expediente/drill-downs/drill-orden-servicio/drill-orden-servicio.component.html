@@ -69,7 +69,7 @@
             <td>{{ c.alcance ?? '—' }}</td>
             <td class="num">{{ c.cantidad ?? '—' }}</td>
             <td class="num">{{ c.frecuencia ?? '—' }}</td>
-            <td class="num">{{ c.simboloMoneda }} {{ (c.precioUnit ?? 0) | number:'1.2-2' }}</td>
+            <td class="num">{{ c.simboloMoneda }} {{ (c.precioUnitario ?? 0) | number:'1.2-2' }}</td>
             <td class="num">{{ c.simboloMoneda }} {{ (c.subtotal ?? 0) | number:'1.2-2' }}</td>
           </tr>
         }
@@ -108,18 +108,26 @@
              [subtitulo]="(drill().programacion?.length ?? 0) > 0 ? ((drill().programacion?.length ?? 0) + ' visita(s) programada(s).') : 'Sin programación.'">
   @if ((drill().programacion?.length ?? 0) > 0) {
     <div class="programacion-lista">
-      @for (v of drill().programacion ?? []; track v.idVisita) {
+      @for (v of drill().programacion ?? []; track v.idProgramacion) {
         <div class="visita">
           <div class="visita__header">
             <span class="material-symbols-outlined">event</span>
             <strong>{{ v.fecha | date:'EEE dd/MM/yyyy' }}</strong>
+            @if (v.codigo) {
+              <span class="visita__codigo">{{ v.codigo }}</span>
+            }
             @if (v.horaInicio || v.horaFin) {
               <span class="visita__horario">{{ v.horaInicio ?? '—' }} – {{ v.horaFin ?? '—' }}</span>
             }
             @if (v.tecnico) {
-              <span class="visita__tecnico">· {{ v.tecnico }}</span>
+              <span class="visita__tecnico">· {{ v.tecnico }} <small>Principal</small></span>
             }
-            @if (v.estado) { <span class="visita__estado">{{ v.estado }}</span> }
+            @if (v.tecnicosApoyo) {
+              <span class="visita__apoyos">+ {{ v.tecnicosApoyo }}</span>
+            }
+            @if (v.estadoLabel || v.estado) {
+              <span class="visita__estado">{{ v.estadoLabel ?? v.estado }}</span>
+            }
           </div>
           <ul class="visita__equipos">
             @for (eq of v.equipos; track eq.idEquipo) {

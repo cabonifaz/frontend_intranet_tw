@@ -140,6 +140,7 @@ export interface PropuestaEquipoApi {
   codigoCliente: string | null;
   codigoTw:      string | null;
   orden:         number;
+  estado?:       'Activo' | 'Inactivo' | string | null;
 }
 
 export interface PropuestaDetalleApi {
@@ -452,6 +453,15 @@ export class PropuestasService {
   async obtenerPdfBlob(idPropuesta: number): Promise<Blob> {
     const r = await firstValueFrom(
       this.http.get(`${this.base}/${idPropuesta}/pdf`, { responseType: 'blob' })
+    );
+    return r;
+  }
+
+  /** Vista previa del PDF ANTES de guardar: envía el draft completo (mismo DTO
+   *  de Guardar cambios) y recibe el PDF renderizado. No toca la BD. */
+  async obtenerPdfPreview(idPropuesta: number, draft: GuardarPropuestaDtoApi): Promise<Blob> {
+    const r = await firstValueFrom(
+      this.http.post(`${this.base}/${idPropuesta}/pdf-preview`, draft, { responseType: 'blob' })
     );
     return r;
   }

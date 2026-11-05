@@ -835,29 +835,32 @@ export interface DatosOsExpedienteDto {
   idPropuesta?:           number | null;
 }
 
-/** Feedback 2026-11-04: conceptos (ítems de la propuesta) incluidos en la OS. */
+/** Conceptos (ítems de la propuesta) incluidos en la OS. */
 export interface ConceptoOsDto {
-  idItem:        number;
-  descripcion?:  string | null;
-  alcance?:      string | null;
-  cantidad?:     number | null;
-  frecuencia?:   number | null;
-  precioUnit?:   number | null;
-  subtotal?:     number | null;
+  idItem:         number;
+  descripcion?:   string | null;
+  alcance?:       string | null;
+  cantidad?:      number | null;
+  frecuencia?:    number | null;
+  precioUnitario?: number | null;
+  subtotal?:      number | null;
   simboloMoneda?: string | null;
 }
 
-/** Feedback 2026-11-04: programación de la OS por día y técnico.
- *  Los equipos se agrupan en "visitas" (una por día + técnico). */
+/** Programación de la OS: una entrada por cada "visita" (programación).
+ *  Si la OS no está programada, llega vacío. */
 export interface ProgramacionVisitaOsDto {
-  idVisita:      number;
-  fecha:         string;   // yyyy-mm-dd
-  idTecnico?:    number | null;
-  tecnico?:      string | null;
-  horaInicio?:   string | null;
-  horaFin?:      string | null;
-  estado?:       string | null;
-  equipos:       { idEquipo: number; codigoTw?: string | null; marca?: string | null; modelo?: string | null; numeroSerie?: string | null }[];
+  idProgramacion: number;
+  codigo?:        string | null;
+  fecha:          string;   // yyyy-mm-dd
+  horaInicio?:    string | null;
+  horaFin?:       string | null;
+  estado?:        string | null;
+  estadoLabel?:   string | null;
+  idTecnico?:     number | null;
+  tecnico?:       string | null;
+  tecnicosApoyo?: string | null;
+  equipos:        { idEquipo: number; codigoTw?: string | null; marca?: string | null; modelo?: string | null; numeroSerie?: string | null }[];
 }
 
 export interface PersonalOsDto {

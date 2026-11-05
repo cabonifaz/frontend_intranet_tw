@@ -378,6 +378,13 @@ export class PropuestaWizardComponent implements OnInit {
   }
   cerrarPreviewPdf(): void { this.modalPreviewPdfAbierto.set(false); }
 
+  /** DTO del draft actual (mismo mapeo que "Guardar cambios") para enviar al
+   *  endpoint de vista previa. El modal lo envía como body del POST
+   *  /propuestas/{id}/pdf-preview para renderizar el PDF sin tocar la BD. */
+  draftPreviewDto() {
+    return mapDraftToGuardarDto(this.draftSvc.draft());
+  }
+
   formatearMonto(valor: number): string {
     const moneda = this.draftSvc.draft().tipoMoneda || 'USD';
     return new Intl.NumberFormat('es-PE', {

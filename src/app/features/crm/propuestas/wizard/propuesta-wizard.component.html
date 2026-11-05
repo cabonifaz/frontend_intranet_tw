@@ -282,11 +282,14 @@
   />
 }
 
-<!-- Vista Previa PDF (mock) -->
+<!-- Vista Previa PDF: envía el draft actual (sin guardar) al endpoint
+     POST /api/crm/propuestas/{id}/pdf-preview para renderizar el PDF con los
+     últimos cambios de pantalla, aunque todavía no estén en BD. -->
 @if (modalPreviewPdfAbierto()) {
   <app-modal-preview-pdf
     [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
     [idPropuesta]="draftSvc.draft().idPropuesta ?? 0"
+    [draft]="draftPreviewDto()"
     (cerrar)="cerrarPreviewPdf()"
   />
 }
