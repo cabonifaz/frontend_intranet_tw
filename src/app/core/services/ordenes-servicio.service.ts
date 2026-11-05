@@ -252,6 +252,14 @@ export class OrdenesServicioService {
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo anular la OS/OM.');
   }
 
+  /** Ticket #4436 — Descarga el PDF de la OS en el detalle. El back responde
+   *  application/pdf. Pendiente: el endpoint GET /{id}/pdf aún no existe. */
+  async obtenerPdfBlob(idOs: number): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.base}/${idOs}/pdf`, { responseType: 'blob' }),
+    );
+  }
+
   // ───────────────────────────────────────────────────────────────────────
   // HU-43 — Catálogos de equipos / conceptos
   // ───────────────────────────────────────────────────────────────────────

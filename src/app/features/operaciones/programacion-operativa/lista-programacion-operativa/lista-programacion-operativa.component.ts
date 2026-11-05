@@ -440,22 +440,14 @@ export class ListaProgramacionOperativaComponent implements OnInit {
   }
 
   /** Abre el detalle de la programación desde la tarjeta del calendario.
-   *  Workaround sin cambio en back: busca el idProgramacion por número de OS
-   *  en Programados y, si no aparece, en Pendientes. */
-  async abrirDetalleDesdeCalendario(s: import('../../../../core/models/programacion-operativa.model').ServicioCalendario): Promise<void> {
-    try {
-      const prog = await this.svc.obtenerProgramados({ busqueda: s.numero, pagina: 1, porPagina: 5 });
-      const encontrado = prog.items.find(i => i.numero === s.numero);
-      if (encontrado?.idProgramacion) { this.idDetalleAbierto.set(encontrado.idProgramacion); return; }
-
-      const pend = await this.svc.obtenerPendientes({ busqueda: s.numero, pagina: 1, porPagina: 5 });
-      const encontradoPend = pend.items.find(i => i.numero === s.numero);
-      if (encontradoPend?.idProgramacion) { this.idDetalleAbierto.set(encontradoPend.idProgramacion); return; }
-
+   *  El back ya expone `idProgramacion` en `ServicioCalendarioDto` (pedido #2
+   *  cerrado por Bryan 2026-11-05), así que se usa directo sin workaround. */
+  abrirDetalleDesdeCalendario(s: import('../../../../core/models/programacion-operativa.model').ServicioCalendario): void {
+    if (!s.idProgramacion) {
       this.toast.info('No se pudo abrir el detalle de este servicio.');
-    } catch (e) {
-      this.toast.error(e instanceof Error ? e.message : 'Error al abrir el detalle.');
+      return;
     }
+    this.idDetalleAbierto.set(s.idProgramacion);
   }
 
   fechaCorta(f: string): string {

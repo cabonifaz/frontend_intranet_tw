@@ -397,11 +397,9 @@
     <div modalFooter class="modal-footer">
       <!-- Izquierda: acciones informativas + anular -->
       <div class="modal-footer__izq">
-        <app-button variant="ghost" tamano="md" icono="folder_open" (clic)="onDocumentos()">
-          Documentos
-        </app-button>
-        <app-button variant="ghost" tamano="md" icono="history" (clic)="onAuditoria()">
-          Historial de Auditoría
+        <app-button variant="ghost" tamano="md" icono="picture_as_pdf"
+                    [disabled]="descargandoPdf()" (clic)="onDescargarPdf()">
+          {{ descargandoPdf() ? 'Descargando…' : 'Descargar PDF' }}
         </app-button>
         @if (d.puedeAnular) {
           <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="onAnular()">

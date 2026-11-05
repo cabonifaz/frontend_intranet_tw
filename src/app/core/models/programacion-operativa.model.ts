@@ -52,6 +52,7 @@ export interface TarjetasProgramacion {
 
 export interface ServicioCalendario {
   idOs:              number;
+  idProgramacion?:   number | null;   // Pedido back #2 cerrado 2026-11-05
   tipo:              TipoOrden;
   numero:            string;
   estado:            string;
