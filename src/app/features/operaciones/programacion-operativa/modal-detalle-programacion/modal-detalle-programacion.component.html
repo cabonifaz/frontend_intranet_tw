@@ -419,7 +419,7 @@
              && !cabecera()?.idSolicitudPendiente
              && cabecera()?.estado === 'pendiente_confirmacion') {
           <app-button variant="primary" tamano="md" icono="record_voice_over" (clic)="abrirRegistrarRespuesta()">
-            Registrar respuesta del cliente
+            {{ (detalle()?.respuestas?.length ?? 0) > 0 ? 'Actualizar respuesta del cliente' : 'Registrar respuesta del cliente' }}
           </app-button>
         }
       }
