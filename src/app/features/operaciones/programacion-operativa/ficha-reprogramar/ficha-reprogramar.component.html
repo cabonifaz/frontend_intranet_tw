@@ -3,7 +3,7 @@
   <app-breadcrumb [items]="breadcrumb" />
 
   <app-hero-header
-    titulo="Reprogramar Programación"
+    [titulo]="datos()?.modo === 'solicitud' ? 'Solicitar Reprogramación' : 'Reprogramar Programación'"
     [descripcion]="datos() ? (datos()!.codigo + ' · ' + (datos()!.razonSocial ?? '')) : 'Cargando...'" />
 
   @if (cargando()) {
@@ -49,9 +49,8 @@
         <div class="banner banner--azul">
           <span class="material-symbols-outlined">info</span>
           <div>
-            Mientras el back no otorgue el permiso <code>prog_aprobar_reprogramacion</code> al rol
-            <strong>usuario</strong>, esta reprogramación se registrará como <strong>solicitud</strong>
-            pendiente de aprobación del Jefe. El cambio queda documentado en el timeline.
+            Esta <strong>solicitud</strong> quedará <strong>pendiente de aprobación del Jefe</strong>.
+            Mientras tanto la programación queda igual y podrás retirar la solicitud si cambias de opinión.
           </div>
         </div>
       }
@@ -74,7 +73,7 @@
         </div>
       </div>
 
-      @if (cambiaFechaHora()) {
+      @if (cambiaFechaHora() && datos()?.estado === 'confirmada') {
         <div class="nota-inline">
           <span class="material-symbols-outlined">info</span>
           Al cambiar fecha u hora, la programación volverá a <strong>Pendiente confirmación cliente</strong>
@@ -174,9 +173,13 @@
         </div>
       </div>
       <div class="campo">
-        <label>Comentario <span class="hint">(máx. {{ d.comentarioMaximo }})</span></label>
+        <label>
+          Comentario
+          @if (d.modo === 'solicitud') { <span class="req">*</span> }
+          <span class="hint">(máx. {{ d.comentarioMaximo }})</span>
+        </label>
         <textarea class="observaciones" rows="3" [maxlength]="d.comentarioMaximo"
-                  placeholder="Explica el motivo de la reprogramación..."
+                  [placeholder]="d.modo === 'solicitud' ? 'Explica al Jefe por qué solicitas la reprogramación...' : 'Explica el motivo de la reprogramación...'"
                   [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
         <small class="contador">{{ comentario().length }}/{{ d.comentarioMaximo }}</small>
       </div>
@@ -269,7 +272,7 @@
       <app-button variant="primary" tamano="md" icono="edit_calendar"
                   [disabled]="!puedeGuardar()" [cargando]="guardando()"
                   (clic)="guardar()">
-        {{ guardando() ? 'Guardando...' : 'Reprogramar' }}
+        {{ guardando() ? 'Guardando...' : (datos()?.modo === 'solicitud' ? 'Enviar solicitud' : 'Reprogramar') }}
       </app-button>
     </div>
   </div>

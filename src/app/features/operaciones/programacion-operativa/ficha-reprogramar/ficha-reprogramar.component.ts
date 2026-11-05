@@ -242,7 +242,7 @@ export class FichaReprogramarComponent implements OnInit {
       if (r.modo === 'directa') {
         this.toast.exito(`Programación ${r.codigo} reprogramada.`);
       } else {
-        this.toast.info('La reprogramación quedó como SOLICITUD pendiente de aprobación del Jefe (deuda back: permiso prog_aprobar_reprogramacion para rol usuario).');
+        this.toast.info('Solicitud enviada. Queda pendiente de aprobación del Jefe.');
       }
       this.router.navigate(['/operaciones/programacion']);
     } catch (e: unknown) {

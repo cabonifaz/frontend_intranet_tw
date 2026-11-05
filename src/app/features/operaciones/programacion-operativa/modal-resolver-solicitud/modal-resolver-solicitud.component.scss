@@ -1,0 +1,253 @@
+.estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 40px;
+  color: #6b7280;
+  font-size: 14px;
+  justify-content: center;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ctx {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    small {
+      font-size: 10px;
+      color: #6b7280;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    strong {
+      font-size: 13px;
+      color: #111827;
+      font-weight: 600;
+    }
+    &__sub {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    &--wide {
+      grid-column: span 1;
+    }
+  }
+}
+
+.bloque {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    .material-symbols-outlined {
+      font-size: 18px;
+      color: #2563eb;
+    }
+    h4 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #111827;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+  }
+
+  textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+  }
+
+  .hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #6b7280;
+    text-align: right;
+  }
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    font-size: 11px;
+
+    .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    &--ambar {
+      color: #92400e;
+    }
+    &--ok {
+      color: #047857;
+    }
+  }
+}
+
+.footer-modal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+
+  &__der {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+.comentario-solicitante {
+  margin: 0;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-left: 3px solid #9ca3af;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #374151;
+  font-style: italic;
+}
+
+.comparativa {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: stretch;
+
+  &__col {
+    padding: 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &--propuesto {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+  }
+
+  &__titulo {
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  &__flecha {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+
+    .material-symbols-outlined {
+      font-size: 24px;
+    }
+  }
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  small {
+    font-size: 10px;
+    color: #6b7280;
+    letter-spacing: 0.3px;
+    font-weight: 600;
+  }
+
+  strong {
+    font-size: 13px;
+    color: #111827;
+    font-weight: 600;
+
+    &.diff {
+      color: #1d4ed8;
+      font-weight: 700;
+    }
+  }
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-top: 10px;
+
+  .material-symbols-outlined {
+    font-size: 18px;
+  }
+
+  &--ambar {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+
+  &--rojo {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+}

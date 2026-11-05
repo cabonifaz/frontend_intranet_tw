@@ -23,6 +23,7 @@ import { ModalDetalleProgramacionComponent } from '../modal-detalle-programacion
 import { ModalRegistrarRespuestaClienteComponent } from '../modal-registrar-respuesta-cliente/modal-registrar-respuesta-cliente.component';
 import { ModalCancelarProgramacionComponent } from '../modal-cancelar-programacion/modal-cancelar-programacion.component';
 import { ModalGestionarViaticosComponent } from '../modal-gestionar-viaticos/modal-gestionar-viaticos.component';
+import { ModalResolverSolicitudComponent } from '../modal-resolver-solicitud/modal-resolver-solicitud.component';
 
 type Tab = 'vista_principal' | 'pendientes' | 'programados';
 
@@ -52,6 +53,7 @@ const RANGOS: { codigo: NonNullable<FiltrosProgramacionOperativa['rango']>; labe
     ModalRegistrarRespuestaClienteComponent,
     ModalCancelarProgramacionComponent,
     ModalGestionarViaticosComponent,
+    ModalResolverSolicitudComponent,
   ],
   templateUrl: './lista-programacion-operativa.component.html',
   styleUrl: './lista-programacion-operativa.component.scss',
@@ -219,6 +221,7 @@ export class ListaProgramacionOperativaComponent implements OnInit {
   readonly idRespuestaAbierto  = signal<number | null>(null);
   readonly idCancelarAbierto   = signal<number | null>(null);
   readonly idViaticosAbierto   = signal<number | null>(null);
+  readonly idSolicitudAbierta  = signal<number | null>(null);
   /** Id guardado para reabrir Detalle al Volver desde un sub-modal. */
   private volverADetalleCon: number | null = null;
 
@@ -253,6 +256,38 @@ export class ListaProgramacionOperativaComponent implements OnInit {
     this.idDetalleAbierto.set(null);
     this.volverADetalleCon = id;
     this.idViaticosAbierto.set(id);
+  }
+  onPedirResolverSolicitud(idSolicitud: number): void {
+    const idProg = this.idDetalleAbierto();
+    this.idDetalleAbierto.set(null);
+    this.volverADetalleCon = idProg;
+    this.idSolicitudAbierta.set(idSolicitud);
+  }
+  async onPedirRetirarSolicitud(idSolicitud: number): Promise<void> {
+    try {
+      await this.svc.retirarSolicitud(idSolicitud);
+      this.toast.exito('Solicitud retirada.');
+      await Promise.all([this.cargarResumen(), this.cargarTab()]);
+      // Forzar recarga del modal detalle: cerrar y reabrir en el siguiente tick
+      // para que Angular monte de nuevo el componente y dispare ngOnInit.
+      const idProg = this.idDetalleAbierto();
+      if (idProg) {
+        this.idDetalleAbierto.set(null);
+        setTimeout(() => this.idDetalleAbierto.set(idProg), 0);
+      }
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo retirar la solicitud.');
+    }
+  }
+  cerrarSolicitud(): void {
+    const id = this.volverADetalleCon;
+    this.idSolicitudAbierta.set(null);
+    if (id) this.idDetalleAbierto.set(id);
+  }
+  async onSolicitudResuelta(): Promise<void> {
+    this.idSolicitudAbierta.set(null);
+    this.volverADetalleCon = null;
+    await Promise.all([this.cargarResumen(), this.cargarTab()]);
   }
 
   // Sub-modales: volver reabre Detalle; completado recarga bandeja

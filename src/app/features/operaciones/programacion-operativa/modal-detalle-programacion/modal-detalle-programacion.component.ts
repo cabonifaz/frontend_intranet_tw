@@ -39,6 +39,8 @@ export class ModalDetalleProgramacionComponent implements OnInit {
   readonly pedirCancelar           = output<number>();
   readonly pedirReprogramar        = output<number>();
   readonly pedirGestionarViaticos  = output<number>();
+  readonly pedirResolverSolicitud  = output<number>();
+  readonly pedirRetirarSolicitud   = output<number>();
 
   readonly tab      = signal<Tab>('datos');
   readonly cargando = signal(true);
@@ -139,6 +141,18 @@ export class ModalDetalleProgramacionComponent implements OnInit {
     const c = this.cabecera();
     if (!c) return;
     this.pedirGestionarViaticos.emit(c.idProgramacion);
+  }
+
+  resolverSolicitud(): void {
+    const c = this.cabecera();
+    if (!c?.idSolicitudPendiente) return;
+    this.pedirResolverSolicitud.emit(c.idSolicitudPendiente);
+  }
+
+  retirarSolicitud(): void {
+    const c = this.cabecera();
+    if (!c?.idSolicitudPendiente) return;
+    this.pedirRetirarSolicitud.emit(c.idSolicitudPendiente);
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────

@@ -326,7 +326,9 @@
       (pedirRegistrarRespuesta)="onPedirRegistrarRespuesta($event)"
       (pedirCancelar)="onPedirCancelar($event)"
       (pedirReprogramar)="onPedirReprogramar($event)"
-      (pedirGestionarViaticos)="onPedirGestionarViaticos($event)" />
+      (pedirGestionarViaticos)="onPedirGestionarViaticos($event)"
+      (pedirResolverSolicitud)="onPedirResolverSolicitud($event)"
+      (pedirRetirarSolicitud)="onPedirRetirarSolicitud($event)" />
   }
 
   <!-- Modal secundario: Registrar respuesta del cliente (HU-37) -->
@@ -351,6 +353,14 @@
       [idProgramacion]="id"
       (cerrar)="cerrarViaticos()"
       (actualizado)="onViaticosActualizado()" />
+  }
+
+  <!-- Modal secundario: Resolver solicitud de reprogramación (HU-38) -->
+  @if (idSolicitudAbierta(); as idSol) {
+    <app-modal-resolver-solicitud
+      [idSolicitud]="idSol"
+      (cerrar)="cerrarSolicitud()"
+      (resuelta)="onSolicitudResuelta()" />
   }
 
 </div>

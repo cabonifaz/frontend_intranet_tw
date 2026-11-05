@@ -390,16 +390,34 @@
     </div>
 
     <div class="footer-modal__der">
+      @if (cabecera(); as c) {
+        @if (c.idSolicitudPendiente && !c.puedeResolverSolicitud) {
+          <span class="chip chip--ambar">
+            <span class="material-symbols-outlined">hourglass_top</span>
+            Esperando aprobación del Jefe
+          </span>
+          <app-button variant="ghost" tamano="md" icono="undo" (clic)="retirarSolicitud()">
+            Retirar solicitud
+          </app-button>
+        }
+      }
       @if (acciones(); as a) {
         @if (a.puedeGestionarViaticos) {
           <app-button variant="ghost" tamano="md" icono="payments" (clic)="gestionarViaticos()">Viáticos</app-button>
         }
-        @if (a.puedeReprogramar) {
-          <app-button variant="secondary" tamano="md" icono="edit_calendar" (clic)="reprogramar()">
-            Reprogramar
+        @if (cabecera()?.puedeResolverSolicitud) {
+          <app-button variant="primary" tamano="md" icono="rule" (clic)="resolverSolicitud()">
+            Resolver solicitud
           </app-button>
         }
-        @if (a.puedeRegistrarRespuesta) {
+        @if (a.puedeReprogramar) {
+          <app-button variant="secondary" tamano="md" icono="edit_calendar" (clic)="reprogramar()">
+            {{ a.reprogramacionRequiereSolicitud ? 'Solicitar reprogramación' : 'Reprogramar' }}
+          </app-button>
+        }
+        @if (a.puedeRegistrarRespuesta
+             && !cabecera()?.idSolicitudPendiente
+             && cabecera()?.estado === 'pendiente_confirmacion') {
           <app-button variant="primary" tamano="md" icono="record_voice_over" (clic)="abrirRegistrarRespuesta()">
             Registrar respuesta del cliente
           </app-button>

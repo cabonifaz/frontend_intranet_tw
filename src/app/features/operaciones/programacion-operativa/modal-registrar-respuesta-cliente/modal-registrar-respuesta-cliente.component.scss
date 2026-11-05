@@ -105,5 +105,12 @@
 
 // ── Footer modal ──────────────────────────────────────────────────────────
 .footer-modal {
-  display: flex; justify-content: flex-end; gap: 10px; width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
 }
