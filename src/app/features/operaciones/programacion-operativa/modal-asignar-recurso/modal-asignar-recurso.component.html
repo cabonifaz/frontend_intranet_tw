@@ -1,0 +1,237 @@
+<app-modal
+  titulo="Asignar Recurso"
+  [subtitulo]="subtituloHeader()"
+  icono="engineering"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.tab--activa]="tab() === 'tecnico'" (click)="cambiarTab('tecnico')">
+      Técnicos
+      @if (contadores()) { <span class="tab__badge">{{ contadores()!.tecnicos }}</span> }
+    </button>
+    <button class="tab" [class.tab--activa]="tab() === 'metrologo'" (click)="cambiarTab('metrologo')">
+      Metrólogos
+      @if (contadores()) { <span class="tab__badge">{{ contadores()!.metrologos }}</span> }
+    </button>
+    <button class="tab" [class.tab--activa]="tab() === 'externo'" (click)="cambiarTab('externo')">
+      Proveedor externo
+      @if (contadores()) { <span class="tab__badge">{{ contadores()!.externos }}</span> }
+    </button>
+  </div>
+
+  <!-- Buscador + chips de filtro contextual -->
+  <div class="buscador">
+    <div class="buscador__input">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" placeholder="Buscar por nombre, cargo o sede..."
+             [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+             (keyup.enter)="cargar()" />
+    </div>
+    <button class="chip-filtro"
+            [class.chip-filtro--activo]="soloDisponibles()"
+            (click)="soloDisponibles.set(!soloDisponibles()); cargar()">
+      @if (fecha() && horaInicio()) {
+        <span class="material-symbols-outlined">check</span>
+        Solo disponibles {{ fecha() }} {{ horaInicio() }}–{{ horaFin() }}
+      } @else {
+        Solo disponibles
+      }
+    </button>
+    <button class="chip-filtro"
+            [class.chip-filtro--activo]="soloSsomaConforme()"
+            (click)="soloSsomaConforme.set(!soloSsomaConforme()); cargar()">
+      Con SSOMA conforme
+    </button>
+    @if (zona()) {
+      <span class="chip-info">Zona: {{ zona() }}</span>
+    }
+  </div>
+
+  <!-- Layout 2 cols: tabla + panel detalle -->
+  <div class="layout">
+
+    <div class="col-tabla">
+      @if (cargando()) {
+        <div class="estado">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Buscando recursos...
+        </div>
+      } @else if (recursos().length === 0) {
+        <div class="estado">
+          <span class="material-symbols-outlined">person_search</span>
+          <p>No se encontraron recursos con los filtros actuales.</p>
+        </div>
+      } @else {
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>RECURSO</th>
+              <th>CARGO</th>
+              <th>SEDE</th>
+              <th class="centro">DISPONIB.</th>
+              <th>CARGA</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of recursos(); track t.idUsuario) {
+              <tr (click)="idFocus.set(t.idUsuario)"
+                  [class.fila-focus]="idFocus() === t.idUsuario"
+                  [class.fila-sel]="idPrincipal() === t.idUsuario"
+                  [class.fila-apoyo]="idsApoyo().includes(t.idUsuario)">
+                <td>
+                  <div class="recurso-cell">
+                    <span class="avatar">{{ iniciales(t.nombre) }}</span>
+                    <div>
+                      <strong>{{ t.nombre }}</strong>
+                      @if (iconoRol(t); as rol) {
+                        <small class="chip chip--azul chip--mini">{{ rol }}</small>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>{{ t.cargo ?? '—' }}</td>
+                <td>{{ t.sedeOperativaNombre ?? '—' }}</td>
+                <td class="centro"><span [class]="claseDisponibilidad(t.disponibilidad)">{{ etiquetaDisponibilidad(t.disponibilidad) }}</span></td>
+                <td>
+                  <div class="carga-cell">
+                    <span class="carga-num">{{ t.serviciosDia }}/{{ t.serviciosMaxDia }}</span>
+                    <div class="bar">
+                      <div class="bar__fill" [class]="claseCarga(t)" [style.width.%]="pctCarga(t)"></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Panel detalle (sticky) -->
+    <aside class="col-detalle">
+      @if (recursoFocus(); as t) {
+        <div class="detalle">
+          <div class="detalle__head">
+            <span class="detalle__title">DETALLE DEL RECURSO</span>
+            <span class="chip chip--verde">{{ etiquetaDisponibilidad(t.disponibilidad) }}</span>
+          </div>
+
+          <div class="detalle__perfil">
+            <span class="avatar avatar--lg">{{ iniciales(t.nombre) }}</span>
+            <div>
+              <strong>{{ t.nombre }}</strong>
+              <small>{{ t.cargo ?? '—' }}{{ t.sedeOperativaNombre ? ' · ' + t.sedeOperativaNombre : '' }}</small>
+            </div>
+          </div>
+
+          <div class="detalle__sec">
+            <div class="detalle__sec-titulo">CARGA DEL DÍA</div>
+            <div class="carga-visual">
+              <div class="carga-visual__nums">
+                <strong>{{ t.serviciosDia }} / {{ t.serviciosMaxDia }}</strong>
+                <small>Servicios hoy · {{ t.cupoLibre }} cupo libre</small>
+              </div>
+              <div class="bar bar--lg">
+                <div class="bar__fill" [class]="claseCarga(t)" [style.width.%]="pctCarga(t)"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="detalle__sec">
+            <div class="detalle__sec-titulo">HABILITACIÓN SSOMA</div>
+            <div class="ssoma-badge" [class]="claseSsoma(t.ssomaEstado)">
+              {{ etiquetaSsoma(t.ssomaEstado) }}
+              <small>· {{ t.ssomaCumplidos }}/{{ t.ssomaRequeridos }} requisitos</small>
+            </div>
+            @if (t.documentosSsoma && t.documentosSsoma.length > 0) {
+              <ul class="docs-lista">
+                @for (d of t.documentosSsoma; track d.requisito) {
+                  <li [class.doc--ok]="d.situacion === 'conforme'"
+                      [class.doc--warn]="d.situacion === 'por_vencer'"
+                      [class.doc--err]="d.situacion === 'bloqueado' || d.situacion === 'sin_documento'">
+                    <span class="material-symbols-outlined">
+                      {{ d.situacion === 'conforme' ? 'check_circle'
+                       : d.situacion === 'por_vencer' ? 'warning'
+                       : 'cancel' }}
+                    </span>
+                    <div>
+                      <strong>{{ d.requisito }}</strong>
+                      @if (d.fechaVencimiento) { <small>Vence: {{ d.fechaVencimiento }}</small> }
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <div class="detalle__sec">
+            <div class="detalle__sec-titulo">SCORECARD</div>
+            <div class="scorecard">
+              <div class="scorecard__stars">
+                @for (s of estrellas(t.scorecardPct); track $index) {
+                  <span class="material-symbols-outlined">
+                    {{ s === 'full' ? 'star' : s === 'half' ? 'star_half' : 'star_outline' }}
+                  </span>
+                }
+              </div>
+              <div class="scorecard__pct">{{ t.scorecardPct ?? 0 }}%</div>
+              @if (t.scorecardServicios) {
+                <div class="scorecard__hint">Calificación de {{ t.scorecardServicios }} OT · Exp. con cliente: {{ etiquetaExp(t.experienciaCliente) }}</div>
+              }
+            </div>
+          </div>
+
+          <!-- Acciones del recurso -->
+          <div class="detalle__acciones">
+            <app-button
+              [variant]="idPrincipal() === t.idUsuario ? 'primary' : 'secondary'"
+              tamano="md"
+              [icono]="idPrincipal() === t.idUsuario ? 'check' : 'person_check'"
+              (clic)="seleccionarPrincipal(t.idUsuario)">
+              Principal
+            </app-button>
+            @if (idPrincipal() !== t.idUsuario) {
+              <app-button
+                [variant]="idsApoyo().includes(t.idUsuario) ? 'primary' : 'ghost'"
+                tamano="md"
+                [icono]="idsApoyo().includes(t.idUsuario) ? 'check' : 'group_add'"
+                (clic)="toggleApoyo(t.idUsuario)">
+                Apoyo
+              </app-button>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="sin-focus">
+          <span class="material-symbols-outlined">person_search</span>
+          <p>Selecciona un recurso de la tabla para ver su detalle.</p>
+        </div>
+      }
+    </aside>
+  </div>
+
+  <!-- Footer -->
+  <div modalFooter class="footer-modal">
+    <div class="footer-modal__izq">
+      @if (tecnicosRecomendados()) {
+        <span class="hint">
+          <span class="material-symbols-outlined">lightbulb</span>
+          Se recomiendan <strong>{{ tecnicosRecomendados() }} técnicos</strong> para este servicio.
+        </span>
+      }
+    </div>
+    <div class="footer-modal__der">
+      <span class="count">{{ totalSeleccionados() }} recurso(s) seleccionado(s)</span>
+      <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Cancelar</app-button>
+      <app-button variant="primary" tamano="md" icono="check"
+                  [disabled]="!tieneSeleccion()"
+                  (clic)="confirmar()">
+        Asignar recurso
+      </app-button>
+    </div>
+  </div>
+
+</app-modal>

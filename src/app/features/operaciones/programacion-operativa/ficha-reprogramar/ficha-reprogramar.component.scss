@@ -1,0 +1,428 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background: #F8FAFC;
+  min-height: 100%;
+  font-family: 'Inter', sans-serif;
+}
+
+// ── Layout 2 columnas: main + sidebar ──────────────────────────────────────
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: flex-start;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.main {
+  display: flex; flex-direction: column; gap: 20px;
+  min-width: 0;
+}
+
+.sidebar {
+  display: flex; flex-direction: column; gap: 16px;
+  position: sticky; top: 16px;
+}
+
+// ── Panel card del sidebar ────────────────────────────────────────────────
+.panel {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  &__head {
+    display: flex; align-items: center; gap: 10px;
+
+    .material-symbols-outlined { color: #2563EB; font-size: 20px; }
+    h4 {
+      margin: 0;
+      color: #0F172A;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+}
+
+// ── Checklist ──────────────────────────────────────────────────────────────
+.checklist {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+
+  li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+
+    .material-symbols-outlined {
+      font-size: 20px;
+      color: #CBD5E1;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    &.ok {
+      background: #F0FDF4;
+      border-color: #BBF7D0;
+      .material-symbols-outlined { color: #059669; }
+    }
+    &.err {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      .material-symbols-outlined { color: #DC2626; }
+    }
+
+    strong { display: block; color: #0F172A; font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+    small  { display: block; color: #64748B; font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+  }
+}
+
+// ── Resumen (filas simples, no tabla) ──────────────────────────────────────
+.resumen {
+  width: 100%;
+  border-collapse: collapse;
+
+  th, td {
+    padding: 10px 0;
+    vertical-align: middle;
+  }
+  th {
+    text-align: left;
+    color: #64748B;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    width: 48%;
+  }
+  td {
+    text-align: right;
+    color: #0F172A;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  tr + tr th, tr + tr td { border-top: 1px solid #F1F5F9; }
+}
+
+.nota-flujo {
+  display: flex; gap: 10px; padding: 14px;
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px;
+  color: #1E40AF; font-size: 12px; line-height: 1.5;
+
+  .material-symbols-outlined { font-size: 20px; color: #2563EB; flex-shrink: 0; margin-top: 1px; }
+  p { margin: 0; }
+  strong { font-weight: 600; }
+}
+
+// ── Estados ────────────────────────────────────────────────────────────────
+.loading {
+  display: flex; align-items: center; gap: 10px; padding: 24px;
+  justify-content: center; color: #64748B; font-size: 13.5px;
+
+  .material-symbols-outlined { font-size: 22px; }
+  .spin { animation: rot 1s linear infinite; color: #2563EB; }
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.vacio {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 24px; color: #64748B; font-size: 13.5px;
+
+  .material-symbols-outlined { font-size: 44px; color: #94A3B8; }
+  p { margin: 0; }
+}
+
+// ── Info grid ──────────────────────────────────────────────────────────────
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 24px;
+
+  .info-item {
+    display: flex; flex-direction: column; gap: 3px;
+
+    small { font-size: 10.5px; color: #64748B; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 600; }
+    strong { font-size: 13.5px; color: #0F172A; font-weight: 500; }
+  }
+}
+
+.banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-top: 14px;
+  border-radius: 8px; font-size: 13px;
+
+  .material-symbols-outlined { font-size: 20px; }
+
+  &--rojo {
+    background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;
+  }
+}
+
+// ── Form ───────────────────────────────────────────────────────────────────
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 20px;
+}
+
+.campo {
+  display: flex; flex-direction: column; gap: 5px;
+
+  label {
+    font-size: 11px; font-weight: 700; color: #475569;
+    letter-spacing: 0.3px; text-transform: uppercase;
+
+    .req { color: #DC2626; margin-left: 2px; }
+  }
+  input, select, textarea {
+    padding: 9px 11px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #FFFFFF;
+    color: #0F172A;
+
+    &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+  }
+
+  textarea { resize: vertical; }
+
+  .hint {
+    font-size: 10.5px; color: #94A3B8;
+    text-transform: none; letter-spacing: 0; font-weight: 500;
+    margin-left: 6px;
+  }
+
+  .contador { align-self: flex-end; font-size: 11px; color: #94A3B8; }
+}
+
+.observaciones {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+
+  &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+}
+
+// ── Resumen de recursos asignados ─────────────────────────────────────────
+.recursos-asignados {
+  display: flex; flex-direction: column; gap: 12px;
+
+  &__head {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+
+  &__count {
+    font-size: 12.5px; font-weight: 600; color: #475569;
+  }
+}
+
+// ── Lista de rows (card-rows limpios, sin headers de tabla) ───────────────
+.lista-rows {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: #93C5FD;
+    background: #F8FAFC;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.06);
+  }
+
+  &--selec {
+    border-color: #2563EB;
+    background: #EFF6FF;
+  }
+  &--apoyo { background: #F8FAFC; }
+
+  &--tec {
+    grid-template-columns: 1fr auto;
+    cursor: default;
+
+    &:hover { box-shadow: none; }
+  }
+
+  // Checkbox del equipo row
+  > input[type="checkbox"] {
+    width: 18px; height: 18px; cursor: pointer; margin: 0;
+  }
+
+  &__main {
+    display: flex; flex-direction: column; gap: 3px;
+    min-width: 0;
+  }
+
+  &__titulo {
+    font-size: 13.5px; font-weight: 600; color: #0F172A;
+  }
+
+  &__meta {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    font-size: 11.5px; color: #64748B;
+  }
+  &__sep { color: #CBD5E1; }
+
+  &__chips {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;
+  }
+
+  &__acciones {
+    display: flex; gap: 8px; align-items: center;
+  }
+}
+
+// ── Opción Principal/Apoyo (pill con radio/checkbox embebido) ─────────────
+.opcion {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px solid #E2E8F0;
+  background: #FFFFFF;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+
+  input { margin: 0; cursor: pointer; }
+
+  &:hover:not(.opcion--dis) { border-color: #93C5FD; color: #1D4ED8; }
+
+  &--activa {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+    accent-color: #FFFFFF;
+  }
+
+  &--dis {
+    opacity: 0.4;
+    cursor: not-allowed;
+    input { cursor: not-allowed; }
+  }
+}
+
+// ── Buscador alineado con el patrón sistema ───────────────────────────────
+.buscador-sys {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+
+  &__input {
+    flex: 1; min-width: 260px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    height: 38px;
+
+    .material-symbols-outlined { color: #94A3B8; font-size: 18px; }
+    input {
+      flex: 1; border: 0; outline: 0; background: transparent;
+      font-size: 13px; color: #0F172A; height: 100%;
+      &::placeholder { color: #94A3B8; }
+    }
+  }
+
+  &__chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+}
+
+.chip-filtro {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 500; color: #475569;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { background: #EFF6FF; border-color: #93C5FD; color: #1D4ED8; }
+  &--activo {
+    background: #2563EB; border-color: #2563EB; color: #FFFFFF;
+  }
+}
+
+// ── SSOMA ──────────────────────────────────────────────────────────────────
+.ssoma-lista {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+
+  li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 12px;
+    background: #F8FAFC; border: 1px solid #E2E8F0;
+    border-radius: 6px;
+
+    .material-symbols-outlined {
+      font-size: 20px; color: #059669; flex-shrink: 0;
+      &.critico { color: #DC2626; }
+    }
+    strong { display: block; color: #0F172A; font-size: 13px; }
+    small  { display: block; color: #64748B; font-size: 11.5px; margin-top: 2px; }
+  }
+}
+
+// ── Chips ──────────────────────────────────────────────────────────────────
+.chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+
+  &--gris  { background: #F1F5F9; color: #475569; }
+  &--azul  { background: #DBEAFE; color: #1D4ED8; }
+  &--verde { background: #D1FAE5; color: #047857; }
+  &--ambar { background: #FEF3C7; color: #B45309; }
+  &--rojo  { background: #FEE2E2; color: #B91C1C; }
+}
+
+// ── Footer card al final de la página ──────────────────────────────────────
+.footer-fijo {
+  &__contenido {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 20px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+}

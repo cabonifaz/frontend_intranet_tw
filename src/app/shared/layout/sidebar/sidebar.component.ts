@@ -59,6 +59,13 @@ export class SidebarComponent {
       ],
     },
     {
+      icono:    'event_available',
+      etiqueta: 'Operaciones',
+      hijos: [
+        { etiqueta: 'Programación Operativa', ruta: '/operaciones/programacion', accion: 'prog_bandeja' },
+      ],
+    },
+    {
       icono:    'settings',
       etiqueta: 'Maestros',
       ruta:     '/maestros',

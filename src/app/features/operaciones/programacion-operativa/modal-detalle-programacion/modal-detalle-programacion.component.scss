@@ -1,0 +1,279 @@
+// ── Alineado con modal-detalle-propuesta (patrón del sistema) ──────────────
+$azul:        #2563EB;
+$azul-bg:     #EFF4FF;
+$verde:       #059669;
+$verde-bg:    #D1FAE5;
+$naranja:     #D97706;
+$naranja-bg:  #FEF3C7;
+$rojo:        #DC2626;
+$rojo-bg:     #FEE2E2;
+$morado-bg:   #EDE9FE;
+$morado:      #6D28D9;
+$gris-borde:  #E5E7EB;
+$gris-texto:  #6B7280;
+$gris-claro:  #94A3B8;
+$gris-bg:     #F8FAFC;
+$texto-osc:   #111827;
+$blanco:      #FFFFFF;
+
+// ── Estado (cargando) ─────────────────────────────────────────────────────
+.estado {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 60px 24px; color: $gris-texto; font-size: 14px;
+
+  .material-symbols-outlined { font-size: 22px; }
+  .spin { animation: rot 1s linear infinite; color: $azul; font-size: 28px; }
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+
+// ── Alertas de la cabecera (SSOMA / solicitud) ─────────────────────────────
+.alertas-cabecera {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 12px 0 0;
+}
+
+// ── Tabs (patrón propuesta) ───────────────────────────────────────────────
+.tabs {
+  display: flex;
+  border-bottom: 1px solid $gris-borde;
+  margin-top: -16px;    // pegar al header
+  flex-wrap: wrap;
+}
+
+.tabs__item {
+  padding: 10px 0 12px;
+  margin-right: 28px;
+  font-size: 14px;
+  font-weight: 500;
+  color: $gris-claro;
+  background: none; border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 8px;
+
+  &:hover { color: $azul; }
+  &--activo {
+    color: $azul;
+    border-bottom-color: $azul;
+    font-weight: 700;
+  }
+}
+
+.tabs__dot {
+  display: inline-block; min-width: 20px; padding: 1px 7px;
+  background: $azul-bg; color: #1D4ED8;
+  border-radius: 10px; font-size: 11px; font-weight: 700;
+  text-align: center;
+}
+
+// ── Contenido ─────────────────────────────────────────────────────────────
+// app-modal ya maneja su propio scroll — no añadir overflow ni max-height
+// para evitar doble barra.
+.contenido {
+  margin-top: 16px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+// ── KPIs fila (patrón propuesta) ──────────────────────────────────────────
+.kpis-fila {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.kpi-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.kpi-icono-wrap {
+  width: 38px; height: 38px;
+  background: $azul-bg;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+
+  .material-symbols-outlined { color: $azul; font-size: 20px; }
+
+  &--verde  { background: $verde-bg;   .material-symbols-outlined { color: $verde; } }
+  &--ambar  { background: $naranja-bg; .material-symbols-outlined { color: $naranja; } }
+  &--morado { background: $morado-bg;  .material-symbols-outlined { color: $morado; } }
+}
+
+.kpi-texto {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.kpi-label {
+  font-size: 9.5px; font-weight: 700;
+  color: $gris-claro; letter-spacing: 0.6px; text-transform: uppercase;
+}
+.kpi-valor {
+  font-size: 13.5px; font-weight: 600; color: $texto-osc;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+// ── Bloque genérico (card blanco para cada sección del contenido) ────────
+.bloque {
+  background: $blanco;
+  border: 1px solid $gris-borde;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+
+  &__head {
+    display: flex; align-items: center; gap: 8px;
+    padding-bottom: 10px; margin-bottom: 12px;
+    border-bottom: 1px solid #F1F5F9;
+
+    .material-symbols-outlined { color: $azul; font-size: 18px; }
+
+    h4 { margin: 0; color: $texto-osc; font-size: 13px; font-weight: 600; }
+  }
+
+  &--alerta &__head .material-symbols-outlined { color: $rojo; }
+}
+
+.badge-count {
+  margin-left: auto;
+  display: inline-block; min-width: 22px; padding: 1px 7px;
+  background: $azul-bg; color: #1D4ED8;
+  border-radius: 10px; font-size: 10.5px; font-weight: 700;
+  text-align: center;
+
+  &--rojo { background: $rojo-bg; color: $rojo; }
+}
+
+// ── Info-grid ─────────────────────────────────────────────────────────────
+.info-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 24px;
+
+  @media (max-width: 800px) { grid-template-columns: repeat(2, 1fr); }
+  .info-item {
+    display: flex; flex-direction: column; gap: 3px;
+    small  { font-size: 10px; color: $gris-texto; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 700; }
+    strong { font-size: 13px; color: $texto-osc; font-weight: 500; }
+  }
+}
+
+.nota {
+  margin-top: 12px; padding: 10px 12px;
+  background: $gris-bg; border: 1px solid $gris-borde; border-radius: 8px;
+
+  small { display: block; font-size: 10px; font-weight: 700; color: $gris-texto; letter-spacing: 0.4px; margin-bottom: 4px; }
+  p { margin: 0; font-size: 12.5px; color: $texto-osc; line-height: 1.5; }
+}
+
+// ── Lista rows (filas dentro de un bloque) ────────────────────────────────
+.lista-rows {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+
+  li {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: $gris-bg;
+    border: 1px solid #F1F5F9;
+    border-radius: 8px;
+
+    strong { display: block; color: $texto-osc; font-size: 13px; }
+    small  { display: block; color: $gris-texto; font-size: 11.5px; margin-top: 2px; }
+
+    .comentario { margin: 6px 0 0; font-size: 12px; color: #475569; font-style: italic; }
+
+    &.alerta { background: #FFF7ED; border-color: #FED7AA; }
+  }
+}
+
+.vacio-sm {
+  padding: 16px; text-align: center;
+  color: $gris-claro; font-size: 12.5px;
+  background: $gris-bg; border: 1px dashed $gris-borde; border-radius: 8px;
+}
+
+// ── Checklist ─────────────────────────────────────────────────────────────
+.checklist {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
+
+  li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    .material-symbols-outlined { font-size: 20px; color: #CBD5E1; flex-shrink: 0; margin-top: 1px; }
+
+    &.ok  { background: #F0FDF4; border-color: #BBF7D0; .material-symbols-outlined { color: $verde; } }
+    &.err { background: #FEF2F2; border-color: #FECACA; .material-symbols-outlined { color: $rojo;  } }
+
+    strong { display: block; color: $texto-osc; font-size: 12.5px; font-weight: 600; }
+    small  { display: block; color: $gris-texto; font-size: 11.5px; margin-top: 2px; }
+  }
+}
+
+// ── Timeline con línea vertical ───────────────────────────────────────────
+.timeline {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative;
+
+  &__item {
+    display: flex; gap: 12px;
+    padding: 10px 12px;
+    background: $gris-bg; border: 1px solid #F1F5F9; border-radius: 8px;
+    position: relative;
+  }
+  &__ico {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: $azul-bg; border-radius: 50%;
+    .material-symbols-outlined { color: $azul; font-size: 18px; }
+  }
+  &__body {
+    display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1;
+    p { margin: 0; font-size: 12.5px; color: #475569; line-height: 1.4; }
+  }
+  &__head {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    strong { color: $texto-osc; font-size: 13px; }
+    small  { color: $gris-claro; font-size: 11px; white-space: nowrap; }
+  }
+  small { color: $gris-texto; font-size: 11px; }
+}
+
+// ── Chips ─────────────────────────────────────────────────────────────────
+.chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px; font-weight: 600;
+
+  &--gris  { background: #F1F5F9; color: #475569; }
+  &--azul  { background: #DBEAFE; color: #1D4ED8; }
+  &--verde { background: $verde-bg; color: $verde; }
+  &--ambar { background: $naranja-bg; color: $naranja; }
+  &--rojo  { background: $rojo-bg; color: $rojo; }
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────
+.footer-modal {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  flex-wrap: wrap; width: 100%;
+  padding: 14px 20px;
+  background: $blanco;
+  border-top: 1px solid $gris-borde;
+
+  &__izq, &__der {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+}

@@ -265,6 +265,28 @@ export const routes: Routes = [
             m => m.FichaOrdenServicioComponent
           ),
       },
+      // ─── Módulo 8 — Programación Operativa (Sprint 5) ─────────────────────
+      {
+        path: 'operaciones/programacion',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/lista-programacion-operativa/lista-programacion-operativa.component').then(
+            m => m.ListaProgramacionOperativaComponent
+          ),
+      },
+      {
+        path: 'operaciones/programacion/ordenes/:idOs/programar',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/ficha-programar-os/ficha-programar-os.component').then(
+            m => m.FichaProgramarOsComponent
+          ),
+      },
+      {
+        path: 'operaciones/programacion/:idProgramacion/reprogramar',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/ficha-reprogramar/ficha-reprogramar.component').then(
+            m => m.FichaReprogramarComponent
+          ),
+      },
       {
         path: 'crm/expedientes-digitales',
         loadComponent: () =>
