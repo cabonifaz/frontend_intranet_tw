@@ -32,6 +32,7 @@ export interface ItemBandejaVb {
   idVb:                        number;
   idPropuesta:                 number;
   numero:                      string;   // ej. "PROP-002590"
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                     number;
   idRequerimiento?:            number | null;
   numeroRq?:                   string | null;

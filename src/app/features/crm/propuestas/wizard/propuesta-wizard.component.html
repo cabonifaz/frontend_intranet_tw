@@ -112,7 +112,7 @@
             {{ esNuevo() ? 'NUEVA PROPUESTA' : 'MODO EDICIÓN ' + (draftSvc.draft().version || 'v1').toUpperCase() }}
           </span>
           <span class="sidebar-card__codigo">
-            {{ draftSvc.draft().codigo || 'PROP-NUEVA' }}
+            {{ draftSvc.draft().codigo || 'PROP-NUEVA'  }}
           </span>
         </div>
         <p class="sidebar-card__referencia">
@@ -287,7 +287,7 @@
      últimos cambios de pantalla, aunque todavía no estén en BD. -->
 @if (modalPreviewPdfAbierto()) {
   <app-modal-preview-pdf
-    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [codigo]="draftSvc.draft().codigo"
     [idPropuesta]="draftSvc.draft().idPropuesta ?? 0"
     [draft]="draftPreviewDto()"
     (cerrar)="cerrarPreviewPdf()"

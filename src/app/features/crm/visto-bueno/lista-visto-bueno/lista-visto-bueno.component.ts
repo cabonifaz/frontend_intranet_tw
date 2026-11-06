@@ -230,7 +230,7 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
     if (!propId) return;
     const item = this.items().find(i => i.idPropuesta === propId);
     this.idDetalleAbierto.set(null);
-    this.codigoPdfAbierto.set(item ? `${item.numero} · v${item.version}` : '');
+    this.codigoPdfAbierto.set(item?.numero ?? '');
     this.idPdfAbierto.set(propId);
   }
 

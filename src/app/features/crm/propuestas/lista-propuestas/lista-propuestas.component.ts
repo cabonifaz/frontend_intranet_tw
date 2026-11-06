@@ -288,7 +288,7 @@ export class ListaPropuestasComponent implements OnInit {
     else if (evt === 'anular')  this.idAnularAbierto.set(id);
     else if (evt === 'preview_pdf') {
       const item = this.items().find(i => i.idPropuesta === id);
-      this.codigoPdfAbierto.set(item ? `${item.codigo} · ${item.version}` : '');
+      this.codigoPdfAbierto.set(item?.codigo ?? '');
       this.idPdfAbierto.set(id);
     }
     else if (evt === 'nueva_version') {

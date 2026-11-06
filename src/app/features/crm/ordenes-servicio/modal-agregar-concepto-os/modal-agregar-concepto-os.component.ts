@@ -9,8 +9,9 @@ import { ConceptoCatalogoOs } from '../../../../core/models/ordenes-servicio.mod
 
 /**
  * HU-43 — Modal "Agregar Concepto del Servicio".
- * Ticket #4435: solo muestra los conceptos de la propuesta origen (se quitó
- * el tab "Todos del catálogo" para evitar vincular conceptos ajenos a la OS).
+ * Ticket #4435: el back filtra por idPropuesta y devuelve UNA FILA POR LÍNEA
+ * (idItem como clave única). Si la propuesta tiene el mismo suministro con dos
+ * alcances distintos, se muestran dos filas y cada una conserva su alcance.
  */
 @Component({
   selector: 'app-modal-agregar-concepto-os',
@@ -19,7 +20,8 @@ import { ConceptoCatalogoOs } from '../../../../core/models/ordenes-servicio.mod
   styleUrl: './modal-agregar-concepto-os.component.scss',
 })
 export class ModalAgregarConceptoOsComponent implements OnInit {
-  readonly codigosYaAgregados = input<string[]>([]);
+  /** IDs de líneas (idItem) que ya están en la OS actual. */
+  readonly itemsYaAgregados   = input<number[]>([]);
   readonly idPropuesta        = input<number | null>(null);
 
   readonly cerrar    = output<void>();
@@ -35,26 +37,22 @@ export class ModalAgregarConceptoOsComponent implements OnInit {
   busqueda = '';
   tipoSel = '';
 
-  readonly conceptosDePropuesta = computed(() =>
-    this.conceptos().filter(c => c.deLaPropuesta),
-  );
-
   readonly tipos = computed(() => {
-    const set = new Set(this.conceptosDePropuesta().map(c => c.tipo).filter(Boolean) as string[]);
+    const set = new Set(this.conceptos().map(c => c.tipo).filter(Boolean) as string[]);
     return [...set].sort();
   });
 
   readonly conceptosFiltrados = computed(() => {
     const q = this.busqueda.toLowerCase().trim();
     const t = this.tipoSel;
-    return this.conceptosDePropuesta().filter(c =>
+    return this.conceptos().filter(c =>
       (!q || c.codigo.toLowerCase().includes(q) || c.descripcion.toLowerCase().includes(q))
       && (!t || c.tipo === t),
     );
   });
 
   readonly conceptosSeleccionados = computed(() =>
-    this.conceptos().filter(c => this.seleccionados().has(c.idSuministro)),
+    this.conceptos().filter(c => this.seleccionados().has(c.idItem)),
   );
 
   readonly puedeAgregar = computed(() => this.seleccionados().size > 0);
@@ -62,8 +60,9 @@ export class ModalAgregarConceptoOsComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     try {
       const list = await this.svc.obtenerConceptosCatalogo(this.idPropuesta() ?? undefined);
-      const ya = this.codigosYaAgregados();
-      this.conceptos.set(list.map(c => ({ ...c, yaAgregado: ya.includes(c.codigo) })));
+      const ya = new Set(this.itemsYaAgregados());
+      // Ticket #4435: el back garantiza idItem único por cada línea de la propuesta.
+      this.conceptos.set(list.map(c => ({ ...c, yaAgregado: ya.has(c.idItem) })));
     } catch (e: any) {
       this.toast.error(e?.message ?? 'No se pudo cargar el catálogo.');
     } finally {
@@ -74,8 +73,8 @@ export class ModalAgregarConceptoOsComponent implements OnInit {
   toggle(c: ConceptoCatalogoOs): void {
     if (c.yaAgregado) return;
     const set = new Set(this.seleccionados());
-    if (set.has(c.idSuministro)) set.delete(c.idSuministro);
-    else set.add(c.idSuministro);
+    if (set.has(c.idItem)) set.delete(c.idItem);
+    else set.add(c.idItem);
     this.seleccionados.set(set);
   }
 

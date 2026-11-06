@@ -34,6 +34,7 @@ import {
 interface PropuestaResumenDtoApi {
   idPropuesta:          number;
   numero:               string;
+  /** Ticket #4437: formato nuevo "PC: 0012-2-2026" listo para pintar. */
   version:              number;
   idRequerimiento:      number;
   numeroRequerimiento:  string;
@@ -146,6 +147,7 @@ export interface PropuestaEquipoApi {
 export interface PropuestaDetalleApi {
   idPropuesta:         number;
   numero:              string;
+  /** Ticket #4437: formato nuevo "PC: 0012-2-2026" listo para pintar. */
   version:             number;
   estado:              string;
   idPropuestaPadre:    number | null;

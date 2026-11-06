@@ -93,7 +93,7 @@
                        Nuevo = marca visual del front para equipos creados en esta importación. -->
                   <span class="chip-estado"
                         [class.chip-estado--nuevo]="(e.estado || '') === 'Nuevo'"
-                        [class.chip-estado--activo]="(e.estado || '') === 'Activo' || (e.estado || '') === 'Vigente'"
+                        [class.chip-estado--activo]="(e.estado || '') === 'Activo'"
                         [class.chip-estado--inactivo]="(e.estado || '') === 'Inactivo' || (e.estado || '') === 'Borrador'">
                     {{ e.estado || '—' }}
                   </span>

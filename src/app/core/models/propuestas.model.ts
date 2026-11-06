@@ -27,7 +27,8 @@ export interface KpisPropuestas {
 
 export interface PropuestaListaItem {
   idPropuesta:          number;
-  codigo:               string;         // PROP-002581
+  codigo:               string;         // PROP-002581 (interno, no mostrar)
+  /** Ticket #4437: formato nuevo listo para mostrar (ej. "PC: 0012-2-2026"). */
   version:              string;         // v1, v2, v3
   idRequerimiento:      number | null;
   codigoRequerimiento:  string | null;  // RQ-2024-001

@@ -181,7 +181,7 @@
 
           <div class="mdo-grid">
             <div><label>Código + Versión</label>
-              <span class="mdo-mono">{{ d.propuestaOrigen.codigo }} v{{ d.propuestaOrigen.version }}</span>
+              <span class="mdo-mono">{{ d.propuestaOrigen.codigo + ' v' + d.propuestaOrigen.version }}</span>
             </div>
             <div><label>Estado</label>
               <span class="badge badge--verde">{{ d.propuestaOrigen.estadoLabel }}</span>
@@ -281,10 +281,15 @@
               </tr>
             </thead>
             <tbody>
-              @for (c of d.conceptos; track c.idConcepto) {
+              @for (c of d.conceptos; track (c.idItem ?? c.idConcepto)) {
                 <tr>
                   <td class="mdo-mono">{{ c.codigo }}</td>
-                  <td>{{ c.descripcion }}</td>
+                  <td>
+                    {{ c.descripcion }}
+                    @if (c.alcance) {
+                      <small class="mdo-alcance">Alcance: {{ c.alcance }}</small>
+                    }
+                  </td>
                   <td>{{ c.clasificacion ?? '—' }}</td>
                   <td>
                     @if (c.equiposAplicados.length === 0) {

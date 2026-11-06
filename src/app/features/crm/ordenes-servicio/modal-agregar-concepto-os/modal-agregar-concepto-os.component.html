@@ -16,7 +16,7 @@
     <div class="mac-origen">
       <span class="material-symbols-outlined">description</span>
       <span>Conceptos de la propuesta</span>
-      <span class="mac-origen__count">{{ conceptosDePropuesta().length }}</span>
+      <span class="mac-origen__count">{{ conceptos().length }}</span>
     </div>
 
     <!-- Filtros -->
@@ -53,13 +53,13 @@
             </tr>
           </thead>
           <tbody>
-            @for (c of conceptosFiltrados(); track c.idSuministro) {
-              <tr [class.mac-tabla__fila--selec]="seleccionados().has(c.idSuministro)"
+            @for (c of conceptosFiltrados(); track c.idItem) {
+              <tr [class.mac-tabla__fila--selec]="seleccionados().has(c.idItem)"
                   [class.mac-tabla__fila--ya]="c.yaAgregado"
                   (click)="toggle(c)">
                 <td class="mac-check">
                   <input type="checkbox"
-                         [checked]="seleccionados().has(c.idSuministro) || c.yaAgregado"
+                         [checked]="seleccionados().has(c.idItem) || c.yaAgregado"
                          [disabled]="c.yaAgregado"
                          (click)="$event.stopPropagation()"
                          (change)="toggle(c)" />

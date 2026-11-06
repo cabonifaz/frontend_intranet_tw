@@ -68,6 +68,7 @@ export interface FilaExpedienteDto {
   idPropuesta?:        number | null;
   numeroPropuesta?:    string | null;
   versionPropuesta?:   number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   estadoPropuesta?:    string | null;
   propuestasOtras:     number;
   idCliente?:          number | null;
@@ -145,6 +146,7 @@ export interface CabeceraExpedienteDto {
   idPropuesta?:        number | null;
   numeroPropuesta?:    string | null;
   versionPropuesta?:   number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   estadoPropuesta?:    string | null;
   tipoPropuesta?:      string | null;
   montoTotal?:         number | null;
@@ -323,6 +325,7 @@ export interface DatosRqExpedienteDto {
 export interface PropuestaGeneradaDto {
   idPropuesta:     number;
   numero:          string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:         number;
   estado:          string;
   total?:          number | null;
@@ -347,6 +350,7 @@ export interface TabRqExpedienteDto {
 export interface VersionPropuestaExpedienteDto {
   idPropuesta:    number;
   numero:         string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:        number;
   estado:         string;
   total?:         number | null;
@@ -360,6 +364,7 @@ export interface VersionPropuestaExpedienteDto {
 export interface DetallePropuestaExpedienteDto {
   idPropuesta:         number;
   numero:              string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:             number;
   estado:              string;
   tipoPropuesta?:      string | null;
@@ -499,6 +504,7 @@ export interface TabPropuestasExpedienteDto {
 // Pill reutilizable en VB / Seguimiento
 export interface PropuestaPillDto {
   numero:       string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:      number;
   seleccionada: boolean;
 }
@@ -506,6 +512,7 @@ export interface PropuestaPillDto {
 // Tab Visto Bueno
 export interface EstadoVistoBuenoExpDto {
   numero?:             string | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" de la propuesta en revisión. */
   idPropuestaRevision?: number | null;
   versionRevision?:    number | null;
   estadoPropuesta?:    string | null;
@@ -591,6 +598,7 @@ export interface TabVistoBuenoExpedienteDto {
 // Tab Seguimiento
 export interface EstadoSeguimientoExpedienteDto {
   numero?:            string | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" de la propuesta en seguimiento. */
   idPropuesta?:       number | null;
   version?:           number | null;
   estadoPropuesta?:   string | null;
@@ -833,6 +841,7 @@ export interface DatosOsExpedienteDto {
   idRequerimiento?:       number | null;
   numeroPropuesta?:       string | null;
   idPropuesta?:           number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
 }
 
 /** Conceptos (ítems de la propuesta) incluidos en la OS. */

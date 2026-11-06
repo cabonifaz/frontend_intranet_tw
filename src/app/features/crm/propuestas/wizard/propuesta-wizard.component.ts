@@ -36,21 +36,18 @@ export class PropuestaWizardComponent implements OnInit {
   readonly esNuevo = computed(() => this.idParam() === 'nueva');
 
   /** Título contextual del header: "Nueva Propuesta Comercial" al crear, o
-   *  "Editar Propuesta PROP-XXX · vN" al editar una versión existente. */
+   *  "Editar Propuesta PC-xxxx-x-xxxx" al editar una versión existente. */
   readonly tituloHeader = computed(() => {
     if (this.esNuevo()) return 'Nueva Propuesta Comercial';
     const d = this.draftSvc.draft();
-    const partes = ['Editar Propuesta'];
-    if (d.codigo) partes.push(d.codigo);
-    if (d.version) partes.push('· ' + d.version);
-    return partes.join(' ');
+    return d.codigo ? `Editar Propuesta ${d.codigo}` : 'Editar Propuesta';
   });
 
   /** Código ficha visible en el header (equivalente a CLI-{año}-NUEVO, USR-..., etc). */
   readonly codigoFicha = computed(() => {
     if (this.esNuevo()) return `PROP-${new Date().getFullYear()}-NUEVA`;
     const d = this.draftSvc.draft();
-    return d.codigo ? (d.version ? `${d.codigo} · ${d.version}` : d.codigo) : `PROP-ID-${this.idParam()}`;
+    return d.codigo || `PROP-ID-${this.idParam()}`;
   });
 
   /** Subtítulo contextual del header. */

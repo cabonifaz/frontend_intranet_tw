@@ -34,7 +34,7 @@
       Ir al Módulo Propuestas
     </app-button>
     <div class="info-grid">
-      <div class="info-item"><small>N° Propuesta</small><strong class="valor-codigo">{{ det.numero }} v{{ det.version }}</strong></div>
+      <div class="info-item"><small>N° Propuesta</small><strong class="valor-codigo">{{ det.numero }}</strong></div>
       <div class="info-item"><small>Fecha Creación</small><strong>{{ det.fechaCreacion ? (det.fechaCreacion | date:'dd/MM/yyyy') : '—' }}</strong></div>
       <div class="info-item"><small>Tipo de Propuesta</small><strong>{{ det.tipoPropuesta ?? '—' }}</strong></div>
       <div class="info-item"><small>Fecha Envío al Cliente</small><strong>{{ det.fechaEnvio ? (det.fechaEnvio | date:'dd/MM/yyyy') : '—' }}</strong></div>
@@ -180,7 +180,7 @@
         <span class="archivo-item__icono material-symbols-outlined">picture_as_pdf</span>
         <div class="archivo-item__texto">
           <strong>{{ drill().detalle!.nombrePdf ?? drill().detalle!.clavePdf }}</strong>
-          <small>PDF · Propuesta {{ drill().detalle!.numero }} v{{ drill().detalle!.version }}</small>
+          <small>PDF · Propuesta {{ drill().detalle!.numero  }}</small>
         </div>
         <div class="archivo-item__acciones">
           <app-button variant="ghost" tamano="sm" icono="visibility"

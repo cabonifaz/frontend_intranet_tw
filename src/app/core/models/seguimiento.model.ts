@@ -24,6 +24,7 @@ export interface KpisSeguimiento {
 export interface ItemBandejaSeguimiento {
   idPropuesta:            number;
   numero:                 string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                number;
   idRequerimiento?:       number | null;
   numeroRq?:              string | null;
@@ -95,6 +96,7 @@ export interface BandejaSeguimiento {
 export interface CabeceraDetalleSeguimiento {
   idPropuesta:              number;
   numero:                   string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                  number;
   idRequerimiento?:         number | null;
   numeroRq?:                string | null;

@@ -75,6 +75,7 @@ export interface ItemBandejaOrdenServicio {
   idPropuesta:            number | null;
   numeroPropuesta:        string | null;         // ej. "PRO-0045-2026"
   versionPropuesta:       number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   idRequerimiento:        number | null;
   numeroRequerimiento:    string | null;         // ej. "RQ-0045-2026"
   /** Para abrir los modales reutilizables de Documentos (HU-31) e Historial de Auditoría (HU-32). */
@@ -137,6 +138,7 @@ export interface FiltrosBandejaOrdenesServicio {
 export interface PropuestaDisponibleOs {
   idPropuesta:         number;
   numero:              string;         // ej. "PRO-0045-2026"
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:             number;
   razonSocial:         string;
   ruc:                 string;
@@ -317,6 +319,9 @@ export interface AnularOsRequest {
 // ═════════════════════════════════════════════════════════════════════════════
 
 export interface ConceptoCatalogoOs {
+  /** Ticket #4435: clave única de la línea en la propuesta origen
+   *  (una fila por cada alcance). Clave de selección/dedup del modal. */
+  idItem:             number;
   idSuministro:       number;
   codigo:             string;         // ej. "SRV-CAL-001"
   descripcion:        string;
@@ -324,8 +329,12 @@ export interface ConceptoCatalogoOs {
   tipo?:              string;         // back: catálogo TIPO_SUMINISTRO
   subtipo?:           string;         // back: catálogo SUBTIPO_SUMINISTRO
   aplicableA:         string;         // "Equipos de pesaje" / "Instrumentos"
-  /** Marca "De la propuesta origen" en el modal de agregar. */
-  deLaPropuesta?:     boolean;
+  // Datos de la línea de la propuesta (ticket #4435)
+  alcance?:           string | null;
+  cantidad?:          number | null;
+  frecuencia?:        string | null;
+  precioUnitario?:    number | null;
+  seccion?:           string | null;
   yaAgregado?:        boolean;
 }
 
@@ -455,6 +464,7 @@ export interface DatosGeneralesOs {
 export interface PropuestaOrigenOs {
   idPropuesta:              number;
   codigo:                   string;      // "PRO-0045-2026"
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                  number;
   estado:                   string;      // "aceptada"
   estadoLabel:              string;
@@ -497,6 +507,8 @@ export interface EquipoDetalleOs {
 
 /** Tab Conceptos — fila. */
 export interface ConceptoDetalleOs {
+  /** Ticket #4435: ID único de la línea de la propuesta origen. */
+  idItem?:            number;
   idConcepto:         number;
   codigo:             string;           // "SRV-CAL-001"
   descripcion:        string;

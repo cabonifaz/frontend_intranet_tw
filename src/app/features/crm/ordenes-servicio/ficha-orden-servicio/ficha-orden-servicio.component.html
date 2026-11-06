@@ -240,7 +240,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (c of conceptos(); track c.idConcepto; let i = $index) {
+            @for (c of conceptos(); track (c.idItem ?? c.idConcepto); let i = $index) {
               <tr>
                 <td style="text-align:center;">{{ i + 1 }}</td>
                 <td class="mono">{{ c.codigo }}</td>
@@ -286,7 +286,7 @@
                 </td>
                 <td style="text-align:center;">
                   <button class="btn-quitar" title="Quitar concepto"
-                          (click)="quitarConcepto(c.idConcepto, $event)">
+                          (click)="quitarConcepto(c.idItem ?? c.idConcepto, $event)">
                     <span class="material-symbols-outlined">delete</span>
                   </button>
                 </td>
@@ -493,7 +493,7 @@
     <!-- ═══ Modales ═══ -->
     @if (modalAgregarConceptoAbierto()) {
       <app-modal-agregar-concepto-os
-        [codigosYaAgregados]="codigosConceptosYa()"
+        [itemsYaAgregados]="itemsConceptosYa()"
         [idPropuesta]="idPropuestaActual()"
         (cerrar)="modalAgregarConceptoAbierto.set(false)"
         (agregados)="onConceptosAgregados($event)" />

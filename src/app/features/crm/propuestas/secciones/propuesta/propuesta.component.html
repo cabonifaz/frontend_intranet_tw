@@ -140,7 +140,7 @@
 @if (modalDescuentoAbierto()) {
   <app-modal-descuento-global
     [idPropuesta]="draftSvc.draft().idPropuesta"
-    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [codigo]="draftSvc.draft().codigo"
     [subtotalLocal]="draftSvc.subtotalBruto()"
     [forzarLocal]="true"
     [descuentoActualPct]="draftSvc.draft().descuentoPct"

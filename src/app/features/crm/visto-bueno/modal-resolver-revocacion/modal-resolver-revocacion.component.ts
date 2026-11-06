@@ -34,7 +34,7 @@ export class ModalResolverRevocacionComponent {
 
   readonly subtitulo = computed(() => {
     const c = this.contexto();
-    return `${c.numero} · v${c.version} / ${c.razonSocial}`;
+    return `${c.numero} / ${c.razonSocial}`;
   });
 
   onCerrar(): void { this.cerrar.emit(); }

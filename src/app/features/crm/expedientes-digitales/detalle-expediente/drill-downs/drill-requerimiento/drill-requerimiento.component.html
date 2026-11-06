@@ -118,7 +118,7 @@
       @for (p of drill().propuestas; track p.idPropuesta) {
         <div class="propuesta-gen">
           <div class="propuesta-gen__cab">
-            <strong class="valor-codigo">{{ p.numero }} v{{ p.version }}</strong>
+            <strong class="valor-codigo">{{ p.numero }}</strong>
             <span class="chip-estado chip-estado--{{ helpers.severidadEstadoPropuesta(p.estado) }}">{{ helpers.humanizarEstado(p.estado) }}</span>
             @if (p.responsable) { <small>· RF: {{ p.responsable }}</small> }
           </div>

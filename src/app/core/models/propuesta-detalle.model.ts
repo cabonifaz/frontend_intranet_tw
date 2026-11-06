@@ -51,7 +51,8 @@ export interface EquipoVinculado {
 export interface PropuestaDraft {
   // Identificación
   idPropuesta:         number | null;    // null = nueva
-  codigo:              string;           // PROP-002581 (asignado al guardar)
+  codigo:              string;           // PROP-002581 (interno, no mostrar)
+  /** Ticket #4437: formato nuevo listo para pintar (ej. "PC: 0012-2-2026"). */
   version:             string;           // v1, v2, v3
   esNuevaVersion:      boolean;          // true si se creó como versión de una existente
   idRequerimiento:     number | null;
