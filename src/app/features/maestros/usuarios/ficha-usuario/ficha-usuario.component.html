@@ -212,17 +212,17 @@
 
         </app-seccion>
 
-        <!-- SECCIÓN 03 — solo para área Servicio Técnico (HU-83 intranet + HU-01 móvil) -->
+        <!-- SECCIÓN 03 — todas las áreas (HU-83 intranet + HU-01 móvil + HU-28): Servicio Técnico la autocompleta, las demás la dejan en blanco -->
         @if (areaRequiereApp()) {
           <app-seccion
             icono="phone_android"
             [titulo]="numAppMobile() + '. Acceso a la App Mobile'"
-            subtitulo="El técnico ingresará a la app móvil con este usuario y la misma contraseña corporativa que recibe por correo."
+            subtitulo="La persona ingresará a la app móvil con este usuario y la misma contraseña corporativa que recibe por correo. Déjalo en blanco si no usará la app. El menú de la app depende de su cargo."
             badgeTexto="App Mobile"
             badgeVariant="azul"
           >
             <div class="campo">
-              <label class="campo__label">Nombre de usuario (app) *</label>
+              <label class="campo__label">Nombre de usuario (app){{ usuarioAppObligatorio() ? ' *' : ' (opcional)' }}</label>
               <div class="campo-usuario-app">
                 <input class="campo__input" type="text" formControlName="nombreUsuario"
                        placeholder="ej. juan.perez" maxlength="32" autocomplete="off" />
@@ -251,7 +251,7 @@
                 </small>
               } @else {
                 <small class="campo__ayuda">
-                  Formato <strong>nombre.apellido</strong> (minúsculas, sin acentos ni espacios). Se autocompleta a partir del nombre y apellido.
+                  Formato <strong>nombre.apellido</strong> (minúsculas, sin acentos ni espacios). En Servicio Técnico se autocompleta; en las demás áreas usa el botón de regenerar para sugerirlo, o déjalo en blanco si no usará la app.
                 </small>
               }
             </div>

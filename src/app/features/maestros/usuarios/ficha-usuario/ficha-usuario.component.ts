@@ -165,7 +165,7 @@ export class FichaUsuarioComponent implements OnInit {
     // Cargo pasó a texto libre (2026-10-05). Max 80 chars, requerido.
     cargo:            ['', [Validators.required, Validators.maxLength(80)]],
     area:             ['', Validators.required],
-    // Nombre de usuario para login en la app móvil (solo cuando area = servicio_tecnico).
+    // Nombre de usuario para login en la app móvil (cualquier área; opcional salvo que la persona use la app).
     // Formato: nombre.apellido (minúsculas, sin acentos, sin espacios). Autogenerado al tipear.
     // La unicidad se valida contra el back con debounce.
     nombreUsuario:    ['', [Validators.maxLength(32), Validators.pattern(/^[a-z0-9.]+$/)]],
@@ -223,18 +223,24 @@ export class FichaUsuarioComponent implements OnInit {
   // La métrica correcta es el área, no el rol.
   readonly rolRequiereInacal = computed(() => this.areaActual() === 'metrologia');
 
-  // Acceso a la App Mobile: solo para usuarios del área Servicio Técnico.
-  // Son los únicos que operan en campo con la app móvil (HU-01 móvil, HU-83 intranet).
-  // Al guardar con este área, el back setea canal_acceso = 'todos' automáticamente.
-  readonly areaRequiereApp = computed(() => this.areaActual() === 'servicio_tecnico');
+  // Acceso a la App Mobile (HU-01 móvil, HU-83 intranet): disponible para TODAS las áreas una vez elegida el área.
+  //   · Servicio Técnico: la sugerencia nombre.apellido se autocompleta (los técnicos operan con la app).
+  //   · Demás áreas (Metrología, Comercial, Operaciones…): el campo queda en blanco y es opcional; solo se llena si la persona
+  //     usará la app. El menú que ve en la app depende de su cargo (HU-28).
+  // Al guardar con nombre de usuario, el back setea canal_acceso = 'todos'; en blanco, en edición, quita el acceso.
+  readonly areaRequiereApp = computed(() => this.areaActual() !== '');
+  /** Solo Servicio Técnico autocompleta el usuario; en las demás áreas lo decide quien administra. */
+  private readonly areaAutogeneraUsuario = computed(() => this.areaActual() === 'servicio_tecnico');
+  readonly usuarioAppObligatorio = this.areaAutogeneraUsuario;
 
   // Numeración dinámica de secciones (depende de qué secciones estén visibles por rol/área).
-  // Secciones 1 y 2 siempre están. 3 (INACAL ó App Mobile — mutuamente exclusivas) según área.
-  // 4 (Seguridad) siempre. 5 (Suplencias) solo con rol asignado y en modo editar.
-  readonly numInacal     = computed(() => this.rolRequiereInacal() ? 3 : null);
+  // Secciones 1 y 2 siempre están. Luego, en este orden de la pantalla: App Mobile (con área elegida) e
+  // INACAL (solo Metrología; con app, va después de ella). Seguridad siempre.
+  // Suplencias solo con rol asignado y en modo editar.
   readonly numAppMobile  = computed(() => this.areaRequiereApp() ? 3 : null);
+  readonly numInacal     = computed(() => this.rolRequiereInacal() ? (this.areaRequiereApp() ? 4 : 3) : null);
   readonly numSeguridad  = computed(() =>
-    (this.rolRequiereInacal() || this.areaRequiereApp()) ? 4 : 3,
+    3 + (this.areaRequiereApp() ? 1 : 0) + (this.rolRequiereInacal() ? 1 : 0),
   );
   readonly numSuplencias = computed(() => {
     if (this.esNuevo() || !this.esRolComercial()) return null;
@@ -300,13 +306,15 @@ export class FichaUsuarioComponent implements OnInit {
           this.formulario.get('cargo')?.setValue('', { emitEvent: false });
         }
         this.areaActual.set(nuevaArea);
-        // Si deja de ser Servicio Técnico, limpiar nombreUsuario para no mandar basura al back.
-        // Si se vuelve Servicio Técnico (en modo crear), autogenerar sugerencia inicial.
-        if (nuevaArea !== 'servicio_tecnico') {
-          this.formulario.get('nombreUsuario')?.setValue('', { emitEvent: false });
-          this.nombreUsuarioDisponible.set(null);
-        } else if (this.esNuevo() && !this.formulario.get('nombreUsuario')?.value) {
-          this.autogenerarNombreUsuario();
+        // Solo al CREAR: Servicio Técnico sugiere el usuario (nombre.apellido); en cualquier otra área el campo queda en blanco.
+        // Al EDITAR no se toca (cambiar el área no debe quitarle ni cambiarle el acceso a la app a nadie).
+        if (this.esNuevo()) {
+          if (nuevaArea === 'servicio_tecnico') {
+            if (!this.formulario.get('nombreUsuario')?.value) this.autogenerarNombreUsuario();
+          } else {
+            this.formulario.get('nombreUsuario')?.setValue('', { emitEvent: false });
+            this.nombreUsuarioDisponible.set(null);
+          }
         }
       });
 
@@ -314,12 +322,12 @@ export class FichaUsuarioComponent implements OnInit {
     this.formulario.get('nombre')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        if (this.esNuevo() && this.areaRequiereApp()) this.autogenerarNombreUsuario();
+        if (this.esNuevo() && this.areaAutogeneraUsuario()) this.autogenerarNombreUsuario();
       });
     this.formulario.get('apellido')?.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        if (this.esNuevo() && this.areaRequiereApp()) this.autogenerarNombreUsuario();
+        if (this.esNuevo() && this.areaAutogeneraUsuario()) this.autogenerarNombreUsuario();
       });
 
     // Validación de unicidad del nombreUsuario con debounce (ping al back).
@@ -674,9 +682,8 @@ export class FichaUsuarioComponent implements OnInit {
         anexo:                        this.componerAnexo(v.anexoTroncal, v.anexoInterno),
         cargo:                        v.cargo?.trim() || null,
         area:                         v.area || null,
-        // Nombre de usuario para app móvil. Solo se manda cuando area = servicio_tecnico;
-        // en otras áreas lo mandamos vacío y el back dejará canal_acceso = 'intranet'.
-        nombreUsuario:                v.area === 'servicio_tecnico' ? (v.nombreUsuario?.trim() || null) : null,
+        // Nombre de usuario para la app móvil (cualquier área). En blanco: al crear no habilita la app; al editar, quita el acceso.
+        nombreUsuario:                v.nombreUsuario?.trim() || null,
         rolSistema:                   v.rolSistema,
         sedeOperativa:                v.sedeOperativa,
         idSupervisorDirecto:          v.idSupervisorDirecto || null,
