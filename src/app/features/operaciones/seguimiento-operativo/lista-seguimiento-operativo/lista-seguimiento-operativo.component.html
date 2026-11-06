@@ -4,9 +4,13 @@
     titulo="Servicio Técnico / Seguimiento Operativo"
     subtitulo="Monitoreo en tiempo real de técnicos en campo y servicios en ejecución">
     @if (bandeja(); as b) {
-      <div class="strip-refresh">
-        <span class="material-symbols-outlined">autorenew</span>
-        Auto-refresh cada 30s · Última actualización {{ b.vistaPrincipal.ultimaActualizacion }}
+      <div class="strip-refresh" [class.strip-refresh--error]="errorActualizacion()">
+        <span class="material-symbols-outlined">{{ errorActualizacion() ? 'sync_problem' : 'autorenew' }}</span>
+        @if (errorActualizacion(); as ea) {
+          No se pudo actualizar ({{ ea }}) · Mostrando datos de las {{ b.vistaPrincipal.ultimaActualizacion }}
+        } @else {
+          Auto-refresh cada {{ b.kpis.refrescoSegundos }}s · Última actualización {{ b.vistaPrincipal.ultimaActualizacion }}
+        }
       </div>
     }
   </app-header-bandeja>
@@ -54,23 +58,37 @@
           <div class="vp-bloque__head">
             <span class="material-symbols-outlined">map</span>
             <h3>Mapa Operativo</h3>
-            <span class="vp-bloque__meta">Ubicación en tiempo real de los técnicos del día</span>
-            <span class="chip chip--verde">● Red GPS Activa</span>
+            <span class="vp-bloque__meta">Última ubicación GPS de cada técnico del día</span>
+            @if (tecnicosSinGps() > 0) {
+              <span class="chip chip--gris">{{ tecnicosSinGps() }} sin posición GPS</span>
+            }
           </div>
 
-          <!-- Placeholder del mapa con tarjetas de técnicos -->
+          <!-- Mapa real (Leaflet + OpenStreetMap): un pin por técnico, con el color de su estado -->
           <div class="vp__mapa-area">
-            <div class="vp__mapa-placeholder">
-              <span class="material-symbols-outlined">map</span>
-              <p>Mapa GPS · integración pendiente</p>
-            </div>
+            <app-mapa-seguimiento
+              [marcadores]="marcadoresMapa()"
+              altura="400px"
+              mensajeVacio="Sin posiciones GPS hoy"
+              (marcadorClic)="abrirServicioDesdeMapa($event)" />
+
+            @if (vistaPrincipal()!.mapa.length === 0) {
+              <p class="vp__vacio">No hay técnicos con servicios programados hoy.</p>
+            }
             <ul class="tec-cards">
-              @for (p of vistaPrincipal()!.mapa; track p.idServicio) {
-                <li class="tec-card" (click)="verDetalleServicio(p.idServicio)">
+              @for (p of vistaPrincipal()!.mapa; track p.idTecnico) {
+                <li class="tec-card" [class.tec-card--sin-servicio]="p.idServicio === null"
+                    (click)="p.idServicio !== null && verDetalleServicio(p.idServicio)">
                   <span class="tec-card__avatar">{{ p.iniciales }}</span>
                   <div class="tec-card__ident">
                     <strong class="tec-card__nombre">{{ p.tecnico }}</strong>
-                    <small class="tec-card__ref">{{ p.numero }} · {{ p.cliente }}</small>
+                    <small class="tec-card__ref">
+                      @if (p.numero) { {{ p.numero }} · {{ p.cliente ?? '—' }} } @else { Sin servicio asignado }
+                    </small>
+                    <small class="tec-card__ref tec-card__ref--gps">
+                      <span class="material-symbols-outlined">{{ p.lat === null ? 'location_off' : 'location_on' }}</span>
+                      {{ p.hace }}
+                    </small>
                   </div>
                   <span [class]="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
                 </li>
@@ -94,20 +112,32 @@
           <div class="vp-bloque__head">
             <span class="material-symbols-outlined">warning</span>
             <h3>Alertas Críticas</h3>
-            <span class="chip chip--rojo">{{ vistaPrincipal()!.totalAlertas }} nuevas</span>
+            <span class="chip" [class]="vistaPrincipal()!.alertasNuevas > 0 ? 'chip chip--rojo' : 'chip chip--gris'">
+              {{ vistaPrincipal()!.alertasNuevas }} nuevas
+            </span>
           </div>
-          <ul class="alertas-lista">
-            @for (a of vistaPrincipal()!.alertas; track a.idAlerta) {
-              <li class="alerta-item" [class]="'alerta-item alerta-item--' + a.severidad">
-                <div class="alerta-item__body">
-                  <strong>{{ a.tituloCorto }}</strong>
-                  <small>{{ a.tecnico }} · {{ a.numeroServicio }}</small>
-                  <small class="alerta-item__hace">{{ a.hace }}</small>
-                </div>
-                <button class="alerta-item__link" (click)="verAlerta(a.idServicio)">Ver →</button>
-              </li>
+          @if (vistaPrincipal()!.alertas.length === 0) {
+            <p class="vp__vacio">Sin alertas activas en este momento.</p>
+          } @else {
+            <ul class="alertas-lista">
+              @for (a of vistaPrincipal()!.alertas; track a.idAlerta) {
+                <li class="alerta-item" [class]="'alerta-item alerta-item--' + a.severidad">
+                  <div class="alerta-item__body">
+                    <strong>{{ a.tituloCorto }}</strong>
+                    <small>{{ a.tecnico }} · {{ a.numeroServicio }}</small>
+                    <small class="alerta-item__hace">{{ a.hace }}</small>
+                  </div>
+                  <button class="alerta-item__link" (click)="verAlerta(a.idServicio)">Ver →</button>
+                </li>
+              }
+            </ul>
+            @if (vistaPrincipal()!.totalAlertas > vistaPrincipal()!.alertas.length) {
+              <small class="vp__nota">
+                Mostrando las {{ vistaPrincipal()!.alertas.length }} más recientes de {{ vistaPrincipal()!.totalAlertas }} alertas
+                ({{ vistaPrincipal()!.alertasCriticas }} críticas).
+              </small>
             }
-          </ul>
+          }
           <button class="vp__alertas-footer" (click)="router.navigate(['/notificaciones'])">
             Ver todas en Centro de Notificaciones →
           </button>
@@ -118,193 +148,264 @@
           <div class="vp-bloque__head">
             <span class="material-symbols-outlined">schedule</span>
             <h3>Próximos Hitos Esperados</h3>
-            <span class="vp-bloque__meta">Hitos predictivos de los próximos 60 minutos · Actualizado {{ vistaPrincipal()!.ultimaActualizacion }}</span>
+            <span class="vp-bloque__meta">Hitos predictivos próximos · Actualizado {{ vistaPrincipal()!.ultimaActualizacion }}</span>
           </div>
-          <ul class="hitos-lista">
-            @for (h of vistaPrincipal()!.hitos; track h.idHito) {
-              <li class="hito-item" [class.hito-item--atencion]="h.requiereAtencion">
-                <div class="hito-item__hora">
-                  <span class="material-symbols-outlined">schedule</span>
-                  {{ h.hora }}
-                </div>
-                <div class="hito-item__body">
-                  <div class="hito-item__titulo-fila">
-                    <strong>{{ h.titulo }}</strong>
-                    @if (h.requiereAtencion) {
-                      <span class="chip chip--rojo">Requiere atención</span>
-                    }
+          @if (vistaPrincipal()!.hitos.length === 0) {
+            <p class="vp__vacio">
+              @if (vistaPrincipal()!.todosHitosOcurrieron) {
+                Todos los hitos del día ya ocurrieron.
+              } @else {
+                No hay hitos esperados en la ventana próxima ({{ vistaPrincipal()!.hitosPendientes }} pendientes más adelante).
+              }
+            </p>
+          } @else {
+            <ul class="hitos-lista">
+              @for (h of vistaPrincipal()!.hitos; track h.idHito) {
+                <li class="hito-item" [class.hito-item--atencion]="h.requiereAtencion">
+                  <div class="hito-item__hora">
+                    <span class="material-symbols-outlined">schedule</span>
+                    {{ h.hora }}
                   </div>
-                  <small>{{ h.subtitulo }}</small>
-                </div>
-                <button class="hito-item__link" (click)="verDetalleServicio(h.idServicio)">Ver →</button>
-              </li>
-            }
-          </ul>
+                  <div class="hito-item__body">
+                    <div class="hito-item__titulo-fila">
+                      <strong>{{ h.titulo }}</strong>
+                      @if (h.requiereAtencion) {
+                        <span class="chip chip--rojo">Atrasado</span>
+                      }
+                    </div>
+                    <small>{{ h.subtitulo }}</small>
+                  </div>
+                  <button class="hito-item__link" (click)="verDetalleServicio(h.idServicio)">Ver →</button>
+                </li>
+              }
+            </ul>
+          }
         </section>
       </div>
     }
 
     <!-- TAB 2: Servicios en Campo -->
     @if (tab() === 'servicios') {
-      <app-tabla-paginada
-        [cargando]="cargando()"
-        [vacio]="!cargando() && servicios().length === 0"
-        [total]="servicios().length"
-        [pagina]="1"
-        [porPagina]="servicios().length || 10"
-        textoItems="servicios"
-        textoVacio="No hay servicios en campo activos.">
-        <thead>
-          <tr>
-            <th>N° OS/OM</th>
-            <th>CLIENTE / SEDE</th>
-            <th>TÉCNICO</th>
-            <th>ESTADO</th>
-            <th>AVANCE</th>
-            <th class="num">EQUIPOS</th>
-            <th>ALERTA</th>
-            <th>ÚLTIMA ACTIVIDAD</th>
-            <th class="centro">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (s of servicios(); track s.idServicio) {
-            <tr (click)="verDetalleServicio(s.idServicio)" class="fila-clic">
-              <td>
-                <strong>{{ s.numero }}</strong>
-              </td>
-              <td>
-                <strong>{{ s.cliente }}</strong>
-                <small class="sub">{{ s.sede }}</small>
-              </td>
-              <td>{{ s.tecnico }}</td>
-              <td><span [class]="claseEstado(s.estado)">{{ etiquetaEstado(s.estado) }}</span></td>
-              <td>
-                <div class="progreso">
-                  <div class="progreso__barra" [style.width.%]="s.avancePct"></div>
-                </div>
-                <small class="sub">{{ s.avancePct }}%</small>
-              </td>
-              <td class="num">{{ s.nEquipos }}</td>
-              <td>
-                @if (s.alertaActiva) {
-                  <span class="chip chip--ambar">{{ s.alertaActiva }}</span>
-                } @else { <span class="muted">—</span> }
-              </td>
-              <td><small class="sub">{{ s.ultimaActividad }}</small></td>
-              <td class="centro acciones" (click)="$event.stopPropagation()">
-                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                            ariaLabel="Ver detalle" title="Ver detalle"
-                            (clic)="verDetalleServicio(s.idServicio)" />
-              </td>
+      @if (errores().servicios; as err) {
+        <div class="aviso-tab">
+          <span class="material-symbols-outlined">error</span>
+          {{ err }}
+          <app-button variant="ghost" tamano="sm" (clic)="cargar()">Reintentar</app-button>
+        </div>
+      } @else {
+        <app-tabla-paginada
+          [cargando]="cargando()"
+          [vacio]="!cargando() && servicios().length === 0"
+          [total]="servicios().length"
+          [pagina]="1"
+          [porPagina]="servicios().length || 10"
+          textoItems="servicios"
+          textoVacio="No hay servicios programados hoy.">
+          <thead>
+            <tr>
+              <th>N° OS/OM</th>
+              <th>CLIENTE / ZONA</th>
+              <th>TÉCNICO</th>
+              <th>ESTADO</th>
+              <th>AVANCE</th>
+              <th>HORA PROG.</th>
+              <th>ÚLTIMA UBICACIÓN</th>
+              <th class="centro">ACCIONES</th>
             </tr>
-          }
-        </tbody>
-      </app-tabla-paginada>
+          </thead>
+          <tbody>
+            @for (s of servicios(); track s.idServicio) {
+              <tr (click)="verDetalleServicio(s.idServicio)" class="fila-clic">
+                <td>
+                  <strong>{{ s.numero }}</strong>
+                  @if (s.propuesta) { <small class="sub">{{ s.propuesta }}</small> }
+                </td>
+                <td>
+                  <strong>{{ s.cliente }}</strong>
+                  <small class="sub">{{ s.zona ?? '—' }}</small>
+                </td>
+                <td>{{ s.tecnico }}</td>
+                <td><span [class]="claseEstado(s.estado)">{{ etiquetaEstado(s.estado) }}</span></td>
+                <td>
+                  <div class="progreso">
+                    <div class="progreso__barra" [style.width.%]="s.avancePct"></div>
+                  </div>
+                  <small class="sub">{{ s.avancePct }}% · {{ progresoSubtitulo(s.nEjecutados, s.nEquipos) }}</small>
+                </td>
+                <td>{{ s.horaProgramada ?? '—' }}</td>
+                <td>
+                  @if (s.ultimaUbicacion) {
+                    <span class="ubicacion-celda">{{ s.ultimaUbicacion }}</span>
+                    <small class="sub">{{ s.ultimaActividad }}</small>
+                  } @else { <span class="muted">Sin posición GPS</span> }
+                </td>
+                <td class="centro acciones" (click)="$event.stopPropagation()">
+                  <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                              ariaLabel="Ver detalle" title="Ver detalle"
+                              (clic)="verDetalleServicio(s.idServicio)" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-paginada>
+      }
     }
 
     <!-- TAB 3: Técnicos Activos -->
     @if (tab() === 'tecnicos') {
-      <section class="tecnicos-grid">
-        @for (t of tecnicos(); track t.idTecnico) {
-          <div class="tecnico-card">
-            <div class="tecnico-card__head">
-              <span class="tecnico-card__avatar">{{ t.iniciales }}</span>
-              <div class="tecnico-card__ident">
-                <strong class="tecnico-card__nombre">{{ t.nombre }}</strong>
-                <small class="tecnico-card__cargo">{{ t.cargo }}</small>
-              </div>
-              <span [class]="claseEstado(t.estado)">{{ etiquetaEstado(t.estado) }}</span>
-            </div>
-
-            <div class="tecnico-card__info">
-              @if (t.servicioActual) {
-                <div class="info-item info-item--wide">
-                  <small>SERVICIO ACTUAL</small>
-                  <strong>{{ t.servicioActual.numero }} · {{ t.servicioActual.cliente }}</strong>
+      @if (errores().tecnicos; as err) {
+        <div class="aviso-tab">
+          <span class="material-symbols-outlined">error</span>
+          {{ err }}
+          <app-button variant="ghost" tamano="sm" (clic)="cargar()">Reintentar</app-button>
+        </div>
+      } @else if (tecnicos().length === 0) {
+        <div class="aviso-tab aviso-tab--vacio">
+          <span class="material-symbols-outlined">group_off</span>
+          No hay técnicos con servicios programados hoy.
+        </div>
+      } @else {
+        <section class="tecnicos-grid">
+          @for (t of tecnicos(); track t.idTecnico) {
+            <div class="tecnico-card">
+              <div class="tecnico-card__head">
+                <span class="tecnico-card__avatar">{{ t.iniciales }}</span>
+                <div class="tecnico-card__ident">
+                  <strong class="tecnico-card__nombre">{{ t.nombre }}</strong>
+                  <small class="tecnico-card__cargo">{{ t.cargo ?? 'Sin cargo' }}{{ t.zona ? ' · ' + t.zona : '' }}</small>
                 </div>
-              }
-              <div class="info-item">
-                <small>HORAS EN CAMPO</small>
-                <strong>{{ t.horasCampo }}h</strong>
+                <span [class]="claseEstado(t.estado)">{{ etiquetaEstado(t.estado) }}</span>
               </div>
-              <div class="info-item">
-                <small>SERVICIOS HOY</small>
-                <strong>{{ t.servicios }}</strong>
-              </div>
-            </div>
 
-            <div class="tecnico-card__footer">
-              <app-button variant="ghost" tamano="sm" icono="call"
-                          (clic)="llamarTecnico(t.telefono, t.nombre)">
-                {{ t.telefono }}
-              </app-button>
-              @if (t.servicioActual) {
-                <app-button variant="primary" tamano="sm"
-                            (clic)="verDetalleServicio(t.servicioActual.idServicio)">
-                  Ver servicio
-                </app-button>
-              }
+              <div class="tecnico-card__info">
+                @if (t.servicioActual) {
+                  <div class="info-item info-item--wide">
+                    <small>SERVICIO ACTUAL</small>
+                    <strong>{{ t.servicioActual.numero }} · {{ t.servicioActual.cliente }}</strong>
+                  </div>
+                }
+                <div class="info-item">
+                  <small>EN CAMPO DESDE</small>
+                  <strong>
+                    {{ t.salidaReal ?? 'Sin salir' }}
+                    @if (t.salidaReal && t.tiempoCampo !== '—') { <span class="info-item__sub">({{ t.tiempoCampo }})</span> }
+                  </strong>
+                </div>
+                <div class="info-item">
+                  <small>SERVICIOS HOY</small>
+                  <strong>{{ t.completados }}/{{ t.servicios }} completados</strong>
+                </div>
+                <div class="info-item info-item--wide">
+                  <small>ÚLTIMA UBICACIÓN</small>
+                  <strong>
+                    @if (t.ultimaUbicacion) { {{ t.ultimaUbicacion }} · {{ t.ultimaActividad }} }
+                    @else { <span class="muted">Sin posición GPS hoy</span> }
+                  </strong>
+                </div>
+              </div>
+
+              <div class="tecnico-card__footer">
+                @if (t.telefono) {
+                  <app-button variant="ghost" tamano="sm" icono="call"
+                              (clic)="llamarTecnico(t.telefono, t.nombre)">
+                    {{ t.telefono }}
+                  </app-button>
+                } @else {
+                  <span></span>
+                }
+                @if (t.servicioActual) {
+                  <app-button variant="primary" tamano="sm"
+                              (clic)="verDetalleServicio(t.servicioActual.idServicio)">
+                    Ver servicio
+                  </app-button>
+                }
+              </div>
             </div>
-          </div>
-        }
-      </section>
+          }
+        </section>
+      }
     }
 
     <!-- TAB 4: Incidencias del Día -->
     @if (tab() === 'incidencias') {
-      <app-tabla-paginada
-        [cargando]="cargando()"
-        [vacio]="!cargando() && incidencias().length === 0"
-        [total]="incidencias().length"
-        [pagina]="1"
-        [porPagina]="incidencias().length || 10"
-        textoItems="incidencias"
-        textoVacio="No hay incidencias registradas en el día.">
-        <thead>
-          <tr>
-            <th>HORA</th>
-            <th>TIPO</th>
-            <th>TÉCNICO</th>
-            <th>SERVICIO</th>
-            <th>SEVERIDAD</th>
-            <th>DETALLE</th>
-            <th>ESTADO</th>
-            <th class="centro">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (i of incidencias(); track i.idIncidencia) {
-            <tr (click)="verDetalleServicio(i.idServicio)" class="fila-clic">
-              <td><strong>{{ i.hora }}</strong></td>
-              <td>{{ i.tipoLabel }}</td>
-              <td>{{ i.tecnico }}</td>
-              <td>{{ i.numeroServicio }}</td>
-              <td>
-                @switch (i.severidad) {
-                  @case ('critica')     { <span class="chip chip--rojo">Crítica</span> }
-                  @case ('advertencia') { <span class="chip chip--ambar">Advertencia</span> }
-                  @default              { <span class="chip chip--azul">Info</span> }
-                }
-              </td>
-              <td><small class="sub">{{ i.detalle }}</small></td>
-              <td>
-                @if (i.resuelta) {
-                  <span class="chip chip--verde">Resuelta</span>
-                } @else {
-                  <span class="chip chip--ambar">Activa</span>
-                }
-              </td>
-              <td class="centro acciones" (click)="$event.stopPropagation()">
-                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
-                            ariaLabel="Ver detalle" title="Ver detalle"
-                            (clic)="verDetalleServicio(i.idServicio)" />
-              </td>
+      @if (errores().incidencias; as err) {
+        <div class="aviso-tab">
+          <span class="material-symbols-outlined">error</span>
+          {{ err }}
+          <app-button variant="ghost" tamano="sm" (clic)="cargar()">Reintentar</app-button>
+        </div>
+      } @else {
+        @if (tarjetasIncidencias(); as tj) {
+          <div class="inc-resumen">
+            <span class="chip chip--gris">{{ tj.total }} registradas hoy</span>
+            <span class="chip chip--ambar">{{ tj.retrasan }} retrasan</span>
+            <span class="chip chip--rojo">{{ tj.detienen }} detienen</span>
+            <span class="chip chip--verde">{{ tj.registradasTecnico }} desde la app del técnico</span>
+            <span class="chip chip--azul">{{ tj.registradasAsistente }} del Asistente</span>
+          </div>
+        }
+        <app-tabla-paginada
+          [cargando]="cargando()"
+          [vacio]="!cargando() && incidencias().length === 0"
+          [total]="incidencias().length"
+          [pagina]="1"
+          [porPagina]="incidencias().length || 10"
+          textoItems="incidencias"
+          textoVacio="No hay incidencias registradas en el día.">
+          <thead>
+            <tr>
+              <th>HORA</th>
+              <th>TIPO</th>
+              <th>MOMENTO</th>
+              <th>TÉCNICO</th>
+              <th>SERVICIO</th>
+              <th>IMPACTO</th>
+              <th class="num">DURACIÓN</th>
+              <th>ORIGEN</th>
+              <th>DETALLE</th>
+              <th class="centro">ACCIONES</th>
             </tr>
-          }
-        </tbody>
-      </app-tabla-paginada>
+          </thead>
+          <tbody>
+            @for (i of incidencias(); track i.idIncidencia) {
+              <tr (click)="verDetalleServicio(i.idServicio)" class="fila-clic">
+                <td><strong>{{ i.hora }}</strong></td>
+                <td>{{ i.tipoLabel }}</td>
+                <td>
+                  @if (i.momento) {
+                    <span [class]="chipMomento(i.fase)">{{ i.momento }}</span>
+                  } @else { <span class="muted">—</span> }
+                </td>
+                <td>{{ i.tecnico }}</td>
+                <td>
+                  <strong>{{ i.numeroServicio }}</strong>
+                  <small class="sub">{{ i.cliente }}</small>
+                </td>
+                <td><span [class]="chipImpacto(i.impacto)">{{ labelImpacto(i.impacto) }}</span></td>
+                <td class="num">{{ i.duracionMin !== null ? i.duracionMin + ' min' : '—' }}</td>
+                <td><small class="sub sub--inline">{{ labelOrigen(i.origen) }}</small></td>
+                <td><small class="sub">{{ i.detalle || '—' }}</small></td>
+                <td class="centro acciones" (click)="$event.stopPropagation()">
+                  <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                              ariaLabel="Ver detalle" title="Ver detalle"
+                              (clic)="verDetalleServicio(i.idServicio)" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-paginada>
+      }
     }
+  } @else if (error(); as err) {
+    <!-- Error en la primera carga: se muestra el mensaje del backend, no una pantalla en blanco -->
+    <div class="aviso-tab aviso-tab--grande" role="alert">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudo cargar el seguimiento operativo</strong>
+        <p>{{ err }}</p>
+      </div>
+      <app-button variant="primary" tamano="sm" icono="refresh" (clic)="cargar()">Reintentar</app-button>
+    </div>
   } @else if (cargando()) {
     <div class="loading">
       <span class="material-symbols-outlined spin">progress_activity</span>

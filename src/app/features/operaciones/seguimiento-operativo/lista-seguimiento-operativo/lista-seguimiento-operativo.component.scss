@@ -22,6 +22,28 @@
   font-size: 12px; font-weight: 600;
   white-space: nowrap;
   .material-symbols-outlined { font-size: 14px; }
+
+  // Falló el último refresco: se conservan los datos anteriores
+  &--error {
+    background: #FEF3C7; color: #92400E; border-color: #FCD34D;
+    white-space: normal; max-width: 640px;
+  }
+}
+
+// Aviso dentro de una pestaña / pantalla cuando el backend responde con error o sin datos
+.aviso-tab {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 10px;
+  background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
+  font-size: 13px; font-weight: 500;
+  .material-symbols-outlined { font-size: 20px; }
+  p { margin: 2px 0 0; font-weight: 400; color: #991B1B; }
+
+  &--vacio { background: #F8FAFC; border-color: #E2E8F0; color: #64748B; }
+  &--grande {
+    padding: 22px 24px; gap: 14px;
+    > div { flex: 1; min-width: 220px; }
+  }
 }
 
 // ── Tabs principales de la bandeja ───────────────────────────────────────
@@ -100,15 +122,11 @@
     display: grid; grid-template-columns: 1fr; gap: 12px;
     min-height: 320px;
   }
-  &__mapa-placeholder {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
-    border: 1px dashed #D1D5DB; border-radius: 8px;
-    min-height: 200px;
-    color: #9CA3AF;
-    .material-symbols-outlined { font-size: 48px; }
-    p { margin: 0; font-size: 13px; font-weight: 600; }
+  &__vacio {
+    margin: 0; padding: 14px 4px; color: #64748B; font-size: 12.5px;
+  }
+  &__nota {
+    display: block; margin-top: 8px; color: #94A3B8; font-size: 11px; line-height: 1.4;
   }
 
   &__leyenda {
@@ -252,7 +270,14 @@
     font-size: 11px;
     color: #6B7280;
     line-height: 1.3;
+
+    &--gps {
+      display: inline-flex; align-items: center; gap: 3px; color: #94A3B8;
+      .material-symbols-outlined { font-size: 12px; }
+    }
   }
+
+  &--sin-servicio { cursor: default; &:hover { border-color: #E5E7EB; box-shadow: none; } }
 }
 
 // ─── Alertas (estilo sistema, patrón sobrio: fondo blanco + dot) ────────────
@@ -314,6 +339,7 @@
   &--gris       { background: #F3F4F6; color: #4B5563; }
   &--gris-oscuro{ background: #E5E7EB; color: #111827; }
   &--azul       { background: #DBEAFE; color: #1D4ED8; }
+  &--morado     { background: #EDE9FE; color: #5B21B6; }
   &--verde      { background: #D1FAE5; color: #047857; }
   &--ambar      { background: #FEF3C7; color: #92400E; }
   &--rojo       { background: #FEE2E2; color: #991B1B; }
@@ -339,6 +365,15 @@
 }
 
 ::ng-deep td .muted { color: #94A3B8; font-style: italic; }
+
+::ng-deep td .sub--inline { display: inline; margin-top: 0; }
+::ng-deep td .ubicacion-celda {
+  display: block; max-width: 240px; font-size: 12.5px; color: #0F172A;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+// Tarjetas resumen de la pestaña Incidencias del Día
+.inc-resumen { display: flex; flex-wrap: wrap; gap: 8px; }
 
 ::ng-deep td.num    { text-align: right; }
 ::ng-deep td.centro { text-align: center; }
@@ -457,6 +492,8 @@
       }
 
       &--wide { grid-column: 1 / -1; }
+
+      .info-item__sub { font-size: 11.5px; font-weight: 500; color: #64748B; }
     }
   }
 

@@ -4,14 +4,24 @@ import { FormsModule } from '@angular/forms';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
-  DetalleServicioSeguimiento, EstadoEquipoServicio, EstadoTecnicoCampo,
-  ModoRegistro, TipoEventoTimeline,
+  COLOR_DEMORA_EN_RUTA, COLOR_DEMORA_INGRESO, etiquetaEstadoCampo, formatearDistancia, formatearDuracionMin,
+} from '../../../../core/services/seguimiento-operativo-mapper';
+import {
+  ConexionGps, DetalleServicioSeguimiento, EstadoEquipoCierre, EstadoEquipoServicio, EstadoTecnicoCampo,
+  FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
 } from '../../../../core/models/seguimiento-operativo.model';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
 import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import {
+  CirculoMapa, MapaSeguimientoComponent, MarcadorMapa, RutaMapa,
+} from '../mapa-seguimiento.component';
+
+/** Respaldo si el backend no manda RefrescoSegundos (parámetro SEG_DETALLE_REFRESCO_SEGUNDOS). */
+const REFRESCO_POR_DEFECTO_SEG = 15;
+const REFRESCO_MINIMO_SEG = 5;
 
 type TabDetalle =
   | 'resumen' | 'equipos' | 'mapa' | 'timeline'
@@ -20,13 +30,14 @@ type TabDetalle =
 /**
  * HU-52 — Modal "Detalle del Servicio en Ruta" (Módulo 11 Control de Campo).
  * Modal grande (xl) con 7 tabs (6 fijos + Cierre condicional cuando esFinalizado).
- * Auto-refresh cada 15s. Footer sticky con botón "Llamar al técnico".
+ * Datos reales del backend. Auto-refresh cada `cabecera.refrescoSegundos` (SEG_DETALLE_REFRESCO_SEGUNDOS, 15 s
+ * por defecto). Footer sticky con botón "Llamar al técnico".
  */
 @Component({
   selector: 'app-modal-detalle-servicio',
   imports: [
     CommonModule, FormsModule, ModalComponent, ButtonComponent,
-    KpiGridComponent, KpiCardComponent, TablaPaginadaComponent,
+    KpiGridComponent, KpiCardComponent, TablaPaginadaComponent, MapaSeguimientoComponent,
   ],
   templateUrl: './modal-detalle-servicio.component.html',
   styleUrl: './modal-detalle-servicio.component.scss',
@@ -43,6 +54,10 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly tab      = signal<TabDetalle>('resumen');
   readonly cargando = signal(true);
   readonly detalle  = signal<DetalleServicioSeguimiento | null>(null);
+  /** Error de la primera carga (el modal no tiene datos que mostrar): se pinta dentro del modal. */
+  readonly error    = signal<string | null>(null);
+  /** Error de un refresco automático: se conservan los últimos datos y se avisa en la franja superior. */
+  readonly errorActualizacion = signal<string | null>(null);
   /** Set de idEquipo expandidos en el tab Avance por Equipos. El equipo activo
    *  (en ejecución) se agrega automáticamente al cargar el detalle. */
   readonly equiposExpandidos = signal<Set<number>>(new Set());
@@ -69,18 +84,17 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     };
   });
 
+  /** El backend entrega el timeline en orden cronológico (orden=antiguo); "más reciente primero" lo invierte. */
   readonly eventosTimelineFiltrados = computed(() => {
     const todos = this.detalle()?.timeline ?? [];
     const filtros = this.filtrosTimeline();
     const list = todos.filter(e => filtros[e.tipo]);
-    const orden = this.ordenTimeline();
-    return [...list].sort((a, b) => {
-      const cmp = a.hora.localeCompare(b.hora);
-      return orden === 'reciente' ? -cmp : cmp;
-    });
+    return this.ordenTimeline() === 'reciente' ? [...list].reverse() : list;
   });
 
-  private intervalRefresh: ReturnType<typeof setInterval> | null = null;
+  private temporizador: ReturnType<typeof setTimeout> | null = null;
+  private destruido = false;
+  private cargandoAhora = false;
 
   readonly cabecera = computed(() => this.detalle()?.cabecera);
 
@@ -89,31 +103,125 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     return this.cabecera()?.esFinalizado ? [...base, 'cierre'] : base;
   });
 
+  // ─── Mapa GPS (tab 3): datos para el componente de mapa ──────────────────
+  /** Posición actual, planta del cliente, hitos (salida/pre-llegada/llegada) y demoras con su GPS. */
+  readonly marcadoresGps = computed<MarcadorMapa[]>(() => {
+    const d = this.detalle();
+    if (!d) return [];
+    const g = d.gps;
+    const marcadores: MarcadorMapa[] = [];
+
+    if (g.planta) {
+      marcadores.push({
+        id: 'planta', lat: g.planta.lat, lng: g.planta.lng, tipo: 'planta', color: '#DC2626', icono: 'business',
+        titulo: `Planta del cliente · ${g.planta.nombre}`,
+        popup: ['Planta del cliente', d.cabecera.cliente, g.planta.nombre, ...(g.planta.direccion ? [g.planta.direccion] : []),
+          ...(g.planta.mostrarRadio ? [`Radio de proximidad: ${g.planta.radioM} m`] : [])],
+        prioridad: 100,
+      });
+    }
+
+    for (const h of g.cronograma) {
+      if (!h.hora || h.lat === null || h.lng === null) continue;
+      if (g.planta && h.lat === g.planta.lat && h.lng === g.planta.lng) continue;   // ya lo marca el pin de la planta
+      marcadores.push({
+        id: `hito-${h.tipo}`, lat: h.lat, lng: h.lng, tipo: 'hito', color: '#10B981', icono: this.iconoHito(h.tipo),
+        titulo: `${h.evento} · ${h.hora}`,
+        popup: [h.evento, `Hora: ${h.hora}`, ...(h.detalle ? [h.detalle] : [])],
+        prioridad: 200,
+      });
+    }
+
+    g.demoras.forEach((dm, i) => {
+      marcadores.push({
+        id: `demora-${i}-${dm.hora}`, lat: dm.lat, lng: dm.lng, tipo: 'demora',
+        color: dm.fase === 'ingreso' ? COLOR_DEMORA_INGRESO : COLOR_DEMORA_EN_RUTA,
+        icono: dm.fase === 'ingreso' ? 'hourglass_top' : 'warning',
+        titulo: `${dm.faseLabel} · ${dm.motivo}`,
+        popup: [dm.faseLabel, dm.motivo, `${dm.hora} · ${dm.duracionMin} min`],
+        prioridad: 300,
+      });
+    });
+
+    const u = g.ultimaUbicacion;
+    if (u.lat !== null && u.lng !== null) {
+      marcadores.push({
+        id: 'actual', lat: u.lat, lng: u.lng, tipo: 'actual', color: '#2563EB', icono: 'navigation',
+        pulso: g.estadoSenal.conexion === 'gps_activo',
+        titulo: `${d.cabecera.tecnico} · posición actual`,
+        popup: [d.cabecera.tecnico, 'Posición actual', g.estadoSenal.hace, u.nombreLugar,
+          ...(u.velocidadKmh !== null ? [`Velocidad: ${u.velocidadKmh} km/h`] : [])],
+        prioridad: 1000,
+      });
+    }
+    return marcadores;
+  });
+
+  /** Polilínea con toda la ruta recorrida hoy por el técnico (puntos GPS del celular, en orden cronológico). */
+  readonly rutaGps = computed<RutaMapa | null>(() => {
+    const ruta = this.detalle()?.gps.ruta ?? [];
+    return ruta.length >= 2 ? { puntos: ruta.map(p => [p.lat, p.lng] as [number, number]) } : null;
+  });
+
+  /** Círculo de proximidad (RadioProximidadM) alrededor de la planta, cuando el backend indica que corresponde. */
+  readonly circuloGps = computed<CirculoMapa | null>(() => {
+    const p = this.detalle()?.gps.planta;
+    return p && p.mostrarRadio ? { lat: p.lat, lng: p.lng, radioM: p.radioM } : null;
+  });
+
   async ngOnInit(): Promise<void> {
     await this.cargar();
-    // HU-52: auto-refresh cada 15 segundos
-    this.intervalRefresh = setInterval(() => this.cargar(true), 15_000);
   }
 
   ngOnDestroy(): void {
-    if (this.intervalRefresh) clearInterval(this.intervalRefresh);
+    this.destruido = true;
+    this.limpiarTemporizador();
   }
 
   async cargar(silencioso = false): Promise<void> {
+    if (this.cargandoAhora) return;   // un refresco no se solapa con otra carga en curso
+    this.cargandoAhora = true;
+    this.limpiarTemporizador();
     if (!silencioso) this.cargando.set(true);
     try {
       const d = await this.svc.obtenerDetalleServicio(this.idServicio());
       this.detalle.set(d);
+      this.error.set(null);
+      this.errorActualizacion.set(null);
       // Primera carga: auto-expandir el equipo activo (en ejecución)
       if (!silencioso) {
         const activo = d.equipos.find(eq => eq.activo);
         if (activo) this.equiposExpandidos.set(new Set([activo.idEquipo]));
       }
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el detalle.');
-      if (!silencioso) this.cerrar.emit();
+      const mensaje = e instanceof Error && e.message ? e.message : 'No se pudo cargar el detalle.';
+      if (!this.detalle()) this.error.set(mensaje);
+      else if (silencioso) this.errorActualizacion.set(mensaje);
+      else this.toast.error(mensaje);
     } finally {
       this.cargando.set(false);
+      this.cargandoAhora = false;
+      this.programarRefresco();
+    }
+  }
+
+  /** Auto-refresh con el intervalo que indica el backend (RefrescoSegundos) en cada respuesta. */
+  private programarRefresco(): void {
+    if (this.destruido) return;
+    const seg = Math.max(REFRESCO_MINIMO_SEG, this.cabecera()?.refrescoSegundos ?? REFRESCO_POR_DEFECTO_SEG);
+    this.temporizador = setTimeout(() => void this.cargar(true), seg * 1000);
+  }
+
+  private limpiarTemporizador(): void {
+    if (this.temporizador) clearTimeout(this.temporizador);
+    this.temporizador = null;
+  }
+
+  private iconoHito(t: TipoHitoGps): string {
+    switch (t) {
+      case 'salida':      return 'play_arrow';
+      case 'pre_llegada': return 'near_me';
+      case 'llegada':     return 'flag';
     }
   }
 
@@ -132,10 +240,39 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   onCerrar(): void { this.cerrar.emit(); }
 
+  /** Llama al técnico con el teléfono que trae la cabecera (TelefonoTecnico). */
   llamarTecnico(): void {
     const c = this.cabecera();
     if (!c) return;
-    this.toast.info(`Llamando a ${c.tecnico} (${c.telefono})…`);
+    if (!c.telefono) {
+      this.toast.info(`${c.tecnico} no tiene un teléfono registrado.`);
+      return;
+    }
+    window.open(`tel:${c.telefono.replace(/[^\d+]/g, '')}`, '_self');
+  }
+
+  /** Desde la columna GPS de Demoras/Incidencias: abre el mapa, donde está el pin de la demora. */
+  verEnMapa(): void { this.tab.set('mapa'); }
+
+  /** Valor numérico opcional con su unidad, o "—" cuando el celular no lo envió (satélites, latencia, etc.). */
+  dato(v: number | null | undefined, unidad = '', decimales = 0): string {
+    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+    return `${decimales > 0 ? v.toFixed(decimales) : Math.round(v)}${unidad}`;
+  }
+
+  distancia(m: number | null): string {
+    return formatearDistancia(m);
+  }
+
+  /** Duración en minutos como "45 min" / "2h 02min" (o "—"). */
+  duracion(min: number | null): string {
+    return formatearDuracionMin(min);
+  }
+
+  /** "HH:mm · título" del evento del timeline al que se vinculó una nota del Asistente (null si no está). */
+  tituloVinculo(clave: string): string | null {
+    const ev = this.detalle()?.timeline.find(e => e.idEvento === clave);
+    return ev ? `${ev.hora} · ${ev.titulo}` : null;
   }
 
   // ─── Helpers de estilo ────────────────────────────────────────────────
@@ -154,15 +291,67 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   }
 
   etiquetaEstado(e: EstadoTecnicoCampo): string {
+    return etiquetaEstadoCampo(e);
+  }
+
+  // ─── Señal GPS (tab Mapa) ─────────────────────────────────────────────
+  chipConexion(c: ConexionGps): string {
+    switch (c) {
+      case 'gps_activo': return 'chip chip--verde';
+      case 'gps_parado': return 'chip chip--ambar';
+      case 'sin_senal':  return 'chip chip--rojo';
+    }
+  }
+
+  etiquetaConexion(c: ConexionGps): string {
+    switch (c) {
+      case 'gps_activo': return '● GPS activo';
+      case 'gps_parado': return '● GPS parado';
+      case 'sin_senal':  return '● Sin señal';
+    }
+  }
+
+  // ─── Resumen (helpers) ────────────────────────────────────────────────
+  labelRol(r: 'principal' | 'apoyo' | 'supervisor'): string {
+    switch (r) {
+      case 'principal':  return 'Principal';
+      case 'apoyo':      return 'Apoyo';
+      case 'supervisor': return 'Supervisión técnica';
+    }
+  }
+
+  chipSsoma(e: string | null): string {
+    switch ((e ?? '').toLowerCase()) {
+      case 'conforme':   return 'chip chip--verde';
+      case 'por_vencer': return 'chip chip--ambar';
+      case 'incompleto': return 'chip chip--ambar';
+      case 'bloqueado':  return 'chip chip--rojo';
+      default:            return 'chip chip--gris';
+    }
+  }
+
+  labelSsoma(e: string | null): string {
+    switch ((e ?? '').toLowerCase()) {
+      case 'conforme':   return 'Conforme';
+      case 'por_vencer': return 'Por vencer';
+      case 'incompleto': return 'Incompleto';
+      case 'bloqueado':  return 'Bloqueado';
+      default:            return e ?? '—';
+    }
+  }
+
+  /** Momento de la demora de la app: en ruta (azul) vs ingreso a planta (morado), igual que sus pines. */
+  chipMomento(f: FaseDemora | null): string {
+    return f === 'ingreso' ? 'chip chip--morado' : 'chip chip--azul';
+  }
+
+  chipEstadoEquipoCierre(e: EstadoEquipoCierre): string {
     switch (e) {
-      case 'sin_salir':      return 'Sin salir';
-      case 'en_ruta':        return 'En ruta';
-      case 'en_planta':      return 'En planta';
-      case 'en_ejecucion':   return 'En ejecución';
-      case 'con_demora':     return 'Con demora';
-      case 'con_incidente':  return 'Incidente crítico';
-      case 'finalizado':     return 'Finalizado';
-      default:                return e;
+      case 'finalizado':   return 'chip chip--verde';
+      case 'parcial':      return 'chip chip--ambar';
+      case 'pendiente':    return 'chip chip--gris';
+      case 'reprogramado': return 'chip chip--azul';
+      case 'anulado':      return 'chip chip--rojo';
     }
   }
 
@@ -235,7 +424,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   // Observación / Nota
   readonly obsDescripcion     = signal<string>('');
-  readonly obsVincularEvento  = signal<number | null>(null);
+  readonly obsVincularEvento  = signal<string | null>(null);
   readonly obsFuente          = signal<'llamada' | 'whatsapp' | 'reporte' | 'directa' | null>(null);
 
   // Demora / Incidente
@@ -292,23 +481,9 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   async onRegistrar(): Promise<void> {
     if (!this.puedeRegistrar()) return;
-    // TODO: back pendiente. Por ahora solo toast + limpieza.
-    const modo = this.modoRegistro();
-    const etiquetas: Record<ModoRegistro, string> = {
-      observacion: 'Observación / Nota',
-      demora_incidente: 'Demora / Incidente',
-      cambio_estado_critico: 'Cambio de estado (crítico)',
-    };
-    this.toast.exito(`${etiquetas[modo]} registrado en el servicio.`);
-    this.obsDescripcion.set('');
-    this.obsVincularEvento.set(null);
-    this.obsFuente.set(null);
-    this.demDuracionMin.set(null);
-    this.demDescripcion.set('');
-    this.cesComentario.set('');
-    // Recargamos el detalle para ver el nuevo evento en el timeline
-    await this.cargar(true);
-    this.actualizado.emit();
+    // HU-53: el backend ya expone POST …/servicios/{idOs}/registros (RegistroAsistenteController), pero esta
+    // pestaña todavía no está conectada: se avisa para no dar por guardado un registro que no se envió.
+    this.toast.info('El registro del Asistente (HU-53) aún no está conectado al servidor: no se guardó nada.');
   }
 
   // ─── Demoras / Incidencias (helpers) ──────────────────────────────────

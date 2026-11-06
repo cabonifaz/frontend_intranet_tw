@@ -7,9 +7,13 @@
   (cerrar)="onCerrar()">
 
   @if (cabecera(); as c) {
-    <div modalHeaderBadges class="strip-refresh">
-      <span class="material-symbols-outlined">autorenew</span>
-      Auto-refresh cada 15s · Última actualización {{ c.ultimaActualizacion }}
+    <div modalHeaderBadges class="strip-refresh" [class.strip-refresh--error]="errorActualizacion()">
+      <span class="material-symbols-outlined">{{ errorActualizacion() ? 'sync_problem' : 'autorenew' }}</span>
+      @if (errorActualizacion(); as ea) {
+        No se pudo actualizar ({{ ea }}) · Mostrando datos de las {{ c.ultimaActualizacion }}
+      } @else {
+        Auto-refresh cada {{ c.refrescoSegundos }}s · Última actualización {{ c.ultimaActualizacion }}
+      }
     </div>
   }
 
@@ -17,6 +21,14 @@
     <div class="estado">
       <span class="material-symbols-outlined spin">progress_activity</span>
       Cargando detalle…
+    </div>
+  } @else if (error(); as err) {
+    <!-- Error al abrir el servicio (fuera de la jornada, sin permiso, error del servidor…): se muestra el mensaje del backend -->
+    <div class="estado estado--error" role="alert">
+      <span class="material-symbols-outlined">error</span>
+      <strong>No se pudo cargar el detalle del servicio</strong>
+      <p>{{ err }}</p>
+      <app-button variant="primary" tamano="sm" icono="refresh" (clic)="cargar()">Reintentar</app-button>
     </div>
   } @else if (detalle(); as d) {
 
@@ -44,8 +56,8 @@
         <div class="kpi-card">
           <div class="kpi-icono kpi-icono--morado"><span class="material-symbols-outlined">event</span></div>
           <div class="kpi-texto">
-            <div class="kpi-label">HORARIO</div>
-            <div class="kpi-valor">{{ d.cabecera.horaProgramada }} – {{ d.cabecera.horaFinEstimada }}</div>
+            <div class="kpi-label">HORARIO PROGRAMADO</div>
+            <div class="kpi-valor">{{ d.cabecera.horaProgramada ?? '—' }} – {{ d.cabecera.horaFinEstimada ?? '—' }}</div>
           </div>
         </div>
         <div class="kpi-card">
@@ -59,7 +71,7 @@
           <div class="kpi-icono kpi-icono--verde"><span class="material-symbols-outlined">precision_manufacturing</span></div>
           <div class="kpi-texto">
             <div class="kpi-label">EQUIPOS</div>
-            <div class="kpi-valor">{{ d.cabecera.totalEquipos }} ({{ d.cabecera.avancePct }}%)</div>
+            <div class="kpi-valor">{{ d.resumen.metricas.equiposCompletados }}/{{ d.resumen.metricas.equiposTotal }} ({{ d.cabecera.avancePct }}%)</div>
           </div>
         </div>
       </div>
@@ -72,18 +84,30 @@
         </div>
         <div class="info-grid">
           <div class="info-item"><small>PROPUESTA</small><strong>{{ d.cabecera.numeroPropuesta ?? '—' }}</strong></div>
-          <div class="info-item"><small>DIRECCIÓN</small><strong>{{ d.cabecera.direccion ?? '—' }}</strong></div>
+          <div class="info-item"><small>PROGRAMACIÓN</small><strong>{{ d.resumen.codigoProgramacion ?? '—' }}</strong></div>
+          <div class="info-item"><small>EXPEDIENTE</small><strong>{{ d.resumen.expediente ?? '—' }}</strong></div>
+          <div class="info-item"><small>TIPO DE SERVICIO</small><strong>{{ d.resumen.tipoServicio ?? '—' }}</strong></div>
+          <div class="info-item"><small>NORMA</small><strong>{{ d.resumen.norma ?? '—' }}</strong></div>
+          <div class="info-item"><small>SEDE / DIRECCIÓN</small><strong>{{ d.cabecera.sede }}{{ d.cabecera.direccion ? ' · ' + d.cabecera.direccion : '' }}</strong></div>
           <div class="info-item"><small>ESTADO</small>
             <strong><span [class]="claseEstado(d.cabecera.estado)">{{ etiquetaEstado(d.cabecera.estado) }}</span></strong>
           </div>
-          <div class="info-item"><small>HORA LLEGADA</small><strong>{{ d.cabecera.horaLlegada ?? '—' }}</strong></div>
-          <div class="info-item"><small>HORA INICIO</small><strong>{{ d.cabecera.horaInicio ?? '—' }}</strong></div>
-          <div class="info-item"><small>CHECKLIST SALIDA</small>
+          <div class="info-item"><small>SALIDA REAL</small>
             <strong>
-              @if (d.resumen.checklistSalida) { <span class="chip chip--verde">OK</span> }
-              @else { <span class="chip chip--ambar">Pendiente</span> }
+              {{ d.cabecera.salidaReal ?? 'Aún no sale' }}
+              @if (d.cabecera.puntualidadSalida === 'puntual') { <span class="chip chip--verde">Puntual</span> }
+              @if (d.cabecera.puntualidadSalida === 'tardia')  { <span class="chip chip--ambar">Tardía</span> }
             </strong>
           </div>
+          <div class="info-item"><small>HORA LLEGADA</small><strong>{{ d.cabecera.horaLlegada ?? '—' }}</strong></div>
+          <div class="info-item"><small>ESTADO SSOMA</small>
+            <strong>
+              @if (d.resumen.estadoSsoma) { <span [class]="chipSsoma(d.resumen.estadoSsoma)">{{ labelSsoma(d.resumen.estadoSsoma) }}</span> }
+              @else { — }
+            </strong>
+          </div>
+          <div class="info-item"><small>DURACIÓN ESTIMADA</small><strong>{{ duracion(d.resumen.minutosEstimados) }}</strong></div>
+          <div class="info-item"><small>TIEMPO EN SERVICIO</small><strong>{{ duracion(d.resumen.metricas.minutosServicio) }}</strong></div>
         </div>
       </div>
 
@@ -92,54 +116,129 @@
         <div class="bloque__head">
           <span class="material-symbols-outlined">group</span>
           <h4>Equipo de trabajo</h4>
-          <span class="badge-count">{{ d.resumen.equipoTrabajo.length }}</span>
+          <span class="badge-count">{{ d.resumen.responsables.length }}</span>
         </div>
-        <ul class="lista-rows">
-          @for (u of d.resumen.equipoTrabajo; track u.idUsuario) {
-            <li>
-              <div>
-                <strong>{{ u.nombre }}</strong>
-                <small>{{ u.rol === 'principal' ? 'Principal' : 'Apoyo' }}</small>
-              </div>
-            </li>
-          }
-        </ul>
+        @if (d.resumen.responsables.length === 0) {
+          <p class="vacio-bloque">Sin responsables asignados.</p>
+        } @else {
+          <ul class="lista-rows">
+            @for (u of d.resumen.responsables; track u.idUsuario + '-' + u.rol) {
+              <li>
+                <div>
+                  <strong>{{ u.nombre }}</strong>
+                  <small>{{ labelRol(u.rol) }}{{ u.cargo ? ' · ' + u.cargo : '' }}</small>
+                  @if (u.nota) { <small class="nota-fila">{{ u.nota }}</small> }
+                </div>
+              </li>
+            }
+          </ul>
+        }
       </div>
 
-      <!-- Viáticos -->
+      <!-- Contacto en planta -->
+      @if (d.resumen.contacto; as ct) {
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">contact_phone</span>
+            <h4>Contacto en planta</h4>
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><small>NOMBRE</small><strong>{{ ct.nombre }}</strong></div>
+            <div class="info-item"><small>CARGO</small><strong>{{ ct.cargo ?? '—' }}</strong></div>
+            <div class="info-item"><small>TELÉFONO</small>
+              <strong>
+                @if (ct.telefono) { <a class="enlace" [href]="'tel:' + ct.telefono">{{ ct.telefono }}</a> } @else { — }
+              </strong>
+            </div>
+            <div class="info-item"><small>CORREO</small>
+              <strong>
+                @if (ct.correo) { <a class="enlace" [href]="'mailto:' + ct.correo">{{ ct.correo }}</a> } @else { — }
+              </strong>
+            </div>
+            <div class="info-item"><small>LLEGADA CONFIRMADA</small>
+              <strong>{{ ct.confirmadoA ?? '—' }}{{ ct.haceMinutos !== null ? ' (hace ' + ct.haceMinutos + ' min)' : '' }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Indicadores: demoras e incidencias del día -->
       <div class="bloque">
         <div class="bloque__head">
-          <span class="material-symbols-outlined">payments</span>
-          <h4>Viáticos</h4>
+          <span class="material-symbols-outlined">monitoring</span>
+          <h4>Indicadores del servicio</h4>
         </div>
         <div class="info-grid">
-          <div class="info-item"><small>ASIGNADO</small>
-            <strong>{{ d.resumen.viaticos.simbolo }} {{ d.resumen.viaticos.asignado | number:'1.2-2' }}</strong>
-          </div>
-          <div class="info-item"><small>ESTADO</small>
+          <div class="info-item"><small>AVANCE</small><strong>{{ d.resumen.metricas.avancePct }}%</strong></div>
+          <div class="info-item"><small>DEMORAS / INCIDENCIAS</small><strong>{{ d.resumen.metricas.demorasIncidencias }}</strong></div>
+          <div class="info-item"><small>MINUTOS DE DEMORA</small><strong>{{ duracion(d.resumen.metricas.minutosDemora) }}</strong></div>
+          <div class="info-item"><small>ÚLTIMO MOTIVO</small><strong>{{ d.resumen.metricas.motivoDemora ?? '—' }}</strong></div>
+          <div class="info-item"><small>ALERTAS ACTIVAS</small>
             <strong>
-              @if (d.resumen.viaticos.estado === 'depositado') {
-                <span class="chip chip--verde">Depositado</span>
-              } @else { <span class="chip chip--ambar">Pendiente depósito</span> }
+              @if (d.resumen.metricas.alertasActivas > 0) {
+                <span class="chip chip--ambar">{{ d.resumen.metricas.alertasActivas }}</span>
+              } @else { 0 }
             </strong>
           </div>
         </div>
       </div>
 
-      <!-- Observaciones -->
-      @if (d.resumen.observaciones) {
+      <!-- Equipos a intervenir -->
+      <div class="bloque">
+        <div class="bloque__head">
+          <span class="material-symbols-outlined">precision_manufacturing</span>
+          <h4>Equipos a intervenir</h4>
+          <span class="badge-count">{{ d.resumen.equipos.length }} de {{ d.resumen.equiposProgramados }}</span>
+        </div>
+        @if (d.resumen.equipos.length === 0) {
+          <p class="vacio-bloque">Este servicio no tiene equipos asociados.</p>
+        } @else {
+          <ul class="lista-rows">
+            @for (eq of d.resumen.equipos; track eq.idEquipo) {
+              <li>
+                <div>
+                  <strong>{{ eq.codigo }}{{ eq.modelo ? ' · ' + eq.modelo : '' }}</strong>
+                  <small>
+                    Serie {{ eq.serie ?? '—' }}
+                    @if (eq.etapaActual) { · Etapa actual: {{ eq.etapaActual }} }
+                    @if (eq.horaCompletado) { · Completado {{ eq.horaCompletado }} }
+                  </small>
+                </div>
+                <span class="fila-chips">
+                  @if (eq.observado) { <span class="chip chip--ambar">Observado</span> }
+                  <span [class]="chipEstadoEquipo(eq.estado)">{{ labelEstadoEquipo(eq.estado) }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <!-- Nota del procedimiento -->
+      @if (d.resumen.notaProcedimiento) {
         <div class="bloque">
           <div class="bloque__head">
             <span class="material-symbols-outlined">forum</span>
-            <h4>Observaciones</h4>
+            <h4>Nota del procedimiento</h4>
           </div>
-          <p class="observacion">{{ d.resumen.observaciones }}</p>
+          <p class="observacion">{{ d.resumen.notaProcedimiento }}</p>
         </div>
       }
     }
 
     <!-- ══════════ TAB AVANCE POR EQUIPOS ══════════ -->
     @if (tab() === 'equipos') {
+      @if (d.errores.equipos; as err) {
+        <div class="aviso-seccion">
+          <span class="material-symbols-outlined">error</span>
+          No se pudo cargar el avance por equipos: {{ err }}
+        </div>
+      } @else if (d.equipos.length === 0) {
+        <div class="aviso-seccion aviso-seccion--vacio">
+          <span class="material-symbols-outlined">precision_manufacturing</span>
+          Este servicio no tiene equipos asociados.
+        </div>
+      }
       <ul class="equipos-lista">
         @for (eq of d.equipos; track eq.idEquipo) {
           <li class="equipo-card" [class.equipo-card--activo]="eq.activo">
@@ -254,49 +353,66 @@
 
     <!-- ══════════ TAB MAPA GPS ══════════ -->
     @if (tab() === 'mapa') {
+      @if (d.errores.mapa; as err) {
+        <div class="aviso-seccion">
+          <span class="material-symbols-outlined">error</span>
+          No se pudo cargar el mapa: {{ err }}
+        </div>
+      }
       <div class="mapa-grid">
         <!-- Panel izquierdo: Mapa + referencias -->
         <section class="mapa-panel">
           <div class="mapa-panel__head">
             <span class="material-symbols-outlined">map</span>
             <h3>Mapa Operativo del Servicio</h3>
-            <span class="chip chip--verde">{{ d.gps.chipEstadoMapa }}</span>
+            <span [class]="claseEstado(d.gps.estadoServicio)">{{ d.gps.chipEstadoMapa }}</span>
           </div>
           <small class="mapa-panel__resumen">{{ d.gps.resumenRuta }}</small>
 
-          <!-- Placeholder del mapa -->
-          <div class="mapa-area">
-            <div class="mapa-placeholder">
-              <span class="material-symbols-outlined">map</span>
-              <p><strong>Mapa GPS · integración pendiente</strong></p>
-              <small>El back entregará lat/lng del técnico en tiempo real</small>
-            </div>
-          </div>
+          <!-- Mapa real (Leaflet + OpenStreetMap): ruta recorrida, posición actual, planta con su radio, hitos y demoras -->
+          <app-mapa-seguimiento
+            [marcadores]="marcadoresGps()"
+            [ruta]="rutaGps()"
+            [circulo]="circuloGps()"
+            [claveAjuste]="d.cabecera.idServicio"
+            [sinPosiciones]="!d.gps.tienePosiciones"
+            altura="440px"
+            mensajeVacio="Sin posiciones GPS hoy" />
 
           <!-- Referencias -->
           <div class="mapa-refs">
             <small class="mapa-refs__label">REFERENCIAS:</small>
             <span class="chip chip--azul"><span class="dot dot--azul"></span>Técnico actual</span>
+            <span class="chip chip--azul"><span class="dot dot--linea"></span>Ruta recorrida hoy</span>
             <span class="chip chip--rojo"><span class="dot dot--rojo"></span>Cliente ({{ d.cabecera.cliente }})</span>
-            <span class="chip chip--verde"><span class="dot dot--verde"></span>Hito registrado</span>
-            <span class="chip chip--gris"><span class="dot dot--azul"></span>Radio 300m proximidad</span>
+            @if (d.gps.planta?.mostrarRadio) {
+              <span class="chip chip--gris"><span class="dot dot--aro"></span>Radio {{ d.gps.planta!.radioM }} m proximidad</span>
+            }
+            <span class="chip chip--verde"><span class="dot dot--verde"></span>Hito (salida, pre-llegada, llegada)</span>
+            <span class="chip chip--ambar"><span class="dot dot--ambar"></span>Demora en ruta</span>
+            <span class="chip chip--morado"><span class="dot dot--morado"></span>Demora en ingreso a planta</span>
           </div>
         </section>
 
-        <!-- Panel derecho: sidebar con 2 cards (Ubicación GPS unificada + Cronograma) -->
+        <!-- Panel derecho: sidebar con cards (Ubicación GPS + Cronograma + Demoras con GPS) -->
         <aside class="mapa-sidebar">
-          <!-- Ubicación GPS (unificada: señal + ubicación + métricas útiles) -->
+          <!-- Ubicación GPS (señal + ubicación + métricas del último punto) -->
           <div class="gps-card">
             <div class="gps-card__head">
               <span class="material-symbols-outlined">location_on</span>
               <h4>UBICACIÓN GPS</h4>
-              <span class="chip chip--verde">● GPS Activo</span>
+              <span [class]="chipConexion(d.gps.estadoSenal.conexion)">{{ etiquetaConexion(d.gps.estadoSenal.conexion) }}</span>
             </div>
 
             <!-- Última actualización arriba del todo -->
             <div class="gps-card__refresh">
               <span class="material-symbols-outlined refresco">autorenew</span>
-              Última actualización hace {{ d.gps.estadoSenal.haceSegundos }} segundos
+              @if (d.gps.estadoSenal.haceSegundos !== null) {
+                Última actualización {{ d.gps.estadoSenal.hace }}
+                @if (d.gps.estadoSenal.ultimaActualizacion) { ({{ d.gps.estadoSenal.ultimaActualizacion }}) }
+              } @else {
+                Sin posiciones GPS hoy
+              }
             </div>
 
             <!-- Lugar y dirección -->
@@ -306,32 +422,51 @@
             @if (d.gps.ultimaUbicacion.dentroDelRadio) {
               <div class="gps-card__estado-chip gps-card__estado-chip--verde">
                 <span class="material-symbols-outlined">verified</span>
-                Dentro del radio de proximidad del cliente ({{ d.gps.ultimaUbicacion.distanciaAlCliente }}m)
+                Dentro del radio de proximidad del cliente ({{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }})
+              </div>
+            } @else if (d.gps.ultimaUbicacion.distanciaAlCliente !== null) {
+              <div class="gps-card__estado-chip gps-card__estado-chip--gris">
+                <span class="material-symbols-outlined">near_me</span>
+                A {{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }} del cliente
               </div>
             }
 
-            <!-- 3 métricas útiles -->
+            <!-- Métricas del último punto (satélites y latencia pueden venir nulos: se muestra "—") -->
             <div class="gps-card__info gps-card__info--grid-3">
               <div class="info-item">
                 <small>VELOCIDAD</small>
-                <strong>{{ d.gps.ultimaUbicacion.velocidadKmh }} km/h</strong>
+                <strong>{{ dato(d.gps.ultimaUbicacion.velocidadKmh, ' km/h') }}</strong>
               </div>
               <div class="info-item">
                 <small>ALTITUD</small>
-                <strong>{{ d.gps.ultimaUbicacion.altitudMsnm }} msnm</strong>
+                <strong>{{ dato(d.gps.ultimaUbicacion.altitudMsnm, ' msnm') }}</strong>
+              </div>
+              <div class="info-item">
+                <small>PRECISIÓN</small>
+                <strong>{{ d.gps.estadoSenal.precisionMetros !== null ? '± ' + dato(d.gps.estadoSenal.precisionMetros, ' m') : '—' }}</strong>
+              </div>
+              <div class="info-item">
+                <small>SATÉLITES</small>
+                <strong>{{ dato(d.gps.estadoSenal.satelites) }}</strong>
+              </div>
+              <div class="info-item">
+                <small>LATENCIA</small>
+                <strong>{{ dato(d.gps.estadoSenal.latenciaMs, ' ms') }}</strong>
               </div>
               <div class="info-item">
                 <small>TIEMPO EN PUNTO</small>
-                <strong class="azul">{{ d.gps.ultimaUbicacion.tiempoEnPunto }}</strong>
+                <strong class="azul">{{ d.gps.ultimaUbicacion.tiempoEnPunto ?? '—' }}</strong>
               </div>
             </div>
 
-            @if (d.gps.estadoSenal.estable) {
-              <div class="gps-card__estado-chip">
-                <span class="material-symbols-outlined">check_circle</span>
-                {{ d.gps.estadoSenal.mensajeEstado }}
-              </div>
-            }
+            <div class="gps-card__estado-chip"
+                 [class.gps-card__estado-chip--ambar]="d.gps.estadoSenal.conexion === 'gps_parado'"
+                 [class.gps-card__estado-chip--rojo]="d.gps.estadoSenal.conexion === 'sin_senal'">
+              <span class="material-symbols-outlined">
+                {{ d.gps.estadoSenal.conexion === 'gps_activo' ? 'check_circle' : d.gps.estadoSenal.conexion === 'gps_parado' ? 'pause_circle' : 'signal_disconnected' }}
+              </span>
+              {{ d.gps.estadoSenal.mensajeEstado }}
+            </div>
           </div>
 
           <!-- Cronograma GPS del día -->
@@ -341,25 +476,57 @@
               <h4>CRONOGRAMA GPS DEL DÍA</h4>
             </div>
             <ul class="cronograma-gps">
-              @for (p of d.gps.cronograma; track $index) {
+              @for (p of d.gps.cronograma; track p.tipo) {
                 <li [class.cronograma-gps__item--salida]="p.tipo === 'salida'"
                     [class.cronograma-gps__item--llegada]="p.tipo === 'llegada'"
-                    [class.cronograma-gps__item--pre-llegada]="p.tipo === 'pre_llegada'">
+                    [class.cronograma-gps__item--pre-llegada]="p.tipo === 'pre_llegada'"
+                    [class.cronograma-gps__item--pendiente]="!p.hora">
                   <span class="cronograma-gps__dot"></span>
                   <div class="cronograma-gps__body">
-                    <strong>{{ p.hora }} · {{ p.evento }}</strong>
+                    <strong>{{ p.hora ?? '—' }} · {{ p.evento }}</strong>
                     @if (p.detalle) { <small>{{ p.detalle }}</small> }
                   </div>
                 </li>
               }
+              @if (d.gps.cronograma.length === 0) {
+                <li class="cronograma-gps__vacio">Sin hitos GPS registrados hoy.</li>
+              }
             </ul>
           </div>
+
+          <!-- Demoras registradas desde la app con el GPS del técnico -->
+          @if (d.gps.demoras.length > 0) {
+            <div class="gps-card">
+              <div class="gps-card__head">
+                <span class="material-symbols-outlined">warning</span>
+                <h4>DEMORAS CON GPS</h4>
+                <span class="badge-count">{{ d.gps.demoras.length }}</span>
+              </div>
+              <ul class="demoras-gps">
+                @for (dm of d.gps.demoras; track $index) {
+                  <li>
+                    <span class="demoras-gps__dot" [class.demoras-gps__dot--ingreso]="dm.fase === 'ingreso'"></span>
+                    <div>
+                      <strong>{{ dm.hora }} · {{ dm.faseLabel }}</strong>
+                      <small>{{ dm.motivo }} · {{ dm.duracionMin }} min</small>
+                    </div>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
         </aside>
       </div>
     }
 
     <!-- ══════════ TAB TIMELINE DEL DÍA ══════════ -->
     @if (tab() === 'timeline') {
+      @if (d.errores.timeline; as err) {
+        <div class="aviso-seccion">
+          <span class="material-symbols-outlined">error</span>
+          No se pudo cargar el timeline: {{ err }}
+        </div>
+      }
       <!-- Explicación en banner azul claro -->
       <div class="banner-info">
         <span class="material-symbols-outlined">history</span>
@@ -421,10 +588,14 @@
                   </span>
                 }
                 <span [class]="chipFuente(ev.tipo)">{{ labelFuente(ev.tipo) }}</span>
+                @if (ev.badge) { <span class="chip chip--azul">{{ ev.badge }}</span> }
               </div>
               <strong class="ev__titulo">{{ ev.titulo }}</strong>
               @if (ev.descripcion) {
                 <p class="ev__desc">{{ ev.descripcion }}</p>
+              }
+              @if (ev.vinculo && tituloVinculo(ev.vinculo); as tv) {
+                <small class="ev__vinculo">Vinculado a: {{ tv }}</small>
               }
             </div>
           </div>
@@ -441,14 +612,20 @@
 
     <!-- ══════════ TAB DEMORAS / INCIDENCIAS ══════════ -->
     @if (tab() === 'demoras') {
+      @if (d.errores.demoras; as err) {
+        <div class="aviso-seccion">
+          <span class="material-symbols-outlined">error</span>
+          No se pudieron cargar las demoras e incidencias: {{ err }}
+        </div>
+      }
+
       <!-- Banner informativo ámbar -->
       <div class="banner-info banner-info--ambar">
         <span class="material-symbols-outlined">warning</span>
         <p>
-          Eventos no planificados registrados en este servicio durante el día.
-          Incluye las demoras/incidencias que el técnico cargó desde su app móvil
-          + las que el Asistente registró desde el tab Registrar.
-          Click en una fila para ver el detalle completo.
+          Eventos no planificados registrados en este servicio durante el día. Incluye las demoras que el
+          técnico cargó desde su app móvil (en ruta hacia la planta o al ingresar a ella, con el GPS desde
+          donde las registró), las incidencias operativas y los registros del Asistente.
         </p>
       </div>
 
@@ -471,7 +648,7 @@
         <div class="bloque__head">
           <span class="material-symbols-outlined">event_note</span>
           <h4>Eventos no planificados del día en {{ d.cabecera.numero }}</h4>
-          <small class="bloque__sub">Vista cronológica · Click en una fila para abrir el detalle</small>
+          <small class="bloque__sub">Vista cronológica · el GPS lleva al mapa del servicio</small>
         </div>
 
         <app-tabla-paginada
@@ -486,23 +663,41 @@
             <tr>
               <th>HORA</th>
               <th class="col-tipo">TIPO</th>
+              <th>MOMENTO</th>
               <th class="col-desc">DESCRIPCIÓN</th>
               <th>IMPACTO</th>
+              <th class="num">DURACIÓN</th>
+              <th>GPS</th>
               <th class="centro">ORIGEN</th>
               <th class="centro">EVIDENCIA</th>
             </tr>
           </thead>
           <tbody>
             @for (ev of d.demoras; track ev.idDemora) {
-              <tr class="fila-clic">
+              <tr>
                 <td><strong>{{ ev.hora }}</strong></td>
                 <td class="col-tipo">{{ ev.tipo }}</td>
+                <td>
+                  @if (ev.momento) {
+                    <span [class]="chipMomento(ev.fase)">{{ ev.momento }}</span>
+                  } @else { <span class="muted">—</span> }
+                </td>
                 <td class="col-desc">
                   <strong>{{ ev.motivo }}</strong>
-                  @if (ev.detalle) { <small class="sub">{{ ev.detalle }}</small> }
+                  @if (ev.detalle) { <small class="sub">Registró: {{ ev.detalle }}</small> }
                 </td>
                 <td>
                   <span [class]="chipImpacto(ev)">{{ labelImpacto(ev) }}</span>
+                </td>
+                <td class="num">{{ ev.duracionMin !== null ? ev.duracionMin + ' min' : '—' }}</td>
+                <td>
+                  @if (ev.lat !== null && ev.lng !== null) {
+                    <button type="button" class="gps-enlace" (click)="verEnMapa()"
+                            title="Ver el punto en el Mapa GPS">
+                      <span class="material-symbols-outlined">location_on</span>
+                      {{ ev.lat | number:'1.4-4' }}, {{ ev.lng | number:'1.4-4' }}
+                    </button>
+                  } @else { <span class="muted">—</span> }
                 </td>
                 <td class="centro">
                   <span [class]="'ic-origen ic-origen--' + ev.origen"
@@ -514,7 +709,7 @@
                   @if (ev.nFotos && ev.nFotos > 0) {
                     <span class="chip chip--gris">
                       <span class="material-symbols-outlined">photo_camera</span>
-                      {{ ev.nFotos }} {{ ev.nFotos === 1 ? 'foto' : 'fotos' }}
+                      Con foto
                     </span>
                   } @else {
                     <span class="muted">—</span>
@@ -776,164 +971,171 @@
     }
 
     <!-- ══════════ TAB CIERRE DEL SERVICIO (HU-54) ══════════ -->
-    @if (tab() === 'cierre' && d.cierre) {
-      <!-- Card verde del cierre -->
-      <div class="cierre-head">
-        <div class="cierre-head__row">
-          <div class="cierre-head__chips">
-            <span [class]="d.cierre.esCompletadoParcial ? 'chip chip--ambar' : 'chip chip--verde'">
-              <span class="material-symbols-outlined">
-                {{ d.cierre.esCompletadoParcial ? 'pending' : 'check_circle' }}
+    @if (tab() === 'cierre') {
+      @if (d.errores.cierre; as err) {
+        <div class="aviso-seccion">
+          <span class="material-symbols-outlined">error</span>
+          No se pudo cargar el cierre del servicio: {{ err }}
+        </div>
+      }
+      @if (d.cierre; as ci) {
+        <!-- Card del cierre -->
+        <div class="cierre-head">
+          <div class="cierre-head__row">
+            <div class="cierre-head__chips">
+              <span [class]="ci.resultado === 'completado' ? 'chip chip--verde' : ci.resultado === 'parcial' ? 'chip chip--ambar' : 'chip chip--rojo'">
+                <span class="material-symbols-outlined">
+                  {{ ci.resultado === 'completado' ? 'check_circle' : ci.resultado === 'parcial' ? 'pending' : 'cancel' }}
+                </span>
+                {{ ci.resultadoTexto }}
               </span>
-              {{ d.cierre.esCompletadoParcial ? 'COMPLETADO PARCIAL' : 'COMPLETADO' }}
-            </span>
-            <span class="chip chip--gris">
-              <span class="material-symbols-outlined">check</span>
-              Finalizado: {{ d.cierre.horaFin }}
-            </span>
-            <span class="chip chip--gris">
-              <span class="material-symbols-outlined">timer</span>
-              Duración: {{ d.cierre.duracionReal }}
-              @if (d.cierre.demoraMinutos) {
-                <small class="cierre-demora">(+{{ d.cierre.demoraMinutos }}min)</small>
+              <span class="chip chip--gris">
+                <span class="material-symbols-outlined">check</span>
+                Finalizado: {{ ci.horaFin ?? '—' }}
+              </span>
+              <span class="chip chip--gris">
+                <span class="material-symbols-outlined">timer</span>
+                Duración: {{ ci.duracionReal }}
+                @if (ci.demoraMinutos && ci.demoraMinutos > 0) {
+                  <small class="cierre-demora">(+{{ ci.demoraMinutos }}min)</small>
+                }
+              </span>
+              @if (ci.chipModo) {
+                <span class="chip chip--azul">{{ ci.chipModo }}</span>
               }
-            </span>
+            </div>
+
+            <div class="cierre-head__tecnico">
+              <span class="ev__usuario-avatar">{{ inicialesAutor(ci.tecnico ?? d.cabecera.tecnico) }}</span>
+              <div>
+                <strong>{{ ci.tecnico ?? d.cabecera.tecnico }}</strong>
+                <small>{{ ci.rol }}</small>
+              </div>
+            </div>
           </div>
 
-          <div class="cierre-head__tecnico">
-            <span class="ev__usuario-avatar">{{ inicialesAutor(d.cabecera.tecnico) }}</span>
-            <div>
-              <strong>{{ d.cabecera.tecnico }}</strong>
-              <small>Líder</small>
+          <p class="cierre-head__narrativa">{{ ci.subtitulo }}</p>
+
+          <!-- 5 mini-KPIs compactos dentro del card -->
+          <div class="cierre-kpis">
+            <div class="cierre-kpi">
+              <small><span class="material-symbols-outlined">schedule</span> DURACIÓN</small>
+              <strong>{{ ci.duracionReal }}</strong>
+            </div>
+            <div class="cierre-kpi cierre-kpi--verde">
+              <small><span class="material-symbols-outlined">check_circle</span> FINALIZADOS</small>
+              <strong>{{ ci.equiposFinalizados }} / {{ ci.equiposTotal }}</strong>
+            </div>
+            <div class="cierre-kpi">
+              <small><span class="material-symbols-outlined">description</span> INFORMES</small>
+              <strong>{{ ci.nInformes }}</strong>
+            </div>
+            <div class="cierre-kpi cierre-kpi--ambar">
+              <small><span class="material-symbols-outlined">warning</span> DEMORAS</small>
+              <strong>{{ ci.nDemoras }}</strong>
+            </div>
+            <div class="cierre-kpi cierre-kpi--azul">
+              <small><span class="material-symbols-outlined">edit_note</span> REG. ASISTENTE</small>
+              <strong>{{ ci.nRegAsistente }}</strong>
             </div>
           </div>
         </div>
 
-        <p class="cierre-head__narrativa">
-          El técnico marcó <strong>"Finalicé el servicio"</strong> a las {{ d.cierre.horaFin }}
-          desde su app móvil. El sistema cerró automáticamente el seguimiento operativo.
-        </p>
+        <!-- Equipos del Servicio al cierre -->
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">precision_manufacturing</span>
+            <h4>Equipos del Servicio</h4>
+            <small class="bloque__sub">Estado final de cada equipo al cierre del servicio</small>
+            <span class="badge-count">Total: {{ ci.equipos.length }} equipos</span>
+          </div>
 
-        <!-- 5 mini-KPIs compactos dentro del card -->
-        <div class="cierre-kpis">
-          <div class="cierre-kpi">
-            <small><span class="material-symbols-outlined">schedule</span> DURACIÓN</small>
-            <strong>{{ d.cierre.duracionReal }}</strong>
-          </div>
-          <div class="cierre-kpi cierre-kpi--verde">
-            <small><span class="material-symbols-outlined">check_circle</span> FINALIZADOS</small>
-            <strong>{{ d.cierre.equiposFinalizados }} / {{ d.cabecera.totalEquipos }}</strong>
-          </div>
-          <div class="cierre-kpi">
-            <small><span class="material-symbols-outlined">description</span> INFORMES</small>
-            <strong>{{ d.cierre.nInformes }}</strong>
-          </div>
-          <div class="cierre-kpi cierre-kpi--ambar">
-            <small><span class="material-symbols-outlined">warning</span> DEMORAS</small>
-            <strong>{{ d.demoras.length }}</strong>
-          </div>
-          <div class="cierre-kpi cierre-kpi--azul">
-            <small><span class="material-symbols-outlined">edit_note</span> REG. ASISTENTE</small>
-            <strong>{{ d.cierre.nRegAsistente }}</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- Equipos del Servicio al cierre -->
-      <div class="bloque">
-        <div class="bloque__head">
-          <span class="material-symbols-outlined">precision_manufacturing</span>
-          <h4>Equipos del Servicio</h4>
-          <small class="bloque__sub">Estado final de cada equipo al cierre del servicio</small>
-          <span class="badge-count">Total: {{ d.equipos.length }} equipos</span>
-        </div>
-
-        <app-tabla-paginada
-          [cargando]="cargando()"
-          [vacio]="false"
-          [total]="d.equipos.length"
-          [pagina]="1"
-          [porPagina]="d.equipos.length"
-          textoItems="equipos"
-          textoVacio="Sin equipos.">
-          <thead>
-            <tr>
-              <th>EQUIPO</th>
-              <th>TIPO SERVICIO</th>
-              <th>ESTADO AL CIERRE</th>
-              <th>INFO</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (eq of d.equipos; track eq.idEquipo) {
-              <tr [class.fila-pendiente]="eq.estado === 'pendiente'">
-                <td>
-                  <strong>{{ eq.codigoTw }} · {{ eq.marca }} {{ eq.modelo }}</strong>
-                  <small class="sub">S/N {{ eq.numeroSerie }}</small>
-                </td>
-                <td>{{ eq.tipoServicioEquipo ?? '—' }}</td>
-                <td>
-                  <span [class]="chipEstadoEquipo(eq.estado)">
-                    {{ labelEstadoEquipo(eq.estado) }}
-                  </span>
-                  @if (eq.horaFin) {
-                    <small class="sub">· {{ eq.horaFin }}</small>
-                  } @else if (eq.estado === 'pendiente') {
-                    <small class="sub">· Sin ejecutar</small>
-                  }
-                </td>
-                <td>
-                  @if (eq.codigoInforme) {
-                    <span class="info-link">
-                      <span class="material-symbols-outlined">description</span>
-                      {{ eq.codigoInforme }}
-                    </span>
-                    @if (eq.nObservaciones > 0) {
-                      <span class="chip chip--ambar">Con observaciones</span>
-                    }
-                  } @else if (eq.motivoPendiente) {
-                    <strong class="ambar">{{ eq.motivoPendiente }}</strong>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </td>
+          <app-tabla-paginada
+            [cargando]="cargando()"
+            [vacio]="ci.equipos.length === 0"
+            [total]="ci.equipos.length"
+            [pagina]="1"
+            [porPagina]="ci.equipos.length || 10"
+            textoItems="equipos"
+            textoVacio="Sin equipos.">
+            <thead>
+              <tr>
+                <th>EQUIPO</th>
+                <th>TIPO SERVICIO</th>
+                <th>ESTADO AL CIERRE</th>
+                <th>INFO</th>
               </tr>
+            </thead>
+            <tbody>
+              @for (eq of ci.equipos; track eq.idEquipo) {
+                <tr [class.fila-pendiente]="eq.estado === 'pendiente'">
+                  <td>
+                    <strong>{{ eq.nombre }}</strong>
+                    <small class="sub">S/N {{ eq.serie ?? '—' }}</small>
+                  </td>
+                  <td>{{ eq.tipoServicio ?? '—' }}</td>
+                  <td>
+                    <span [class]="chipEstadoEquipoCierre(eq.estado)">{{ eq.estadoTexto }}</span>
+                    @if (eq.hora) {
+                      <small class="sub">· {{ eq.hora }}</small>
+                    } @else if (eq.estado === 'pendiente') {
+                      <small class="sub">· Sin ejecutar</small>
+                    }
+                  </td>
+                  <td>
+                    @if (eq.informe) {
+                      @if (eq.urlInforme && eq.urlInforme.startsWith('https://')) {
+                        <a class="info-link" [href]="eq.urlInforme" target="_blank" rel="noopener noreferrer">
+                          <span class="material-symbols-outlined">description</span>
+                          {{ eq.informe }}
+                        </a>
+                      } @else {
+                        <span class="info-link">
+                          <span class="material-symbols-outlined">description</span>
+                          {{ eq.informe }}
+                        </span>
+                      }
+                      @if (eq.conObservaciones) {
+                        <span class="chip chip--ambar">Con observaciones</span>
+                      }
+                    } @else if (eq.info) {
+                      <strong [class.ambar]="eq.destacado">{{ eq.info }}</strong>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-paginada>
+        </div>
+
+        <!-- Conformidad del cliente (acta) -->
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">verified</span>
+            <h4>Conformidad del cliente</h4>
+            @if (ci.acta; as ac) {
+              <span class="badge-count" [class.badge-count--ambar]="!ac.firmada">{{ ac.chip }}</span>
             }
-          </tbody>
-        </app-tabla-paginada>
-
-        <p class="nota-pie">
-          <span class="material-symbols-outlined">lightbulb</span>
-          Click en cualquier fila para ver el detalle del equipo en el tab "Avance por Equipos".
-        </p>
-      </div>
-
-      <!-- Observaciones del técnico + Firma del cliente -->
-      @if (d.cierre.observacionesTecnico || d.cierre.firmadoPorCliente) {
-        <div class="cierre-cols">
-          @if (d.cierre.observacionesTecnico) {
-            <div class="bloque">
-              <div class="bloque__head">
-                <span class="material-symbols-outlined">forum</span>
-                <h4>Observaciones del técnico</h4>
-              </div>
-              <p class="observacion">{{ d.cierre.observacionesTecnico }}</p>
-            </div>
-          }
-
-          @if (d.cierre.firmadoPorCliente) {
-            <div class="bloque">
-              <div class="bloque__head">
-                <span class="material-symbols-outlined">verified</span>
-                <h4>Conformidad del cliente</h4>
-                <span class="chip chip--verde badge-count">Firmado</span>
-              </div>
-              <div class="info-grid">
-                <div class="info-item"><small>QUIEN FIRMA</small><strong>{{ d.cierre.nombreQuienFirma ?? '—' }}</strong></div>
-                <div class="info-item"><small>CARGO</small><strong>{{ d.cierre.cargoQuienFirma ?? '—' }}</strong></div>
-                <div class="info-item"><small>HORA DE FIRMA</small><strong>{{ d.cierre.horaFirma ?? '—' }}</strong></div>
+          </div>
+          @if (ci.acta; as ac) {
+            <div class="info-grid">
+              <div class="info-item"><small>QUIEN FIRMA</small><strong>{{ ac.firmante ?? '—' }}</strong></div>
+              <div class="info-item"><small>CARGO</small><strong>{{ ac.cargo ?? '—' }}</strong></div>
+              <div class="info-item"><small>HORA DE REGISTRO</small><strong>{{ ac.hora ?? '—' }}</strong></div>
+              <div class="info-item"><small>MÉTODO</small><strong>{{ ac.metodo }}</strong></div>
+              <div class="info-item"><small>UBICACIÓN DE LA FIRMA</small>
+                <strong>
+                  <span [class]="ac.gpsVerificado ? 'chip chip--verde' : 'chip chip--gris'">{{ ac.gps }}</span>
+                </strong>
               </div>
             </div>
+            @if (ac.observaciones) {
+              <p class="observacion">{{ ac.observaciones }}</p>
+            }
+          } @else {
+            <p class="vacio-bloque">Este servicio no tiene un acta de conformidad registrada.</p>
           }
         </div>
       }
@@ -954,11 +1156,13 @@
   @if (cabecera(); as c) {
     <div modalFooter class="footer-modal">
       <div class="footer-modal__izq">
-        <small class="muted">Servicio #{{ c.numero }}</small>
+        <small class="muted">Servicio {{ c.numero }}</small>
       </div>
       <div class="footer-modal__der">
         <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Cerrar</app-button>
-        <app-button variant="primary" tamano="md" icono="call" (clic)="llamarTecnico()">
+        <app-button variant="primary" tamano="md" icono="call" [disabled]="!c.telefono"
+                    [title]="c.telefono ? 'Llamar a ' + c.tecnico + ' (' + c.telefono + ')' : 'El técnico no tiene un teléfono registrado'"
+                    (clic)="llamarTecnico()">
           Llamar al técnico
         </app-button>
       </div>
