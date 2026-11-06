@@ -66,6 +66,14 @@ export class SidebarComponent {
       ],
     },
     {
+      icono:    'engineering',
+      etiqueta: 'Servicio Técnico',
+      hijos: [
+        { etiqueta: 'Seguimiento Operativo', ruta: '/operaciones/seguimiento-operativo' },
+        // Pendiente Módulo 12: { etiqueta: 'Revisión de Informes', ruta: '/servicio-tecnico/revision-informes' },
+      ],
+    },
+    {
       icono:    'settings',
       etiqueta: 'Maestros',
       ruta:     '/maestros',

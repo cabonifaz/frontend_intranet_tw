@@ -287,6 +287,14 @@ export const routes: Routes = [
             m => m.FichaReprogramarComponent
           ),
       },
+      // ─── Módulo 11 — Seguimiento Operativo (Control de Campo) ────────────
+      {
+        path: 'operaciones/seguimiento-operativo',
+        loadComponent: () =>
+          import('./features/operaciones/seguimiento-operativo/lista-seguimiento-operativo/lista-seguimiento-operativo.component').then(
+            m => m.ListaSeguimientoOperativoComponent
+          ),
+      },
       {
         path: 'crm/expedientes-digitales',
         loadComponent: () =>

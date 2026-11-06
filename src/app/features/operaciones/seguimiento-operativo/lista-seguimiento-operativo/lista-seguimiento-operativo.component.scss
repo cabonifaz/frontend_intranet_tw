@@ -1,0 +1,470 @@
+.pagina {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #F8FAFC;
+  min-height: calc(100vh - 56px);
+}
+
+.loading {
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  padding: 60px; color: #6B7280; font-size: 14px;
+}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.strip-refresh {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: #EFF6FF; color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+  font-size: 12px; font-weight: 600;
+  white-space: nowrap;
+  .material-symbols-outlined { font-size: 14px; }
+}
+
+// ── Tabs principales de la bandeja ───────────────────────────────────────
+.tabs-bandeja {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #E2E8F0;
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: transparent;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    color: #64748B;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+
+    .material-symbols-outlined { font-size: 18px; }
+
+    &:hover { color: #1D4ED8; }
+
+    &--activa {
+      color: #2563EB;
+      border-bottom-color: #2563EB;
+      font-weight: 600;
+    }
+
+    &__badge {
+      display: inline-block;
+      min-width: 20px;
+      padding: 1px 7px;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+    }
+  }
+}
+
+.bloque {
+  background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 16px; overflow: hidden;
+}
+
+// ═══════════════════ VISTA PRINCIPAL ═══════════════════
+
+// Patrón bloque del sistema (copia de vp-bloque de Programación Operativa)
+.vp-bloque {
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  padding: 16px 18px;
+
+  &__head {
+    display: flex; align-items: center; gap: 8px;
+    padding-bottom: 10px; margin-bottom: 12px;
+    border-bottom: 1px solid #F1F5F9;
+
+    .material-symbols-outlined { color: #2563EB; font-size: 20px; }
+    h3 { margin: 0; font-size: 13.5px; font-weight: 600; color: #0F172A; }
+  }
+  &__meta { margin-left: auto; font-size: 11.5px; color: #64748B; }
+}
+
+.vp {
+  display: grid; grid-template-columns: 7fr 3fr; gap: 16px;
+  &__hitos { grid-column: 1 / -1; }
+
+  &__mapa-area {
+    position: relative;
+    display: grid; grid-template-columns: 1fr; gap: 12px;
+    min-height: 320px;
+  }
+  &__mapa-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+    border: 1px dashed #D1D5DB; border-radius: 8px;
+    min-height: 200px;
+    color: #9CA3AF;
+    .material-symbols-outlined { font-size: 48px; }
+    p { margin: 0; font-size: 13px; font-weight: 600; }
+  }
+
+  &__leyenda {
+    display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px;
+    padding-top: 12px; border-top: 1px solid #F3F4F6;
+    font-size: 11px; color: #6B7280;
+    span { display: inline-flex; align-items: center; gap: 6px; }
+  }
+
+  &__alertas-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    h3 { margin: 0; font-size: 14px; font-weight: 700; color: #111827; }
+  }
+  &__alertas-lista {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  &__alertas-footer {
+    width: 100%; margin-top: 12px; padding: 10px;
+    background: transparent; border: 1px solid #E5E7EB; border-radius: 6px;
+    color: #2563EB; font-size: 12px; font-weight: 600; cursor: pointer;
+    &:hover { background: #EFF6FF; }
+  }
+
+}
+
+// ─── Hitos esperados (estilo sistema) ───────────────────────────────────────
+.hitos-lista {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.hito-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px; align-items: flex-start;
+  padding: 10px 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: #CBD5E1; }
+
+  &--atencion {
+    background: #FEF2F2;
+    border-color: #FECACA;
+    &:hover { border-color: #FCA5A5; }
+  }
+
+  &__hora {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: #EFF6FF;
+    border-radius: 6px;
+    color: #1D4ED8;
+    font-size: 12px; font-weight: 700;
+    white-space: nowrap;
+
+    .material-symbols-outlined { font-size: 14px; }
+  }
+
+  &--atencion &__hora {
+    background: #FEE2E2;
+    color: #B91C1C;
+  }
+
+  &__body {
+    display: flex; flex-direction: column; gap: 3px; min-width: 0;
+    small { font-size: 11.5px; color: #64748B; line-height: 1.4; }
+  }
+
+  &__titulo-fila {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    strong { font-size: 13px; font-weight: 600; color: #0F172A; line-height: 1.3; }
+  }
+
+  &__link {
+    background: transparent; border: none; cursor: pointer;
+    color: #2563EB; font-size: 12px; font-weight: 600;
+    padding: 2px 0; white-space: nowrap; align-self: center;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ─── Cards de técnicos del Mapa Operativo (estilo sistema) ──────────────────
+.tec-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.tec-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: #2563EB;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #EFF6FF;
+    color: #2563EB;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  &__ident {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  &__nombre {
+    font-size: 13px;
+    color: #111827;
+    font-weight: 600;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__ref {
+    font-size: 11px;
+    color: #6B7280;
+    line-height: 1.3;
+  }
+}
+
+// ─── Alertas (estilo sistema, patrón sobrio: fondo blanco + dot) ────────────
+.alertas-lista {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.alerta-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: #CBD5E1; }
+
+  // Fondo coloreado solo cuando la alerta es un problema real
+  &--critica {
+    background: #FEF2F2;
+    border-color: #FECACA;
+  }
+  &--advertencia {
+    background: #FEF3C7;
+    border-color: #FDE68A;
+  }
+  // 'info' se queda con fondo blanco (sin variante)
+
+  &__body {
+    flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    strong { font-size: 13px; font-weight: 600; color: #0F172A; line-height: 1.3; }
+    small { font-size: 11.5px; color: #64748B; line-height: 1.4; }
+  }
+
+  &__link {
+    background: transparent; border: none; cursor: pointer;
+    color: #2563EB; font-size: 11px; font-weight: 600;
+    padding: 2px 0; white-space: nowrap; align-self: flex-start;
+    &:hover { text-decoration: underline; }
+  }
+
+  &__hace { color: #94A3B8 !important; font-size: 11px !important; }
+}
+
+// Leyenda dots
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.dot--gris          { background: #9CA3AF; }
+.dot--gris-oscuro   { background: #4B5563; }
+.dot--azul          { background: #2563EB; }
+.dot--verde         { background: #10B981; }
+.dot--ambar         { background: #F59E0B; }
+.dot--rojo          { background: #DC2626; }
+
+// Chips reutilizables
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; line-height: 1.6;
+  &--gris       { background: #F3F4F6; color: #4B5563; }
+  &--gris-oscuro{ background: #E5E7EB; color: #111827; }
+  &--azul       { background: #DBEAFE; color: #1D4ED8; }
+  &--verde      { background: #D1FAE5; color: #047857; }
+  &--ambar      { background: #FEF3C7; color: #92400E; }
+  &--rojo       { background: #FEE2E2; color: #991B1B; }
+}
+
+// ─── Tabla paginada: estilos globales a nivel de bandeja ────────────────
+// Las filas se proyectan dentro de app-tabla-paginada; para que los estilos
+// alcancen al contenido proyectado, no los anidamos.
+::ng-deep tbody tr.fila-clic { cursor: pointer; }
+::ng-deep tbody tr.fila-clic:hover { background: #F8FAFC; }
+
+::ng-deep td .sub {
+  display: block;
+  color: #64748B;
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+
+::ng-deep td strong {
+  display: block;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+::ng-deep td .muted { color: #94A3B8; font-style: italic; }
+
+::ng-deep td.num    { text-align: right; }
+::ng-deep td.centro { text-align: center; }
+::ng-deep th.num    { text-align: right; }
+::ng-deep th.centro { text-align: center; }
+
+::ng-deep td.acciones {
+  display: table-cell;
+  > * + * { margin-left: 4px; }
+}
+
+// ═══════════════════ TABLAS (legacy local) ═══════════════════
+.tabla {
+  width: 100%; border-collapse: collapse;
+  thead th {
+    text-align: left; padding: 10px 12px;
+    background: #F9FAFB; font-size: 11px; font-weight: 700;
+    color: #6B7280; text-transform: uppercase; letter-spacing: 0.4px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+  tbody td {
+    padding: 12px; border-bottom: 1px solid #F3F4F6;
+    font-size: 13px; color: #111827;
+    strong { display: block; }
+    small { display: block; color: #6B7280; font-size: 11px; }
+  }
+  &__fila-clic { cursor: pointer; &:hover { background: #F9FAFB; } }
+}
+
+.muted { color: #9CA3AF; }
+
+.progreso {
+  width: 100px; height: 6px; background: #E2E8F0; border-radius: 999px; overflow: hidden;
+  margin-bottom: 2px;
+  &__barra {
+    height: 100%; border-radius: 999px;
+    background: #2563EB;  // azul primario del sistema para progreso en curso
+    transition: width 0.3s;
+  }
+}
+
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border: 1px solid #E5E7EB; border-radius: 6px;
+  background: #FFFFFF; cursor: pointer; color: #4B5563;
+  .material-symbols-outlined { font-size: 18px; }
+  &:hover { border-color: #2563EB; color: #2563EB; }
+}
+
+// ═══════════════════ TÉCNICOS CARDS (estilo sistema) ═══════════════════
+.tecnicos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.tecnico-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    border-color: #CBD5E1;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+
+  &__head {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  &__avatar {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #EFF6FF; color: #2563EB;
+    font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  &__ident {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  &__nombre {
+    font-size: 13.5px; font-weight: 600; color: #0F172A;
+    line-height: 1.2;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  &__cargo {
+    font-size: 11.5px; color: #64748B;
+  }
+
+  &__info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 20px;
+    padding: 12px 0;
+    border-top: 1px solid #F1F5F9;
+    border-bottom: 1px solid #F1F5F9;
+
+    .info-item {
+      display: flex; flex-direction: column; gap: 3px;
+      min-width: 0;
+
+      small {
+        font-size: 10px; font-weight: 700; color: #64748B;
+        letter-spacing: 0.4px; text-transform: uppercase;
+      }
+      strong {
+        font-size: 13px; font-weight: 600; color: #0F172A;
+        line-height: 1.3;
+      }
+
+      &--wide { grid-column: 1 / -1; }
+    }
+  }
+
+  &__footer {
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+
+    // El teléfono (ghost) a la izquierda ocupa lo que necesite, el primario a la derecha
+    > *:first-child { flex: 0 1 auto; }
+    > *:last-child  { flex: 0 0 auto; }
+  }
+}

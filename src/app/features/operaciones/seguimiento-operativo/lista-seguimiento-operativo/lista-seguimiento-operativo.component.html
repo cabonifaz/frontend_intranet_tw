@@ -1,0 +1,322 @@
+<div class="pagina">
+  <app-header-bandeja
+    [breadcrumb]="[{ label: 'Inicio', ruta: '/' }, { label: 'Servicio Técnico' }, { label: 'Seguimiento Operativo' }]"
+    titulo="Servicio Técnico / Seguimiento Operativo"
+    subtitulo="Monitoreo en tiempo real de técnicos en campo y servicios en ejecución">
+    @if (bandeja(); as b) {
+      <div class="strip-refresh">
+        <span class="material-symbols-outlined">autorenew</span>
+        Auto-refresh cada 30s · Última actualización {{ b.vistaPrincipal.ultimaActualizacion }}
+      </div>
+    }
+  </app-header-bandeja>
+
+  @if (bandeja(); as b) {
+    <!-- KPIs -->
+    <app-kpi-grid [columnas]="6">
+      <app-kpi-card icono="event"           etiqueta="PROGRAMADOS / TÉCNICOS"
+                    [valor]="b.kpis.programadas + ' / ' + b.kpis.tecnicos" variante="azul" />
+      <app-kpi-card icono="local_shipping"  etiqueta="EN RUTA"       [valor]="b.kpis.enRuta"      variante="morado" />
+      <app-kpi-card icono="apartment"       etiqueta="EN PLANTA"     [valor]="b.kpis.enPlanta"    variante="verde" />
+      <app-kpi-card icono="engineering"     etiqueta="EN EJECUCIÓN"  [valor]="b.kpis.enEjecucion" variante="verde" />
+      <app-kpi-card icono="warning"         etiqueta="CON DEMORA"    [valor]="b.kpis.conDemora"   variante="rojo" />
+      <app-kpi-card icono="check_circle"    etiqueta="FINALIZADOS"   [valor]="b.kpis.finalizados" variante="verde" />
+    </app-kpi-grid>
+
+    <!-- Tabs -->
+    <div class="tabs-bandeja">
+      <button class="tab" [class.tab--activa]="tab() === 'vista_principal'" (click)="cambiarTab('vista_principal')">
+        <span class="material-symbols-outlined">dashboard</span>
+        Vista Principal
+      </button>
+      <button class="tab" [class.tab--activa]="tab() === 'servicios'" (click)="cambiarTab('servicios')">
+        <span class="material-symbols-outlined">assignment</span>
+        Servicios en Campo
+        <span class="tab__badge">{{ servicios().length }}</span>
+      </button>
+      <button class="tab" [class.tab--activa]="tab() === 'tecnicos'" (click)="cambiarTab('tecnicos')">
+        <span class="material-symbols-outlined">group</span>
+        Técnicos Activos
+        <span class="tab__badge">{{ tecnicos().length }}</span>
+      </button>
+      <button class="tab" [class.tab--activa]="tab() === 'incidencias'" (click)="cambiarTab('incidencias')">
+        <span class="material-symbols-outlined">warning</span>
+        Incidencias del Día
+        <span class="tab__badge">{{ incidencias().length }}</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Vista Principal -->
+    @if (tab() === 'vista_principal') {
+      <div class="vp">
+        <!-- Mapa + leyenda -->
+        <section class="vp-bloque vp__mapa">
+          <div class="vp-bloque__head">
+            <span class="material-symbols-outlined">map</span>
+            <h3>Mapa Operativo</h3>
+            <span class="vp-bloque__meta">Ubicación en tiempo real de los técnicos del día</span>
+            <span class="chip chip--verde">● Red GPS Activa</span>
+          </div>
+
+          <!-- Placeholder del mapa con tarjetas de técnicos -->
+          <div class="vp__mapa-area">
+            <div class="vp__mapa-placeholder">
+              <span class="material-symbols-outlined">map</span>
+              <p>Mapa GPS · integración pendiente</p>
+            </div>
+            <ul class="tec-cards">
+              @for (p of vistaPrincipal()!.mapa; track p.idServicio) {
+                <li class="tec-card" (click)="verDetalleServicio(p.idServicio)">
+                  <span class="tec-card__avatar">{{ p.iniciales }}</span>
+                  <div class="tec-card__ident">
+                    <strong class="tec-card__nombre">{{ p.tecnico }}</strong>
+                    <small class="tec-card__ref">{{ p.numero }} · {{ p.cliente }}</small>
+                  </div>
+                  <span [class]="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <!-- Leyenda -->
+          <div class="vp__leyenda">
+            <span><i class="dot dot--azul"></i>En ruta</span>
+            <span><i class="dot dot--verde"></i>En planta/ejecución</span>
+            <span><i class="dot dot--ambar"></i>Con demora/incidente</span>
+            <span><i class="dot dot--rojo"></i>Con incidente crítico</span>
+            <span><i class="dot dot--gris-oscuro"></i>Finalizado</span>
+            <span><i class="dot dot--gris"></i>Sin salir aún</span>
+          </div>
+        </section>
+
+        <!-- Alertas críticas -->
+        <aside class="vp-bloque vp__alertas">
+          <div class="vp-bloque__head">
+            <span class="material-symbols-outlined">warning</span>
+            <h3>Alertas Críticas</h3>
+            <span class="chip chip--rojo">{{ vistaPrincipal()!.totalAlertas }} nuevas</span>
+          </div>
+          <ul class="alertas-lista">
+            @for (a of vistaPrincipal()!.alertas; track a.idAlerta) {
+              <li class="alerta-item" [class]="'alerta-item alerta-item--' + a.severidad">
+                <div class="alerta-item__body">
+                  <strong>{{ a.tituloCorto }}</strong>
+                  <small>{{ a.tecnico }} · {{ a.numeroServicio }}</small>
+                  <small class="alerta-item__hace">{{ a.hace }}</small>
+                </div>
+                <button class="alerta-item__link" (click)="verAlerta(a.idServicio)">Ver →</button>
+              </li>
+            }
+          </ul>
+          <button class="vp__alertas-footer" (click)="router.navigate(['/notificaciones'])">
+            Ver todas en Centro de Notificaciones →
+          </button>
+        </aside>
+
+        <!-- Hitos esperados -->
+        <section class="vp-bloque vp__hitos">
+          <div class="vp-bloque__head">
+            <span class="material-symbols-outlined">schedule</span>
+            <h3>Próximos Hitos Esperados</h3>
+            <span class="vp-bloque__meta">Hitos predictivos de los próximos 60 minutos · Actualizado {{ vistaPrincipal()!.ultimaActualizacion }}</span>
+          </div>
+          <ul class="hitos-lista">
+            @for (h of vistaPrincipal()!.hitos; track h.idHito) {
+              <li class="hito-item" [class.hito-item--atencion]="h.requiereAtencion">
+                <div class="hito-item__hora">
+                  <span class="material-symbols-outlined">schedule</span>
+                  {{ h.hora }}
+                </div>
+                <div class="hito-item__body">
+                  <div class="hito-item__titulo-fila">
+                    <strong>{{ h.titulo }}</strong>
+                    @if (h.requiereAtencion) {
+                      <span class="chip chip--rojo">Requiere atención</span>
+                    }
+                  </div>
+                  <small>{{ h.subtitulo }}</small>
+                </div>
+                <button class="hito-item__link" (click)="verDetalleServicio(h.idServicio)">Ver →</button>
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+    }
+
+    <!-- TAB 2: Servicios en Campo -->
+    @if (tab() === 'servicios') {
+      <app-tabla-paginada
+        [cargando]="cargando()"
+        [vacio]="!cargando() && servicios().length === 0"
+        [total]="servicios().length"
+        [pagina]="1"
+        [porPagina]="servicios().length || 10"
+        textoItems="servicios"
+        textoVacio="No hay servicios en campo activos.">
+        <thead>
+          <tr>
+            <th>N° OS/OM</th>
+            <th>CLIENTE / SEDE</th>
+            <th>TÉCNICO</th>
+            <th>ESTADO</th>
+            <th>AVANCE</th>
+            <th class="num">EQUIPOS</th>
+            <th>ALERTA</th>
+            <th>ÚLTIMA ACTIVIDAD</th>
+            <th class="centro">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of servicios(); track s.idServicio) {
+            <tr (click)="verDetalleServicio(s.idServicio)" class="fila-clic">
+              <td>
+                <strong>{{ s.numero }}</strong>
+              </td>
+              <td>
+                <strong>{{ s.cliente }}</strong>
+                <small class="sub">{{ s.sede }}</small>
+              </td>
+              <td>{{ s.tecnico }}</td>
+              <td><span [class]="claseEstado(s.estado)">{{ etiquetaEstado(s.estado) }}</span></td>
+              <td>
+                <div class="progreso">
+                  <div class="progreso__barra" [style.width.%]="s.avancePct"></div>
+                </div>
+                <small class="sub">{{ s.avancePct }}%</small>
+              </td>
+              <td class="num">{{ s.nEquipos }}</td>
+              <td>
+                @if (s.alertaActiva) {
+                  <span class="chip chip--ambar">{{ s.alertaActiva }}</span>
+                } @else { <span class="muted">—</span> }
+              </td>
+              <td><small class="sub">{{ s.ultimaActividad }}</small></td>
+              <td class="centro acciones" (click)="$event.stopPropagation()">
+                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                            ariaLabel="Ver detalle" title="Ver detalle"
+                            (clic)="verDetalleServicio(s.idServicio)" />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-paginada>
+    }
+
+    <!-- TAB 3: Técnicos Activos -->
+    @if (tab() === 'tecnicos') {
+      <section class="tecnicos-grid">
+        @for (t of tecnicos(); track t.idTecnico) {
+          <div class="tecnico-card">
+            <div class="tecnico-card__head">
+              <span class="tecnico-card__avatar">{{ t.iniciales }}</span>
+              <div class="tecnico-card__ident">
+                <strong class="tecnico-card__nombre">{{ t.nombre }}</strong>
+                <small class="tecnico-card__cargo">{{ t.cargo }}</small>
+              </div>
+              <span [class]="claseEstado(t.estado)">{{ etiquetaEstado(t.estado) }}</span>
+            </div>
+
+            <div class="tecnico-card__info">
+              @if (t.servicioActual) {
+                <div class="info-item info-item--wide">
+                  <small>SERVICIO ACTUAL</small>
+                  <strong>{{ t.servicioActual.numero }} · {{ t.servicioActual.cliente }}</strong>
+                </div>
+              }
+              <div class="info-item">
+                <small>HORAS EN CAMPO</small>
+                <strong>{{ t.horasCampo }}h</strong>
+              </div>
+              <div class="info-item">
+                <small>SERVICIOS HOY</small>
+                <strong>{{ t.servicios }}</strong>
+              </div>
+            </div>
+
+            <div class="tecnico-card__footer">
+              <app-button variant="ghost" tamano="sm" icono="call"
+                          (clic)="llamarTecnico(t.telefono, t.nombre)">
+                {{ t.telefono }}
+              </app-button>
+              @if (t.servicioActual) {
+                <app-button variant="primary" tamano="sm"
+                            (clic)="verDetalleServicio(t.servicioActual.idServicio)">
+                  Ver servicio
+                </app-button>
+              }
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB 4: Incidencias del Día -->
+    @if (tab() === 'incidencias') {
+      <app-tabla-paginada
+        [cargando]="cargando()"
+        [vacio]="!cargando() && incidencias().length === 0"
+        [total]="incidencias().length"
+        [pagina]="1"
+        [porPagina]="incidencias().length || 10"
+        textoItems="incidencias"
+        textoVacio="No hay incidencias registradas en el día.">
+        <thead>
+          <tr>
+            <th>HORA</th>
+            <th>TIPO</th>
+            <th>TÉCNICO</th>
+            <th>SERVICIO</th>
+            <th>SEVERIDAD</th>
+            <th>DETALLE</th>
+            <th>ESTADO</th>
+            <th class="centro">ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of incidencias(); track i.idIncidencia) {
+            <tr (click)="verDetalleServicio(i.idServicio)" class="fila-clic">
+              <td><strong>{{ i.hora }}</strong></td>
+              <td>{{ i.tipoLabel }}</td>
+              <td>{{ i.tecnico }}</td>
+              <td>{{ i.numeroServicio }}</td>
+              <td>
+                @switch (i.severidad) {
+                  @case ('critica')     { <span class="chip chip--rojo">Crítica</span> }
+                  @case ('advertencia') { <span class="chip chip--ambar">Advertencia</span> }
+                  @default              { <span class="chip chip--azul">Info</span> }
+                }
+              </td>
+              <td><small class="sub">{{ i.detalle }}</small></td>
+              <td>
+                @if (i.resuelta) {
+                  <span class="chip chip--verde">Resuelta</span>
+                } @else {
+                  <span class="chip chip--ambar">Activa</span>
+                }
+              </td>
+              <td class="centro acciones" (click)="$event.stopPropagation()">
+                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                            ariaLabel="Ver detalle" title="Ver detalle"
+                            (clic)="verDetalleServicio(i.idServicio)" />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </app-tabla-paginada>
+    }
+  } @else if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando seguimiento operativo…
+    </div>
+  }
+
+  <!-- Modal detalle del servicio (HU-52) -->
+  @if (idDetalleAbierto(); as id) {
+    <app-modal-detalle-servicio
+      [idServicio]="id"
+      (cerrar)="cerrarDetalle()"
+      (actualizado)="onDetalleActualizado()" />
+  }
+</div>
