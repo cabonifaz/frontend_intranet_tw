@@ -19,6 +19,8 @@ import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tab
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
 import { ModalDetalleServicioComponent } from '../modal-detalle-servicio/modal-detalle-servicio.component';
+import { ModalDetalleIncidenciaComponent } from '../modal-detalle-incidencia/modal-detalle-incidencia.component';
+import { DemoraIncidenciaServicio } from '../../../../core/models/seguimiento-operativo.model';
 import { MapaSeguimientoComponent, MarcadorMapa } from '../mapa-seguimiento.component';
 
 type Tab = 'vista_principal' | 'servicios' | 'tecnicos' | 'incidencias';
@@ -38,7 +40,7 @@ const REFRESCO_MINIMO_SEG = 5;
   selector: 'app-lista-seguimiento-operativo',
   imports: [
     CommonModule, FormsModule, HeaderBandejaComponent, KpiGridComponent, KpiCardComponent, TablaPaginadaComponent,
-    ButtonComponent, BarraFiltrosBandejaComponent, ModalDetalleServicioComponent, MapaSeguimientoComponent,
+    ButtonComponent, BarraFiltrosBandejaComponent, ModalDetalleServicioComponent, ModalDetalleIncidenciaComponent, MapaSeguimientoComponent,
   ],
   templateUrl: './lista-seguimiento-operativo.component.html',
   styleUrl: './lista-seguimiento-operativo.component.scss',
@@ -60,6 +62,11 @@ export class ListaSeguimientoOperativoComponent implements OnInit, OnDestroy {
   readonly errorActualizacion = signal<string | null>(null);
   readonly tab      = signal<Tab>('vista_principal');
   readonly idDetalleAbierto = signal<number | null>(null);
+
+  /** HU-53 — Vista de detalle de incidencia abierta desde el modal servicio. */
+  readonly incidenciaAbierta = signal<{ idServicio: number; numeroOs: string; evento: DemoraIncidenciaServicio } | null>(null);
+  /** Guarda cuál servicio reabrir cuando se cierre el modal de incidencia. */
+  private idServicioPrevio: number | null = null;
 
   // ─── Filtros ──────────────────────────────────────────────────────────
   // Catálogos para los selects del popover.
@@ -207,6 +214,25 @@ export class ListaSeguimientoOperativoComponent implements OnInit, OnDestroy {
   }
 
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
+
+  /** El modal de servicio emitió "ver incidencia": cerramos el modal servicio y abrimos el otro. */
+  onVerIncidencia(payload: { evento: DemoraIncidenciaServicio; numeroOs: string }): void {
+    const idServicio = this.idDetalleAbierto();
+    if (!idServicio) return;
+    this.idServicioPrevio = idServicio;
+    this.idDetalleAbierto.set(null);
+    this.incidenciaAbierta.set({ idServicio, numeroOs: payload.numeroOs, evento: payload.evento });
+  }
+
+  /** Al cerrar el modal de incidencia, reabrimos el de detalle servicio. */
+  onCerrarIncidencia(): void {
+    const prev = this.idServicioPrevio;
+    this.incidenciaAbierta.set(null);
+    if (prev) {
+      this.idDetalleAbierto.set(prev);
+      this.idServicioPrevio = null;
+    }
+  }
 
   async onDetalleActualizado(): Promise<void> {
     await this.cargar(true);

@@ -7,8 +7,8 @@ import {
   COLOR_DEMORA_EN_RUTA, COLOR_DEMORA_INGRESO, etiquetaEstadoCampo, formatearDistancia, formatearDuracionMin,
 } from '../../../../core/services/seguimiento-operativo-mapper';
 import {
-  ConexionGps, DetalleServicioSeguimiento, EstadoEquipoCierre, EstadoEquipoServicio, EstadoTecnicoCampo,
-  FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
+  ConexionGps, DemoraIncidenciaServicio, DetalleServicioSeguimiento, EstadoEquipoCierre, EstadoEquipoServicio,
+  EstadoTecnicoCampo, FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
 } from '../../../../core/models/seguimiento-operativo.model';
 import { FormularioRegistroAsistenteApi, SeccionEquipo, SeccionEquipoApi } from '../../../../core/models/seguimiento-operativo-api.model';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
@@ -51,6 +51,8 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   readonly cerrar     = output<void>();
   readonly actualizado = output<void>();
+  /** El padre coordina cerrar este modal y abrir el de detalle de incidencia (incluye el N° OS para el header). */
+  readonly verIncidencia = output<{ evento: DemoraIncidenciaServicio; numeroOs: string }>();
 
   readonly tab      = signal<TabDetalle>('resumen');
   readonly cargando = signal(true);
@@ -68,11 +70,6 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly cargandoAuditoriaCierre = signal(false);
   readonly mostrandoAuditoria = signal(false);
 
-  /** Clave de la incidencia/demora expandida (null = todas colapsadas). */
-  readonly incidenciaExpandida = signal<string | null>(null);
-  /** Cache de detalles cargados: clave → { descripcion extendida, evidencia url }. */
-  readonly detalleIncidencias = signal<Map<string, { descripcion: string | null; evidenciaUrl: string | null }>>(new Map());
-  readonly cargandoDetalleIncidencia = signal<string | null>(null);
 
   /** Sub-tab activo por equipo (drill-down). Key = idEquipo, value = sección. */
   readonly subtabActivoPorEquipo = signal<Map<number, SeccionEquipo>>(new Map());
@@ -109,6 +106,31 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     const list = todos.filter(e => filtros[e.tipo]);
     return this.ordenTimeline() === 'reciente' ? [...list].reverse() : list;
   });
+
+  /** Mapa clave → DemoraIncidenciaServicio: usado por el timeline para saber si un evento tiene foto adjunta. */
+  readonly demorasPorClave = computed<Map<string, DemoraIncidenciaServicio>>(() => {
+    const filas = this.detalle()?.demoras ?? [];
+    const m = new Map<string, DemoraIncidenciaServicio>();
+    for (const f of filas) m.set(f.idDemora, f);
+    return m;
+  });
+
+  /** Devuelve la demora/incidencia si el evento del timeline tiene una (match por clave), o null. */
+  demoraDeEvento(idEvento: string): DemoraIncidenciaServicio | null {
+    return this.demorasPorClave().get(idEvento) ?? null;
+  }
+
+  /** true si el evento del timeline corresponde a una demora/registro que tiene foto adjunta. */
+  eventoTieneFoto(idEvento: string): boolean {
+    const d = this.demoraDeEvento(idEvento);
+    return !!d && !!d.nFotos && d.nFotos > 0;
+  }
+
+  /** Click en un evento del timeline: si corresponde a una demora/registro, abre el modal detalle. */
+  onClicEventoTimeline(idEvento: string): void {
+    const d = this.demoraDeEvento(idEvento);
+    if (d) this.verIncidencia.emit({ evento: d, numeroOs: this.cabecera()?.numero ?? '' });
+  }
 
   private temporizador: ReturnType<typeof setTimeout> | null = null;
   private destruido = false;
@@ -198,6 +220,8 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destruido = true;
     this.limpiarTemporizador();
+    const previo = this.evidenciaPreview();
+    if (previo) URL.revokeObjectURL(previo);
   }
 
   async cargar(silencioso = false): Promise<void> {
@@ -318,37 +342,9 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     return (a?.entradas ?? []) as { fecha: string; origen: string; accion: string; usuario: string | null; descripcion: string | null }[];
   }
 
-  /** Toggle del detalle de una incidencia. Carga la info extendida la primera vez. */
-  async toggleIncidencia(clave: string): Promise<void> {
-    if (this.incidenciaExpandida() === clave) {
-      this.incidenciaExpandida.set(null);
-      return;
-    }
-    this.incidenciaExpandida.set(clave);
-    if (this.detalleIncidencias().has(clave)) return;
-    this.cargandoDetalleIncidencia.set(clave);
-    try {
-      const r = await this.svc.obtenerDetalleIncidencia(this.idServicio(), clave);
-      const fila = r.filas?.[0];
-      const m = new Map(this.detalleIncidencias());
-      m.set(clave, {
-        descripcion:  fila?.descripcion ?? null,
-        evidenciaUrl: fila?.evidencia ?? null,
-      });
-      this.detalleIncidencias.set(m);
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el detalle del registro.');
-    } finally {
-      this.cargandoDetalleIncidencia.set(null);
-    }
-  }
-
-  estaExpandidaIncidencia(clave: string): boolean {
-    return this.incidenciaExpandida() === clave;
-  }
-
-  detalleIncidenciaDe(clave: string): { descripcion: string | null; evidenciaUrl: string | null } | null {
-    return this.detalleIncidencias().get(clave) ?? null;
+  /** Emite al padre para que cierre este modal y abra el de detalle de la incidencia. */
+  abrirIncidenciaModal(ev: DemoraIncidenciaServicio): void {
+    this.verIncidencia.emit({ evento: ev, numeroOs: this.cabecera()?.numero ?? '' });
   }
 
   estaExpandido(idEquipo: number): boolean {
@@ -584,6 +580,12 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly demDuracionMin   = signal<number | null>(null);
   readonly demDescripcion   = signal<string>('');
   readonly demImpacto       = signal<'retrasa' | 'detiene' | null>(null);
+  // HU-53 evidencia foto (opcional en los 3 modos: observación, demora/incidente y cambio de estado crítico)
+  readonly evidenciaArchivo = signal<File | null>(null);
+  readonly evidenciaPreview = signal<string | null>(null);
+  readonly subiendoEvidencia = signal(false);
+  /** JPG/PNG/WEBP hasta 5 MB (restricción del back). */
+  readonly MAX_EVIDENCIA_BYTES = 5 * 1024 * 1024;
 
   // Cambio de Estado crítico — catálogos vienen del back (formRegistro.motivos / .estados)
   readonly cesIdMotivo     = signal<number | null>(null);
@@ -612,6 +614,35 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     this.obsFuente.set(this.obsFuente() === f ? null : f);
   }
 
+  /** HU-53 — Selección del archivo de evidencia (opcional en los 3 modos). Valida tipo y tamaño en el front. */
+  onSeleccionarEvidencia(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0] ?? null;
+    if (!archivo) return;
+    const tiposValidos = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!tiposValidos.includes(archivo.type)) {
+      this.toast.error('Solo se admiten imágenes JPG, PNG o WEBP.');
+      input.value = '';
+      return;
+    }
+    if (archivo.size > this.MAX_EVIDENCIA_BYTES) {
+      this.toast.error(`La imagen supera el límite de 5 MB (${(archivo.size / 1024 / 1024).toFixed(1)} MB).`);
+      input.value = '';
+      return;
+    }
+    const previoAnterior = this.evidenciaPreview();
+    if (previoAnterior) URL.revokeObjectURL(previoAnterior);
+    this.evidenciaArchivo.set(archivo);
+    this.evidenciaPreview.set(URL.createObjectURL(archivo));
+  }
+
+  quitarEvidencia(): void {
+    const previo = this.evidenciaPreview();
+    if (previo) URL.revokeObjectURL(previo);
+    this.evidenciaArchivo.set(null);
+    this.evidenciaPreview.set(null);
+  }
+
   /** GET …/registros — primero al abrir el tab, se mantiene con los últimos valores. */
   async cargarFormularioRegistro(): Promise<void> {
     this.cargandoFormRegistro.set(true);
@@ -632,6 +663,20 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
       const modoBack =
         this.modoRegistro() === 'observacion'       ? 'observacion' :
         this.modoRegistro() === 'demora_incidente'  ? 'demora'      : 'cambio_estado';
+
+      // HU-53 — Si hay foto adjunta (en cualquiera de los 3 modos), la subimos primero
+      // y mandamos la URL devuelta como evidenciaUrl en el POST /registros.
+      let evidenciaUrl: string | null = null;
+      if (this.evidenciaArchivo()) {
+        this.subiendoEvidencia.set(true);
+        try {
+          const subida = await this.svc.subirEvidencia(this.idServicio(), this.evidenciaArchivo()!);
+          evidenciaUrl = subida.url;
+        } finally {
+          this.subiendoEvidencia.set(false);
+        }
+      }
+
       const r = await this.svc.registrarAsistente(this.idServicio(), {
         modo:        modoBack,
         descripcion: this.modoRegistro() === 'observacion' ? this.obsDescripcion() : this.demDescripcion() || null,
@@ -640,6 +685,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
         idTipo:      this.modoRegistro() === 'demora_incidente' ? this.demIdTipo()  : null,
         duracionMin: this.modoRegistro() === 'demora_incidente' ? this.demDuracionMin() : null,
         impacto:     this.modoRegistro() === 'demora_incidente' ? this.demImpacto() : null,
+        evidenciaUrl,
         nuevoEstado: this.modoRegistro() === 'cambio_estado_critico' ? this.cesNuevoEstado() : null,
         idMotivo:    this.modoRegistro() === 'cambio_estado_critico' ? this.cesIdMotivo()    : null,
         comentario:  this.modoRegistro() === 'cambio_estado_critico' ? this.cesComentario()  : null,
@@ -648,6 +694,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
       // Limpio los campos editables
       this.obsDescripcion.set(''); this.obsFuente.set(null); this.obsVincularEvento.set(null);
       this.demDescripcion.set(''); this.demDuracionMin.set(null); this.demIdTipo.set(null); this.demImpacto.set(null);
+      this.quitarEvidencia();
       this.cesComentario.set(''); this.cesIdMotivo.set(null); this.cesNuevoEstado.set(null);
       // Recargo formulario (para refrescar "Mis registros") + todo el detalle (timeline, incidencias, cabecera)
       await Promise.all([this.cargarFormularioRegistro(), this.cargar(true)]);

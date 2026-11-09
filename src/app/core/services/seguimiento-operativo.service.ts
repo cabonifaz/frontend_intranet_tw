@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   AvanceServicioApi, CierreServicioApi, ConsultaSeguimientoQs, DetalleServicioApi, FormularioRegistroAsistenteApi,
   IncidenciasSeguimientoApi, IncidenciasServicioApi, MapaServicioApi, OpcionesFiltrosSeguimientoApi,
-  RegistrarAsistenteSolicitudApi, RegistroAsistenteCreadoApi, RespuestaSeguimientoApi, ResumenSeguimientoApi,
+  EvidenciaSubidaApi, RegistrarAsistenteSolicitudApi, RegistroAsistenteCreadoApi, RespuestaSeguimientoApi, ResumenSeguimientoApi,
   SeccionEquipo, SeccionEquipoApi, ServiciosSeguimientoApi, TecnicosSeguimientoApi, TimelineServicioApi,
 } from '../models/seguimiento-operativo-api.model';
 import {
@@ -230,6 +230,45 @@ export class SeguimientoOperativoService {
       return r.datos;
     } catch (e) {
       throw this.comoError(e, 'No se pudo registrar.');
+    }
+  }
+
+  /**
+   * HU-53 — Sube la foto de evidencia asociada al servicio (solo Modo 2 Demora/Incidente).
+   * POST multipart …/servicios/{idOs}/registros/evidencia (campo "archivo").
+   * JPG/PNG/WEBP hasta 5 MB. La `url` devuelta se manda luego como `evidenciaUrl` en POST /registros.
+   */
+  async subirEvidencia(idOs: number, archivo: File): Promise<EvidenciaSubidaApi> {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
+    if (!archivo) throw new Error('No se seleccionó ningún archivo.');
+    const form = new FormData();
+    form.append('archivo', archivo, archivo.name);
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaSeguimientoApi<EvidenciaSubidaApi>>(
+          `${this.base}/servicios/${idOs}/registros/evidencia`, form,
+        ),
+      );
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo subir la evidencia.');
+      return r.datos;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo subir la evidencia.');
+    }
+  }
+
+  /**
+   * HU-53 — Devuelve la foto de evidencia de una demora/incidencia/registro como blob
+   * (el <img src> directo no envía el token, por eso viene por aquí y se usa URL.createObjectURL).
+   */
+  async obtenerEvidenciaIncidencia(idOs: number, clave: string): Promise<Blob> {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
+    if (!clave) throw new Error('El registro indicado no es válido.');
+    try {
+      return await firstValueFrom(
+        this.http.get(`${this.base}/servicios/${idOs}/incidencias/${clave}/evidencia`, { responseType: 'blob' }),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar la evidencia.');
     }
   }
 

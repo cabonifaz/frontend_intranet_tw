@@ -631,7 +631,10 @@
       <!-- Timeline (patrón .ev del sistema — modal Auditoría Expediente) -->
       <div class="aud__timeline">
         @for (ev of eventosTimelineFiltrados(); track ev.idEvento) {
-          <div class="ev" [class.ev--asistente]="ev.tipo === 'registro_asistente'">
+          <div class="ev"
+               [class.ev--asistente]="ev.tipo === 'registro_asistente'"
+               [class.ev--clickable]="demoraDeEvento(ev.idEvento)"
+               (click)="onClicEventoTimeline(ev.idEvento)">
             <div class="ev__col-fecha">
               <strong>{{ ev.hora }}</strong>
               <small>Hoy</small>
@@ -649,6 +652,12 @@
                 }
                 <span [class]="chipFuente(ev.tipo)">{{ labelFuente(ev.tipo) }}</span>
                 @if (ev.badge) { <span class="chip chip--azul">{{ ev.badge }}</span> }
+                @if (eventoTieneFoto(ev.idEvento)) {
+                  <span class="chip chip--gris chip--foto">
+                    <span class="material-symbols-outlined">photo_camera</span>
+                    Con foto
+                  </span>
+                }
               </div>
               <strong class="ev__titulo">{{ ev.titulo }}</strong>
               @if (ev.descripcion) {
@@ -741,8 +750,7 @@
           </thead>
           <tbody>
             @for (ev of d.demoras; track ev.idDemora) {
-              <tr class="fila-clic" (click)="toggleIncidencia(ev.idDemora)"
-                  [class.fila-expandida]="estaExpandidaIncidencia(ev.idDemora)">
+              <tr class="fila-clic" (click)="abrirIncidenciaModal(ev)">
                 <td><strong>{{ ev.hora }}</strong></td>
                 <td class="col-tipo">{{ ev.tipo }}</td>
                 <td>
@@ -784,33 +792,6 @@
                   }
                 </td>
               </tr>
-              @if (estaExpandidaIncidencia(ev.idDemora)) {
-                <tr class="fila-detalle-expandido">
-                  <td colspan="9">
-                    <div class="incidencia-detalle" (click)="$event.stopPropagation()">
-                      @if (cargandoDetalleIncidencia() === ev.idDemora) {
-                        <div class="subtab-estado">
-                          <span class="material-symbols-outlined spin">progress_activity</span>
-                          Cargando detalle…
-                        </div>
-                      } @else if (detalleIncidenciaDe(ev.idDemora); as det) {
-                        <div class="incidencia-detalle__grid">
-                          <div class="incidencia-detalle__texto">
-                            <small>DESCRIPCIÓN COMPLETA</small>
-                            <p>{{ det.descripcion ?? ev.motivo }}</p>
-                          </div>
-                          @if (det.evidenciaUrl) {
-                            <a class="incidencia-detalle__foto" [href]="det.evidenciaUrl" target="_blank" rel="noopener">
-                              <img [src]="det.evidenciaUrl" alt="Evidencia" loading="lazy" />
-                              <small>Ver foto completa</small>
-                            </a>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
             }
           </tbody>
         </app-tabla-paginada>
@@ -1070,6 +1051,30 @@
               </small>
             </div>
           }
+
+          <!-- HU-53: Foto de evidencia (opcional, disponible en los 3 modos) -->
+          <div class="form-grupo">
+            <label>Foto de evidencia <span class="form-grupo__opt">(opcional)</span></label>
+            @if (!evidenciaPreview()) {
+              <label class="evidencia-drop">
+                <input type="file" accept="image/jpeg,image/png,image/webp"
+                       (change)="onSeleccionarEvidencia($event)" hidden>
+                <span class="material-symbols-outlined">add_a_photo</span>
+                <span>Subir foto JPG, PNG o WEBP (máx. 5 MB)</span>
+              </label>
+            } @else {
+              <div class="evidencia-preview">
+                <img [src]="evidenciaPreview()!" alt="Evidencia">
+                <div class="evidencia-preview__info">
+                  <strong>{{ evidenciaArchivo()?.name }}</strong>
+                  <small>{{ ((evidenciaArchivo()?.size ?? 0) / 1024 / 1024).toFixed(2) }} MB</small>
+                </div>
+                <button class="evidencia-preview__quitar" type="button" (click)="quitarEvidencia()" title="Quitar">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            }
+          </div>
 
           <!-- Footer de acciones -->
           <div class="reg-form__footer">

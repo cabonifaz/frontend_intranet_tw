@@ -540,3 +540,11 @@ export interface RegistroAsistenteCreadoApi {
   notificados: number;
   estadoNuevo: string | null;
 }
+
+/** Respuesta del POST …/registros/evidencia (multipart). Solo se usa en Modo 2 Demora/Incidente. */
+export interface EvidenciaSubidaApi {
+  url:          string;
+  nombre:       string;
+  tamanoBytes:  number;
+  contentType:  string;
+}

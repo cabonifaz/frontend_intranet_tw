@@ -509,6 +509,16 @@
     <app-modal-detalle-servicio
       [idServicio]="id"
       (cerrar)="cerrarDetalle()"
-      (actualizado)="onDetalleActualizado()" />
+      (actualizado)="onDetalleActualizado()"
+      (verIncidencia)="onVerIncidencia($event)" />
+  }
+
+  <!-- Modal detalle de incidencia (HU-52/HU-53 — se abre al cerrar el modal servicio) -->
+  @if (incidenciaAbierta(); as ctx) {
+    <app-modal-detalle-incidencia
+      [idServicio]="ctx.idServicio"
+      [numeroOs]="ctx.numeroOs"
+      [evento]="ctx.evento"
+      (cerrar)="onCerrarIncidencia()" />
   }
 </div>
