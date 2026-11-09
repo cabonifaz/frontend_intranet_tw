@@ -10,6 +10,7 @@ import {
   ConexionGps, DetalleServicioSeguimiento, EstadoEquipoCierre, EstadoEquipoServicio, EstadoTecnicoCampo,
   FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
 } from '../../../../core/models/seguimiento-operativo.model';
+import { FormularioRegistroAsistenteApi, SeccionEquipo, SeccionEquipoApi } from '../../../../core/models/seguimiento-operativo-api.model';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
@@ -62,6 +63,23 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
    *  (en ejecución) se agrega automáticamente al cargar el detalle. */
   readonly equiposExpandidos = signal<Set<number>>(new Set());
 
+  /** Auditoría del cierre (tab Cierre, solo si esFinalizado). */
+  readonly auditoriaCierre = signal<unknown | null>(null);
+  readonly cargandoAuditoriaCierre = signal(false);
+  readonly mostrandoAuditoria = signal(false);
+
+  /** Clave de la incidencia/demora expandida (null = todas colapsadas). */
+  readonly incidenciaExpandida = signal<string | null>(null);
+  /** Cache de detalles cargados: clave → { descripcion extendida, evidencia url }. */
+  readonly detalleIncidencias = signal<Map<string, { descripcion: string | null; evidenciaUrl: string | null }>>(new Map());
+  readonly cargandoDetalleIncidencia = signal<string | null>(null);
+
+  /** Sub-tab activo por equipo (drill-down). Key = idEquipo, value = sección. */
+  readonly subtabActivoPorEquipo = signal<Map<number, SeccionEquipo>>(new Map());
+  /** Contenido cargado por (idEquipo, sección). Key = `${idEquipo}:${seccion}`. */
+  readonly contenidoSeccionEquipo = signal<Map<string, SeccionEquipoApi>>(new Map());
+  readonly cargandoSeccionEquipo  = signal<Set<string>>(new Set());
+
   // ─── Timeline del Día (tab 4) ─────────────────────────────────────────
   readonly tiposFiltroTimeline: readonly TipoEventoTimeline[] =
     ['hito_tecnico', 'alerta_sistema', 'demora_incidente', 'registro_asistente'];
@@ -102,6 +120,10 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     const base: TabDetalle[] = ['resumen', 'equipos', 'mapa', 'timeline', 'demoras', 'registrar'];
     return this.cabecera()?.esFinalizado ? [...base, 'cierre'] : base;
   });
+
+  /** HU-54: cuando el servicio está finalizado, Registrar queda bloqueado. */
+  readonly registrarDeshabilitado = computed<boolean>(() => !!this.cabecera()?.esFinalizado);
+  readonly tooltipRegistrarBloqueado = 'Servicio finalizado — Para registrar observaciones post-cierre, pedir reapertura al Jefe de Operaciones';
 
   // ─── Mapa GPS (tab 3): datos para el componente de mapa ──────────────────
   /** Posición actual, planta del cliente, hitos (salida/pre-llegada/llegada) y demoras con su GPS. */
@@ -226,17 +248,142 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   }
 
   toggleEquipo(idEquipo: number): void {
+    const estabaExpandido = this.equiposExpandidos().has(idEquipo);
     const set = new Set(this.equiposExpandidos());
-    if (set.has(idEquipo)) set.delete(idEquipo);
+    if (estabaExpandido) set.delete(idEquipo);
     else set.add(idEquipo);
     this.equiposExpandidos.set(set);
+    // Al expandir por primera vez, cargar el sub-tab por defecto (fotos)
+    if (!estabaExpandido) {
+      void this.cargarSeccionEquipo(idEquipo, this.subtabEquipo(idEquipo));
+    }
+  }
+
+  /** Devuelve el sub-tab activo de un equipo. Default: 'fotos'. */
+  subtabEquipo(idEquipo: number): SeccionEquipo {
+    return this.subtabActivoPorEquipo().get(idEquipo) ?? 'fotos';
+  }
+
+  contenidoSeccion(idEquipo: number, seccion: SeccionEquipo): SeccionEquipoApi | null {
+    return this.contenidoSeccionEquipo().get(`${idEquipo}:${seccion}`) ?? null;
+  }
+
+  estaCargandoSeccion(idEquipo: number, seccion: SeccionEquipo): boolean {
+    return this.cargandoSeccionEquipo().has(`${idEquipo}:${seccion}`);
+  }
+
+  /** Cambia el sub-tab de un equipo. Carga el contenido si aún no lo tiene. */
+  async cambiarSubtabEquipo(idEquipo: number, seccion: SeccionEquipo): Promise<void> {
+    const m = new Map(this.subtabActivoPorEquipo());
+    m.set(idEquipo, seccion);
+    this.subtabActivoPorEquipo.set(m);
+    await this.cargarSeccionEquipo(idEquipo, seccion);
+  }
+
+  private async cargarSeccionEquipo(idEquipo: number, seccion: SeccionEquipo): Promise<void> {
+    const key = `${idEquipo}:${seccion}`;
+    if (this.contenidoSeccionEquipo().has(key) || this.cargandoSeccionEquipo().has(key)) return;
+    const cargando = new Set(this.cargandoSeccionEquipo()); cargando.add(key);
+    this.cargandoSeccionEquipo.set(cargando);
+    try {
+      const r = await this.svc.obtenerSeccionEquipo(this.idServicio(), idEquipo, seccion);
+      const m = new Map(this.contenidoSeccionEquipo()); m.set(key, r);
+      this.contenidoSeccionEquipo.set(m);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la sección del equipo.');
+    } finally {
+      const c = new Set(this.cargandoSeccionEquipo()); c.delete(key);
+      this.cargandoSeccionEquipo.set(c);
+    }
+  }
+
+  /** Toggle del panel de auditoría del cierre. Carga la info la primera vez. */
+  async verAuditoriaCierre(): Promise<void> {
+    if (this.mostrandoAuditoria()) { this.mostrandoAuditoria.set(false); return; }
+    this.mostrandoAuditoria.set(true);
+    if (this.auditoriaCierre()) return;
+    this.cargandoAuditoriaCierre.set(true);
+    try {
+      this.auditoriaCierre.set(await this.svc.obtenerAuditoriaCierre(this.idServicio()));
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la auditoría del cierre.');
+    } finally {
+      this.cargandoAuditoriaCierre.set(false);
+    }
+  }
+
+  /** El DTO de auditoría trae { entradas: [{fecha, origen, accion, usuario, descripcion}] }. */
+  get auditoriaEntradas(): { fecha: string; origen: string; accion: string; usuario: string | null; descripcion: string | null }[] {
+    const a = this.auditoriaCierre() as { entradas?: unknown[] } | null;
+    return (a?.entradas ?? []) as { fecha: string; origen: string; accion: string; usuario: string | null; descripcion: string | null }[];
+  }
+
+  /** Toggle del detalle de una incidencia. Carga la info extendida la primera vez. */
+  async toggleIncidencia(clave: string): Promise<void> {
+    if (this.incidenciaExpandida() === clave) {
+      this.incidenciaExpandida.set(null);
+      return;
+    }
+    this.incidenciaExpandida.set(clave);
+    if (this.detalleIncidencias().has(clave)) return;
+    this.cargandoDetalleIncidencia.set(clave);
+    try {
+      const r = await this.svc.obtenerDetalleIncidencia(this.idServicio(), clave);
+      const fila = r.filas?.[0];
+      const m = new Map(this.detalleIncidencias());
+      m.set(clave, {
+        descripcion:  fila?.descripcion ?? null,
+        evidenciaUrl: fila?.evidencia ?? null,
+      });
+      this.detalleIncidencias.set(m);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el detalle del registro.');
+    } finally {
+      this.cargandoDetalleIncidencia.set(null);
+    }
+  }
+
+  estaExpandidaIncidencia(clave: string): boolean {
+    return this.incidenciaExpandida() === clave;
+  }
+
+  detalleIncidenciaDe(clave: string): { descripcion: string | null; evidenciaUrl: string | null } | null {
+    return this.detalleIncidencias().get(clave) ?? null;
   }
 
   estaExpandido(idEquipo: number): boolean {
     return this.equiposExpandidos().has(idEquipo);
   }
 
-  cambiarTab(t: TabDetalle): void { this.tab.set(t); }
+  cambiarTab(t: TabDetalle): void {
+    // HU-54: si el servicio está finalizado, Registrar queda bloqueado (no permite navegación)
+    if (t === 'registrar' && this.registrarDeshabilitado()) {
+      this.toast.info(this.tooltipRegistrarBloqueado);
+      return;
+    }
+    this.tab.set(t);
+    // HU-53: cargar formulario del registro la primera vez que se visita la pestaña Registrar
+    if (t === 'registrar' && !this.formRegistro() && !this.cargandoFormRegistro()) {
+      this.cargarFormularioRegistro();
+    }
+  }
+
+  /** Exportar CSV de Demoras/Incidencias — sin confirmaciones, descarga directa. */
+  async exportarCsvIncidencias(): Promise<void> {
+    try {
+      const blob = await this.svc.exportarIncidenciasCsv(this.idServicio());
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `incidencias-${this.cabecera()?.numero ?? this.idServicio()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo exportar el CSV.');
+    }
+  }
 
   onCerrar(): void { this.cerrar.emit(); }
 
@@ -422,52 +569,38 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   // ─── Tab Registrar (HU-53) ────────────────────────────────────────────
   readonly modoRegistro = signal<ModoRegistro>('observacion');
 
+  /** Formulario traído del back (catálogos + contexto + mis registros de hoy). */
+  readonly formRegistro      = signal<FormularioRegistroAsistenteApi | null>(null);
+  readonly cargandoFormRegistro = signal(false);
+  readonly guardandoRegistro = signal(false);
+
   // Observación / Nota
   readonly obsDescripcion     = signal<string>('');
   readonly obsVincularEvento  = signal<string | null>(null);
-  readonly obsFuente          = signal<'llamada' | 'whatsapp' | 'reporte' | 'directa' | null>(null);
+  readonly obsFuente          = signal<'llamada_telefonica' | 'whatsapp' | 'contacto_planta' | 'observacion_directa' | null>(null);
 
-  // Demora / Incidente
-  readonly demTipo          = signal<string>('trafico');
+  // Demora / Incidente — catálogos vienen del back (formRegistro.tiposDemora)
+  readonly demIdTipo        = signal<number | null>(null);
   readonly demDuracionMin   = signal<number | null>(null);
   readonly demDescripcion   = signal<string>('');
+  readonly demImpacto       = signal<'retrasa' | 'detiene' | null>(null);
 
-  // Cambio de Estado crítico
-  readonly cesMotivo       = signal<string>('celular_robado');
-  readonly cesNuevoEstado  = signal<string>('ingreso_planta');
+  // Cambio de Estado crítico — catálogos vienen del back (formRegistro.motivos / .estados)
+  readonly cesIdMotivo     = signal<number | null>(null);
+  readonly cesNuevoEstado  = signal<string | null>(null);
   readonly cesComentario   = signal<string>('');
 
-  readonly tiposDemora = [
-    'Tráfico', 'Accidente propio', 'Accidente ajeno', 'Falla vehículo',
-    'Clima adverso', 'Cliente no disponible', 'Problema de acceso',
-    'Falta repuesto', 'Otros',
-  ] as const;
-
-  readonly motivosCriticos: { id: string; label: string }[] = [
-    { id: 'celular_robado',  label: 'Celular robado / perdido' },
-    { id: 'bateria_agotada', label: 'Batería agotada sin posibilidad de carga' },
-    { id: 'equipo_danado',   label: 'Equipo dañado (celular roto)' },
-    { id: 'error_app',       label: 'App móvil con error técnico' },
-    { id: 'otro',            label: 'Otro (especificar en comentario)' },
-  ];
-
-  readonly estadosManuales: { id: string; label: string }[] = [
-    { id: 'salida',         label: 'Salida de base' },
-    { id: 'en_ruta',        label: 'En ruta' },
-    { id: 'llegada',        label: 'Llegada' },
-    { id: 'ingreso_planta', label: 'Ingreso a planta' },
-    { id: 'inicio_servicio',label: 'Inicio de servicio' },
-    { id: 'finalizado',     label: 'Finalizado' },
-  ];
-
   readonly puedeRegistrar = computed<boolean>(() => {
+    const ctx = this.formRegistro()?.contexto;
+    if (!ctx?.puedeRegistrar) return false;
+    if (this.guardandoRegistro()) return false;
     switch (this.modoRegistro()) {
       case 'observacion':
         return this.obsDescripcion().trim().length > 0;
       case 'demora_incidente':
-        return this.demDescripcion().trim().length > 0;
+        return this.demDescripcion().trim().length > 0 && this.demIdTipo() != null;
       case 'cambio_estado_critico':
-        return this.cesComentario().trim().length > 0;
+        return this.cesComentario().trim().length > 0 && !!this.cesNuevoEstado() && this.cesIdMotivo() != null;
     }
   });
 
@@ -475,15 +608,55 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     this.modoRegistro.set(m);
   }
 
-  setObsFuente(f: 'llamada' | 'whatsapp' | 'reporte' | 'directa'): void {
+  setObsFuente(f: 'llamada_telefonica' | 'whatsapp' | 'contacto_planta' | 'observacion_directa'): void {
     this.obsFuente.set(this.obsFuente() === f ? null : f);
+  }
+
+  /** GET …/registros — primero al abrir el tab, se mantiene con los últimos valores. */
+  async cargarFormularioRegistro(): Promise<void> {
+    this.cargandoFormRegistro.set(true);
+    try {
+      this.formRegistro.set(await this.svc.obtenerFormularioRegistro(this.idServicio()));
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el formulario de registro.');
+    } finally {
+      this.cargandoFormRegistro.set(false);
+    }
   }
 
   async onRegistrar(): Promise<void> {
     if (!this.puedeRegistrar()) return;
-    // HU-53: el backend ya expone POST …/servicios/{idOs}/registros (RegistroAsistenteController), pero esta
-    // pestaña todavía no está conectada: se avisa para no dar por guardado un registro que no se envió.
-    this.toast.info('El registro del Asistente (HU-53) aún no está conectado al servidor: no se guardó nada.');
+    this.guardandoRegistro.set(true);
+    try {
+      // Mapear modo del front → modo del back (observacion | demora | cambio_estado)
+      const modoBack =
+        this.modoRegistro() === 'observacion'       ? 'observacion' :
+        this.modoRegistro() === 'demora_incidente'  ? 'demora'      : 'cambio_estado';
+      const r = await this.svc.registrarAsistente(this.idServicio(), {
+        modo:        modoBack,
+        descripcion: this.modoRegistro() === 'observacion' ? this.obsDescripcion() : this.demDescripcion() || null,
+        fuente:      this.modoRegistro() === 'observacion' ? this.obsFuente()      : null,
+        vinculo:     this.modoRegistro() === 'observacion' ? this.obsVincularEvento() : null,
+        idTipo:      this.modoRegistro() === 'demora_incidente' ? this.demIdTipo()  : null,
+        duracionMin: this.modoRegistro() === 'demora_incidente' ? this.demDuracionMin() : null,
+        impacto:     this.modoRegistro() === 'demora_incidente' ? this.demImpacto() : null,
+        nuevoEstado: this.modoRegistro() === 'cambio_estado_critico' ? this.cesNuevoEstado() : null,
+        idMotivo:    this.modoRegistro() === 'cambio_estado_critico' ? this.cesIdMotivo()    : null,
+        comentario:  this.modoRegistro() === 'cambio_estado_critico' ? this.cesComentario()  : null,
+      });
+      this.toast.exito(`Registro creado · ${r.notificados} notificado(s).`);
+      // Limpio los campos editables
+      this.obsDescripcion.set(''); this.obsFuente.set(null); this.obsVincularEvento.set(null);
+      this.demDescripcion.set(''); this.demDuracionMin.set(null); this.demIdTipo.set(null); this.demImpacto.set(null);
+      this.cesComentario.set(''); this.cesIdMotivo.set(null); this.cesNuevoEstado.set(null);
+      // Recargo formulario (para refrescar "Mis registros") + todo el detalle (timeline, incidencias, cabecera)
+      await Promise.all([this.cargarFormularioRegistro(), this.cargar(true)]);
+      this.actualizado.emit();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo registrar.');
+    } finally {
+      this.guardandoRegistro.set(false);
+    }
   }
 
   // ─── Demoras / Incidencias (helpers) ──────────────────────────────────

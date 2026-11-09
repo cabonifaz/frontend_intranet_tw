@@ -35,8 +35,15 @@
     <!-- Tabs -->
     <div class="tabs-bandeja">
       @for (t of tabsVisibles(); track t) {
-        <button class="tab" [class.tab--activa]="tab() === t" (click)="cambiarTab(t)">
-          <span class="material-symbols-outlined">{{ tabIcono(t) }}</span>
+        <button class="tab"
+                [class.tab--activa]="tab() === t"
+                [class.tab--deshabilitada]="t === 'registrar' && registrarDeshabilitado()"
+                [disabled]="t === 'registrar' && registrarDeshabilitado()"
+                [title]="t === 'registrar' && registrarDeshabilitado() ? tooltipRegistrarBloqueado : ''"
+                (click)="cambiarTab(t)">
+          <span class="material-symbols-outlined">
+            {{ t === 'registrar' && registrarDeshabilitado() ? 'lock' : tabIcono(t) }}
+          </span>
           {{ tabLabel(t) }}
         </button>
       }
@@ -306,36 +313,89 @@
               }
             </div>
 
-            <!-- Sub-tabs con contadores + placeholder (desplegable con "Ver detalle completo") -->
+            <!-- Sub-tabs con contadores + contenido dinámico del back -->
             @if (estaExpandido(eq.idEquipo)) {
               <div class="equipo-card__subtabs">
-                <button class="subtab subtab--activo">
+                <button class="subtab" [class.subtab--activo]="subtabEquipo(eq.idEquipo) === 'fotos'"
+                        (click)="cambiarSubtabEquipo(eq.idEquipo, 'fotos')">
                   <span class="material-symbols-outlined">photo_library</span>
                   Fotos ({{ eq.nFotos }})
                 </button>
-                <button class="subtab">
+                <button class="subtab" [class.subtab--activo]="subtabEquipo(eq.idEquipo) === 'ensayos'"
+                        (click)="cambiarSubtabEquipo(eq.idEquipo, 'ensayos')">
                   <span class="material-symbols-outlined">science</span>
                   Ensayos ({{ eq.nEnsayos }})
                 </button>
-                <button class="subtab">
+                <button class="subtab" [class.subtab--activo]="subtabEquipo(eq.idEquipo) === 'documentos'"
+                        (click)="cambiarSubtabEquipo(eq.idEquipo, 'documentos')">
                   <span class="material-symbols-outlined">description</span>
                   Documentos ({{ eq.nDocumentos }})
                 </button>
-                <button class="subtab">
+                <button class="subtab" [class.subtab--activo]="subtabEquipo(eq.idEquipo) === 'observaciones'"
+                        (click)="cambiarSubtabEquipo(eq.idEquipo, 'observaciones')">
                   <span class="material-symbols-outlined">forum</span>
                   Observaciones ({{ eq.nObservaciones }})
                 </button>
-                <button class="subtab">
+                <button class="subtab" [class.subtab--activo]="subtabEquipo(eq.idEquipo) === 'mediciones'"
+                        (click)="cambiarSubtabEquipo(eq.idEquipo, 'mediciones')">
                   <span class="material-symbols-outlined">straighten</span>
                   Mediciones ({{ eq.nMediciones > 0 ? eq.nMediciones : 'en vivo' }})
                 </button>
               </div>
 
-              <!-- Placeholder del contenido del sub-tab -->
-              <div class="subtab-placeholder">
-                <span class="material-symbols-outlined">image</span>
-                <p><strong>Fotos cargadas por el técnico desde la app móvil</strong></p>
-                <small class="muted">Galería de fotos — integración con el back pendiente</small>
+              <!-- Contenido del sub-tab -->
+              @let activo = subtabEquipo(eq.idEquipo);
+              @let seccion = contenidoSeccion(eq.idEquipo, activo);
+              <div class="subtab-contenido">
+                @if (estaCargandoSeccion(eq.idEquipo, activo)) {
+                  <div class="subtab-estado">
+                    <span class="material-symbols-outlined spin">progress_activity</span>
+                    Cargando {{ activo }}…
+                  </div>
+                } @else if (seccion && seccion.elementos.length === 0) {
+                  <div class="subtab-estado">
+                    <span class="material-symbols-outlined">inbox</span>
+                    Sin elementos en {{ activo }}.
+                  </div>
+                } @else if (seccion) {
+                  <!-- Fotos: grid de miniaturas -->
+                  @if (activo === 'fotos') {
+                    <div class="subtab-fotos">
+                      @for (el of seccion.elementos; track el.id) {
+                        <a class="subtab-foto" [href]="el.url" target="_blank" rel="noopener"
+                           [title]="el.titulo + (el.detalle ? ' · ' + el.detalle : '')">
+                          @if (el.url) {
+                            <img [src]="el.url" [alt]="el.titulo" loading="lazy" />
+                          } @else {
+                            <span class="material-symbols-outlined">image</span>
+                          }
+                          <small>{{ el.fecha ?? '—' }}</small>
+                        </a>
+                      }
+                    </div>
+                  } @else {
+                    <!-- Lista genérica: ensayos, documentos, observaciones, mediciones -->
+                    <ul class="subtab-lista">
+                      @for (el of seccion.elementos; track el.id) {
+                        <li>
+                          <div class="subtab-lista__texto">
+                            <strong>{{ el.titulo }}</strong>
+                            @if (el.detalle) { <small>{{ el.detalle }}</small> }
+                            @if (el.resultado) { <small class="subtab-lista__res">{{ el.resultado }}</small> }
+                          </div>
+                          <div class="subtab-lista__meta">
+                            @if (el.fecha) { <small>{{ el.fecha }}</small> }
+                            @if (el.url) {
+                              <a class="subtab-lista__link" [href]="el.url" target="_blank" rel="noopener">
+                                <span class="material-symbols-outlined">open_in_new</span>
+                              </a>
+                            }
+                          </div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                }
               </div>
             }
 
@@ -649,6 +709,13 @@
           <span class="material-symbols-outlined">event_note</span>
           <h4>Eventos no planificados del día en {{ d.cabecera.numero }}</h4>
           <small class="bloque__sub">Vista cronológica · el GPS lleva al mapa del servicio</small>
+          <div style="margin-left: auto;">
+            <app-button variant="secondary" tamano="sm" icono="download"
+                        [disabled]="d.demoras.length === 0"
+                        (clic)="exportarCsvIncidencias()">
+              Exportar CSV
+            </app-button>
+          </div>
         </div>
 
         <app-tabla-paginada
@@ -674,7 +741,8 @@
           </thead>
           <tbody>
             @for (ev of d.demoras; track ev.idDemora) {
-              <tr>
+              <tr class="fila-clic" (click)="toggleIncidencia(ev.idDemora)"
+                  [class.fila-expandida]="estaExpandidaIncidencia(ev.idDemora)">
                 <td><strong>{{ ev.hora }}</strong></td>
                 <td class="col-tipo">{{ ev.tipo }}</td>
                 <td>
@@ -716,6 +784,33 @@
                   }
                 </td>
               </tr>
+              @if (estaExpandidaIncidencia(ev.idDemora)) {
+                <tr class="fila-detalle-expandido">
+                  <td colspan="9">
+                    <div class="incidencia-detalle" (click)="$event.stopPropagation()">
+                      @if (cargandoDetalleIncidencia() === ev.idDemora) {
+                        <div class="subtab-estado">
+                          <span class="material-symbols-outlined spin">progress_activity</span>
+                          Cargando detalle…
+                        </div>
+                      } @else if (detalleIncidenciaDe(ev.idDemora); as det) {
+                        <div class="incidencia-detalle__grid">
+                          <div class="incidencia-detalle__texto">
+                            <small>DESCRIPCIÓN COMPLETA</small>
+                            <p>{{ det.descripcion ?? ev.motivo }}</p>
+                          </div>
+                          @if (det.evidenciaUrl) {
+                            <a class="incidencia-detalle__foto" [href]="det.evidenciaUrl" target="_blank" rel="noopener">
+                              <img [src]="det.evidenciaUrl" alt="Evidencia" loading="lazy" />
+                              <small>Ver foto completa</small>
+                            </a>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
             }
           </tbody>
         </app-tabla-paginada>
@@ -822,8 +917,8 @@
               <select [ngModel]="obsVincularEvento()"
                       (ngModelChange)="obsVincularEvento.set($event)">
                 <option [ngValue]="null">— Sin vincular —</option>
-                @for (ev of d.timeline; track ev.idEvento) {
-                  <option [ngValue]="ev.idEvento">{{ ev.hora }} · {{ ev.titulo }}</option>
+                @for (ev of formRegistro()?.eventosVinculables ?? []; track ev.clave) {
+                  <option [value]="ev.clave">{{ ev.hora }} · {{ ev.titulo }}</option>
                 }
               </select>
               <small class="form-grupo__hint">Si vinculás con un evento, tu nota aparecerá debajo de ese evento en el timeline.</small>
@@ -832,20 +927,20 @@
             <div class="form-grupo">
               <label>Fuente de la información <span class="opt">(opcional)</span></label>
               <div class="form-chips">
-                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'llamada'"
-                        (click)="setObsFuente('llamada')">
+                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'llamada_telefonica'"
+                        (click)="setObsFuente('llamada_telefonica')">
                   <span class="material-symbols-outlined">call</span> Llamada telefónica
                 </button>
                 <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'whatsapp'"
                         (click)="setObsFuente('whatsapp')">
                   <span class="material-symbols-outlined">chat</span> WhatsApp
                 </button>
-                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'reporte'"
-                        (click)="setObsFuente('reporte')">
+                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'contacto_planta'"
+                        (click)="setObsFuente('contacto_planta')">
                   <span class="material-symbols-outlined">assignment</span> Reporte del contacto en planta
                 </button>
-                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'directa'"
-                        (click)="setObsFuente('directa')">
+                <button class="chip-toggle" [class.chip-toggle--activo]="obsFuente() === 'observacion_directa'"
+                        (click)="setObsFuente('observacion_directa')">
                   <span class="material-symbols-outlined">visibility</span> Observación directa
                 </button>
               </div>
@@ -874,11 +969,22 @@
 
             <div class="form-grupo">
               <label>Tipo de demora o incidente <span class="req">*</span></label>
-              <select [ngModel]="demTipo()" (ngModelChange)="demTipo.set($event)">
-                @for (t of tiposDemora; track t) {
-                  <option [value]="t">{{ t }}</option>
+              <select [ngModel]="demIdTipo()" (ngModelChange)="demIdTipo.set($event)">
+                <option [ngValue]="null">— Seleccionar —</option>
+                @for (t of formRegistro()?.tiposDemora ?? []; track t.id) {
+                  <option [ngValue]="t.id">{{ t.nombre }}</option>
                 }
               </select>
+            </div>
+
+            <div class="form-grupo">
+              <label>Impacto <span class="opt">(opcional)</span></label>
+              <div class="form-chips">
+                <button class="chip-toggle" [class.chip-toggle--activo]="demImpacto() === 'retrasa'"
+                        (click)="demImpacto.set(demImpacto() === 'retrasa' ? null : 'retrasa')">Retrasa</button>
+                <button class="chip-toggle" [class.chip-toggle--activo]="demImpacto() === 'detiene'"
+                        (click)="demImpacto.set(demImpacto() === 'detiene' ? null : 'detiene')">Detiene</button>
+              </div>
             </div>
 
             <div class="form-grupo">
@@ -927,9 +1033,10 @@
 
             <div class="form-grupo">
               <label>Motivo del cambio manual <span class="req">*</span></label>
-              <select [ngModel]="cesMotivo()" (ngModelChange)="cesMotivo.set($event)">
-                @for (m of motivosCriticos; track m.id) {
-                  <option [value]="m.id">{{ m.label }}</option>
+              <select [ngModel]="cesIdMotivo()" (ngModelChange)="cesIdMotivo.set($event)">
+                <option [ngValue]="null">— Seleccionar —</option>
+                @for (m of formRegistro()?.motivos ?? []; track m.id) {
+                  <option [ngValue]="m.id">{{ m.nombre }}</option>
                 }
               </select>
             </div>
@@ -937,11 +1044,17 @@
             <div class="form-grupo">
               <label>Nuevo estado del servicio <span class="req">*</span></label>
               <select [ngModel]="cesNuevoEstado()" (ngModelChange)="cesNuevoEstado.set($event)">
-                @for (e of estadosManuales; track e.id) {
-                  <option [value]="e.id">{{ e.label }}</option>
+                <option [ngValue]="null">— Seleccionar —</option>
+                @for (e of formRegistro()?.estados ?? []; track e.codigo) {
+                  <option [value]="e.codigo" [disabled]="!e.permitido">
+                    {{ e.nombre }} @if (!e.permitido) { (no permitido) }
+                  </option>
                 }
               </select>
-              <small class="form-grupo__hint">Solo podés avanzar el estado, no retroceder.</small>
+              <small class="form-grupo__hint">
+                Solo podés avanzar el estado, no retroceder.
+                @if (formRegistro()?.contexto?.estadoActual) { Actualmente: {{ formRegistro()!.contexto.estadoActual }}. }
+              </small>
             </div>
 
             <div class="form-grupo">
@@ -1136,6 +1249,46 @@
             }
           } @else {
             <p class="vacio-bloque">Este servicio no tiene un acta de conformidad registrada.</p>
+          }
+        </div>
+
+        <!-- Auditoría del servicio (historial completo post-cierre) -->
+        <div class="auditoria-cierre">
+          <button class="auditoria-cierre__toggle" (click)="verAuditoriaCierre()">
+            <span class="material-symbols-outlined">history</span>
+            {{ mostrandoAuditoria() ? 'Ocultar auditoría del servicio' : 'Ver auditoría del servicio' }}
+            <span class="material-symbols-outlined">{{ mostrandoAuditoria() ? 'expand_less' : 'expand_more' }}</span>
+          </button>
+          @if (mostrandoAuditoria()) {
+            <div class="auditoria-cierre__panel">
+              @if (cargandoAuditoriaCierre()) {
+                <div class="subtab-estado">
+                  <span class="material-symbols-outlined spin">progress_activity</span>
+                  Cargando auditoría…
+                </div>
+              } @else if (auditoriaEntradas.length === 0) {
+                <div class="subtab-estado">
+                  <span class="material-symbols-outlined">inbox</span>
+                  Sin entradas de auditoría.
+                </div>
+              } @else {
+                <ul class="auditoria-lista">
+                  @for (en of auditoriaEntradas; track $index) {
+                    <li>
+                      <div class="auditoria-lista__fecha">
+                        <strong>{{ en.fecha }}</strong>
+                        <small>{{ en.origen }}</small>
+                      </div>
+                      <div class="auditoria-lista__texto">
+                        <strong>{{ en.accion }}</strong>
+                        @if (en.descripcion) { <small>{{ en.descripcion }}</small> }
+                        @if (en.usuario) { <small class="auditoria-lista__user">por {{ en.usuario }}</small> }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
           }
         </div>
       }

@@ -52,6 +52,23 @@
 
     <!-- TAB 1: Vista Principal -->
     @if (tab() === 'vista_principal') {
+      <app-barra-filtros-bandeja
+        [cantidadActivos]="nActivosPorTab('vista_principal')"
+        [(busqueda)]="busqueda"
+        placeholder="Buscar por técnico, N° OS o cliente..."
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()">
+        <div class="col-full">
+          <label>TÉCNICO</label>
+          <select [(ngModel)]="tecnicoDraft">
+            <option [ngValue]="null">Todos los técnicos</option>
+            @for (t of opcionesFiltros()?.tecnicos ?? []; track t.id) {
+              <option [ngValue]="t.id">{{ t.nombre }}</option>
+            }
+          </select>
+        </div>
+      </app-barra-filtros-bandeja>
+
       <div class="vp">
         <!-- Mapa + leyenda -->
         <section class="vp-bloque vp__mapa">
@@ -186,6 +203,44 @@
 
     <!-- TAB 2: Servicios en Campo -->
     @if (tab() === 'servicios') {
+      <app-barra-filtros-bandeja
+        [cantidadActivos]="nActivosPorTab('servicios')"
+        [(busqueda)]="busqueda"
+        placeholder="Buscar por N° OS, cliente o técnico..."
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()">
+        <div>
+          <label>TÉCNICO</label>
+          <select [(ngModel)]="tecnicoDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (t of opcionesFiltros()?.tecnicos ?? []; track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div>
+          <label>CLIENTE</label>
+          <select [(ngModel)]="clienteDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (c of opcionesFiltros()?.clientes ?? []; track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+          </select>
+        </div>
+        <div>
+          <label>ESTADO</label>
+          <select [(ngModel)]="estadoDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (e of opcionesFiltros()?.estados ?? []; track e.codigo) { <option [ngValue]="e.codigo">{{ e.nombre }}</option> }
+          </select>
+        </div>
+        <div>
+          <label>RANGO</label>
+          <select [(ngModel)]="rangoDraft">
+            <option [ngValue]="null">Todos</option>
+            <option [ngValue]="'en_curso'">En curso</option>
+            <option [ngValue]="'sin_iniciar'">Sin iniciar</option>
+            <option [ngValue]="'finalizados'">Finalizados</option>
+          </select>
+        </div>
+      </app-barra-filtros-bandeja>
+
       @if (errores().servicios; as err) {
         <div class="aviso-tab">
           <span class="material-symbols-outlined">error</span>
@@ -253,6 +308,21 @@
 
     <!-- TAB 3: Técnicos Activos -->
     @if (tab() === 'tecnicos') {
+      <app-barra-filtros-bandeja
+        [cantidadActivos]="nActivosPorTab('tecnicos')"
+        [(busqueda)]="busqueda"
+        placeholder="Buscar técnico por nombre..."
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()">
+        <div class="col-full">
+          <label>ESTADO</label>
+          <select [(ngModel)]="estadoDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (e of opcionesFiltros()?.estados ?? []; track e.codigo) { <option [ngValue]="e.codigo">{{ e.nombre }}</option> }
+          </select>
+        </div>
+      </app-barra-filtros-bandeja>
+
       @if (errores().tecnicos; as err) {
         <div class="aviso-tab">
           <span class="material-symbols-outlined">error</span>
@@ -328,6 +398,36 @@
 
     <!-- TAB 4: Incidencias del Día -->
     @if (tab() === 'incidencias') {
+      <app-barra-filtros-bandeja
+        [cantidadActivos]="nActivosPorTab('incidencias')"
+        [(busqueda)]="busqueda"
+        placeholder="Buscar por servicio, técnico o detalle..."
+        (limpiar)="limpiarFiltros()"
+        (aplicar)="aplicarFiltros()">
+        <div>
+          <label>TÉCNICO</label>
+          <select [(ngModel)]="tecnicoDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (t of opcionesFiltros()?.tecnicos ?? []; track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+          </select>
+        </div>
+        <div>
+          <label>TIPO</label>
+          <select [(ngModel)]="tipoDraft">
+            <option [ngValue]="null">Todos</option>
+            @for (tp of opcionesFiltros()?.tipos ?? []; track tp.codigo) { <option [ngValue]="tp.codigo">{{ tp.nombre }}</option> }
+          </select>
+        </div>
+        <div>
+          <label>IMPACTO</label>
+          <select [(ngModel)]="impactoDraft">
+            <option [ngValue]="null">Todos</option>
+            <option [ngValue]="'retrasa'">Retrasa</option>
+            <option [ngValue]="'detiene'">Detiene</option>
+          </select>
+        </div>
+      </app-barra-filtros-bandeja>
+
       @if (errores().incidencias; as err) {
         <div class="aviso-tab">
           <span class="material-symbols-outlined">error</span>
@@ -335,15 +435,6 @@
           <app-button variant="ghost" tamano="sm" (clic)="cargar()">Reintentar</app-button>
         </div>
       } @else {
-        @if (tarjetasIncidencias(); as tj) {
-          <div class="inc-resumen">
-            <span class="chip chip--gris">{{ tj.total }} registradas hoy</span>
-            <span class="chip chip--ambar">{{ tj.retrasan }} retrasan</span>
-            <span class="chip chip--rojo">{{ tj.detienen }} detienen</span>
-            <span class="chip chip--verde">{{ tj.registradasTecnico }} desde la app del técnico</span>
-            <span class="chip chip--azul">{{ tj.registradasAsistente }} del Asistente</span>
-          </div>
-        }
         <app-tabla-paginada
           [cargando]="cargando()"
           [vacio]="!cargando() && incidencias().length === 0"

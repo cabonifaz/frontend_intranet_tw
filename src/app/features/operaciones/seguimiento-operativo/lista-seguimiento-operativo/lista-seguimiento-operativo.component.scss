@@ -372,9 +372,6 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-// Tarjetas resumen de la pestaña Incidencias del Día
-.inc-resumen { display: flex; flex-wrap: wrap; gap: 8px; }
-
 ::ng-deep td.num    { text-align: right; }
 ::ng-deep td.centro { text-align: center; }
 ::ng-deep th.num    { text-align: right; }
@@ -505,3 +502,22 @@
     > *:last-child  { flex: 0 0 auto; }
   }
 }
+
+// ─── Filtros globales ─────────────────────────────────────────────────────
+.filtros-barra {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 0;
+}
+
+.filtros-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
+  background: #FFFFFF; border: 1px solid #CBD5E1;
+  color: #334155; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #F8FAFC; }
+  &--activo { border-color: #2563EB; color: #1D4ED8; background: #EFF6FF; }
+  &__badge { color: #DC2626; font-weight: 700; }
+}
+

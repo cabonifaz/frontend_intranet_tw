@@ -290,6 +290,7 @@ export const routes: Routes = [
       // ─── Módulo 11 — Seguimiento Operativo (Control de Campo) ────────────
       {
         path: 'operaciones/seguimiento-operativo',
+        canActivate: [permisoRutaGuard('seg_bandeja')],
         loadComponent: () =>
           import('./features/operaciones/seguimiento-operativo/lista-seguimiento-operativo/lista-seguimiento-operativo.component').then(
             m => m.ListaSeguimientoOperativoComponent

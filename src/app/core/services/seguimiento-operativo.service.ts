@@ -3,9 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  AvanceServicioApi, CierreServicioApi, DetalleServicioApi, IncidenciasSeguimientoApi,
-  IncidenciasServicioApi, MapaServicioApi, RespuestaSeguimientoApi, ResumenSeguimientoApi,
-  ServiciosSeguimientoApi, TecnicosSeguimientoApi, TimelineServicioApi,
+  AvanceServicioApi, CierreServicioApi, ConsultaSeguimientoQs, DetalleServicioApi, FormularioRegistroAsistenteApi,
+  IncidenciasSeguimientoApi, IncidenciasServicioApi, MapaServicioApi, OpcionesFiltrosSeguimientoApi,
+  RegistrarAsistenteSolicitudApi, RegistroAsistenteCreadoApi, RespuestaSeguimientoApi, ResumenSeguimientoApi,
+  SeccionEquipo, SeccionEquipoApi, ServiciosSeguimientoApi, TecnicosSeguimientoApi, TimelineServicioApi,
 } from '../models/seguimiento-operativo-api.model';
 import {
   BandejaSeguimientoOperativo, DetalleServicioSeguimiento, ParteBandeja, ParteDetalle,
@@ -44,13 +45,15 @@ export class SeguimientoOperativoService {
   /**
    * Pide las 4 pestañas en paralelo. El resumen (KPIs + Vista Principal) es obligatorio: si falla, se lanza
    * su mensaje. Si falla alguna de las otras 3, la bandeja se muestra igual y esa pestaña lleva su error.
+   * Acepta filtros opcionales que se aplican como query string en cada endpoint.
    */
-  async obtenerBandeja(): Promise<BandejaSeguimientoOperativo> {
+  async obtenerBandeja(filtros?: ConsultaSeguimientoQs): Promise<BandejaSeguimientoOperativo> {
+    const pBase = this.aQueryParams(filtros);
     const [resumen, servicios, tecnicos, incidencias] = await Promise.allSettled([
-      this.get<ResumenSeguimientoApi>(this.base),
-      this.obtenerTodosLosServicios(),
-      this.get<TecnicosSeguimientoApi>(`${this.base}/tecnicos`),
-      this.get<IncidenciasSeguimientoApi>(`${this.base}/incidencias`),
+      this.get<ResumenSeguimientoApi>(this.base, pBase),
+      this.obtenerTodosLosServicios(filtros),
+      this.get<TecnicosSeguimientoApi>(`${this.base}/tecnicos`, pBase),
+      this.get<IncidenciasSeguimientoApi>(`${this.base}/incidencias`, pBase),
     ]);
     if (resumen.status === 'rejected') throw this.comoError(resumen.reason, 'No se pudo cargar la bandeja de seguimiento.');
 
@@ -72,10 +75,12 @@ export class SeguimientoOperativoService {
   }
 
   /** /servicios viene paginado (máx. 50): se piden todas las páginas para que la tabla muestre el día completo. */
-  private async obtenerTodosLosServicios(): Promise<ServiciosSeguimientoApi> {
-    const pedir = (pagina: number): Promise<ServiciosSeguimientoApi> =>
-      this.get<ServiciosSeguimientoApi>(`${this.base}/servicios`,
-        new HttpParams().set('pagina', pagina).set('tamano', TAMANO_PAGINA_SERVICIOS));
+  private async obtenerTodosLosServicios(filtros?: ConsultaSeguimientoQs): Promise<ServiciosSeguimientoApi> {
+    const pedir = (pagina: number): Promise<ServiciosSeguimientoApi> => {
+      let p = this.aQueryParams(filtros);
+      p = p.set('pagina', pagina).set('tamano', TAMANO_PAGINA_SERVICIOS);
+      return this.get<ServiciosSeguimientoApi>(`${this.base}/servicios`, p);
+    };
 
     const primera = await pedir(1);
     const hasta = Math.min(primera.totalPaginas, MAX_PAGINAS_SERVICIOS);
@@ -83,6 +88,20 @@ export class SeguimientoOperativoService {
 
     const resto = await Promise.all(Array.from({ length: hasta - 1 }, (_, i) => pedir(i + 2)));
     return { ...primera, filas: [...primera.filas, ...resto.flatMap(p => p.filas)] };
+  }
+
+  /** Convierte un objeto de filtros a HttpParams omitiendo nulls/undefined/vacíos. */
+  private aQueryParams(filtros?: ConsultaSeguimientoQs): HttpParams {
+    let p = new HttpParams();
+    if (!filtros) return p;
+    if (filtros.idTecnico != null) p = p.set('idTecnico', String(filtros.idTecnico));
+    if (filtros.idCliente != null) p = p.set('idCliente', String(filtros.idCliente));
+    if (filtros.estado)            p = p.set('estado',   filtros.estado);
+    if (filtros.busqueda)          p = p.set('busqueda', filtros.busqueda);
+    if (filtros.rango)             p = p.set('rango',    filtros.rango);
+    if (filtros.tipo)              p = p.set('tipo',     filtros.tipo);
+    if (filtros.impacto)           p = p.set('impacto',  filtros.impacto);
+    return p;
   }
 
   // ─── Detalle del servicio (HU-52 / HU-54) ──────────────────────────────────
@@ -134,6 +153,84 @@ export class SeguimientoOperativoService {
       cierre,
       errores,
     });
+  }
+
+  /** GET /filtros — opciones de los filtros globales (técnicos, clientes, zonas, tipos, estados). */
+  async obtenerFiltros(): Promise<OpcionesFiltrosSeguimientoApi> {
+    try {
+      return await this.get<OpcionesFiltrosSeguimientoApi>(`${this.base}/filtros`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar las opciones de filtro.');
+    }
+  }
+
+  /**
+   * GET …/servicios/{idOs}/avance/{idEquipo}/{seccion} — drill-down del equipo.
+   * seccion: fotos | ensayos | documentos | observaciones | mediciones
+   */
+  async obtenerSeccionEquipo(idOs: number, idEquipo: number, seccion: SeccionEquipo): Promise<SeccionEquipoApi> {
+    try {
+      return await this.get<SeccionEquipoApi>(`${this.base}/servicios/${idOs}/avance/${idEquipo}/${seccion}`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el detalle del equipo.');
+    }
+  }
+
+  /** GET …/servicios/{idOs}/incidencias/{clave} — detalle completo de una demora/incidencia/registro. */
+  async obtenerDetalleIncidencia(idOs: number, clave: string): Promise<IncidenciasServicioApi> {
+    if (!clave) throw new Error('El registro indicado no es válido.');
+    try {
+      return await this.get<IncidenciasServicioApi>(`${this.base}/servicios/${idOs}/incidencias/${clave}`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el detalle del registro.');
+    }
+  }
+
+  /** GET …/servicios/{idOs}/cierre/auditoria — historial completo post-servicio (solo cuando esFinalizado). */
+  async obtenerAuditoriaCierre(idOs: number): Promise<unknown> {
+    try {
+      return await this.get<unknown>(`${this.base}/servicios/${idOs}/cierre/auditoria`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar la auditoría del cierre.');
+    }
+  }
+
+  /** GET …/servicios/{idOs}/incidencias/exportar — descarga el CSV generado por el back. */
+  async exportarIncidenciasCsv(idOs: number): Promise<Blob> {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
+    try {
+      return await firstValueFrom(
+        this.http.get(`${this.base}/servicios/${idOs}/incidencias/exportar`, { responseType: 'blob' }),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo exportar el CSV.');
+    }
+  }
+
+  // ─── Registro del Asistente (HU-53) ────────────────────────────────────────
+
+  /** GET …/servicios/{idOs}/registros — formulario con contexto + catálogos + mis registros de hoy. */
+  async obtenerFormularioRegistro(idOs: number): Promise<FormularioRegistroAsistenteApi> {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
+    try {
+      return await this.get<FormularioRegistroAsistenteApi>(`${this.base}/servicios/${idOs}/registros`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el formulario de registro.');
+    }
+  }
+
+  /** POST …/servicios/{idOs}/registros — crea el registro (observación / demora / cambio de estado). */
+  async registrarAsistente(idOs: number, solicitud: RegistrarAsistenteSolicitudApi): Promise<RegistroAsistenteCreadoApi> {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaSeguimientoApi<RegistroAsistenteCreadoApi>>(`${this.base}/servicios/${idOs}/registros`, solicitud),
+      );
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo registrar.');
+      return r.datos;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo registrar.');
+    }
   }
 
   // ─── HTTP ──────────────────────────────────────────────────────────────────

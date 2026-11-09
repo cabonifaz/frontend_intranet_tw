@@ -447,3 +447,96 @@ export interface CierreServicioApi {
   pie:      PieCierreApi;
   ordenes:  OrdenCierreApi[];
 }
+
+// ─── Drill-down del equipo (GET /servicios/{idOs}/avance/{idEquipo}/{seccion}) ──
+
+export type SeccionEquipo = 'fotos' | 'ensayos' | 'documentos' | 'observaciones' | 'mediciones';
+
+export interface ElementoEquipoApi {
+  id:              number;
+  titulo:          string;
+  detalle:         string | null;
+  fecha:           string | null;
+  url:             string | null;
+  resultado:       string | null;
+  ultimaHaceMin:   number | null;
+}
+
+export interface SeccionEquipoApi {
+  seccion:   string;
+  elementos: ElementoEquipoApi[];
+}
+
+// ─── Filtros globales de la bandeja (GET /filtros) ─────────────────────────
+
+export interface OpcionFiltroSeguimientoApi { id: number; nombre: string; }
+export interface OpcionCodigoSeguimientoApi { codigo: string; nombre: string; }
+
+export interface OpcionesFiltrosSeguimientoApi {
+  tecnicos: OpcionFiltroSeguimientoApi[];
+  clientes: OpcionFiltroSeguimientoApi[];
+  zonas:    string[];
+  tipos:    OpcionCodigoSeguimientoApi[];
+  estados:  OpcionCodigoSeguimientoApi[];
+}
+
+/** Query string admitido por los endpoints de la bandeja de seguimiento. */
+export interface ConsultaSeguimientoQs {
+  idTecnico?: number | null;
+  idCliente?: number | null;
+  estado?:    string | null;
+  busqueda?:  string | null;
+  rango?:     string | null;     // en_curso | finalizados | sin_iniciar (solo /servicios)
+  tipo?:      string | null;     // código del catálogo (solo /incidencias)
+  impacto?:   string | null;     // retrasa | detiene (solo /incidencias)
+}
+
+// ─── HU-53 Registro del Asistente ───────────────────────────────────────────
+// GET /api/operaciones/seguimiento/servicios/{idOs}/registros
+
+export interface ContextoRegistroAsistenteApi {
+  registrandoComo: string;
+  horaActual:      string;
+  numero:          string;
+  tecnico:         string | null;
+  estadoActual:    string;
+  nivelActual:     number;
+  puedeRegistrar:  boolean;
+  mensajeBloqueo?: string | null;
+}
+
+export interface OpcionRegistroAsistenteApi { id: number; nombre: string; codigo: string; }
+export interface EstadoRegistroAsistenteApi { codigo: string; nombre: string; nivel: number; permitido: boolean; }
+export interface EventoVinculableApi { clave: string; hora: string; titulo: string; }
+export interface MiRegistroAsistenteApi { idRegistro: number; modo: string; hora: string; texto: string; fuente: string | null; badge: string; haceMin: number; }
+
+export interface FormularioRegistroAsistenteApi {
+  contexto:           ContextoRegistroAsistenteApi;
+  tiposDemora:        OpcionRegistroAsistenteApi[];
+  motivos:            OpcionRegistroAsistenteApi[];
+  estados:            EstadoRegistroAsistenteApi[];
+  eventosVinculables: EventoVinculableApi[];
+  misRegistros:       MiRegistroAsistenteApi[];
+}
+
+/** POST /api/operaciones/seguimiento/servicios/{idOs}/registros */
+export interface RegistrarAsistenteSolicitudApi {
+  modo:         string;         // observacion | demora | cambio_estado
+  descripcion?: string | null;
+  fuente?:      string | null;
+  vinculo?:     string | null;
+  idTipo?:      number | null;
+  duracionMin?: number | null;
+  impacto?:     string | null;
+  evidenciaUrl?: string | null;
+  nuevoEstado?: string | null;
+  idMotivo?:    number | null;
+  comentario?:  string | null;
+}
+
+export interface RegistroAsistenteCreadoApi {
+  idRegistro:  number;
+  modo:        string;
+  notificados: number;
+  estadoNuevo: string | null;
+}

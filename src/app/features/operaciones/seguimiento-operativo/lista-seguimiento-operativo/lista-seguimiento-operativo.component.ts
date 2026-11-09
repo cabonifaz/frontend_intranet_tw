@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -10,11 +11,13 @@ import {
   BandejaSeguimientoOperativo, EstadoTecnicoCampo, FaseDemora, ImpactoIncidencia, OrigenIncidencia,
   PuntoMapa, SeveridadAlerta,
 } from '../../../../core/models/seguimiento-operativo.model';
+import { ConsultaSeguimientoQs, OpcionesFiltrosSeguimientoApi } from '../../../../core/models/seguimiento-operativo-api.model';
 import { HeaderBandejaComponent } from '../../../../shared/ui/header-bandeja/header-bandeja.component';
 import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
 import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
 import { ModalDetalleServicioComponent } from '../modal-detalle-servicio/modal-detalle-servicio.component';
 import { MapaSeguimientoComponent, MarcadorMapa } from '../mapa-seguimiento.component';
 
@@ -34,8 +37,8 @@ const REFRESCO_MINIMO_SEG = 5;
 @Component({
   selector: 'app-lista-seguimiento-operativo',
   imports: [
-    CommonModule, HeaderBandejaComponent, KpiGridComponent, KpiCardComponent, TablaPaginadaComponent,
-    ButtonComponent, ModalDetalleServicioComponent, MapaSeguimientoComponent,
+    CommonModule, FormsModule, HeaderBandejaComponent, KpiGridComponent, KpiCardComponent, TablaPaginadaComponent,
+    ButtonComponent, BarraFiltrosBandejaComponent, ModalDetalleServicioComponent, MapaSeguimientoComponent,
   ],
   templateUrl: './lista-seguimiento-operativo.component.html',
   styleUrl: './lista-seguimiento-operativo.component.scss',
@@ -58,12 +61,37 @@ export class ListaSeguimientoOperativoComponent implements OnInit, OnDestroy {
   readonly tab      = signal<Tab>('vista_principal');
   readonly idDetalleAbierto = signal<number | null>(null);
 
+  // ─── Filtros ──────────────────────────────────────────────────────────
+  // Catálogos para los selects del popover.
+  readonly opcionesFiltros = signal<OpcionesFiltrosSeguimientoApi | null>(null);
+  // Estado APLICADO (se envía al back). Se construye desde los drafts al dar "Aplicar".
+  readonly filtros = signal<ConsultaSeguimientoQs>({});
+
+  // Drafts bindeados con [(ngModel)] dentro del popover / barra. No disparan carga por sí solos.
+  busqueda            = '';
+  tecnicoDraft: number | null = null;
+  clienteDraft: number | null = null;
+  estadoDraft: string | null  = null;
+  rangoDraft:  string | null  = null;
+  tipoDraft:   string | null  = null;
+  impactoDraft: 'retrasa' | 'detiene' | null = null;
+
+  /** Nº de filtros avanzados aplicables a la tab vigente (sin contar búsqueda). */
+  nActivosPorTab(tab: Tab): number {
+    const f = this.filtros();
+    switch (tab) {
+      case 'vista_principal': return f.idTecnico ? 1 : 0;
+      case 'servicios':       return (f.idTecnico ? 1 : 0) + (f.idCliente ? 1 : 0) + (f.estado ? 1 : 0) + (f.rango ? 1 : 0);
+      case 'tecnicos':        return f.estado ? 1 : 0;
+      case 'incidencias':     return (f.idTecnico ? 1 : 0) + (f.tipo ? 1 : 0) + (f.impacto ? 1 : 0);
+    }
+  }
+
   readonly kpis = computed(() => this.bandeja()?.kpis);
   readonly vistaPrincipal = computed(() => this.bandeja()?.vistaPrincipal);
   readonly servicios      = computed(() => this.bandeja()?.serviciosEnCampo ?? []);
   readonly tecnicos       = computed(() => this.bandeja()?.tecnicosActivos ?? []);
   readonly incidencias    = computed(() => this.bandeja()?.incidenciasDia ?? []);
-  readonly tarjetasIncidencias = computed(() => this.bandeja()?.tarjetasIncidencias);
   readonly errores        = computed(() => this.bandeja()?.errores ?? {});
 
   /** Un pin por técnico con posición GPS; el color lo da su estado (leyenda de la pantalla). */
@@ -94,6 +122,38 @@ export class ListaSeguimientoOperativoComponent implements OnInit, OnDestroy {
     (this.vistaPrincipal()?.mapa ?? []).filter(p => p.lat === null || p.lng === null).length);
 
   async ngOnInit(): Promise<void> {
+    await Promise.all([this.cargar(), this.cargarOpcionesFiltros()]);
+  }
+
+  private async cargarOpcionesFiltros(): Promise<void> {
+    try {
+      this.opcionesFiltros.set(await this.svc.obtenerFiltros());
+    } catch { /* opcional: filtros vacíos no bloquean */ }
+  }
+
+  /** Consolida los drafts del popover + búsqueda en el estado aplicado y recarga. */
+  async aplicarFiltros(): Promise<void> {
+    this.filtros.set({
+      busqueda:  this.busqueda.trim() || null,
+      idTecnico: this.tecnicoDraft,
+      idCliente: this.clienteDraft,
+      estado:    this.estadoDraft,
+      rango:     this.rangoDraft,
+      tipo:      this.tipoDraft,
+      impacto:   this.impactoDraft,
+    });
+    await this.cargar();
+  }
+
+  async limpiarFiltros(): Promise<void> {
+    this.busqueda      = '';
+    this.tecnicoDraft  = null;
+    this.clienteDraft  = null;
+    this.estadoDraft   = null;
+    this.rangoDraft    = null;
+    this.tipoDraft     = null;
+    this.impactoDraft  = null;
+    this.filtros.set({});
     await this.cargar();
   }
 
@@ -108,7 +168,7 @@ export class ListaSeguimientoOperativoComponent implements OnInit, OnDestroy {
     this.limpiarTemporizador();
     if (!silencioso) this.cargando.set(true);
     try {
-      const r = await this.svc.obtenerBandeja();
+      const r = await this.svc.obtenerBandeja(this.filtros());
       this.bandeja.set(r);
       this.error.set(null);
       this.errorActualizacion.set(null);
