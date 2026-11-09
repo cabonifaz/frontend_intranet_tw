@@ -27,6 +27,7 @@ import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-a
 import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
 import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
 import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { TabPrecotizacionesComponent } from '../tab-precotizaciones/tab-precotizaciones.component';
 import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
@@ -38,7 +39,7 @@ import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
     FormsModule, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
     ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent, ModalSolicitarRevocacionComponent, ModalEnviarClienteComponent,
-    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, TabPrecotizacionesComponent, MonedaPipe,
     DetalleRequerimientoComponent, SiPermisoDirective, ModalComponent,
   ],
   templateUrl: './lista-propuestas.component.html',
@@ -71,6 +72,10 @@ export class ListaPropuestasComponent implements OnInit {
 
   readonly estadoActivo    = signal<EstadoPropuesta | 'todas'>('todas');
   readonly modalRqAbierto  = signal(false);
+
+  /** HU-60: tabs "Propuestas | Precotizaciones Técnicas" dentro de esta misma vista. */
+  readonly tabActivo = signal<'propuestas' | 'precotizaciones'>('propuestas');
+  cambiarTab(t: 'propuestas' | 'precotizaciones'): void { this.tabActivo.set(t); }
 
   // Modal "propuesta existente" — se abre al elegir un RQ que ya tiene una propuesta.
   readonly propuestaExistenteCtx = signal<{

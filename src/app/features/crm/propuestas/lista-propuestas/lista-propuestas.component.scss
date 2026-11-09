@@ -178,3 +178,31 @@
     gap: 10px;
   }
 }
+
+// ── Tabs CRM: Propuestas | Precotizaciones Técnicas (HU-60) ─────────────
+.tabs-crm {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #E2E8F0;
+}
+.tab-crm {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  background: transparent; border: 0;
+  border-bottom: 2px solid transparent;
+  color: #64748B; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+  margin-bottom: -1px;
+
+  &__badge {
+    background: #F1F5F9; color: #475569;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 11.5px; font-weight: 700;
+  }
+
+  &:hover { color: #0F172A; }
+  &--activa {
+    color: #2563EB; border-bottom-color: #2563EB; font-weight: 700;
+    .tab-crm__badge { background: #FEE2E2; color: #B91C1C; }
+  }
+}

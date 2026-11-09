@@ -1,0 +1,277 @@
+<div class="mdp-overlay" (click)="$event.target === $event.currentTarget && onCerrar()">
+  <div class="mdp">
+
+    <!-- ── Header ─────────────────────────────────────────────────────── -->
+    <div class="mdp__header">
+      <div class="mdp__header-izq">
+        <div class="mdp__icono"><span class="material-symbols-outlined">receipt_long</span></div>
+        <div>
+          <div class="mdp__titulo-fila">
+            <h2 class="mdp__titulo">Precotización Técnica</h2>
+            @if (cabecera(); as c) {
+              <span class="mdp__separador">/</span>
+              <span class="mdp__numero">{{ c.numero ?? '—' }}</span>
+            }
+          </div>
+          @if (cabecera(); as c) {
+            <p class="mdp__sub">
+              Emitida por <strong>{{ c.supervisor ?? '—' }}</strong>
+              @if (c.cargoSupervisor) { ({{ c.cargoSupervisor }}) }
+              · {{ c.fecha | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          }
+        </div>
+      </div>
+      <div class="mdp__header-der">
+        @if (cabecera(); as c) {
+          <span [class]="chipEstado()">{{ c.estadoLabel ?? '—' }}</span>
+        }
+        <button class="mdp__cerrar" type="button" (click)="onCerrar()" title="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Body ───────────────────────────────────────────────────────── -->
+    <div class="mdp__body">
+      @if (cargando()) {
+        <div class="loading">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando precotización...
+        </div>
+      } @else if (error(); as err) {
+        <div class="aviso-error">
+          <span class="material-symbols-outlined">error</span>
+          <div>
+            <strong>No se pudo cargar la precotización</strong>
+            <p>{{ err }}</p>
+          </div>
+        </div>
+      } @else if (cabecera(); as c) {
+
+        <!-- Banner si está convertida -->
+        @if (esConvertida()) {
+          <div class="banner-verde">
+            <span class="material-symbols-outlined">check_circle</span>
+            <div>
+              <strong>Convertida en Propuesta <span class="link">{{ c.numeroPropuestaGenerada ?? '—' }}</span></strong>
+              @if (c.estadoDetalle) { <p>{{ c.estadoDetalle }}</p> }
+              @if (c.fechaConversion || c.convertidoPor) {
+                <p class="banner__meta">
+                  @if (c.fechaConversion) { Convertida el {{ c.fechaConversion | date:'dd/MM/yyyy HH:mm' }} }
+                  @if (c.convertidoPor) { · por <strong>{{ c.convertidoPor }}</strong> }
+                </p>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ── Cliente + equipo + servicio ─────────────────────────── -->
+        <section class="card">
+          <header class="card__head">
+            <span class="material-symbols-outlined">apartment</span>
+            <h3>Datos del Cliente y Equipo</h3>
+          </header>
+          <div class="info-grid">
+            <div class="info-item">
+              <small>CLIENTE</small>
+              <strong>{{ c.razonSocial ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>RUC</small>
+              <strong>{{ c.ruc ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>SEDE</small>
+              <strong>{{ c.sede ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>REQUERIMIENTO (RQ)</small>
+              <strong class="link">{{ c.numeroRq ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>EQUIPO</small>
+              <strong>{{ c.equipo ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>CÓDIGO TW · SERIE</small>
+              <strong>{{ c.codigoTw ?? '—' }} · {{ c.numeroSerie ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>MARCA · MODELO</small>
+              <strong>{{ c.marca ?? '—' }} · {{ c.modelo ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>TIPO DE SERVICIO</small>
+              <strong>{{ c.tipoServicio ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>OS ORIGEN</small>
+              <strong class="link">{{ c.numeroOs ?? '—' }}</strong>
+            </div>
+            <div class="info-item">
+              <small>PROPUESTA ORIGEN</small>
+              <strong class="link">
+                @if (c.numeroPropuestaOrigen) {
+                  {{ c.numeroPropuestaOrigen }} v{{ c.versionPropuestaOrigen }}
+                } @else { — }
+              </strong>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Diagnóstico técnico ────────────────────────────────── -->
+        @if (c.diagnostico) {
+          <section class="card card--texto">
+            <header class="card__head">
+              <span class="material-symbols-outlined">subject</span>
+              <h3>Resumen del Diagnóstico</h3>
+            </header>
+            <p class="card__texto">{{ c.diagnostico }}</p>
+          </section>
+        }
+
+        <!-- ── Observaciones del servicio ─────────────────────────── -->
+        @if (observaciones().length > 0) {
+          <section class="card">
+            <header class="card__head">
+              <span class="material-symbols-outlined">warning</span>
+              <h3>Observaciones Detectadas</h3>
+              <span class="card__meta">{{ observaciones().length }} registradas</span>
+            </header>
+            <div class="obs-lista">
+              @for (o of observaciones(); track o.idObservacion) {
+                <article class="obs">
+                  <header class="obs__head">
+                    <span class="obs__codigo">{{ o.codigo ?? ('OBS-' + o.idObservacion) }}</span>
+                    <strong class="obs__titulo">{{ o.titulo }}</strong>
+                    <span [class]="claseNivel(o.nivelAfectacion)">{{ o.nivelAfectacion ?? '—' }}</span>
+                  </header>
+                  @if (o.descripcion) { <p class="obs__desc">{{ o.descripcion }}</p> }
+                  @if (o.ubicacion) { <small class="obs__meta"><strong>Ubicación:</strong> {{ o.ubicacion }}</small> }
+                </article>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- ── Ítems a cotizar ────────────────────────────────────── -->
+        <section class="card">
+          <header class="card__head">
+            <span class="material-symbols-outlined">inventory_2</span>
+            <h3>Ítems a Cotizar</h3>
+            <span class="card__meta">{{ items().length }} ítems del supervisor técnico</span>
+          </header>
+
+          @if (items().length === 0) {
+            <p class="vacio">La precotización no tiene ítems registrados.</p>
+          } @else {
+            <table class="tabla-items">
+              <thead>
+                <tr>
+                  <th>CONCEPTO</th>
+                  <th>CÓDIGO</th>
+                  <th class="num">CANT.</th>
+                  <th>UNIDAD</th>
+                  <th>PRIORIDAD</th>
+                  <th>OBS.</th>
+                  <th class="num">PRECIO REF.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (i of items(); track i.idItem) {
+                  <tr>
+                    <td>
+                      <strong>{{ i.concepto ?? '—' }}</strong>
+                      @if (i.descripcionTecnica) { <small class="sub">{{ i.descripcionTecnica }}</small> }
+                    </td>
+                    <td><code>{{ i.codigo ?? '—' }}</code></td>
+                    <td class="num">{{ i.cantidad }}</td>
+                    <td>{{ i.unidad ?? '—' }}</td>
+                    <td><span [class]="clasePrioridad(i.prioridad)">{{ i.prioridad ?? '—' }}</span></td>
+                    <td>
+                      @if (i.codigoObservacion) {
+                        <span class="chip chip--rojo">{{ i.codigoObservacion }}</span>
+                      } @else { <span class="muted">—</span> }
+                    </td>
+                    <td class="num">
+                      @if (i.precioReferencia != null) {
+                        {{ i.precioReferencia | number:'1.2-2' }}
+                      } @else { <span class="muted">—</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          @if (c.notaSupervisor) {
+            <div class="nota-supervisor">
+              <span class="material-symbols-outlined">sticky_note_2</span>
+              <div>
+                <strong>Nota del Supervisor</strong>
+                <p>{{ c.notaSupervisor }}</p>
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- ── Trazabilidad (timeline horizontal) ─────────────────── -->
+        @if (trazabilidad().length > 0) {
+          <section class="card">
+            <header class="card__head">
+              <span class="material-symbols-outlined">timeline</span>
+              <h3>Trazabilidad del Servicio</h3>
+            </header>
+            <ol class="traza">
+              @for (t of trazabilidad(); track t.orden) {
+                <li class="traza__paso"
+                    [class.traza__paso--hecho]="t.completado"
+                    [class.traza__paso--actual]="t.actual">
+                  <span class="traza__icono">
+                    <span class="material-symbols-outlined">{{ iconoTraza(t.codigo) }}</span>
+                  </span>
+                  <div class="traza__body">
+                    <strong>{{ t.titulo }}</strong>
+                    @if (t.detalle) { <small>{{ t.detalle }}</small> }
+                    @if (t.fecha) { <small class="traza__fecha">{{ t.fecha | date:'dd/MM/yyyy' }}</small> }
+                  </div>
+                </li>
+              }
+            </ol>
+          </section>
+        }
+
+      }
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────────────────── -->
+    @if (cabecera(); as c) {
+      <div class="mdp__footer">
+        <div class="mdp__footer-izq">
+          @if (c.horasAtencion != null) {
+            <small class="mdp__hint">
+              <span class="material-symbols-outlined">timer</span>
+              Atención en {{ c.horasAtencion }}h
+            </small>
+          }
+          @if (c.mensajeConversion) {
+            <small class="mdp__hint mdp__hint--info">{{ c.mensajeConversion }}</small>
+          }
+        </div>
+        <div class="mdp__footer-der">
+          <button class="mdp__link" type="button" (click)="onCerrar()">Cancelar</button>
+          @if (esConvertida() && c.numeroPropuestaGenerada) {
+            <app-button variant="primary" icono="open_in_new">
+              Abrir Propuesta {{ c.numeroPropuestaGenerada }}
+            </app-button>
+          } @else if (c.puedeConvertir) {
+            <app-button variant="primary" icono="local_offer" (clic)="onGenerarPropuesta()">
+              Generar Propuesta
+            </app-button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

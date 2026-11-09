@@ -1,0 +1,58 @@
+.tab-pre { display: flex; flex-direction: column; gap: 16px; }
+
+.loading {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 60px; color: #64748B; font-size: 14px;
+}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.aviso-error {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 22px 24px; border-radius: 10px;
+  background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
+  font-size: 13px; font-weight: 500;
+  .material-symbols-outlined { font-size: 22px; }
+  > div { flex: 1; min-width: 220px; }
+  p { margin: 2px 0 0; font-weight: 400; color: #991B1B; }
+}
+
+.fila-clic { cursor: pointer; transition: background 0.1s; }
+.fila-clic:hover { background: #F8FAFC; }
+
+.sub { display: block; font-size: 11.5px; color: #64748B; margin-top: 2px; }
+.link { color: #2563EB; font-weight: 600; font-family: monospace; }
+.link__icon { font-size: 14px; color: #2563EB; margin-left: 2px; vertical-align: middle; }
+
+.tec { display: inline-flex; align-items: center; gap: 8px;
+  &__avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #DBEAFE; color: #1D4ED8;
+    font-size: 11px; font-weight: 700;
+  }
+}
+
+label { display: block; font-size: 11px; color: #475569; font-weight: 600;
+  letter-spacing: 0.3px; margin-bottom: 4px; }
+select, input[type="date"] {
+  width: 100%;
+  padding: 7px 10px; border: 1px solid #CBD5E1; border-radius: 6px;
+  font-size: 13px; color: #0F172A; background: #FFFFFF;
+  &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+}
+
+::ng-deep td.centro, ::ng-deep th.centro { text-align: center; }
+::ng-deep td.acciones { display: table-cell; }
+
+::ng-deep .chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600;
+  .chip__icon { font-size: 13px; }
+  &--azul       { background: #DBEAFE; color: #1D4ED8; }
+  &--verde      { background: #DCFCE7; color: #166534; }
+  &--ambar      { background: #FEF3C7; color: #92400E; }
+  &--rojo       { background: #FEE2E2; color: #B91C1C; }
+  &--gris       { background: #F1F5F9; color: #475569; }
+}

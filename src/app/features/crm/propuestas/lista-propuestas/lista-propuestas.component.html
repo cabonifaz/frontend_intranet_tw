@@ -9,6 +9,23 @@
     permisoBoton="propuesta_guardar"
     (clicBoton)="irANuevo()" />
 
+  <!-- ── Tabs CRM: Propuestas | Precotizaciones Técnicas (HU-60) ───────────── -->
+  <div class="tabs-crm">
+    <button class="tab-crm" [class.tab-crm--activa]="tabActivo() === 'propuestas'"
+            (click)="cambiarTab('propuestas')">
+      Propuestas
+      <span class="tab-crm__badge">{{ total() }}</span>
+    </button>
+    <button class="tab-crm" [class.tab-crm--activa]="tabActivo() === 'precotizaciones'"
+            (click)="cambiarTab('precotizaciones')">
+      Precotizaciones Técnicas
+    </button>
+  </div>
+
+  @if (tabActivo() === 'precotizaciones') {
+    <app-tab-precotizaciones />
+  } @else {
+
   <!-- ── KPI Cards (sin subtítulos, homologado con Requerimientos) ─────────── -->
   <app-kpi-grid [columnas]="5">
     <app-kpi-card icono="schedule"      etiqueta="PENDIENTES"      [valor]="kpis().pendientes"    variante="azul" />
@@ -169,6 +186,7 @@
     </tbody>
   </app-tabla-paginada>
 
+  }
 </div>
 
 @if (modalRqAbierto()) {

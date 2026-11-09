@@ -296,6 +296,23 @@ export const routes: Routes = [
             m => m.ListaSeguimientoOperativoComponent
           ),
       },
+      // ─── Módulo 12 — Revisión de Informes Técnicos ───────────────────────
+      {
+        path: 'servicio-tecnico/revision-informes',
+        canActivate: [permisoRutaGuard('rt_bandeja')],
+        loadComponent: () =>
+          import('./features/servicio-tecnico/revision-informes/lista-revision-informes/lista-revision-informes.component').then(
+            m => m.ListaRevisionInformesComponent
+          ),
+      },
+      {
+        path: 'servicio-tecnico/revision-informes/:id/editar',
+        canActivate: [permisoRutaGuard('rt_editar')],
+        loadComponent: () =>
+          import('./features/servicio-tecnico/revision-informes/ficha-edicion-informe/ficha-edicion-informe.component').then(
+            m => m.FichaEdicionInformeComponent
+          ),
+      },
       {
         path: 'crm/expedientes-digitales',
         loadComponent: () =>
