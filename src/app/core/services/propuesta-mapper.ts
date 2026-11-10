@@ -14,7 +14,6 @@ import {
   EquipoVinculado,
   crearDraftVacio,
 } from '../models/propuesta-detalle.model';
-import { TipoPropuesta } from '../models/propuestas.model';
 import {
   DatosNuevaPropuestaApi,
   GuardarPropuestaDtoApi,
@@ -24,6 +23,7 @@ import {
   PropuestaItemApi,
   PropuestaTextoApi,
 } from './propuestas.service';
+import { PrecargaPrecotizacionApi } from '../models/precotizaciones-api.model';
 
 // ─── Catálogo de moneda (back usa IdMoneda numérico) ─────────────────────────
 const MONEDA_ID_A_CODIGO: Record<number, string> = { 1: 'PEN', 2: 'USD' };
@@ -82,9 +82,10 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
       condicionesServicio:  d.seccionesActivas.includes('condiciones'),
       listadoEquipos:       true,
     },
-    tipoPropuesta:         (d.tipoServicio as TipoPropuesta | '') || '',
+    tipoPropuesta:         d.tipoServicio ?? '',
     responsableTecnico:    d.nombreResponsable ?? '',
     requiereTercerizacion: d.esTercerizado,
+    idClienteTercero:      d.idClienteTercero ?? null,
     terceroEmpresa:        d.terceroRazonSocial ?? '',
     terceroRuc:            d.terceroRuc ?? '',
     terceroDireccion:      d.terceroDireccion ?? '',
@@ -95,11 +96,8 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
     bloquesDetalle:            agruparTextos(d.textos, 'detalle'),
     bloquesRecomendaciones:    agruparTextos(d.textos, 'recomendaciones'),
     bloquesSuministrosCliente: agruparTextos(d.textos, 'suministros_cliente'),
-
-    clausulasContrato: d.textos
-      .filter(t => t.seccion === 'condiciones' && t.tipo === 'vineta')
-      .sort((a, b) => a.orden - b.orden)
-      .map(t => ({ id: 'c_' + (t.id ?? Math.random()), texto: t.texto ?? '' })),
+    // Feedback 2026-11-04: condiciones ahora también usa bloques jerárquicos.
+    bloquesCondiciones:        agruparTextos(d.textos, 'condiciones'),
 
     tipoMoneda:         MONEDA_ID_A_CODIGO[d.idMoneda] ?? 'USD',
     tipoCambio:         Number(d.tipoCambio ?? 3.75),
@@ -122,6 +120,39 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
   };
 }
 
+/**
+ * Rellena el draft con los datos iniciales de una Precotización (HU-60, flujo
+ * "Nace de Precotización"): cliente + RQ + contacto + sede + ítems a cotizar
+ * provenientes del supervisor técnico.
+ */
+export function prellenarDraftDesdePrecotizacion(precarga: PrecargaPrecotizacionApi): PropuestaDraft {
+  const base = crearDraftVacio();
+  const c = precarga.cabecera;
+  return {
+    ...base,
+    idRequerimiento:     c.idRequerimiento ?? 0,
+    codigoRequerimiento: c.numeroRq ?? '',
+    idCliente:           c.idCliente ?? 0,
+    razonSocial:         c.razonSocial ?? '',
+    ruc:                 c.ruc ?? '',
+    contacto:            c.contacto ?? '',
+    idContacto:          c.idContacto ?? null,
+    correoContacto:      null,
+    referencia:          c.nota ?? '',
+    tipoPropuesta:       c.tipoServicio ?? '',
+    lineasPropuesta:     precarga.items.map(i => ({
+      idSuministro:    i.idSuministro ?? 0,
+      descripcion:     i.descripcionTecnica || i.descripcion || i.concepto || '',
+      alcance:         '',
+      ptosCalibracion: '',
+      cantidad:        Number(i.cantidad ?? 1),
+      frecuencia:      1,
+      precioUnitario:  Number(i.precioReferencia ?? 0),
+      descuentoPct:    0,
+    })),
+  };
+}
+
 /** Rellena el draft con los datos iniciales del RQ (modo nueva). */
 export function prellenarDraftDesdeRq(datos: DatosNuevaPropuestaApi): PropuestaDraft {
   const base = crearDraftVacio();
@@ -133,6 +164,14 @@ export function prellenarDraftDesdeRq(datos: DatosNuevaPropuestaApi): PropuestaD
     razonSocial:         datos.razonSocial,
     ruc:                 datos.ruc,
     contacto:            datos.nombreContacto ?? '',
+    idContacto:          datos.idContacto,
+    correoContacto:      null,  // se completa al cargar el dropdown en la configuración
+    // Observación 12 (31/10): "Referencia" se precarga con el detalle del RQ y queda no editable en la UI.
+    referencia:          datos.descripcion ?? '',
+    // Observaciones 10 y 20 (31/10): flags heredados del RQ que condicionan opciones del wizard.
+    esAcreditacionRq:       !!datos.esAcreditacion,
+    condicionPagoClienteRq: datos.condicionPagoCliente ?? null,
+    condicionPagoCodigoRq:  datos.condicionPagoCodigo ?? null,
   };
 }
 
@@ -162,6 +201,7 @@ function mapEquipoApiToVinculado(e: PropuestaEquipoApi): EquipoVinculado {
     marca:    e.marca ?? '',
     modelo:   e.modelo ?? '',
     esNuevo:  false,   // equipos ya guardados no se consideran "nuevos" al recargar
+    estado:   e.estado ?? null,
   };
 }
 
@@ -209,14 +249,7 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     ...aplanarGrupos(draft.bloquesDetalle,             'detalle'),
     ...aplanarGrupos(draft.bloquesRecomendaciones,     'recomendaciones'),
     ...aplanarGrupos(draft.bloquesSuministrosCliente, 'suministros_cliente'),
-    ...draft.clausulasContrato.map((c, i): PropuestaTextoApi => ({
-      id:          null,
-      seccion:     'condiciones',
-      tipo:        'vineta',
-      texto:       c.texto,
-      idTextoBase: null,
-      orden:       i + 1,
-    })),
+    ...aplanarGrupos(draft.bloquesCondiciones,          'condiciones'),
   ];
 
   const formasPago: PropuestaFormaPagoApi[] = draft.cuotas.map((c, i) => ({
@@ -262,6 +295,7 @@ export function mapDraftToGuardarDto(draft: PropuestaDraft): GuardarPropuestaDto
     seccionesActivas,
 
     esTercerizado:      draft.requiereTercerizacion,
+    idClienteTercero:   draft.idClienteTercero ?? null,
     terceroRuc:         draft.terceroRuc        || null,
     terceroRazonSocial: draft.terceroEmpresa    || null,
     terceroDireccion:   draft.terceroDireccion  || null,

@@ -1,7 +1,6 @@
 // Modelo del state de la propuesta en edición. Compartido entre el shell y las 9
 // secciones vía PropuestaDraftService.
 
-import { TipoPropuesta } from './propuestas.model';
 
 // ─── Línea de ítem en la propuesta (secciones 2 Propuesta y 3 Opcionales) ────
 export interface LineaItemPropuesta {
@@ -41,13 +40,19 @@ export interface EquipoVinculado {
   marca:       string;
   modelo:      string;
   esNuevo:     boolean;   // true si fue creado por importación XLS o manualmente
+  /** Observación 21 (31/10, fix 2026-11-03): estado real del equipo en el
+   *  maestro. En BD solo existen `Activo` o `Inactivo`. El chip "Nuevo" es
+   *  una marca adicional del front para equipos creados recién en esta
+   *  importación XLS (no es un estado del maestro). */
+  estado?:     string | null;
 }
 
 // ─── Estado completo de la propuesta en edición ──────────────────────────────
 export interface PropuestaDraft {
   // Identificación
   idPropuesta:         number | null;    // null = nueva
-  codigo:              string;           // PROP-002581 (asignado al guardar)
+  codigo:              string;           // PROP-002581 (interno, no mostrar)
+  /** Ticket #4437: formato nuevo listo para pintar (ej. "PC: 0012-2-2026"). */
   version:             string;           // v1, v2, v3
   esNuevaVersion:      boolean;          // true si se creó como versión de una existente
   idRequerimiento:     number | null;
@@ -77,6 +82,15 @@ export interface PropuestaDraft {
   razonSocial:  string;
   ruc:          string;
   contacto:     string;
+  /** Observación 11 (31/10): id del contacto elegido para "Dirigido a" (dropdown de contactos del cliente). */
+  idContacto:   number | null;
+  correoContacto: string | null;
+  // Observaciones 31/10: datos heredados del RQ que condicionan opciones del wizard.
+  /** El RQ marcó "Proyecto entra al sistema de acreditación" (observación 8/10). */
+  esAcreditacionRq:       boolean;
+  /** Condición de pago habitual del cliente para precargar la Forma de pago (observación 20). */
+  condicionPagoClienteRq: string | null;
+  condicionPagoCodigoRq:  string | null;
 
   // 1 - Configuración
   seccionesIncluidas: {
@@ -90,9 +104,15 @@ export interface PropuestaDraft {
     condicionesServicio:  boolean;
     listadoEquipos:       boolean;
   };
-  tipoPropuesta:       TipoPropuesta | '';
+  // Observación 10 (31/10): tipo de propuesta ahora viene del catálogo TIPO_PROPUESTA (106).
+  // Se guarda el nombre (String1) del catálogo para que el back lo persista como tipo_servicio.
+  tipoPropuesta:       string;
   responsableTecnico:  string;
   requiereTercerizacion: boolean;
+  /** Observación 15 (31/10): el tercerizado ahora se busca del maestro de clientes.
+   *  Si el usuario selecciona uno, se guarda su id; si decide ingresarlo manualmente
+   *  (cliente "nuevo al vuelo"), el id queda en `null` y los otros campos van sueltos. */
+  idClienteTercero:    number | null;
   terceroEmpresa:      string;
   terceroRuc:          string;
   terceroDireccion:    string;
@@ -122,8 +142,9 @@ export interface PropuestaDraft {
   // 7 - Suministros del Cliente
   bloquesSuministrosCliente: GrupoBloque[];
 
-  // 8 - Condiciones del Servicio
-  clausulasContrato: { id: string; titulo?: string; texto: string }[];
+  // 8 - Condiciones del Servicio (feedback 2026-11-04: ahora usa bloques
+  // jerárquicos — mismo patrón que Detalle, Recomendaciones y Suministros).
+  bloquesCondiciones: GrupoBloque[];
 
   // 9 - Listado de Equipos vinculados
   equiposVinculados: EquipoVinculado[];
@@ -145,6 +166,11 @@ export function crearDraftVacio(): PropuestaDraft {
     razonSocial: '',
     ruc: '',
     contacto: '',
+    idContacto:   null,
+    correoContacto: null,
+    esAcreditacionRq:       false,
+    condicionPagoClienteRq: null,
+    condicionPagoCodigoRq:  null,
 
     estado:              'borrador',
     esEditable:          true,
@@ -175,6 +201,7 @@ export function crearDraftVacio(): PropuestaDraft {
     tipoPropuesta: '',
     responsableTecnico: '',
     requiereTercerizacion: false,
+    idClienteTercero: null,
     terceroEmpresa: '',
     terceroRuc: '',
     terceroDireccion: '',
@@ -194,7 +221,7 @@ export function crearDraftVacio(): PropuestaDraft {
     cuotas: [],
 
     bloquesSuministrosCliente: [],
-    clausulasContrato: [],
+    bloquesCondiciones: [],
     equiposVinculados: [],
 
     ultimaModificacion: new Date().toISOString(),

@@ -111,6 +111,8 @@ export interface CertificadoOsApi {
 
 export interface ConceptoOsApi {
   idOsConcepto:     number | null;
+  /** Ticket #4435: línea de la propuesta origen (propuesta_item). */
+  idItem?:          number | null;
   idSuministro:     number | null;
   codigo:           string | null;
   descripcion:      string;
@@ -189,6 +191,14 @@ export interface EquipoGuardarOsApi {
   conceptos: number[];   // idSuministro
 }
 
+/** Ticket #4435: cada concepto de la OS conserva el idItem (línea de la
+ *  propuesta) + alcance de la línea que se eligió en el modal. */
+export interface ConceptoGuardarOsApi {
+  idSuministro: number;
+  idItem:       number | null;
+  alcance:      string | null;
+}
+
 export interface GuardarOrdenServicioApi {
   idPropuesta:          number | null;
   idContacto:           number | null;
@@ -199,7 +209,10 @@ export interface GuardarOrdenServicioApi {
   certRuc:              string | null;
   certDireccion:        string | null;
   certContacto:         string | null;
-  conceptos:            number[];              // idSuministro
+  /** Legacy — solo idSuministro. Dejamos vacío y mandamos todo en conceptosDetalle. */
+  conceptos:            number[];
+  /** Ticket #4435: conceptos con idItem + alcance por línea. Si viene, reemplaza a `conceptos`. */
+  conceptosDetalle:     ConceptoGuardarOsApi[];
   equipos:              EquipoGuardarOsApi[];
   emitir:               boolean;
 }
@@ -284,6 +297,10 @@ function mapCertificado(c: CertificadoOsApi | null | undefined): DatosCertificad
 
 function mapConcepto(c: ConceptoOsApi): ConceptoDetalleOs {
   return {
+    // Ticket #4435: idItem viene del back (identifica la línea de la propuesta).
+    // Lo usamos como clave primaria en el front para distinguir filas con el
+    // mismo suministro + distinto alcance.
+    idItem:           c.idItem ?? undefined,
     // El back separa idOsConcepto (fila guardada) vs idSuministro (ref al catálogo).
     // Al enviar el guardar, el back espera idSuministro. Preferimos ese valor acá
     // para que el redondeo sea limpio.
@@ -398,6 +415,11 @@ export function mapFichaApiToPreparacionEdicion(dto: FichaOrdenServicioApi): Pre
       numeroRequerimiento:  dto.numeroRq,
       numeroPropuesta:      dto.propuesta.numero,
       versionPropuesta:     dto.propuesta.version,
+      // Observación 34 (fix 2026-11-03): el rango tentativo se perdía al editar
+      // porque el mapper no lo copiaba a `datosGenerales`. El back SÍ lo devuelve
+      // en la raíz (`dto.fechaProgramadaDesde/Hasta`), solo faltaba pasarlo.
+      fechaProgramadaDesde: dto.fechaProgramadaDesde,
+      fechaProgramadaHasta: dto.fechaProgramadaHasta,
     } as any,
     avancePorEquipos: { total: dto.equipos.length, ejecutados: 0, pendientes: dto.equipos.length } as any,
     propuestaOrigen: mapPropuestaOrigen(dto.propuesta),
@@ -715,7 +737,12 @@ export function mapGuardarRequestToApi(req: GuardarOrdenServicioRequest): Guarda
     certRuc:              req.datosCertificado?.ruc ?? null,
     certDireccion:        req.datosCertificado?.direccion ?? null,
     certContacto:         req.datosCertificado?.contacto ?? null,
-    conceptos:            req.conceptos.map(c => c.idConcepto),
+    conceptos:            [],
+    conceptosDetalle:     req.conceptos.map(c => ({
+      idSuministro: c.idConcepto,
+      idItem:       c.idItem ?? null,
+      alcance:      c.alcance ?? null,
+    })),
     equipos:              req.equipos.map(e => ({
       idEquipo:  e.idEquipo,
       conceptos: (e.conceptosAplicados ?? [])
@@ -869,9 +896,16 @@ export interface OpcionImportacionApi {
 }
 
 export interface ConceptoCatalogoOsApi {
+  /** Ticket #4435: ID único de la línea en la propuesta (una fila por alcance). */
+  idItem:           number;
   idSuministro:     number;
   codigo:           string;
   descripcion:      string;
+  alcance?:         string | null;
+  cantidad?:        number | null;
+  frecuencia?:      string | null;
+  precioUnitario?:  number | null;
+  seccion?:         string | null;
   tipo:             string | null;
   tipoLabel:        string | null;
   subtipo:          string | null;
@@ -899,6 +933,7 @@ export function mapConceptoCatalogo(dto: ConceptoCatalogoOsApi): ConceptoCatalog
   if (dto.aplicaMetrologia) aplicable.push('Instrumentos');
   if (dto.aplicaServicio)   aplicable.push('Equipos de pesaje');
   return {
+    idItem: dto.idItem,
     idSuministro:   dto.idSuministro,
     codigo:         dto.codigo,
     descripcion:    dto.descripcion,
@@ -906,7 +941,11 @@ export function mapConceptoCatalogo(dto: ConceptoCatalogoOsApi): ConceptoCatalog
     tipo:           dto.tipoLabel ?? dto.tipo ?? undefined,
     subtipo:        dto.subtipoLabel ?? dto.subtipo ?? undefined,
     aplicableA:     aplicable.join(' · ') || '—',
-    deLaPropuesta:  dto.deLaPropuesta,
+    alcance:        dto.alcance ?? null,
+    cantidad:       dto.cantidad ?? null,
+    frecuencia:     dto.frecuencia ?? null,
+    precioUnitario: dto.precioUnitario ?? null,
+    seccion:        dto.seccion ?? null,
   };
 }
 

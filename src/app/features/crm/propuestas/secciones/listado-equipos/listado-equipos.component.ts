@@ -19,6 +19,7 @@ interface EquipoCatalogo {
   modelo:    string;
   numSerie:  string;
   codigoTw:  string;
+  estado:    string;   // Observación 21: estado real del maestro
 }
 
 @Component({
@@ -54,6 +55,7 @@ export class ListadoEquiposComponent implements OnInit {
         modelo:    e.modelo,
         numSerie:  e.numSerie,
         codigoTw:  e.codigoTw,
+        estado:    e.estado,
       }));
       this.catalogo.set(items);
     } catch { /* silencioso */ }
@@ -93,6 +95,7 @@ export class ListadoEquiposComponent implements OnInit {
         marca:    e.marca,
         modelo:   e.modelo,
         esNuevo:  false,
+        estado:   e.estado,    // Observación 21: estado real del maestro
       } as EquipoVinculado],
     });
   }
@@ -144,6 +147,14 @@ export class ListadoEquiposComponent implements OnInit {
         marca:    e.marca,
         modelo:   e.modelo,
         esNuevo:  e.resultado === 'creado',
+        // Observación 21 (fix 2026-11-04): el back ahora devuelve `estadoEquipoLabel`
+        // (Vigente | Inactivo | Borrador). Los creados en esta importación los
+        // sobrescribimos como "Nuevo" (marca visual del front, no estado del maestro).
+        estado:   e.resultado === 'creado'
+                    ? 'Nuevo'
+                    : ((e as unknown as { estadoEquipoLabel?: string | null }).estadoEquipoLabel
+                       ?? (e as unknown as { estado?: string | null }).estado
+                       ?? 'Activo'),
       }));
 
     this.draftSvc.actualizar({

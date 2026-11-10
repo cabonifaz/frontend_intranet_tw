@@ -1,0 +1,76 @@
+<app-modal
+  [titulo]="'Detalle del Registro · ' + (numeroOs() || ('Servicio #' + idServicio()))"
+  [subtitulo]="evento().tipo + ' · ' + evento().hora + (evento().momento ? ' · ' + evento().momento : '') + (evento().detalle ? ' · Registró: ' + evento().detalle : '')"
+  icono="warning"
+  [iconoColor]="iconoVariante()"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="estado">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando detalle del registro…
+    </div>
+  } @else {
+    <!-- Datos clave -->
+    <div class="mdi-info-grid">
+      <div class="mdi-info-item">
+        <small>IMPACTO</small>
+        <span [class]="chipImpactoClase()">{{ labelImpacto() }}</span>
+      </div>
+      <div class="mdi-info-item">
+        <small>DURACIÓN</small>
+        <strong>{{ evento().duracionMin !== null ? evento().duracionMin + ' min' : '—' }}</strong>
+      </div>
+      <div class="mdi-info-item">
+        <small>ORIGEN</small>
+        <strong>{{ labelOrigen() }}</strong>
+      </div>
+      <div class="mdi-info-item">
+        <small>GPS</small>
+        @if (evento().lat !== null && evento().lng !== null) {
+          <strong class="mdi-link" (click)="onVerMapa()">
+            <span class="material-symbols-outlined">location_on</span>
+            {{ evento().lat | number:'1.4-4' }}, {{ evento().lng | number:'1.4-4' }}
+          </strong>
+        } @else {
+          <span class="muted">Sin posición</span>
+        }
+      </div>
+    </div>
+
+    <!-- Descripción completa -->
+    <section class="mdi-seccion">
+      <h4>Descripción completa</h4>
+      <p>{{ descripcion() ?? evento().motivo }}</p>
+    </section>
+
+    <!-- Evidencia fotográfica -->
+    @if (evidenciaUrl()) {
+      <section class="mdi-seccion">
+        <h4>Evidencia fotográfica</h4>
+        @if (blobFoto(); as b) {
+          <a class="mdi-evidencia" [href]="b" target="_blank" rel="noopener">
+            <img [src]="b" alt="Evidencia" loading="lazy" />
+            <small>
+              <span class="material-symbols-outlined">open_in_new</span>
+              Ver foto completa
+            </small>
+          </a>
+        } @else {
+          <div class="mdi-evidencia mdi-evidencia--cargando">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            <small>Cargando foto...</small>
+          </div>
+        }
+      </section>
+    }
+  }
+
+  <!-- Footer -->
+  <div modalFooter class="mdi-footer">
+    <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="onCerrar()">
+      Volver al detalle del servicio
+    </app-button>
+  </div>
+</app-modal>

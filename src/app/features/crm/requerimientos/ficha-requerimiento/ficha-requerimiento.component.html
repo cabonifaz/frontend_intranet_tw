@@ -19,7 +19,7 @@
       <app-hero-header
         icono="assignment"
         [titulo]="'Editar Requerimiento ' + (ficha()?.numero ?? '')"
-        [descripcion]="'Fecha necesidad: ' + ((ficha()?.fechaNecesidad | date:'dd/MM/yyyy') ?? '—') + ' · ' + (ficha()?.razonSocial ?? '')"
+        [descripcion]="'Fecha de requerimiento: ' + ((ficha()?.fechaNecesidad | date:'dd/MM/yyyy HH:mm') ?? '—') + ' · ' + (ficha()?.razonSocial ?? '')"
         [codigoFicha]="codigoFicha()"
         [badgeTexto]="ficha()?.estadoLabel ?? ficha()?.estado ?? ''"
         badgeVariant="azul"
@@ -103,22 +103,22 @@
                 </div>
               </div>
               <div class="campo">
-                <label class="campo__label">FECHA REQUERIDA</label>
-                <input class="campo__input" type="date" formControlName="fechaNecesidad" />
+                <label class="campo__label">FECHA DE REQUERIMIENTO</label>
+                <input class="campo__input" type="datetime-local" formControlName="fechaNecesidad" />
               </div>
             </div>
 
             <!-- Descripción -->
             <div class="campo">
-              <label class="campo__label">DESCRIPCIÓN DE LA NECESIDAD</label>
+              <label class="campo__label">DETALLE DEL REQUERIMIENTO</label>
               <textarea class="campo__textarea" rows="4"
-                        placeholder="Describa el problema o necesidad detalladamente..."
+                        placeholder="Describa el requerimiento detalladamente..."
                         formControlName="descripcion"></textarea>
               @if (formulario.get('descripcion')?.touched) {
                 @if (formulario.get('descripcion')?.hasError('required')) {
-                  <span class="campo__error">La descripción es obligatoria.</span>
+                  <span class="campo__error">El detalle del requerimiento es obligatorio.</span>
                 } @else if (formulario.get('descripcion')?.hasError('minlength')) {
-                  <span class="campo__error">La descripción debe tener al menos 10 caracteres.</span>
+                  <span class="campo__error">El detalle debe tener al menos 10 caracteres.</span>
                 }
               }
             </div>
@@ -133,14 +133,14 @@
           @if (!esSoloLectura()) {
             <app-button variant="secondary" tamano="sm" icono="business"
                         headerActions
-                        (clic)="mostrarModalCliente.set(true)">
+                        (clic)="abrirSeleccionCliente()">
               {{ cliente() ? 'CAMBIAR CLIENTE' : 'SELECCIONAR CLIENTE' }}
             </app-button>
           }
 
 
-            <!-- Cliente + Sede + Contacto cards -->
-            <div class="campo-trio">
+            <!-- Cliente + Sede + Contacto + Contacto Secundario cards (grid 2x2) -->
+            <div class="cards-cliente-grid">
 
               <!-- CLIENTE -->
               <div class="cliente-card">
@@ -237,10 +237,53 @@
                 }
               </div>
 
+              <!-- CONTACTO SECUNDARIO (opcional) -->
+              <div class="cliente-card"
+                   [class.cliente-card--seleccionable]="!!(cliente() && !contactoSecundario())"
+                   (click)="cliente() && !contactoSecundario() ? mostrarModalContactoSecundario.set(true) : null">
+                <span class="cliente-card__label">CONTACTO SECUNDARIO <small style="font-weight:400;color:#64748B">(opcional)</small></span>
+                @if (contactoSecundario()) {
+                  @if (cliente()) {
+                    <button class="cliente-card__btn-cambiar" type="button"
+                            title="Cambiar contacto secundario"
+                            (click)="$event.stopPropagation(); mostrarModalContactoSecundario.set(true)">
+                      <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="cliente-card__btn-cambiar" type="button"
+                            title="Quitar contacto secundario"
+                            style="right:40px"
+                            (click)="$event.stopPropagation(); quitarContactoSecundario()">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  }
+                  <div class="cliente-card__filled">
+                    <div class="cliente-card__icon-bg">
+                      <span class="material-symbols-outlined">person_add</span>
+                    </div>
+                    <div>
+                      <div class="cliente-card__nombre">{{ contactoSecundario()!.nombres }}</div>
+                      @if (contactoSecundario()!.cargo) {
+                        <div class="cliente-card__ruc">{{ contactoSecundario()!.cargo }}</div>
+                      }
+                    </div>
+                  </div>
+                } @else if (cliente()) {
+                  <div class="cliente-card__placeholder">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Agregar contacto secundario</span>
+                  </div>
+                } @else {
+                  <div class="cliente-card__vacio">
+                    <span class="material-symbols-outlined">person_add</span>
+                    Seleccione primero un cliente
+                  </div>
+                }
+              </div>
+
             </div>
 
-            <!-- Checkboxes fila 1 -->
-            <div class="checks-row">
+            <!-- Checkboxes (grid 2x2 alineado) -->
+            <div class="checks-grid">
               <label class="check-item">
                 <input type="checkbox" class="check-item__input" formControlName="notificarCorreo" />
                 <span class="check-item__box"></span>
@@ -251,14 +294,15 @@
                 <span class="check-item__box"></span>
                 <span class="check-item__label">Requiere visita técnica previa</span>
               </label>
-            </div>
-
-            <!-- Checkboxes fila 2 -->
-            <div class="checks-row">
               <label class="check-item">
                 <input type="checkbox" class="check-item__input" formControlName="clienteDeuda" />
                 <span class="check-item__box"></span>
                 <span class="check-item__label">Cliente con deuda pendiente</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" class="check-item__input" formControlName="esAcreditacion" />
+                <span class="check-item__box"></span>
+                <span class="check-item__label">Proyecto entra al sistema de acreditación</span>
               </label>
             </div>
 
@@ -269,10 +313,104 @@
           icono="folder_open"
           titulo="Documentos Relacionados"
         >
-          <div class="upload-area">
-            <span class="material-symbols-outlined">upload_file</span>
-            <p>Click o arrastra para adjuntar documentos</p>
-          </div>
+          <input #inputAdjuntos type="file" multiple
+                 [accept]="ADJUNTOS_ACCEPT"
+                 hidden
+                 (change)="onArchivosSeleccionados(inputAdjuntos.files, inputAdjuntos)" />
+
+          @if (!esSoloLectura()) {
+            <app-button variant="secondary" tamano="sm" icono="upload_file"
+                        headerActions
+                        [disabled]="subiendoAdjuntos() || totalAdjuntos() >= ADJUNTOS_POR_RQ_MAX"
+                        (clic)="inputAdjuntos.click()">
+              {{ subiendoAdjuntos() ? 'Subiendo...' : 'Subir archivos' }}
+            </app-button>
+          }
+
+          @if (acreditacionSinAdjuntos()) {
+            <div class="rq-adjuntos__alerta" style="padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;color:#991B1B;font-size:0.875rem;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+              <span class="material-symbols-outlined">warning</span>
+              <span><strong>Este requerimiento entra al sistema de acreditación.</strong> Debes adjuntar al menos un documento antes de guardar.</span>
+            </div>
+          }
+
+          @if (errorAdjuntos()) {
+            <div class="rq-adjuntos__error" style="padding:10px 14px;background:#FEF2F2;border-left:3px solid #DC2626;border-radius:4px;color:#991B1B;font-size:0.875rem;margin-bottom:12px">
+              {{ errorAdjuntos() }}
+            </div>
+          }
+
+          @if (totalAdjuntos() === 0) {
+            <div class="upload-area"
+                 style="cursor:pointer"
+                 (click)="!esSoloLectura() && !subiendoAdjuntos() && inputAdjuntos.click()">
+              <span class="material-symbols-outlined">upload_file</span>
+              <p>Click para adjuntar documentos (foto, video, correo, PDF, Office, texto o zip)</p>
+              <small style="color:#94A3B8">Hasta {{ ADJUNTOS_POR_SUBIDA_MAX }} archivos por subida · {{ ADJUNTOS_TAMANO_MAX_MB }} MB cada uno · máx {{ ADJUNTOS_POR_RQ_MAX }} por RQ</small>
+            </div>
+          } @else {
+            <div class="rq-adjuntos__lista" style="display:flex;flex-direction:column;gap:8px">
+              <!-- Adjuntos ya persistidos en el back -->
+              @for (a of adjuntos(); track a.idDocumento) {
+                <div class="rq-adjunto"
+                     style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px">
+                  <span class="material-symbols-outlined" style="color:#2563EB">{{ iconoAdjunto(a) }}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;color:#0F172A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.nombreArchivo }}</div>
+                    <div style="font-size:0.75rem;color:#64748B">
+                      {{ formatearTamano(a.tamanoBytes) }} ·
+                      {{ a.fechaCarga | date:'dd/MM/yyyy HH:mm' }}
+                      @if (a.subidoPor) { · {{ a.subidoPor }} }
+                    </div>
+                  </div>
+                  <button type="button"
+                          class="btn-icono"
+                          title="Ver / descargar"
+                          (click)="verAdjunto(a)"
+                          style="background:transparent;border:none;cursor:pointer;color:#2563EB;padding:6px;border-radius:6px">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+                  @if (!esSoloLectura()) {
+                    <button type="button"
+                            class="btn-icono"
+                            title="Quitar adjunto"
+                            (click)="eliminarAdjunto(a)"
+                            style="background:transparent;border:none;cursor:pointer;color:#DC2626;padding:6px;border-radius:6px">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  }
+                </div>
+              }
+              <!-- Archivos pendientes de subir (cola local al crear el RQ) -->
+              @for (f of archivosPendientes(); track $index) {
+                <div class="rq-adjunto"
+                     style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#EFF6FF;border:1px dashed #93C5FD;border-radius:8px">
+                  <span class="material-symbols-outlined" style="color:#2563EB">schedule</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;color:#0F172A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.name }}</div>
+                    <div style="font-size:0.75rem;color:#2563EB">
+                      {{ formatearTamano(f.size) }} · Se subirá al guardar el requerimiento
+                    </div>
+                  </div>
+                  @if (!esSoloLectura()) {
+                    <button type="button"
+                            class="btn-icono"
+                            title="Quitar de la cola"
+                            (click)="quitarArchivoPendiente($index)"
+                            style="background:transparent;border:none;cursor:pointer;color:#DC2626;padding:6px;border-radius:6px">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  }
+                </div>
+              }
+              <div style="font-size:0.75rem;color:#64748B;text-align:right;margin-top:4px">
+                {{ totalAdjuntos() }} / {{ ADJUNTOS_POR_RQ_MAX }} adjuntos
+                @if (archivosPendientes().length > 0) {
+                  · {{ archivosPendientes().length }} pendientes
+                }
+              </div>
+            </div>
+          }
         </app-seccion>
 
       </div><!-- /main -->
@@ -431,7 +569,7 @@
   @if (mostrarModalCliente()) {
     <app-seleccionar-cliente
       (confirmado)="onClienteConfirmado($event)"
-      (cancelado)="mostrarModalCliente.set(false)"
+      (cancelado)="mostrarModalCliente.set(false); cancelarFlujoEncadenado()"
     />
   }
 
@@ -439,8 +577,9 @@
   @if (mostrarModalSede() && cliente()) {
     <app-seleccionar-sede
       [idCliente]="cliente()!.idCliente"
+      [autoSeleccionar]="flujoEncadenado()"
       (confirmado)="onSedeConfirmada($event)"
-      (cancelado)="mostrarModalSede.set(false)"
+      (cancelado)="mostrarModalSede.set(false); cancelarFlujoEncadenado()"
     />
   }
 
@@ -448,8 +587,22 @@
   @if (mostrarModalContacto() && cliente()) {
     <app-seleccionar-contacto
       [idCliente]="cliente()!.idCliente"
+      [autoSeleccionar]="flujoEncadenado()"
+      [excluirIdContacto]="contactoSecundario()?.idContacto ?? null"
       (confirmado)="onContactoConfirmado($event)"
-      (cancelado)="mostrarModalContacto.set(false)"
+      (cancelado)="mostrarModalContacto.set(false); cancelarFlujoEncadenado()"
+    />
+  }
+
+  <!-- Modal Seleccionar Contacto Secundario (opcional, excluye al contacto principal). -->
+  <!-- Auto-selecciona si solo queda 1 contacto disponible y venimos del flujo encadenado, y se cierra solo si no queda ninguno. -->
+  @if (mostrarModalContactoSecundario() && cliente()) {
+    <app-seleccionar-contacto
+      [idCliente]="cliente()!.idCliente"
+      [autoSeleccionar]="flujoEncadenado()"
+      [excluirIdContacto]="contacto()?.idContacto ?? null"
+      (confirmado)="onContactoSecundarioConfirmado($event)"
+      (cancelado)="mostrarModalContactoSecundario.set(false); cancelarFlujoEncadenado()"
     />
   }
 

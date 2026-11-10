@@ -11,7 +11,7 @@ export interface EquipoClienteListaItem {
   clasificacionLabel:  string;   // "INSTRUMENTO" en la tabla
   marca:               string;
   modelo:              string;
-  estado:              string;   // Vigente | Por Vencer | Activo | Inactivo
+  estado:              string;   // Activo | Inactivo | Borrador
   esActivo:            boolean;
 }
 
@@ -151,8 +151,7 @@ export const ESTADOS_OPERATIVOS: OpcionCatalogo[] = [
 ];
 
 export const ESTADOS_EQUIPO: OpcionCatalogo[] = [
-  { value: 'Vigente',   label: 'Vigente' },
-  { value: 'Por Vencer', label: 'Por Vencer' },
   { value: 'Activo',    label: 'Activo' },
   { value: 'Inactivo',  label: 'Inactivo' },
+  { value: 'Borrador',  label: 'Borrador' },
 ];

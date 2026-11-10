@@ -14,7 +14,7 @@ import { AreasClienteService } from '../../../../core/services/areas-cliente.ser
 import { RequisitosSsomaService, RequisitoSsoma } from '../../../../core/services/requisitos-ssoma.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { useAutosaveBorrador } from '../../../../shared/composables/use-autosave-borrador';
-import { AreaCliente, CatalogoItem, CategoriaCliente, ConsultaRuc, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
+import { AreaCliente, CatalogoItem, CategoriaCliente, ComercialCartera, ConsultaRuc, ContactoListaItem, GuardarClienteRequest, GuardarContactoRequest, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { SeccionComponent }    from '../../../../shared/ui/seccion/seccion.component';
@@ -98,6 +98,10 @@ export class FichaClienteComponent implements OnInit {
   readonly condicionesPago  = signal<CatalogoItem[]>([]);
   readonly categoriasCliente = signal<CategoriaCliente[]>([]);
 
+  // Observación 4 (31/10, back 2026-11-04): Cartera asignada desde la ficha.
+  readonly comercialesCartera   = signal<ComercialCartera[]>([]);
+  readonly puedeAsignarCartera  = signal<boolean>(false);
+
   // Áreas de operación del cliente (ej. "Zona de carnes", "Patio norte").
   // Son por cliente (NO un catálogo global). En modo nuevo se mantienen en
   // memoria como items temporales (idArea < 0) y se cascadan al back después
@@ -124,6 +128,9 @@ export class FichaClienteComponent implements OnInit {
     // Al guardar enviamos null hasta que Bryan deprecie la columna del DTO.
     ssomaNotas:             [''],
     idCategoria:            [''],
+    /** Observación 4 (31/10, back 2026-11-04): comercial asignado en la cartera.
+     *  Solo editable por usuarios con permiso `cartera_asignar`. */
+    idComercialCartera:     [null as number | null],
   });
 
   // Autoguardado + dirty + borrador en un composable (reemplaza ~80 líneas boilerplate).
@@ -259,6 +266,17 @@ export class FichaClienteComponent implements OnInit {
       .then(l => this.ssomaDisponibles.set(l))
       .catch(() => this.ssomaDisponibles.set([]));
 
+    // Observación 4 (back 2026-11-04): comerciales para el select de cartera.
+    // El endpoint también devuelve el flag `puedeAsignarCartera`.
+    this.maestrosSvc.obtenerCarteraClientes({ porPagina: 1 })
+      .then(r => {
+        this.comercialesCartera.set(r.comerciales);
+        this.puedeAsignarCartera.set(r.puedeAsignar);
+        // Si el usuario NO puede asignar, bloqueamos el control.
+        if (!r.puedeAsignar) this.formulario.get('idComercialCartera')?.disable();
+      })
+      .catch(() => { /* silencioso: la ficha funciona igual si falla */ });
+
     try {
       if (esNuevo) {
         const [tiposDoc, tipos, condiciones, categorias] = await catalogsTask;
@@ -310,6 +328,7 @@ export class FichaClienteComponent implements OnInit {
           // del form (obs #4281) — ya no se patchean. SSOMA se maneja por catálogo.
           ssomaNotas:             detalle.ssomaNotas ?? '',
           idCategoria:            detalle.idCategoria ?? '',
+          idComercialCartera:     detalle.idComercialCartera ?? null,
         });
       }
 
@@ -329,7 +348,9 @@ export class FichaClienteComponent implements OnInit {
     this.guardando.set(true);
     this.error.set('');
     try {
-      const v = this.formulario.value;
+      // Obs 4 (back 2026-11-04): usamos getRawValue() para que `idComercialCartera`
+      // vaya aunque el control esté disabled (lectura para usuarios sin permiso de cartera).
+      const v = this.formulario.getRawValue();
       const dto: GuardarClienteRequest = {
         idCliente:              this.idCliente,
         tipoDocumento:          v.tipoDocumento,
@@ -360,6 +381,10 @@ export class FichaClienteComponent implements OnInit {
         ssomaExamenMedico:      false,
         ssomaNotas:             v.ssomaNotas || null,
         idCategoria:            v.idCategoria ? Number(v.idCategoria) : null,
+        // Observación 4 (back 2026-11-04): SIEMPRE mandar el valor actual.
+        // null = quitar de cartera. Si el usuario no tiene permiso cartera_asignar,
+        // el back ignora este campo silenciosamente.
+        idComercialCartera:     v.idComercialCartera != null ? Number(v.idComercialCartera) : null,
       };
 
       const id = await this.maestrosSvc.guardarCliente(dto);

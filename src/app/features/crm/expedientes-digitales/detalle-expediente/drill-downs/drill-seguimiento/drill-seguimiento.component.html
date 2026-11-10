@@ -8,7 +8,7 @@
                 class="pill-prop"
                 [class.pill-prop--activa]="p.seleccionada"
                 (click)="cambiarPropuestaSeguimiento.emit(p.numero)">
-          {{ p.numero }} v{{ p.version }}
+          {{ p.numero }}
         </button>
       }
     </div>
@@ -23,7 +23,7 @@
       Ir al Módulo Seguimiento
     </app-button>
     <div class="info-grid">
-      <div class="info-item"><small>Propuesta en seguimiento</small><strong class="valor-codigo">{{ e.numero }} v{{ e.version ?? '—' }}</strong></div>
+      <div class="info-item"><small>Propuesta en seguimiento</small><strong class="valor-codigo">{{ e.numero }}</strong></div>
       <div class="info-item">
         <small>Comercial a cargo</small>
         <div class="responsable-mini">

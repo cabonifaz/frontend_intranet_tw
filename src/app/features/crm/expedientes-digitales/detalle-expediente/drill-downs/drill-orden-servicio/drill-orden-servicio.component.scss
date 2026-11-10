@@ -1,1 +1,93 @@
 // Estilos específicos del drill-down Orden de Servicio.
+// Feedback cliente 2026-11-04: restructura del drill (Datos · Conceptos · Equipos · Programación).
+
+// ── Estado vacío ──────────────────────────────────────────────────────────
+.vacio-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: #64748B;
+  font-size: 13px;
+  text-align: center;
+
+  .material-symbols-outlined { font-size: 36px; color: #94A3B8; }
+  p { margin: 0; }
+  strong { color: #0F172A; font-weight: 600; }
+}
+
+// ── Programación: lista de visitas ─────────────────────────────────────────
+.programacion-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .visita {
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #FFFFFF;
+
+    &__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #E2E8F0;
+      font-size: 13px;
+
+      .material-symbols-outlined { color: #2563EB; font-size: 18px; }
+
+      strong {
+        color: #0F172A;
+        font-weight: 600;
+        text-transform: capitalize;
+      }
+    }
+
+    &__horario {
+      color: #475569;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    &__tecnico {
+      color: #64748B;
+      font-size: 12.5px;
+    }
+
+    &__estado {
+      margin-left: auto;
+      padding: 2px 8px;
+      background: #EFF6FF;
+      color: #1D4ED8;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    &__equipos {
+      list-style: none;
+      margin: 0;
+      padding: 0 0 0 26px;
+
+      li {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 6px 0;
+        border-bottom: 1px dashed #F1F5F9;
+
+        &:last-child { border-bottom: 0; }
+
+        strong { font-size: 12.5px; color: #0F172A; }
+        small  { font-size: 11.5px; color: #64748B; }
+      }
+    }
+  }
+}

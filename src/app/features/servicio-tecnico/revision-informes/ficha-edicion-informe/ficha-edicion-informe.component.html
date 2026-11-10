@@ -1,0 +1,564 @@
+<div class="pagina">
+
+  @if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando informe...
+    </div>
+  } @else if (error(); as err) {
+    <div class="aviso-error">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudo cargar el informe</strong>
+        <p>{{ err }}</p>
+      </div>
+      <app-button variant="primary" tamano="sm" icono="arrow_back" (clic)="cancelar()">Volver a la bandeja</app-button>
+    </div>
+  } @else if (cabecera(); as c) {
+
+    <!-- ── Header ─────────────────────────────────────────────────────── -->
+    <app-breadcrumb [items]="breadcrumb()" />
+
+    <app-hero-header
+      icono="edit_document"
+      titulo="Editar Informe de Servicio Técnico"
+      [descripcion]="(c.tecnico ?? '—') + ' · ' + (c.razonSocial ?? '—') + ' · ' + (c.equipo ?? '—') + ' · ejecutado el ' + ((c.fechaEjecucion | date:'dd/MM/yyyy') ?? '—')"
+      [codigoFicha]="(c.numeroOs ?? '—') + ' · v' + c.version"
+      [badgeTexto]="c.estadoLabel ?? ''"
+      [badgeVariant]="badgeVarianteHero()"
+      (volver)="cancelar()" />
+
+    <!-- ── Stepper (patrón wizard propuesta) ──────────────────────────── -->
+    <div class="stepper">
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 1"
+         [class.stepper__paso--completado]="paso() > 1"
+         (click)="irPaso(1)">
+        <span class="stepper__numero">
+          @if (paso() > 1) { <span class="material-symbols-outlined">check</span> }
+          @else { 1 }
+        </span>
+        <span class="stepper__label">Datos y Procedimiento</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 2"
+         [class.stepper__paso--completado]="paso() > 2"
+         (click)="irPaso(2)">
+        <span class="stepper__numero">
+          @if (paso() > 2) { <span class="material-symbols-outlined">check</span> }
+          @else { 2 }
+        </span>
+        <span class="stepper__label">Ensayos</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 3"
+         [class.stepper__paso--completado]="paso() > 3"
+         (click)="irPaso(3)">
+        <span class="stepper__numero">
+          @if (paso() > 3) { <span class="material-symbols-outlined">check</span> }
+          @else { 3 }
+        </span>
+        <span class="stepper__label">Fotos y Descripción</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 4"
+         (click)="irPaso(4)">
+        <span class="stepper__numero">4</span>
+        <span class="stepper__label">Hallazgos y Precotización</span>
+        @if (requierePrecotizacion()) {
+          <span class="stepper__dot" title="Obligatorio">!</span>
+        }
+      </a>
+    </div>
+
+    <!-- ── Grid 2 columnas (contenido + sidebar) ──────────────────────── -->
+    <div class="fe-grid">
+
+      <main class="fe-main">
+
+        <!-- ═══ PASO 1: DATOS Y PROCEDIMIENTO ═══════════════════════════ -->
+        @if (paso() === 1) {
+
+          <app-seccion
+            icono="lock"
+            titulo="1. Datos Generales del Servicio"
+            subtitulo="Información cargada desde la OS — no editable"
+            badgeTexto="LECTURA PROTEGIDA"
+            badgeVariant="dark">
+            <div class="info-grid info-grid--3">
+              <div class="info-item"><small>CLIENTE</small><strong>{{ c.razonSocial ?? '—' }}</strong></div>
+              <div class="info-item"><small>SEDE</small><strong>{{ c.sede ?? '—' }}</strong></div>
+              <div class="info-item"><small>EQUIPO</small><strong>{{ c.equipo ?? '—' }}</strong></div>
+              <div class="info-item"><small>TIPO DE SERVICIO</small><strong>{{ c.tipoServicio ?? '—' }}</strong></div>
+              <div class="info-item">
+                <small>TÉCNICO ASIGNADO</small>
+                <div class="tec-row"><span class="tec-avatar">{{ c.tecnico | iniciales }}</span><strong>{{ c.tecnico ?? '—' }}</strong></div>
+              </div>
+              <div class="info-item"><small>CONTACTO EN SITIO</small><strong>{{ c.contacto ?? '—' }}</strong></div>
+              <div class="info-item"><small>FECHA DE EJECUCIÓN</small><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }}</strong></div>
+              <div class="info-item"><small>HORARIO DE TRABAJO</small><strong>{{ c.horaInicio ?? '—' }} - {{ c.horaFin ?? '—' }}</strong></div>
+              <div class="info-item"><small>PROPUESTA ORIGEN</small><strong class="link">{{ c.numeroPropuesta ?? '—' }} <span class="muted">v{{ c.versionPropuesta }}</span></strong></div>
+            </div>
+          </app-seccion>
+
+          <app-seccion
+            icono="checklist"
+            titulo="2. Detalle del Procedimiento Ejecutado"
+            subtitulo="Pasos ejecutados por el técnico desde la app móvil. Solo lectura."
+            [badgeTexto]="'LECTURA PROTEGIDA'"
+            badgeVariant="dark">
+
+            @if (procedimientoDraft.length === 0) {
+              <p class="vacio">El técnico no registró pasos para este servicio.</p>
+            }
+
+            <ol class="pasos-lectura">
+              @for (p of procedimientoDraft; track $index) {
+                <li class="paso-lectura" [class.paso-lectura--no]="!p.realizado">
+                  <span class="paso-lectura__check" [class.paso-lectura__check--ok]="p.realizado">
+                    <span class="material-symbols-outlined">{{ p.realizado ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                  </span>
+                  <div class="paso-lectura__body">
+                    <strong>{{ p.titulo }}</strong>
+                    @if (p.detalle) { <small>{{ p.detalle }}</small> }
+                  </div>
+                  @if (!p.realizado) {
+                    <span class="chip chip--ambar">No realizado</span>
+                  }
+                </li>
+              }
+            </ol>
+          </app-seccion>
+        }
+
+        <!-- ═══ PASO 2: ENSAYOS ═════════════════════════════════════════ -->
+        @if (paso() === 2) {
+          <app-seccion
+            icono="science"
+            titulo="1. Resultado Global de los Ensayos"
+            subtitulo="Parámetros de referencia y conclusión técnica">
+            <div class="grid-cols-3">
+              <app-campo label="Normativa">
+                <input type="text" [(ngModel)]="resultadoDraft.normativa" placeholder="OIML R-76 / INACAL">
+              </app-campo>
+              <app-campo label="Patrón de ensayo">
+                <input type="text" [(ngModel)]="resultadoDraft.patronEnsayo" placeholder="M1 #LOT-2024">
+              </app-campo>
+              <app-campo label="Tolerancia excentricidad">
+                <input type="number" step="0.01" [(ngModel)]="resultadoDraft.toleranciaExcentricidad">
+              </app-campo>
+              <app-campo label="Resultado global">
+                <select [(ngModel)]="resultadoDraft.resultadoGlobal">
+                  <option [ngValue]="null">Sin definir</option>
+                  <option [ngValue]="'dentro'">Dentro de tolerancia</option>
+                  <option [ngValue]="'fuera'">Fuera de tolerancia</option>
+                </select>
+              </app-campo>
+              <app-campo label="Error máximo">
+                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.errorMaximo">
+              </app-campo>
+              <app-campo label="Detalle del error máx.">
+                <input type="text" [(ngModel)]="resultadoDraft.errorMaximoDetalle" placeholder="%, kg, g...">
+              </app-campo>
+              <app-campo label="Incertidumbre">
+                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.incertidumbre">
+              </app-campo>
+              <app-campo label="Factor K">
+                <input type="number" step="0.1" [(ngModel)]="resultadoDraft.factorK">
+              </app-campo>
+            </div>
+            <app-campo label="Decisión técnica">
+              <textarea rows="2" [(ngModel)]="resultadoDraft.decisionTecnica"
+                        placeholder="Ej. Equipo apto para seguir en operación."></textarea>
+            </app-campo>
+          </app-seccion>
+
+          <app-seccion
+            icono="monitor_weight"
+            titulo="2. Ensayos Registrados"
+            [subtitulo]="'Pesaje y excentricidad. ' + ensayosNoConformes() + ' no conformes.'">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('pesaje')">
+                Pesaje
+              </app-button>
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('excentricidad')">
+                Excentricidad
+              </app-button>
+            </div>
+
+            @if (ensayosDraft.length === 0) {
+              <p class="vacio">Aún no hay ensayos registrados.</p>
+            } @else {
+              <table class="tabla-edit">
+                <thead>
+                  <tr>
+                    <th>TIPO</th><th>PUNTO</th><th>NOTA</th>
+                    <th class="num">CARGA</th><th class="num">LECTURA</th>
+                    <th class="num">ERROR</th><th class="num">TOL.</th>
+                    <th>RESULTADO</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (e of ensayosDraft; track $index) {
+                    <tr>
+                      <td><span class="chip chip--azul">{{ e.tipo === 'pesaje' ? 'Pesaje' : 'Excent.' }}</span></td>
+                      <td><input type="text" [(ngModel)]="e.punto" placeholder="Punto"></td>
+                      <td><input type="text" [(ngModel)]="e.notaPunto" placeholder="CAP. MÁX, etc."></td>
+                      <td class="num"><input type="number" step="0.01" [(ngModel)]="e.carga"></td>
+                      <td class="num"><input type="number" step="0.01" [(ngModel)]="e.lectura"></td>
+                      <td class="num"><input type="number" step="0.001" [(ngModel)]="e.error"></td>
+                      <td class="num"><input type="number" step="0.001" [(ngModel)]="e.tolerancia"></td>
+                      <td>
+                        <select [(ngModel)]="e.resultado">
+                          <option [ngValue]="null">—</option>
+                          <option [ngValue]="'conforme'">Conforme</option>
+                          <option [ngValue]="'no_conforme'">No conforme</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button class="icono-btn" type="button" (click)="eliminarEnsayo($index)" title="Eliminar">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </app-seccion>
+        }
+
+        <!-- ═══ PASO 3: FOTOS Y DESCRIPCIÓN ═════════════════════════════ -->
+        @if (paso() === 3) {
+          <app-seccion
+            icono="photo_library"
+            titulo="1. Fotos del Servicio"
+            subtitulo="Capturadas por el técnico desde la app móvil. Solo lectura."
+            [badgeTexto]="fotos().length + ' fotos'"
+            badgeVariant="dark">
+
+            @if (fotos().length === 0) {
+              <p class="vacio vacio--grande">
+                <span class="material-symbols-outlined">image_not_supported</span>
+                El técnico no subió fotos para este servicio.
+              </p>
+            } @else {
+              <div class="galeria">
+                @for (f of fotos(); track f.idEvidencia) {
+                  <a class="foto" [href]="f.urlArchivo" target="_blank">
+                    <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''">
+                    <div class="foto__pie">
+                      <span class="chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
+                      @if (f.codigoObservacion) { <span class="chip chip--rojo">{{ f.codigoObservacion }}</span> }
+                    </div>
+                  </a>
+                }
+              </div>
+            }
+          </app-seccion>
+
+          <app-seccion
+            icono="description"
+            titulo="2. Descripción Complementaria del Supervisor"
+            subtitulo="Notas internas o contexto adicional que acompañan el informe">
+            <app-campo>
+              <textarea rows="6"
+                        [(ngModel)]="descripcionDraft"
+                        placeholder="Observaciones adicionales del supervisor técnico sobre este servicio..."></textarea>
+            </app-campo>
+          </app-seccion>
+        }
+
+        <!-- ═══ PASO 4: HALLAZGOS Y PRECOTIZACIÓN ═══════════════════════ -->
+        @if (paso() === 4) {
+
+          <!-- Banner informativo -->
+          @if (requierePrecotizacion()) {
+            <div class="aviso-banner aviso-banner--ambar">
+              <span class="material-symbols-outlined">info</span>
+              <span>Este servicio tiene observaciones registradas. Debes registrar la precotización antes de marcar el informe como revisado.</span>
+            </div>
+          }
+
+          <!-- Observaciones -->
+          <app-seccion
+            icono="warning"
+            titulo="1. Observaciones Detectadas"
+            subtitulo="Hallazgos encontrados durante el servicio">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarObservacion()">
+                Observación
+              </app-button>
+            </div>
+
+            @if (observacionesDraft.length === 0) {
+              <p class="vacio">Este servicio se cerró sin observaciones.</p>
+            }
+
+            <div class="hallazgo-lista">
+              @for (o of observacionesDraft; track $index) {
+                <article class="hallazgo">
+                  <header class="hallazgo__head">
+                    <span class="hallazgo__codigo">OBS-{{ $index + 1 }}</span>
+                    <input class="hallazgo__titulo" type="text" placeholder="Título de la observación"
+                           [(ngModel)]="o.titulo">
+                    <select class="hallazgo__nivel" [(ngModel)]="o.nivelAfectacion">
+                      <option [ngValue]="'critico'">Crítico</option>
+                      <option [ngValue]="'alto'">Alto</option>
+                      <option [ngValue]="'medio'">Medio</option>
+                      <option [ngValue]="'bajo'">Bajo</option>
+                    </select>
+                    <button class="icono-btn" type="button" (click)="eliminarObservacion($index)" title="Eliminar">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </header>
+                  <textarea class="hallazgo__desc" rows="2" placeholder="Descripción del hallazgo..."
+                            [(ngModel)]="o.descripcion"></textarea>
+                  <div class="form-grid form-grid--2">
+                    <div class="field"><label>UBICACIÓN</label>
+                      <input type="text" [(ngModel)]="o.ubicacion" placeholder="Ej. Celda de carga N°2"></div>
+                    <div class="field"><label>DETALLE EXTRA</label>
+                      <input type="text" [(ngModel)]="o.detalleExtra" placeholder="Ej. +3.2% fuera tolerancia"></div>
+                  </div>
+                </article>
+              }
+            </div>
+          </app-seccion>
+
+          <!-- Recomendaciones -->
+          <app-seccion
+            icono="lightbulb"
+            titulo="2. Recomendaciones Técnicas"
+            subtitulo="Acciones correctivas sugeridas al cliente">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarRecomendacion()">
+                Recomendación
+              </app-button>
+            </div>
+
+            @if (recomendacionesDraft.length === 0) {
+              <p class="vacio">Sin recomendaciones registradas.</p>
+            }
+
+            <div class="hallazgo-lista">
+              @for (r of recomendacionesDraft; track $index) {
+                <article class="hallazgo">
+                  <header class="hallazgo__head">
+                    <span class="hallazgo__codigo">REC-{{ $index + 1 }}</span>
+                    <input class="hallazgo__titulo" type="text" placeholder="Título de la recomendación"
+                           [(ngModel)]="r.titulo">
+                    <select class="hallazgo__nivel" [(ngModel)]="r.prioridad">
+                      <option [ngValue]="'alta'">Prioridad Alta</option>
+                      <option [ngValue]="'media'">Prioridad Media</option>
+                      <option [ngValue]="'baja'">Prioridad Baja</option>
+                    </select>
+                    <button class="icono-btn" type="button" (click)="eliminarRecomendacion($index)" title="Eliminar">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </header>
+                  <textarea class="hallazgo__desc" rows="2" placeholder="Acción recomendada..."
+                            [(ngModel)]="r.descripcion"></textarea>
+                  <div class="form-grid form-grid--2">
+                    <div class="field"><label>PLAZO SUGERIDO</label>
+                      <input type="text" [(ngModel)]="r.plazo" placeholder="Inmediato (< 48h), Próximo mantenimiento..."></div>
+                  </div>
+                </article>
+              }
+            </div>
+          </app-seccion>
+
+          <!-- Precotización -->
+          @if (requierePrecotizacion()) {
+            <app-seccion
+              icono="receipt_long"
+              titulo="3. Precotización Técnica"
+              subtitulo="Ítems/repuestos a cotizar. Se envía a Comercial como insumo para la propuesta derivada."
+              badgeTexto="Obligatoria"
+              badgeVariant="rojo">
+              <div headerActions class="card__botones">
+                <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarItemPrecot()">
+                  Ítem
+                </app-button>
+              </div>
+
+              @if (precotizacionDraft.length === 0) {
+                <p class="vacio">Aún no has registrado ítems en la precotización.</p>
+              } @else {
+                <table class="tabla-edit">
+                  <thead>
+                    <tr>
+                      <th>CONCEPTO</th><th>CÓDIGO</th><th>DESCRIPCIÓN TÉCNICA</th>
+                      <th class="num">CANT.</th><th>UNIDAD</th><th>PRIORIDAD</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (it of precotizacionDraft; track $index) {
+                      <tr>
+                        <td><input type="text" [(ngModel)]="it.concepto" placeholder="Celda carga 2T"></td>
+                        <td><input type="text" [(ngModel)]="it.codigo" placeholder="SP-CEL-2000K-IP68"></td>
+                        <td><input type="text" [(ngModel)]="it.descripcionTecnica" placeholder="Especificaciones..."></td>
+                        <td class="num"><input type="number" min="0" step="0.5" [(ngModel)]="it.cantidad"></td>
+                        <td><input type="text" [(ngModel)]="it.unidad" placeholder="un / serv / m"></td>
+                        <td>
+                          <select [(ngModel)]="it.prioridad" [class]="clasePrioridadPrecot(it.prioridad)">
+                            <option [ngValue]="'alta'">Alta</option>
+                            <option [ngValue]="'media'">Media</option>
+                            <option [ngValue]="'opcional'">Opcional</option>
+                          </select>
+                        </td>
+                        <td>
+                          <button class="icono-btn" type="button" (click)="eliminarItemPrecot($index)" title="Eliminar">
+                            <span class="material-symbols-outlined">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              <div class="field field--full">
+                <label>NOTA PARA COMERCIAL</label>
+                <textarea rows="2" [(ngModel)]="notaPrecotDraft"
+                          placeholder="Contexto u observaciones del supervisor para el área comercial..."></textarea>
+              </div>
+            </app-seccion>
+          }
+        }
+      </main>
+
+      <!-- ═══ SIDEBAR DERECHO ══════════════════════════════════════════ -->
+      <aside class="fe-side">
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">RESUMEN DEL INFORME</span>
+          </div>
+          <div class="side-list">
+            <div><span>Orden de Servicio</span><strong>{{ c.numeroOs ?? '—' }}</strong></div>
+            <div><span>Requerimiento</span><strong class="link">{{ c.numeroRq ?? '—' }}</strong></div>
+            <div><span>Cliente</span><strong>{{ c.razonSocial ?? '—' }}</strong></div>
+            <div>
+              <span>Técnico de campo</span>
+              <strong>{{ c.tecnico ?? '—' }}</strong>
+            </div>
+            <div><span>Ejecutado el</span><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }} {{ c.horaInicio }}</strong></div>
+            <div><span>Duración en campo</span>
+              <strong>
+                @if (c.duracionMin) { {{ (c.duracionMin / 60) | number:'1.0-0' }}h {{ c.duracionMin % 60 }}m }
+                @else { — }
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">CHECKLIST DE GUARDADO</span>
+          </div>
+          <ul class="checklist">
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Datos generales</span>
+              <small class="checklist__meta">Completo</small>
+            </li>
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Procedimiento registrado</span>
+              <small class="checklist__meta">{{ pasosEjecutados() }} / {{ procedimientoDraft.length }}</small>
+            </li>
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Observaciones</span>
+              <small class="checklist__meta">{{ observacionesDraft.length }}</small>
+            </li>
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Recomendaciones</span>
+              <small class="checklist__meta">{{ recomendacionesDraft.length }}</small>
+            </li>
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Ensayos registrados</span>
+              <small class="checklist__meta">{{ ensayosDraft.length }}</small>
+            </li>
+            @if (requierePrecotizacion()) {
+              <li [class.checklist__li--alerta]="precotizacionDraft.length === 0">
+                <span class="material-symbols-outlined"
+                      [class.check]="precotizacionDraft.length > 0"
+                      [class.check-rojo]="precotizacionDraft.length === 0">
+                  {{ precotizacionDraft.length > 0 ? 'check_circle' : 'warning' }}
+                </span>
+                <span>Precotización</span>
+                <small class="checklist__meta" [class.checklist__meta--alerta]="precotizacionDraft.length === 0">
+                  @if (precotizacionDraft.length === 0) { Pendiente }
+                  @else { {{ precotizacionDraft.length }} ítems }
+                </small>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">HISTORIAL RECIENTE</span>
+          </div>
+          @if (historialReciente().length === 0) {
+            <p class="vacio vacio--mini">Sin eventos aún.</p>
+          } @else {
+            <ul class="timeline-mini">
+              @for (ev of historialReciente(); track ev.idAuditoria) {
+                <li class="ev-mini">
+                  <span class="ev-mini__dot"></span>
+                  <div>
+                    <strong>{{ ev.fecha | date:'dd/MM/yyyy HH:mm' }}</strong>
+                    @if (ev.usuario) { <small>· {{ ev.usuario }}</small> }
+                    <p>{{ ev.descripcion ?? ev.accion }}</p>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </aside>
+
+      <!-- ── Footer sticky dentro del grid (patrón wizard propuesta) ──── -->
+      <div class="ficha-footer">
+        <div class="wizard__footer">
+          <div class="wizard__footer-izq">
+            @if (paso() > 1) {
+              <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="anteriorPaso()">
+                Atrás
+              </app-button>
+            }
+            <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
+              Cancelar
+            </app-button>
+          </div>
+          <div class="wizard__footer-der">
+            @if (ultimoGuardado(); as fecha) {
+              <small class="wizard__footer-hint">Último guardado {{ fecha | date:'HH:mm' }}</small>
+            }
+            <app-button variant="ghost" tamano="md" icono="save"
+                        [disabled]="guardando()"
+                        [cargando]="guardando()"
+                        (clic)="guardar()">
+              {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+            </app-button>
+            @if (paso() < 4) {
+              <app-button variant="primary" tamano="md" icono="chevron_right" (clic)="siguientePaso()">
+                Continuar
+              </app-button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+  }
+</div>

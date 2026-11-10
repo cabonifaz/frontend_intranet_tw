@@ -199,7 +199,7 @@
           @for (p of propuestas(); track p.idPropuesta) {
             <span class="leyenda-item">
               <span class="leyenda-item__dot"></span>
-              {{ p.numero }}: {{ p.montoAsignado | moneda:c.monedaSimbolo }} ({{ p.pctOc }}%)
+              {{ p.numero  }}: {{ p.montoAsignado | moneda:c.monedaSimbolo }} ({{ p.pctOc }}%)
             </span>
           }
           <span class="leyenda-total">
@@ -213,7 +213,7 @@
         <div class="card-propuesta">
           <div class="card-propuesta__header">
             <div class="card-propuesta__titulo">
-              <strong class="card-propuesta__codigo">{{ p.numero }} v{{ p.version }}</strong>
+              <strong class="card-propuesta__codigo">{{ p.numero }}</strong>
               <span class="chip chip--verde">{{ p.aceptada ? 'ACEPTADA' : p.estadoPropuesta }}</span>
               <span class="card-propuesta__pct">{{ p.pctOc }}% de la OC ({{ p.montoAsignado | moneda:c.monedaSimbolo }})</span>
             </div>

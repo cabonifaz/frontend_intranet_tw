@@ -1,0 +1,73 @@
+.estado {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 40px; color: #64748B; font-size: 13.5px;
+
+  .material-symbols-outlined { font-size: 22px; }
+  .spin { animation: rot 1s linear infinite; color: #2563EB; }
+}
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.cuerpo { display: flex; flex-direction: column; gap: 16px; }
+
+.info-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 20px;
+  padding: 12px 14px;
+  background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+
+  .info-item {
+    display: flex; flex-direction: column; gap: 2px;
+    small  { font-size: 10px; color: #64748B; letter-spacing: 0.3px; text-transform: uppercase; font-weight: 700; }
+    strong { font-size: 13px; color: #0F172A; font-weight: 500; }
+  }
+}
+
+.banner {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12.5px; line-height: 1.5;
+
+  .material-symbols-outlined { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  strong { font-weight: 600; }
+
+  &--rojo  { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA;
+            .material-symbols-outlined { color: #DC2626; } }
+  &--ambar { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A;
+            .material-symbols-outlined { color: #D97706; } }
+  &--azul  { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;
+            .material-symbols-outlined { color: #2563EB; } }
+}
+
+.campo {
+  display: flex; flex-direction: column; gap: 5px;
+
+  label {
+    font-size: 11px; font-weight: 700; color: #475569;
+    letter-spacing: 0.3px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+
+    .req { color: #DC2626; }
+    .hint { font-size: 10.5px; color: #94A3B8; text-transform: none; letter-spacing: 0; font-weight: 500; }
+  }
+
+  select, textarea {
+    padding: 9px 11px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 13px; font-family: inherit;
+    background: #FFFFFF;
+
+    &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+  }
+  textarea { resize: vertical; }
+
+  .contador { align-self: flex-end; font-size: 11px; color: #94A3B8; }
+}
+
+.footer-modal {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border-top: 1px solid #E5E7EB;
+}

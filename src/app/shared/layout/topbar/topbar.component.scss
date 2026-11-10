@@ -105,9 +105,31 @@
   right: 4px;
   width: 8px;
   height: 8px;
-  background: #E31B23;
+  background: #DC2626;
   border: 2px solid #FFFFFF;
   border-radius: 9999px;
+  pointer-events: none;
+}
+
+.topbar__badge-count {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #DC2626;
+  color: #FFFFFF;
+  border: 2px solid #FFFFFF;
+  border-radius: 9999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
 
@@ -210,9 +232,9 @@
   font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
-  background: #FEE2E2;
-  color: #E31B23;
+  padding: 2px 8px;
+  background: #DBEAFE;
+  color: #1D4ED8;
   border-radius: 100px;
 }
 
@@ -245,28 +267,19 @@
   border-bottom: 1px solid #E5E7EB;
   background: #FFFFFF;
   transition: background 0.12s;
+  cursor: pointer;
 
   &:last-child { border-bottom: none; }
   &--no-leida  { background: #EFF4FF; }
+  &--alerta    { background: #FEF2F2; }
+  &:hover      { background: #E0E7FF; }
+  &--alerta:hover { background: #FECACA; }
 }
 
 .topbar__notif-fila {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.topbar__notif-izq {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.topbar__notif-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  flex-shrink: 0;
 }
 
 .topbar__notif-titulo {
@@ -295,23 +308,36 @@
 }
 
 .topbar__notif-vacio {
-  padding: 24px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 32px 16px;
   text-align: center;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   color: #9CA3AF;
+
+  .material-symbols-outlined { font-size: 28px; color: #16A34A; }
+}
+
+.topbar__notif-subt {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 500;
 }
 
 // ─── Footer notificaciones ────────────────────────────────────────────────────
 .topbar__notif-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  background: #EFF4FF;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  border-top: 1px solid #E5E7EB;
 }
 
 .topbar__notif-footer-link {
+  display: inline-flex; align-items: center; gap: 6px;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
   font-weight: 700;
@@ -319,9 +345,13 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
 
-  &:hover { text-decoration: underline; }
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #DBEAFE; }
+
+  &--sec { color: #475569; &:hover { background: #E2E8F0; color: #0F172A; } }
 }
 
 // ─── Menú usuario ─────────────────────────────────────────────────────────────

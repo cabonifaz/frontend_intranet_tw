@@ -2,6 +2,8 @@
   <div class="modal modal--{{ ancho() }}">
     <div class="modal__header" [class.modal__header--rico]="tieneHeaderRico()">
       <div class="modal__header-izq">
+        <!-- Slot para acciones a la izquierda del header (ej. botón "Volver"). -->
+        <ng-content select="[modalHeaderStart]"></ng-content>
         @if (icono(); as ic) {
           <div class="modal__icono-wrap modal__icono-wrap--{{ iconoColor() }}">
             <span class="material-symbols-outlined modal__icono">{{ ic }}</span>

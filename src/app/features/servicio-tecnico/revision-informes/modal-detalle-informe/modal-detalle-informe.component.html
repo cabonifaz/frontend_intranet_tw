@@ -1,0 +1,571 @@
+<div class="mdi-overlay" (click)="$event.target === $event.currentTarget && onCerrar()">
+  <div class="mdi">
+
+    <!-- ── Header ─────────────────────────────────────────────────────── -->
+    <div class="mdi__header">
+      <div class="mdi__header-izq">
+        <div class="mdi__icono-wrap">
+          <span class="material-symbols-outlined">description</span>
+        </div>
+        <div class="mdi__textos">
+          <div class="mdi__titulo-fila">
+            <h2 class="mdi__titulo">Detalle del Servicio Técnico</h2>
+            @if (cabecera(); as c) {
+              <span class="mdi__separador">/</span>
+              <span class="mdi__numero">{{ c.numeroOs ?? '—' }}</span>
+              <span class="mdi__version">· v{{ c.version }}</span>
+            }
+          </div>
+          @if (cabecera(); as c) {
+            <p class="mdi__subtitulo">
+              Técnico <strong>{{ c.tecnico ?? '—' }}</strong> ·
+              ejecutado el {{ c.fechaEjecucion | date:'dd/MM/yyyy' }}
+              @if (c.horaInicio) { {{ c.horaInicio }} }
+              @if (c.duracionMin) { · duración {{ (c.duracionMin / 60) | number:'1.0-0' }}h {{ c.duracionMin % 60 }}m }
+            </p>
+          }
+        </div>
+      </div>
+      <div class="mdi__header-der">
+        @if (cabecera(); as c) {
+          <span [class]="chipEstado()">{{ c.estadoLabel ?? '—' }}</span>
+        }
+        <button class="mdi__cerrar" type="button" (click)="onCerrar()" title="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+    <div class="mdi__tabs">
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'resumen'"       (click)="cambiarTab('resumen')">Resumen</button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'detalle'"       (click)="cambiarTab('detalle')">Detalle del Servicio</button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'descripcion'"   (click)="cambiarTab('descripcion')">Descripción Complementaria</button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'observaciones'" (click)="cambiarTab('observaciones')">
+        Observaciones
+        @if (observaciones().length) { <span class="mdi__tab-badge">{{ observaciones().length }}</span> }
+      </button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'recomendaciones'" (click)="cambiarTab('recomendaciones')">
+        Recomendaciones
+        @if (recomendaciones().length) { <span class="mdi__tab-badge">{{ recomendaciones().length }}</span> }
+      </button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'ensayos'" (click)="cambiarTab('ensayos')">
+        Ensayos
+        @if (ensayos().length) { <span class="mdi__tab-badge">{{ ensayos().length }}</span> }
+      </button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'fotos'" (click)="cambiarTab('fotos')">
+        Fotos
+        @if (fotosTodas().length) { <span class="mdi__tab-badge">{{ fotosTodas().length }}</span> }
+      </button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'historial'" (click)="cambiarTab('historial')">Historial</button>
+    </div>
+
+    <!-- ── Body ────────────────────────────────────────────────────────── -->
+    <div class="mdi__body">
+      @if (cargando()) {
+        <div class="loading">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando detalle del informe...
+        </div>
+      } @else if (error(); as err) {
+        <div class="aviso-error">
+          <span class="material-symbols-outlined">error</span>
+          <div>
+            <strong>No se pudo cargar el detalle</strong>
+            <p>{{ err }}</p>
+          </div>
+          <app-button variant="primary" tamano="sm" icono="refresh" (clic)="cargar()">Reintentar</app-button>
+        </div>
+      } @else if (cabecera(); as c) {
+
+        <!-- Aviso bloqueo (banner ámbar) -->
+        @if (c.mensajeBloqueo) {
+          <div class="aviso-banner aviso-banner--ambar">
+            <span class="material-symbols-outlined">info</span>
+            <span>{{ c.mensajeBloqueo }}</span>
+          </div>
+        }
+
+        <!-- ── TAB 1: RESUMEN ───────────────────────────────────────── -->
+        @if (tab() === 'resumen') {
+          <!-- 5 KPI cards horizontales -->
+          <div class="mini-grid">
+            <div class="mini-card">
+              <div class="mini-card__icono"><span class="material-symbols-outlined">apartment</span></div>
+              <div class="mini-card__body">
+                <small>CLIENTE</small>
+                <strong>{{ c.razonSocial ?? '—' }}</strong>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card__icono"><span class="material-symbols-outlined">place</span></div>
+              <div class="mini-card__body">
+                <small>SEDE</small>
+                <strong>{{ c.sede ?? '—' }}</strong>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card__icono"><span class="material-symbols-outlined">precision_manufacturing</span></div>
+              <div class="mini-card__body">
+                <small>EQUIPO</small>
+                <strong>{{ c.equipo ?? '—' }}</strong>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card__icono"><span class="material-symbols-outlined">build</span></div>
+              <div class="mini-card__body">
+                <small>TIPO DE SERVICIO</small>
+                <strong>{{ c.tipoServicio ?? '—' }}</strong>
+              </div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-card__icono"><span class="material-symbols-outlined">schedule</span></div>
+              <div class="mini-card__body">
+                <small>DURACIÓN</small>
+                <strong>
+                  @if (c.duracionMin) { {{ (c.duracionMin / 60) | number:'1.0-0' }}h {{ c.duracionMin % 60 }}m }
+                  @else { — }
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2 columnas: Info General + Validaciones -->
+          <div class="col2">
+            <section class="card">
+              <header class="card__head">
+                <span class="material-symbols-outlined">info</span>
+                <h3>Información General del Servicio</h3>
+              </header>
+              <div class="info-grid">
+                <div class="info-item">
+                  <small>ORDEN DE SERVICIO</small>
+                  <strong>{{ c.numeroOs ?? '—' }}</strong>
+                </div>
+                <div class="info-item">
+                  <small>PROPUESTA DE ORIGEN</small>
+                  <strong class="link">
+                    {{ c.numeroPropuesta ?? '—' }}@if (c.versionPropuesta) { <span class="muted"> v{{ c.versionPropuesta }}</span> }
+                    @if (c.numeroPropuesta) { <span class="material-symbols-outlined link__icon">open_in_new</span> }
+                  </strong>
+                </div>
+                <div class="info-item">
+                  <small>REQUERIMIENTO (RQ)</small>
+                  <strong class="link">
+                    {{ c.numeroRq ?? '—' }}
+                    @if (c.numeroRq) { <span class="material-symbols-outlined link__icon">open_in_new</span> }
+                  </strong>
+                </div>
+                <div class="info-item">
+                  <small>FECHA DE EJECUCIÓN</small>
+                  <strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }}</strong>
+                </div>
+                <div class="info-item">
+                  <small>HORARIO DE TRABAJO</small>
+                  <strong>
+                    @if (c.horaInicio || c.horaFin) { {{ c.horaInicio ?? '—' }} - {{ c.horaFin ?? '—' }} }
+                    @else { — }
+                  </strong>
+                </div>
+                <div class="info-item">
+                  <small>CONTACTO EN SITIO</small>
+                  <strong>{{ c.contacto ?? '—' }}</strong>
+                </div>
+                <div class="info-item info-item--wide">
+                  <small>TÉCNICO ASIGNADO</small>
+                  <div class="tec-row">
+                    <span class="tec-avatar">{{ c.tecnico | iniciales }}</span>
+                    <strong>{{ c.tecnico ?? '—' }}</strong>
+                  </div>
+                </div>
+                <div class="info-item info-item--wide">
+                  <small>TIPO BALANZA</small>
+                  <strong>{{ c.tipoEquipo ?? '—' }}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="card">
+              <header class="card__head">
+                <span class="material-symbols-outlined">fact_check</span>
+                <h3>Resumen de Validaciones</h3>
+              </header>
+              <ul class="val-list">
+                <li class="val-item">
+                  <span class="material-symbols-outlined val-item__icon">image</span>
+                  <span class="val-item__label">Fotos obligatorias</span>
+                  <span [class]="chipFotos(c).clase">{{ chipFotos(c).label }}</span>
+                </li>
+                <li class="val-item">
+                  <span class="material-symbols-outlined val-item__icon">science</span>
+                  <span class="val-item__label">Ensayos registrados</span>
+                  <span [class]="chipEnsayos(c).clase">{{ chipEnsayos(c).label }}</span>
+                </li>
+                <li class="val-item">
+                  <span class="material-symbols-outlined val-item__icon">warning</span>
+                  <span class="val-item__label">Observaciones detectadas</span>
+                  <span [class]="chipObservaciones(c).clase">{{ chipObservaciones(c).label }}</span>
+                </li>
+                <li class="val-item">
+                  <span class="material-symbols-outlined val-item__icon">lightbulb</span>
+                  <span class="val-item__label">Recomendaciones</span>
+                  <span [class]="chipRecomendaciones(c).clase">{{ chipRecomendaciones(c).label }}</span>
+                </li>
+                <li class="val-item">
+                  <span class="material-symbols-outlined val-item__icon">checklist</span>
+                  <span class="val-item__label">Checklist del procedimiento</span>
+                  <span [class]="chipProcedimiento(c).clase">{{ chipProcedimiento(c).label }}</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <!-- Resumen del diagnóstico -->
+          @if (c.diagnostico) {
+            <section class="card card--texto">
+              <header class="card__head">
+                <span class="material-symbols-outlined">subject</span>
+                <h3>Resumen del Diagnóstico</h3>
+              </header>
+              <p class="card__texto">{{ c.diagnostico }}</p>
+            </section>
+          }
+        }
+
+        <!-- ── TAB 2: DETALLE DEL SERVICIO (equipo + procedimiento) ────── -->
+        @if (tab() === 'detalle') {
+          <section class="card">
+            <header class="card__head">
+              <span class="material-symbols-outlined">precision_manufacturing</span>
+              <h3>Equipo atendido</h3>
+            </header>
+            <div class="info-grid">
+              <div class="info-item"><small>EQUIPO</small><strong>{{ c.equipo ?? '—' }}</strong></div>
+              <div class="info-item"><small>CÓDIGO TW</small><strong>{{ c.codigoTw ?? '—' }}</strong></div>
+              <div class="info-item"><small>N° DE SERIE</small><strong>{{ c.numeroSerie ?? '—' }}</strong></div>
+              <div class="info-item"><small>MARCA</small><strong>{{ c.marca ?? '—' }}</strong></div>
+              <div class="info-item"><small>MODELO</small><strong>{{ c.modelo ?? '—' }}</strong></div>
+              <div class="info-item"><small>TIPO BALANZA</small><strong>{{ c.tipoEquipo ?? '—' }}</strong></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <header class="card__head">
+              <span class="material-symbols-outlined">checklist</span>
+              <h3>Procedimiento ejecutado</h3>
+              <span class="card__meta">{{ c.nPasosRealizados }} / {{ c.nPasos }} pasos · {{ c.porcentajeProcedimiento ?? 0 }}%</span>
+            </header>
+            @if (procedimiento().length === 0) {
+              <p class="vacio">El técnico no registró pasos para este servicio.</p>
+            } @else {
+              <ol class="pasos">
+                @for (p of procedimiento(); track p.idPaso) {
+                  <li class="paso" [class.paso--no-realizado]="!p.realizado">
+                    <span class="paso__num">{{ p.orden }}</span>
+                    <div class="paso__body">
+                      <strong>{{ p.titulo }}</strong>
+                      @if (p.detalle) { <p class="paso__detalle">{{ p.detalle }}</p> }
+                      @if (p.nota) { <p class="paso__nota">Nota: {{ p.nota }}</p> }
+                    </div>
+                    <span class="material-symbols-outlined paso__check" [class.paso__check--ok]="p.realizado">
+                      {{ p.realizado ? 'check_circle' : 'radio_button_unchecked' }}
+                    </span>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
+
+          @if (c.normativa || c.patronEnsayo || c.resultadoGlobal) {
+            <section class="card">
+              <header class="card__head">
+                <span class="material-symbols-outlined">analytics</span>
+                <h3>Resultado global de los ensayos</h3>
+                @if (c.resultadoGlobal) {
+                  <span class="chip" [class.chip--verde]="c.resultadoGlobal === 'dentro'" [class.chip--rojo]="c.resultadoGlobal === 'fuera'">
+                    {{ c.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia' : 'Fuera de tolerancia' }}
+                  </span>
+                }
+              </header>
+              <div class="info-grid">
+                <div class="info-item"><small>NORMATIVA</small><strong>{{ c.normativa ?? '—' }}</strong></div>
+                <div class="info-item"><small>PATRÓN DE ENSAYO</small><strong>{{ c.patronEnsayo ?? '—' }}</strong></div>
+                <div class="info-item"><small>TOLERANCIA EXCENTRICIDAD</small><strong>{{ c.toleranciaExcentricidad ?? '—' }}</strong></div>
+                <div class="info-item"><small>ERROR MÁXIMO</small><strong>{{ c.errorMaximo ?? '—' }} <span class="muted">{{ c.errorMaximoDetalle }}</span></strong></div>
+                <div class="info-item"><small>INCERTIDUMBRE</small><strong>{{ c.incertidumbre ?? '—' }}</strong></div>
+                <div class="info-item"><small>FACTOR K</small><strong>{{ c.factorK ?? '—' }}</strong></div>
+                @if (c.decisionTecnica) {
+                  <div class="info-item info-item--wide"><small>DECISIÓN TÉCNICA</small><strong>{{ c.decisionTecnica }}</strong></div>
+                }
+              </div>
+            </section>
+          }
+        }
+
+        <!-- ── TAB 3: DESCRIPCIÓN COMPLEMENTARIA ───────────────────────── -->
+        @if (tab() === 'descripcion') {
+          <section class="card card--texto">
+            <header class="card__head">
+              <span class="material-symbols-outlined">description</span>
+              <h3>Descripción complementaria del supervisor</h3>
+            </header>
+            @if (c.descripcionComplementaria) {
+              <p class="card__texto">{{ c.descripcionComplementaria }}</p>
+            } @else {
+              <p class="vacio">Aún no se ha registrado una descripción complementaria.</p>
+            }
+          </section>
+        }
+
+        <!-- ── TAB 4: OBSERVACIONES ──────────────────────────────────── -->
+        @if (tab() === 'observaciones') {
+          @if (observaciones().length === 0) {
+            <p class="vacio vacio--grande">
+              <span class="material-symbols-outlined">task_alt</span>
+              Este servicio se cerró sin observaciones.
+            </p>
+          } @else {
+            <div class="obs-lista">
+              @for (o of observaciones(); track o.idObservacion) {
+                <article class="obs">
+                  <header class="obs__head">
+                    <span class="obs__codigo">{{ o.codigo ?? ('OBS-' + o.orden) }}</span>
+                    <strong class="obs__titulo">{{ o.titulo }}</strong>
+                    <span [class]="claseNivel(o.nivelAfectacion)">{{ labelNivel(o.nivelAfectacion) }}</span>
+                  </header>
+                  @if (o.descripcion) { <p class="obs__desc">{{ o.descripcion }}</p> }
+                  @if (o.ubicacion || o.detalleExtra) {
+                    <div class="obs__meta">
+                      @if (o.ubicacion)    { <span><strong>Ubicación:</strong> {{ o.ubicacion }}</span> }
+                      @if (o.detalleExtra) { <span><strong>Detalle:</strong> {{ o.detalleExtra }}</span> }
+                    </div>
+                  }
+                  @if (o.urlFoto) {
+                    <a class="obs__evidencia" [href]="o.urlFoto" target="_blank">
+                      <img [src]="o.urlFoto" [alt]="o.titulo ?? ''">
+                    </a>
+                  }
+                </article>
+              }
+            </div>
+          }
+        }
+
+        <!-- ── TAB 5: RECOMENDACIONES ────────────────────────────────── -->
+        @if (tab() === 'recomendaciones') {
+          @if (recomendaciones().length === 0) {
+            <p class="vacio vacio--grande">
+              <span class="material-symbols-outlined">lightbulb</span>
+              Este servicio no tiene recomendaciones registradas.
+            </p>
+          } @else {
+            <div class="obs-lista">
+              @for (r of recomendaciones(); track r.idRecomendacion) {
+                <article class="obs">
+                  <header class="obs__head">
+                    <span class="obs__codigo">{{ r.codigo ?? ('REC-' + r.orden) }}</span>
+                    <strong class="obs__titulo">{{ r.titulo }}</strong>
+                    <span [class]="clasePrioridad(r.prioridad)">Prioridad {{ labelPrioridad(r.prioridad) }}</span>
+                  </header>
+                  @if (r.descripcion) { <p class="obs__desc">{{ r.descripcion }}</p> }
+                  <div class="obs__meta">
+                    @if (r.plazo) { <span><strong>Plazo:</strong> {{ r.plazo }}</span> }
+                    @if (r.codigoObservacion) {
+                      <span><strong>Vinculada a:</strong> {{ r.codigoObservacion }}</span>
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        }
+
+        <!-- ── TAB 6: ENSAYOS ────────────────────────────────────────── -->
+        @if (tab() === 'ensayos') {
+          @if (ensayos().length === 0) {
+            <p class="vacio vacio--grande">
+              <span class="material-symbols-outlined">science</span>
+              El técnico no registró ensayos en este servicio.
+            </p>
+          } @else {
+            <section class="card">
+              <header class="card__head">
+                <span class="material-symbols-outlined">science</span>
+                <h3>Ensayos registrados</h3>
+                <span class="card__meta">
+                  {{ ensayos().length }} ensayos · {{ c.nEnsayosNoConformes }} no conformes
+                </span>
+              </header>
+              <table class="tabla-mini">
+                <thead>
+                  <tr>
+                    <th>TIPO</th><th>PUNTO</th><th class="num">CARGA</th><th class="num">LECTURA</th>
+                    <th class="num">ERROR</th><th class="num">TOL.</th><th>RESULTADO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (e of ensayos(); track e.idEnsayo) {
+                    <tr>
+                      <td><span class="chip chip--azul">{{ e.tipo === 'pesaje' ? 'Pesaje' : 'Excent.' }}</span></td>
+                      <td>
+                        <strong>{{ e.punto ?? '—' }}</strong>
+                        @if (e.notaPunto) { <small class="sub">{{ e.notaPunto }}</small> }
+                      </td>
+                      <td class="num">{{ e.carga ?? '—' }}</td>
+                      <td class="num">{{ e.lectura ?? '—' }}</td>
+                      <td class="num">{{ e.error ?? '—' }}</td>
+                      <td class="num">{{ e.tolerancia ?? '—' }}</td>
+                      <td>
+                        <span [class]="claseResultadoEnsayo(e.resultado)">{{ e.resultadoLabel ?? '—' }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        }
+
+        <!-- ── TAB 7: FOTOS ──────────────────────────────────────────── -->
+        @if (tab() === 'fotos') {
+          @if (fotosTodas().length === 0) {
+            <p class="vacio vacio--grande">
+              <span class="material-symbols-outlined">image_not_supported</span>
+              El técnico no subió fotos para este servicio.
+            </p>
+          } @else {
+            <div class="galeria-filtros">
+              @for (m of momentosDisponibles(); track m.codigo) {
+                <button class="filtro-chip" [class.filtro-chip--activo]="filtroMomento() === m.codigo"
+                        (click)="cambiarFiltroMomento(m.codigo)">
+                  {{ m.label }}
+                  <span class="filtro-chip__badge">{{ m.n }}</span>
+                </button>
+              }
+            </div>
+            @if (fotos().length === 0) {
+              <p class="vacio">No hay fotos de este tipo.</p>
+            } @else {
+              <div class="galeria">
+                @for (f of fotos(); track f.idEvidencia) {
+                  <a class="foto" [href]="f.urlArchivo" target="_blank">
+                    <div class="foto__thumb">
+                      <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''"
+                           (error)="$any($event.target).style.display='none'; $any($event.target).nextElementSibling?.classList.add('foto__fallback--visible')">
+                      <div class="foto__fallback">
+                        <span class="material-symbols-outlined">broken_image</span>
+                        <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
+                      </div>
+                    </div>
+                    <div class="foto__pie">
+                      <span class="foto__momento chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
+                      @if (f.georreferenciada) {
+                        <span class="material-symbols-outlined foto__gps" title="Georreferenciada">location_on</span>
+                      }
+                      @if (f.codigoObservacion) {
+                        <span class="chip chip--rojo">{{ f.codigoObservacion }}</span>
+                      }
+                    </div>
+                  </a>
+                }
+              </div>
+            }
+          }
+        }
+
+        <!-- ── TAB 8: HISTORIAL COMPLETO ─────────────────────────────── -->
+        @if (tab() === 'historial') {
+          @if (contadoresHistorial(); as cnt) {
+            <div class="hist-filtros">
+              <button class="hist-chip" [class.hist-chip--activo]="categoriaHistorial() === 'todos'"
+                      (click)="cambiarCategoriaHistorial('todos')">
+                Todos <span class="hist-chip__badge">{{ cnt.todos }}</span>
+              </button>
+              <button class="hist-chip" [class.hist-chip--activo]="categoriaHistorial() === 'edicion'"
+                      (click)="cambiarCategoriaHistorial('edicion')">
+                Edición <span class="hist-chip__badge">{{ cnt.edicion }}</span>
+              </button>
+              <button class="hist-chip" [class.hist-chip--activo]="categoriaHistorial() === 'precotizacion'"
+                      (click)="cambiarCategoriaHistorial('precotizacion')">
+                Precotización <span class="hist-chip__badge">{{ cnt.precotizacion }}</span>
+              </button>
+              <button class="hist-chip" [class.hist-chip--activo]="categoriaHistorial() === 'revision'"
+                      (click)="cambiarCategoriaHistorial('revision')">
+                Revisión <span class="hist-chip__badge">{{ cnt.revision }}</span>
+              </button>
+              <button class="hist-chip" [class.hist-chip--activo]="categoriaHistorial() === 'sistema'"
+                      (click)="cambiarCategoriaHistorial('sistema')">
+                Sistema <span class="hist-chip__badge">{{ cnt.sistema }}</span>
+              </button>
+            </div>
+          }
+
+          @if (cargandoHistorial()) {
+            <div class="loading">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              Cargando historial...
+            </div>
+          } @else if (eventosHistorial().length === 0) {
+            <p class="vacio vacio--grande">
+              <span class="material-symbols-outlined">history</span>
+              No hay eventos registrados en esta categoría.
+            </p>
+          } @else {
+            <ul class="timeline">
+              @for (e of eventosHistorial(); track e.idAuditoria) {
+                <li class="ev">
+                  <span [class]="claseCategoriaHistorial(e.categoria)"></span>
+                  <div class="ev__contenido">
+                    <div class="ev__head">
+                      <strong>{{ e.accion ?? 'Evento' }}</strong>
+                      @if (e.etiqueta) { <span class="chip chip--gris">{{ e.etiqueta }}</span> }
+                      <small>{{ e.fecha | date:'dd/MM/yyyy HH:mm' }}</small>
+                    </div>
+                    @if (e.descripcion) { <p>{{ e.descripcion }}</p> }
+                    @if (e.cambios) { <p class="ev__cambios">{{ e.cambios }}</p> }
+                    @if (e.nota) { <p class="ev__nota"><strong>Nota:</strong> {{ e.nota }}</p> }
+                    @if (e.usuario) { <small class="ev__user">Por {{ e.usuario }}</small> }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        }
+
+      }
+    </div>
+
+    <!-- ── Footer ──────────────────────────────────────────────────────── -->
+    @if (cabecera(); as c) {
+      <div class="mdi__footer">
+        <div class="mdi__footer-izq">
+          <button class="mdi__link" type="button" (click)="descargarPdf()">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+            Descargar Informe PDF
+          </button>
+          @if (c.idOs) {
+            <button class="mdi__link" type="button">
+              <span class="material-symbols-outlined">open_in_new</span>
+              Abrir OS
+            </button>
+          }
+        </div>
+        <div class="mdi__footer-der">
+          @if (c.puedeEditar) {
+            <app-button variant="secondary" icono="edit" (clic)="onEditar()">Editar</app-button>
+          }
+          @if (c.accionPrincipal === 'registrar_precotizacion') {
+            <app-button variant="primary" icono="receipt_long" (clic)="onAccionPrincipal()">
+              Registrar Precotización
+            </app-button>
+          } @else if (c.accionPrincipal === 'registrar_revision') {
+            <app-button variant="primary" icono="check_circle" (clic)="onAccionPrincipal()">
+              Registrar Revisión
+            </app-button>
+          }
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

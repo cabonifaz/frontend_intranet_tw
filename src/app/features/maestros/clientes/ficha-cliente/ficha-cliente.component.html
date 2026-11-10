@@ -118,6 +118,23 @@
             </div>
           </div>
 
+          <!-- Observación 4 (31/10, back 2026-11-04): Cartera asignada desde la ficha.
+               Solo editable si el usuario tiene permiso `cartera_asignar`. -->
+          <div class="campo-2col">
+            <div class="campo">
+              <label class="campo__label">
+                Comercial asignado (cartera)
+                @if (!puedeAsignarCartera()) { <small> · Solo lectura</small> }
+              </label>
+              <select class="campo__select" formControlName="idComercialCartera">
+                <option [ngValue]="null">Sin asignar</option>
+                @for (c of comercialesCartera(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.nombre }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
           @if (consultaRuc(); as c) {
             <div class="ruc-resultado" [class.ruc-resultado--alerta]="advertenciasRuc().length > 0">
               <div class="ruc-resultado__cabecera">

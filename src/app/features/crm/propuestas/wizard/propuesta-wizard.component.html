@@ -46,6 +46,22 @@
     </div>
   }
 
+  <!-- ── Banner "Nace de Precotización" (HU-60) ──────────────────────────────── -->
+  @if (origenPrecotizacion(); as p) {
+    <div class="banner-precot">
+      <span class="material-symbols-outlined banner-precot__icono">receipt_long</span>
+      <div class="banner-precot__texto">
+        <strong>Propuesta derivada de la Precotización
+          <span class="banner-precot__codigo">{{ p.numero }}</span>
+        </strong>
+        <span>
+          Se precargaron el cliente, el requerimiento y los ítems sugeridos por el supervisor técnico.
+          Al generar la propuesta, la precotización quedará marcada como <em>Convertida</em>.
+        </span>
+      </div>
+    </div>
+  }
+
   <!-- ── Banner propuesta existente ──────────────────────────────────────────── -->
   @if (propuestaPrevia() && !bannerCerrado()) {
     <div class="banner-aviso">
@@ -112,7 +128,7 @@
             {{ esNuevo() ? 'NUEVA PROPUESTA' : 'MODO EDICIÓN ' + (draftSvc.draft().version || 'v1').toUpperCase() }}
           </span>
           <span class="sidebar-card__codigo">
-            {{ draftSvc.draft().codigo || 'PROP-NUEVA' }}
+            {{ draftSvc.draft().codigo || 'PROP-NUEVA'  }}
           </span>
         </div>
         <p class="sidebar-card__referencia">
@@ -194,26 +210,17 @@
   <div class="ficha-footer">
     <div class="wizard__footer">
       <div class="wizard__footer-izq">
-        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
-          Cancelar
-        </app-button>
         @if (!esPrimerPaso) {
           <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="irAnterior()">
             Atrás
           </app-button>
         }
+        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
+          Cancelar
+        </app-button>
       </div>
       <div class="wizard__footer-der">
-        <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
-        @if (!esNuevo() && draftSvc.draft().esEditable) {
-          <app-button variant="ghost" tamano="md" icono="save"
-                      [disabled]="guardando()"
-                      [cargando]="guardando()"
-                      (clic)="guardarCambios()">
-            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
-          </app-button>
-        }
-
+        <!-- Anular propuesta (feedback 2026-11-04: siempre visible en edición). -->
         @if (!esNuevo() && draftSvc.draft().esEditable && draftSvc.draft().idPropuesta) {
           <app-button variant="danger-ghost" tamano="md" icono="block"
                       (clic)="abrirAnular()">
@@ -226,6 +233,16 @@
           Vista Previa PDF
         </app-button>
 
+        <!-- Modo edición de un borrador: botón para persistir cambios en todos los pasos -->
+        @if (!esNuevo() && draftSvc.draft().esEditable) {
+          <app-button variant="ghost" tamano="md" icono="save"
+                      [disabled]="guardando()"
+                      [cargando]="guardando()"
+                      (clic)="guardarCambios()">
+            {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+          </app-button>
+        }
+
         <!-- No último paso: Continuar al siguiente -->
         @if (!esUltimoPaso()) {
           <app-button variant="primary" tamano="md" iconoDer="arrow_forward"
@@ -233,18 +250,18 @@
             Continuar
           </app-button>
         } @else if (draftSvc.draft().esEditable) {
-          <!-- Último paso: en create → "Generar Propuesta". En edit → "Enviar a Visto Bueno". -->
+          <!-- Último paso: en create → "Generar Propuesta". En edit → "Guardar y enviar a VB". -->
           @if (esNuevo()) {
-            <app-button variant="success" tamano="md" icono="task_alt"
+            <app-button variant="primary" tamano="md" icono="task_alt"
                         [disabled]="guardando()"
                         [cargando]="guardando()"
                         (clic)="generarPropuesta()">
               {{ guardando() ? 'Generando...' : 'Generar Propuesta' }}
             </app-button>
           } @else {
-            <app-button variant="success" tamano="md" icono="send"
+            <app-button variant="primary" tamano="md" icono="send"
                         (clic)="enviarAVistoBueno()">
-              Enviar a Visto Bueno
+              Guardar y enviar a VB
             </app-button>
           }
         }
@@ -281,11 +298,14 @@
   />
 }
 
-<!-- Vista Previa PDF (mock) -->
+<!-- Vista Previa PDF: envía el draft actual (sin guardar) al endpoint
+     POST /api/crm/propuestas/{id}/pdf-preview para renderizar el PDF con los
+     últimos cambios de pantalla, aunque todavía no estén en BD. -->
 @if (modalPreviewPdfAbierto()) {
   <app-modal-preview-pdf
-    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [codigo]="draftSvc.draft().codigo"
     [idPropuesta]="draftSvc.draft().idPropuesta ?? 0"
+    [draft]="draftPreviewDto()"
     (cerrar)="cerrarPreviewPdf()"
   />
 }

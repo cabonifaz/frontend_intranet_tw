@@ -72,11 +72,12 @@
 
     <h4 class="subtitulo-mini">Parámetros operativos</h4>
     <div class="grid-cols-2">
-      <app-campo label="Tipo de propuesta">
+      <app-campo label="Tipo de propuesta"
+                 hint="Las opciones dependen de si el requerimiento entra al sistema de acreditación.">
         <select formControlName="tipoPropuesta">
           <option value="">Seleccionar...</option>
-          @for (t of tiposPropuesta; track t.value) {
-            <option [value]="t.value">{{ t.label }}</option>
+          @for (t of tiposPropuestaDisponibles(); track t.id) {
+            <option [value]="t.nombre">{{ t.nombre }}</option>
           }
         </select>
       </app-campo>
@@ -109,26 +110,99 @@
       subtitulo="La propuesta y el certificado se emitirán a nombre de esta empresa"
       badgeTexto="TERCERIZADO"
       badgeVariant="azul"
+      [overflowVisible]="true"
     >
-      <div class="grid-cols-2">
-        <app-campo label="RUC">
-          <input type="text" formControlName="terceroRuc" placeholder="Ej: 20100036352" />
-        </app-campo>
-        <app-campo label="Razón social">
-          <input type="text" formControlName="terceroEmpresa" placeholder="Nombre legal de la empresa" />
-        </app-campo>
-        <app-campo label="Nombre comercial">
-          <input type="text" formControlName="terceroNombreComercial" placeholder="Nombre de marca" />
-        </app-campo>
-        <app-campo label="País fiscal">
-          <input type="text" formControlName="terceroPais" />
-        </app-campo>
+      <!-- Observación 15 v2 (feedback 2026-11-03): solo selección desde el maestro
+           de clientes, sin ingreso manual. Al elegir, se muestran los 4 campos
+           (RUC, razón social, nombre comercial, dirección fiscal) en modo lectura. -->
+      <div class="tercero-selector">
+        @if (draftSvc.draft().idClienteTercero; as idT) {
+          <div class="tercero-info">
+            <div class="tercero-info__cabecera">
+              <span class="material-symbols-outlined">verified</span>
+              <div class="tercero-info__titulo">
+                <strong>{{ draftSvc.draft().terceroEmpresa || '—' }}</strong>
+                <small>Cliente registrado en el maestro · ID #{{ idT }}</small>
+              </div>
+              <app-button variant="ghost" tamano="sm" icono="swap_horiz"
+                          (clic)="limpiarClienteTercero()">
+                Cambiar
+              </app-button>
+            </div>
+            <div class="grid-cols-3">
+              <app-campo label="RUC">
+                <input type="text" [value]="draftSvc.draft().terceroRuc || '—'" readonly />
+              </app-campo>
+              <app-campo label="Razón social">
+                <input type="text" [value]="draftSvc.draft().terceroEmpresa || '—'" readonly />
+              </app-campo>
+              <app-campo label="Nombre comercial">
+                <input type="text" [value]="form.get('terceroNombreComercial')?.value || '—'" readonly />
+              </app-campo>
+            </div>
+            <app-campo label="Dirección fiscal">
+              <input type="text" [value]="draftSvc.draft().terceroDireccion || '—'" readonly />
+            </app-campo>
+          </div>
+        } @else {
+          <!-- Estado vacío v4 (feedback 2026-11-03): autocomplete inline.
+               Montado FUERA de app-campo para que su dropdown no sea recortado
+               por los estilos globales de ::ng-deep del wrapper del input. -->
+          <div class="tercero-busqueda">
+            <div class="tercero-busqueda__head">
+              <label class="tercero-busqueda__label">Buscar cliente tercerizado</label>
+              <span class="tercero-busqueda__hint">
+                Escribe razón social o RUC. Si no aparece, regístralo primero en Maestros &gt; Clientes.
+              </span>
+            </div>
+            <div class="tercero-busqueda__fila">
+              <div class="tercero-autocomplete">
+                <span class="material-symbols-outlined tercero-autocomplete__icono">search</span>
+                <input
+                  type="text"
+                  class="tercero-autocomplete__input"
+                  placeholder="Empieza a escribir el nombre o RUC del cliente..."
+                  [value]="busquedaTercero()"
+                  (input)="onBuscarTercero($any($event.target).value)"
+                  (focus)="busquedaTerceroFoco.set(true)"
+                  (blur)="onBlurBusquedaTercero()"
+                  autocomplete="off"
+                />
+                @if (busquedaTerceroFoco() && busquedaTercero().length >= 2) {
+                  <ul class="tercero-sugerencias">
+                    @if (buscandoTercero()) {
+                      <li class="tercero-sugerencias__estado">Buscando...</li>
+                    } @else if (sugerenciasTercero().length === 0) {
+                      <li class="tercero-sugerencias__estado tercero-sugerencias__estado--vacio">
+                        Sin resultados para "{{ busquedaTercero() }}". Usa <strong>Nuevo cliente</strong> para registrarlo.
+                        El borrador de la propuesta se guarda y al volver lo retomas.
+                      </li>
+                    } @else {
+                      @for (c of sugerenciasTercero(); track c.idCliente) {
+                        <li class="tercero-sugerencias__item"
+                            (mousedown)="seleccionarTercero(c)">
+                          <strong>{{ c.razonSocial }}</strong>
+                          <small>RUC {{ c.ruc }}@if (c.nombreComercial) { · {{ c.nombreComercial }} }</small>
+                        </li>
+                      }
+                    }
+                  </ul>
+                }
+              </div>
+              <!-- Botón al lado del input: navega a la ficha de cliente en la misma ventana.
+                   El borrador del wizard se autoguarda (Obs 9), al volver se restaura solo. -->
+              <a class="tercero-nuevo" routerLink="/maestros/clientes/nuevo"
+                 title="Registrar un nuevo cliente en el maestro">
+                <span class="material-symbols-outlined">add</span>
+                Nuevo cliente
+              </a>
+            </div>
+          </div>
+        }
       </div>
-      <app-campo label="Dirección fiscal">
-        <input type="text" formControlName="terceroDireccion" placeholder="Av. ... distrito, provincia" />
-      </app-campo>
     </app-seccion>
   }
+
 
   <!-- ── 4. Datos de la Propuesta — Carátula y Formalidades ─────────────── -->
   <app-seccion
@@ -145,21 +219,31 @@
       <app-campo label="Cliente">
         <input type="text" [value]="draftSvc.draft().razonSocial" readonly />
       </app-campo>
-      <app-campo label="Dirigido a">
-        <input type="text" formControlName="dirigidoA" placeholder="Nombre + cargo del destinatario" />
+      <app-campo label="Dirigido a"
+                 [hint]="correoDirigidoA() ? ('✉️ ' + correoDirigidoA()) : 'Elige el contacto del cliente a quien va dirigida la propuesta.'">
+        <select formControlName="dirigidoA">
+          <option value="">Selecciona un contacto...</option>
+          @for (c of contactosCliente(); track c.idContacto) {
+            <option [value]="c.idContacto">
+              {{ c.nombres }}@if (c.cargo) { — {{ c.cargo }} }
+            </option>
+          }
+        </select>
       </app-campo>
     </div>
 
-    <app-campo label="Referencia / Asunto" hint="Aparece debajo del título en el PDF">
-      <input type="text" formControlName="referencia"
-             placeholder="Ej. Mantenimiento anual celdas de carga - Planta Concentradora" />
+    <app-campo label="Referencia / Asunto"
+               hint="Se precarga con el detalle del requerimiento. No editable.">
+      <input type="text" formControlName="referencia" readonly
+             placeholder="(Se carga desde el requerimiento)" />
     </app-campo>
 
     <app-campo label="Introducción / Saludo"
-               hint="Mensaje introductorio al cliente (texto plano por ahora)">
+               hint="Texto fijo generado a partir del requerimiento. No editable.">
       <textarea
         formControlName="textoIntroduccion"
         rows="4"
+        readonly
         placeholder="Estimado..."
       ></textarea>
     </app-campo>

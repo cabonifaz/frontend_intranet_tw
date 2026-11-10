@@ -89,6 +89,32 @@
   }
 }
 
+// ── Banner "Nace de Precotización" (HU-60) ──────────────────────────────────
+.banner-precot {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px 18px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 12px;
+
+  &__icono {
+    color: #2563EB; font-size: 22px; flex-shrink: 0; margin-top: 2px;
+  }
+  &__texto {
+    display: flex; flex-direction: column; gap: 3px;
+    font-size: 13px; color: #1E3A8A;
+    strong { color: #1E40AF; font-weight: 700; }
+    em { color: #2563EB; font-style: normal; font-weight: 600; }
+  }
+  &__codigo {
+    display: inline-block;
+    background: #DBEAFE; color: #1D4ED8;
+    padding: 2px 8px; border-radius: 6px;
+    font-family: monospace; font-size: 12px; font-weight: 700;
+    margin-left: 4px;
+  }
+}
+
 // ── Banner "Propuesta existente detectada" ──────────────────────────────────
 .banner-aviso {
   display: flex;

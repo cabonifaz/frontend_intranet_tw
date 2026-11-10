@@ -68,6 +68,7 @@ export interface FilaExpedienteDto {
   idPropuesta?:        number | null;
   numeroPropuesta?:    string | null;
   versionPropuesta?:   number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   estadoPropuesta?:    string | null;
   propuestasOtras:     number;
   idCliente?:          number | null;
@@ -145,6 +146,7 @@ export interface CabeceraExpedienteDto {
   idPropuesta?:        number | null;
   numeroPropuesta?:    string | null;
   versionPropuesta?:   number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   estadoPropuesta?:    string | null;
   tipoPropuesta?:      string | null;
   montoTotal?:         number | null;
@@ -323,6 +325,7 @@ export interface DatosRqExpedienteDto {
 export interface PropuestaGeneradaDto {
   idPropuesta:     number;
   numero:          string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:         number;
   estado:          string;
   total?:          number | null;
@@ -347,6 +350,7 @@ export interface TabRqExpedienteDto {
 export interface VersionPropuestaExpedienteDto {
   idPropuesta:    number;
   numero:         string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:        number;
   estado:         string;
   total?:         number | null;
@@ -360,6 +364,7 @@ export interface VersionPropuestaExpedienteDto {
 export interface DetallePropuestaExpedienteDto {
   idPropuesta:         number;
   numero:              string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:             number;
   estado:              string;
   tipoPropuesta?:      string | null;
@@ -499,6 +504,7 @@ export interface TabPropuestasExpedienteDto {
 // Pill reutilizable en VB / Seguimiento
 export interface PropuestaPillDto {
   numero:       string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:      number;
   seleccionada: boolean;
 }
@@ -506,6 +512,7 @@ export interface PropuestaPillDto {
 // Tab Visto Bueno
 export interface EstadoVistoBuenoExpDto {
   numero?:             string | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" de la propuesta en revisión. */
   idPropuestaRevision?: number | null;
   versionRevision?:    number | null;
   estadoPropuesta?:    string | null;
@@ -591,6 +598,7 @@ export interface TabVistoBuenoExpedienteDto {
 // Tab Seguimiento
 export interface EstadoSeguimientoExpedienteDto {
   numero?:            string | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" de la propuesta en seguimiento. */
   idPropuesta?:       number | null;
   version?:           number | null;
   estadoPropuesta?:   string | null;
@@ -807,6 +815,9 @@ export interface DatosOsExpedienteDto {
   estado:                 string;
   fechaCreacion?:         string | null;
   fechaEjecucion?:        string | null;
+  // Observación 34/35 (31/10): rango tentativo definido al crear la OS.
+  fechaProgramadaDesde?:  string | null;
+  fechaProgramadaHasta?:  string | null;
   horaInicio?:            string | null;
   horaFinEstimada?:       string | null;
   horaLlegadaReal?:       string | null;
@@ -825,6 +836,40 @@ export interface DatosOsExpedienteDto {
   contactoConfirma?:      string | null;
   notasOperativas?:       string | null;
   generadoPor?:           string | null;
+  // Feedback 2026-11-04: vinculación a RQ y Propuesta visibles en el drill.
+  numeroRq?:              string | null;
+  idRequerimiento?:       number | null;
+  numeroPropuesta?:       string | null;
+  idPropuesta?:           number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
+}
+
+/** Conceptos (ítems de la propuesta) incluidos en la OS. */
+export interface ConceptoOsDto {
+  idItem:         number;
+  descripcion?:   string | null;
+  alcance?:       string | null;
+  cantidad?:      number | null;
+  frecuencia?:    number | null;
+  precioUnitario?: number | null;
+  subtotal?:      number | null;
+  simboloMoneda?: string | null;
+}
+
+/** Programación de la OS: una entrada por cada "visita" (programación).
+ *  Si la OS no está programada, llega vacío. */
+export interface ProgramacionVisitaOsDto {
+  idProgramacion: number;
+  codigo?:        string | null;
+  fecha:          string;   // yyyy-mm-dd
+  horaInicio?:    string | null;
+  horaFin?:       string | null;
+  estado?:        string | null;
+  estadoLabel?:   string | null;
+  idTecnico?:     number | null;
+  tecnico?:       string | null;
+  tecnicosApoyo?: string | null;
+  equipos:        { idEquipo: number; codigoTw?: string | null; marca?: string | null; modelo?: string | null; numeroSerie?: string | null }[];
 }
 
 export interface PersonalOsDto {
@@ -876,6 +921,9 @@ export interface TabOrdenServicioExpedienteDto {
   equipos:           EquipoOsDto[];
   gastos:            GastoOsDto[];
   ordenesMetrologia: OrdenMetrologiaExpedienteDto[];
+  // Feedback 2026-11-04: conceptos y programación de la OS.
+  conceptos?:        ConceptoOsDto[];
+  programacion?:     ProgramacionVisitaOsDto[];
 }
 
 // Tab Programación

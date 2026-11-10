@@ -39,10 +39,21 @@
     } @else {
       <div class="bloques">
         @for (g of grupos(); track g.id; let i = $index) {
+          <!-- Observación 19 v2: drag-and-drop en lugar de flechas ↑↓. Arrastrando
+               el grupo desde su header se reordenan los grupos entre sí. -->
           <div class="bloque-grupo"
                [class.bloque-grupo--activo]="grupoActivo() === g.id"
+               [class.bloque-grupo--dragging]="dragGrupoId() === g.id"
+               draggable="true"
+               (dragstart)="onDragStartGrupo($event, g.id)"
+               (dragover)="onDragOver($event)"
+               (drop)="onDropGrupo($event, g.id)"
+               (dragend)="onDragEnd()"
                (click)="grupoActivo.set(g.id)">
             <div class="bloque-grupo__header">
+              <span class="bloque-grupo__drag" title="Arrástrame para reordenar">
+                <span class="material-symbols-outlined">drag_indicator</span>
+              </span>
               <span class="bloque-grupo__num">{{ i + 1 }}</span>
               <input
                 type="text"
@@ -50,6 +61,8 @@
                 [value]="g.titulo"
                 (change)="actualizarTituloGrupo(g.id, $any($event.target).value)"
                 (click)="$event.stopPropagation()"
+                draggable="false"
+                (dragstart)="$event.stopPropagation(); $event.preventDefault()"
               />
               <span class="chip-mini">TÍTULO</span>
             </div>
@@ -59,13 +72,25 @@
             } @else {
               <ul class="bloque-grupo__vinetas">
                 @for (v of g.vinetas; track v.id) {
-                  <li>
+                  <!-- Observación 19 v2: la viñeta se arrastra desde su handle;
+                       el textarea no es draggable para no romper la edición de texto. -->
+                  <li draggable="true"
+                      [class.bloque-grupo__vineta--dragging]="dragVinetaId() === v.id"
+                      (dragstart)="onDragStartVineta($event, g.id, v.id)"
+                      (dragover)="onDragOver($event)"
+                      (drop)="onDropVineta($event, g.id, v.id)"
+                      (dragend)="onDragEnd()">
+                    <span class="bloque-grupo__drag bloque-grupo__drag--vineta" title="Arrástrame para reordenar">
+                      <span class="material-symbols-outlined">drag_indicator</span>
+                    </span>
                     <textarea
                       rows="1"
                       [value]="v.texto"
                       (input)="autogrow($any($event.target))"
                       (change)="actualizarTextoVineta(g.id, v.id, $any($event.target).value)"
                       (click)="$event.stopPropagation()"
+                      draggable="false"
+                      (dragstart)="$event.stopPropagation(); $event.preventDefault()"
                     ></textarea>
                     <app-button variant="ghost" tamano="xs" icono="close" [soloIcon]="true"
                                 ariaLabel="Eliminar viñeta"

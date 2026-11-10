@@ -1,7 +1,8 @@
 export const environment = {
   production: false,
-  // ⚠️ TEMPORAL: Railway caído, back desplegado en Render con Gemini funcionando. Revertir cuando Railway vuelva.
-  apiUrl: 'https://backend-intranet-tw.onrender.com',
+  // Backend de staging en Railway: el mismo que usa la app móvil.
+  // Antes (temporal, cuando Railway estaba caído): 'https://backend-intranet-tw.onrender.com' (Render, con Gemini funcionando).
+  apiUrl: 'https://backendintranettw-staging.up.railway.app',
   // Flag global para alternar entre mocks locales y back real.
   // Cambiar a false cuando se quiera probar contra el backend corriendo en apiUrl.
   usarMocks: false,

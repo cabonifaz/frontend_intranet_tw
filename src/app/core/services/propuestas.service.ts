@@ -34,6 +34,7 @@ import {
 interface PropuestaResumenDtoApi {
   idPropuesta:          number;
   numero:               string;
+  /** Ticket #4437: formato nuevo "PC: 0012-2-2026" listo para pintar. */
   version:              number;
   idRequerimiento:      number;
   numeroRequerimiento:  string;
@@ -74,6 +75,11 @@ export interface DatosNuevaPropuestaApi {
   prioridadLabel:      string | null;
   descripcion:         string;
   propuestaExistente:  { idPropuesta: number; numero: string; version: number; estado: string } | null;
+  // Observaciones 31/10: campos nuevos del RQ que condicionan el wizard de la propuesta.
+  esAcreditacion?:       boolean;   // RQ marca "Proyecto entra al sistema de acreditación" → habilita "Servicio metrológico"
+  cantidadAdjuntos?:     number;    // informativo (hard stop del RQ ya validó al crearlo)
+  condicionPagoCliente?: string | null;  // texto de la ficha del cliente, para precargar Forma de pago
+  condicionPagoCodigo?:  string | null;  // código en CONDICION_PAGO para seleccionar la opción
 }
 
 export interface GuardarPropuestaResultadoApi {
@@ -135,11 +141,13 @@ export interface PropuestaEquipoApi {
   codigoCliente: string | null;
   codigoTw:      string | null;
   orden:         number;
+  estado?:       'Activo' | 'Inactivo' | string | null;
 }
 
 export interface PropuestaDetalleApi {
   idPropuesta:         number;
   numero:              string;
+  /** Ticket #4437: formato nuevo "PC: 0012-2-2026" listo para pintar. */
   version:             number;
   estado:              string;
   idPropuestaPadre:    number | null;
@@ -165,6 +173,8 @@ export interface PropuestaDetalleApi {
   seccionesActivas:    string[];
 
   esTercerizado:       boolean;
+  /** Observación 15 (31/10): id del cliente del maestro, cuando el tercero se eligió desde la BD. */
+  idClienteTercero?:   number | null;
   terceroRuc:          string | null;
   terceroRazonSocial:  string | null;
   terceroDireccion:    string | null;
@@ -217,6 +227,8 @@ export interface GuardarPropuestaDtoApi {
   seccionesActivas:   string[] | null;
 
   esTercerizado:      boolean;
+  /** Observación 15 (31/10): id del cliente del maestro cuando el tercero se eligió desde la BD. */
+  idClienteTercero?:  number | null;
   terceroRuc:         string | null;
   terceroRazonSocial: string | null;
   terceroDireccion:   string | null;
@@ -443,6 +455,15 @@ export class PropuestasService {
   async obtenerPdfBlob(idPropuesta: number): Promise<Blob> {
     const r = await firstValueFrom(
       this.http.get(`${this.base}/${idPropuesta}/pdf`, { responseType: 'blob' })
+    );
+    return r;
+  }
+
+  /** Vista previa del PDF ANTES de guardar: envía el draft completo (mismo DTO
+   *  de Guardar cambios) y recibe el PDF renderizado. No toca la BD. */
+  async obtenerPdfPreview(idPropuesta: number, draft: GuardarPropuestaDtoApi): Promise<Blob> {
+    const r = await firstValueFrom(
+      this.http.post(`${this.base}/${idPropuesta}/pdf-preview`, draft, { responseType: 'blob' })
     );
     return r;
   }

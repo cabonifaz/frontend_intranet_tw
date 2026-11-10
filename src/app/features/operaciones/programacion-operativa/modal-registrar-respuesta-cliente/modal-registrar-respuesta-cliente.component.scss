@@ -1,0 +1,116 @@
+.cuerpo {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.hint {
+  display: flex; gap: 10px;
+  padding: 12px 14px;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  border-radius: 8px; color: #1E40AF;
+  font-size: 12px; line-height: 1.5;
+
+  .material-symbols-outlined { font-size: 20px; color: #2563EB; flex-shrink: 0; }
+  strong { font-weight: 600; }
+}
+
+.campo {
+  display: flex; flex-direction: column; gap: 6px;
+
+  label {
+    font-size: 11px; font-weight: 700; color: #475569;
+    letter-spacing: 0.3px; text-transform: uppercase;
+
+    .req { color: #DC2626; margin-left: 2px; }
+  }
+
+  textarea {
+    padding: 10px 12px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 13px; font-family: inherit;
+    resize: vertical;
+
+    &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+  }
+
+  .contador {
+    align-self: flex-end;
+    font-size: 11px; color: #94A3B8;
+  }
+}
+
+// ── Canal (4 tarjetas pequeñas con icono) ──────────────────────────────────
+.opciones-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+
+  @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.opcion-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 10px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: #475569;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  .material-symbols-outlined { font-size: 22px; color: #94A3B8; transition: color 0.15s; }
+
+  &:hover {
+    border-color: #93C5FD;
+    .material-symbols-outlined { color: #2563EB; }
+  }
+
+  &--sel {
+    border-color: #2563EB;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    .material-symbols-outlined { color: #2563EB; }
+  }
+}
+
+// ── Resultado (3 cards grandes con color semántico) ────────────────────────
+.opciones-resultado {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.resultado-card {
+  display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+  padding: 12px 14px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  background: #FFFFFF;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &__titulo {
+    font-size: 13.5px; font-weight: 600; color: #0F172A;
+  }
+  &__desc {
+    font-size: 11.5px; color: #64748B;
+  }
+
+  &:hover { border-color: #93C5FD; background: #F8FAFC; }
+
+  &--sel { box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+
+  &--verde.resultado-card--sel { border-color: #059669; background: #F0FDF4; }
+  &--ambar.resultado-card--sel { border-color: #D97706; background: #FFFBEB; }
+  &--rojo.resultado-card--sel  { border-color: #DC2626; background: #FEF2F2; }
+}
+
+// ── Footer modal ──────────────────────────────────────────────────────────
+.footer-modal {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}

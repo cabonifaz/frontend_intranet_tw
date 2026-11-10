@@ -49,8 +49,9 @@
           @for (l of lineas(); track $index) {
             <tr (click)="seleccionadoLinea.set($index)" [class.tabla-editable__fila--activa]="seleccionadoLinea() === $index">
               <td class="celda-desc">{{ l.descripcion }}</td>
-              <td><input type="text" [value]="l.alcance" (change)="actualizarLinea($index, 'alcance', $any($event.target).value)" /></td>
-              <td><input type="text" [value]="l.ptosCalibracion" (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)" /></td>
+              <!-- Observación 17/18 v2 (feedback 2026-11-04): textareas multi-línea. -->
+              <td><textarea class="celda-textarea" rows="1" [value]="l.alcance" (change)="actualizarLinea($index, 'alcance', $any($event.target).value)"></textarea></td>
+              <td><textarea class="celda-textarea" rows="1" [value]="l.ptosCalibracion" (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)"></textarea></td>
               <td><input type="number" min="1" [value]="l.cantidad" (change)="actualizarLinea($index, 'cantidad', +$any($event.target).value)" /></td>
               <td><input type="number" min="1" [value]="l.frecuencia" (change)="actualizarLinea($index, 'frecuencia', +$any($event.target).value)" /></td>
               <td><input type="number" step="0.01" [value]="l.precioUnitario" (change)="actualizarLinea($index, 'precioUnitario', +$any($event.target).value)" /></td>
@@ -77,7 +78,9 @@
             </span>
           </div>
         }
-        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+        <!-- Observación 22 (31/10): modal también en modo local para la sección opcionales. -->
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()"
+                [disabled]="draftSvc.subtotalOpcionalesBruto() <= 0">
           <span class="material-symbols-outlined">percent</span>
           {{ (draftSvc.draft().descuentoOpcionales ?? 0) > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
         </button>
@@ -106,11 +109,16 @@
   </app-doble-panel>
 </app-seccion>
 
-@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+@if (modalDescuentoAbierto()) {
   <app-modal-descuento-global
-    [idPropuesta]="draftSvc.draft().idPropuesta!"
-    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version + ' · Opcionales'"
+    [idPropuesta]="draftSvc.draft().idPropuesta"
+    [codigo]="draftSvc.draft().codigo + ' · Opcionales'"
+    [subtotalLocal]="draftSvc.subtotalOpcionalesBruto()"
     [seccion]="'opcionales'"
+    [forzarLocal]="true"
+    [descuentoActualPct]="draftSvc.draft().descuentoOpcionalesPct"
+    [descuentoActualMonto]="draftSvc.draft().descuentoOpcionales"
+    [idMotivoActual]="draftSvc.draft().idMotivoDescuentoOpcionales"
     (cerrar)="cerrarModalDescuento()"
     (aplicado)="onDescuentoAplicado($event)"
   />

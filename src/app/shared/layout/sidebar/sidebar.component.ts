@@ -59,6 +59,21 @@ export class SidebarComponent {
       ],
     },
     {
+      icono:    'event_available',
+      etiqueta: 'Operaciones',
+      hijos: [
+        { etiqueta: 'Programación Operativa', ruta: '/operaciones/programacion', accion: 'prog_bandeja' },
+      ],
+    },
+    {
+      icono:    'engineering',
+      etiqueta: 'Servicio Técnico',
+      hijos: [
+        { etiqueta: 'Seguimiento Operativo', ruta: '/operaciones/seguimiento-operativo', accion: 'seg_bandeja' },
+        { etiqueta: 'Revisión de Informes',  ruta: '/servicio-tecnico/revision-informes', accion: 'rt_bandeja' },
+      ],
+    },
+    {
       icono:    'settings',
       etiqueta: 'Maestros',
       ruta:     '/maestros',

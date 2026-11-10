@@ -1,0 +1,132 @@
+<div class="tab-pre">
+
+  @if (bandeja(); as b) {
+    <!-- ── 4 KPI cards ───────────────────────────────────────────────── -->
+    <app-kpi-grid [columnas]="4">
+      <app-kpi-card icono="pending_actions" etiqueta="PENDIENTES"
+                    [valor]="b.tarjetas.pendientes" subtitulo="Requieren tu atención" variante="ambar" />
+      <app-kpi-card icono="check_circle"    etiqueta="CONVERTIDAS EN PROPUESTA"
+                    [valor]="b.tarjetas.convertidasMes" subtitulo="Materializadas este mes" variante="verde" />
+      <app-kpi-card icono="timer"           etiqueta="TIEMPO PROMEDIO"
+                    [valor]="(b.tarjetas.tiempoPromedioHoras ?? 0) + 'h'"
+                    [subtitulo]="'Dentro de meta < ' + b.tarjetas.metaHoras + 'h'" variante="azul" />
+      <app-kpi-card icono="engineering"     etiqueta="TÉCNICOS INVOLUCRADOS"
+                    [valor]="b.tarjetas.supervisores"
+                    [subtitulo]="b.tarjetas.nombresSupervisores ?? '—'" variante="morado" />
+    </app-kpi-grid>
+
+    <!-- ── Barra filtros estándar ───────────────────────────────────── -->
+    <app-barra-filtros-bandeja
+      [cantidadActivos]="filtrosActivos()"
+      [(busqueda)]="busqueda"
+      placeholder="Buscar por RQ, cliente, supervisor o equipo..."
+      (limpiar)="limpiarFiltros()"
+      (aplicar)="aplicarFiltros()">
+      <div>
+        <label>ESTADO</label>
+        <select [(ngModel)]="estadoDraft">
+          <option [ngValue]="'todas'">Todas</option>
+          <option [ngValue]="'pendiente'">Pendientes</option>
+          <option [ngValue]="'convertida'">Convertidas</option>
+        </select>
+      </div>
+      <div>
+        <label>SUPERVISOR TÉCNICO</label>
+        <select [(ngModel)]="idSupervisorDraft">
+          <option [ngValue]="null">Todos</option>
+          @for (s of supervisores(); track s.id) { <option [ngValue]="s.id">{{ s.nombre }}</option> }
+        </select>
+      </div>
+      <div>
+        <label>FECHA DESDE</label>
+        <input type="date" [(ngModel)]="fechaDesdeDraft">
+      </div>
+      <div>
+        <label>FECHA HASTA</label>
+        <input type="date" [(ngModel)]="fechaHastaDraft">
+      </div>
+    </app-barra-filtros-bandeja>
+
+    <!-- ── Tabla ────────────────────────────────────────────────────── -->
+    <app-tabla-paginada
+      [cargando]="cargando()"
+      [vacio]="!cargando() && items().length === 0"
+      [total]="total()"
+      [pagina]="filtros().pagina ?? 1"
+      [porPagina]="filtros().porPagina ?? 10"
+      textoItems="precotizaciones"
+      textoVacio="No hay precotizaciones técnicas con estos filtros."
+      (paginar)="irPagina($event)">
+      <thead>
+        <tr>
+          <th>FECHA</th>
+          <th>RQ ORIGEN</th>
+          <th>CLIENTE</th>
+          <th>EQUIPO</th>
+          <th>SUPERVISOR</th>
+          <th class="centro">ÍTEMS</th>
+          <th>ESTADO</th>
+          <th class="centro">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of items(); track p.idPrecotizacion) {
+          <tr class="fila-clic" (click)="verDetalle(p.idPrecotizacion)">
+            <td>{{ p.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <strong class="link">{{ p.numeroRq ?? '—' }}</strong>
+              @if (p.numeroRq) { <span class="material-symbols-outlined link__icon">open_in_new</span> }
+            </td>
+            <td>
+              <strong>{{ p.razonSocial ?? '—' }}</strong>
+              @if (p.sede) { <small class="sub">{{ p.sede }}</small> }
+            </td>
+            <td>{{ p.equipo ?? '—' }}</td>
+            <td>
+              <div class="tec">
+                <span class="tec__avatar">{{ p.supervisor | iniciales }}</span>
+                <span>{{ p.supervisor ?? '—' }}</span>
+              </div>
+            </td>
+            <td class="centro"><span class="chip chip--gris">{{ p.items }} ítems</span></td>
+            <td>
+              <span [class]="claseEstado(p.estadoGrupo)">
+                <span class="material-symbols-outlined chip__icon">{{ iconoEstado(p.estadoGrupo) }}</span>
+                {{ p.estadoLabel ?? '—' }}
+              </span>
+            </td>
+            <td class="centro acciones" (click)="$event.stopPropagation()">
+              <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                          ariaLabel="Ver detalle" title="Ver detalle"
+                          (clic)="verDetalle(p.idPrecotizacion)" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </app-tabla-paginada>
+
+  } @else if (error(); as err) {
+    <div class="aviso-error" role="alert">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudieron cargar las precotizaciones</strong>
+        <p>{{ err }}</p>
+      </div>
+      <app-button variant="primary" tamano="sm" icono="refresh" (clic)="cargar()">Reintentar</app-button>
+    </div>
+  } @else if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando precotizaciones técnicas...
+    </div>
+  }
+
+  <!-- Modal detalle precotización (HU-60) -->
+  @if (idDetalleAbierto(); as id) {
+    <app-modal-detalle-precotizacion
+      [idPrecotizacion]="id"
+      (cerrar)="cerrarDetalle()"
+      (generarPropuesta)="onGenerarPropuesta($event)"
+      (convertida)="onConvertida()" />
+  }
+</div>

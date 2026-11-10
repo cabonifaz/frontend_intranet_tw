@@ -72,6 +72,8 @@ export class SeleccionarClienteComponent implements OnInit {
 
   seleccionar(cliente: ClienteListaItem): void {
     this.seleccionado.set(cliente);
+    // Un clic en la fila ya aplica la selección (observación 31/10: "reducir clicks" en la ficha del RQ).
+    this.confirmado.emit({ idCliente: cliente.idCliente, razonSocial: cliente.razonSocial, ruc: cliente.ruc });
   }
 
   confirmar(): void {

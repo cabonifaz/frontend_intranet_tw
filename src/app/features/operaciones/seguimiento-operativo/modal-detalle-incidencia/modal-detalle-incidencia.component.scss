@@ -1,0 +1,63 @@
+.estado {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 60px; color: #64748B; font-size: 14px;
+}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.mdi-info-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 20px;
+  padding: 14px 16px; border-radius: 10px; background: #F8FAFC;
+  margin-bottom: 16px;
+  @media (max-width: 420px) { grid-template-columns: 1fr; }
+}
+.mdi-info-item {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  small { font-size: 10.5px; color: #64748B; font-weight: 700; letter-spacing: 0.3px; }
+  strong { font-size: 13px; color: #0F172A; font-weight: 600; }
+  .muted { color: #94A3B8; font-size: 12.5px; font-style: italic; }
+}
+.mdi-link {
+  color: #2563EB; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  .material-symbols-outlined { font-size: 14px; }
+  &:hover { text-decoration: underline; }
+}
+
+.mdi-seccion {
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;
+  h4 { margin: 0; font-size: 11px; color: #64748B; font-weight: 700; letter-spacing: 0.4px; }
+  p { margin: 0; font-size: 13.5px; color: #0F172A; line-height: 1.55; white-space: pre-wrap; }
+}
+
+.mdi-evidencia {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1px solid #E2E8F0; border-radius: 10px; overflow: hidden;
+  text-decoration: none; color: inherit;
+  background: #FFFFFF;
+  img { width: 100%; max-height: 260px; display: block; object-fit: contain; background: #F1F5F9; }
+  small {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 8px 10px; font-size: 12px; color: #2563EB; font-weight: 600;
+    background: #F8FAFC; border-top: 1px solid #E2E8F0;
+    .material-symbols-outlined { font-size: 14px; }
+  }
+  &:hover small { background: #EFF6FF; }
+  &--cargando {
+    padding: 36px 20px; display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: #64748B; font-size: 13px;
+  }
+}
+
+.mdi-footer { display: flex; justify-content: flex-end; padding: 12px 20px; border-top: 1px solid #E2E8F0; background: #F8FAFC; }
+
+// Chips consistentes con el sistema
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600;
+  &--azul  { background: #DBEAFE; color: #1D4ED8; }
+  &--verde { background: #DCFCE7; color: #166534; }
+  &--ambar { background: #FEF3C7; color: #92400E; }
+  &--rojo  { background: #FEE2E2; color: #B91C1C; }
+  &--gris  { background: #F1F5F9; color: #475569; }
+}

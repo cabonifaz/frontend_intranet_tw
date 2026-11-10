@@ -1,0 +1,86 @@
+<app-modal
+  [titulo]="'Cancelar Programación ' + (datos()?.codigo ?? '')"
+  [subtitulo]="'La OS vuelve a Pendientes y podrá reprogramarse después.'"
+  icono="block"
+  iconoColor="rojo"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="estado">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando motivos...
+    </div>
+  } @else if (datos(); as d) {
+
+    @if (!d.puedeCancelar) {
+      <div class="banner banner--rojo">
+        <span class="material-symbols-outlined">block</span>
+        {{ d.motivoNoCancelable ?? 'Esta programación no se puede cancelar.' }}
+      </div>
+    } @else {
+
+      <div class="cuerpo">
+
+        <div class="info-grid">
+          <div class="info-item"><small>OS</small><strong>{{ d.numeroOs }}</strong></div>
+          <div class="info-item"><small>Cliente</small><strong>{{ d.razonSocial ?? '—' }}</strong></div>
+          <div class="info-item"><small>Estado actual</small><strong>{{ d.estadoLabel }}</strong></div>
+          <div class="info-item"><small>Viáticos depositados</small><strong>S/ {{ d.viaticosDepositados | number:'1.2-2' }}</strong></div>
+        </div>
+
+        @if (d.viaticosDepositados > 0) {
+          <div class="banner banner--ambar">
+            <span class="material-symbols-outlined">payments</span>
+            <div>
+              Ya se depositaron viáticos por <strong>S/ {{ d.viaticosDepositados | number:'1.2-2' }}</strong>.
+              Coordina la devolución con el técnico.
+            </div>
+          </div>
+        }
+
+        @if (d.idSolicitudPendiente) {
+          <div class="banner banner--azul">
+            <span class="material-symbols-outlined">info</span>
+            Esta programación tiene una solicitud de reprogramación pendiente — al cancelar, la solicitud también se cierra.
+          </div>
+        }
+
+        <!-- Motivo -->
+        <div class="campo">
+          <label>Motivo <span class="req">*</span></label>
+          <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+            <option [ngValue]="null">Seleccione...</option>
+            @for (m of d.motivos; track m.idMotivo) {
+              <option [ngValue]="m.idMotivo">{{ m.nombre }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Comentario -->
+        <div class="campo">
+          <label>
+            Comentario
+            @if (d.comentarioMinimo > 0) { <span class="req">*</span> }
+            <span class="hint">(mínimo {{ d.comentarioMinimo }} · máximo {{ d.comentarioMaximo }})</span>
+          </label>
+          <textarea rows="3" [maxlength]="d.comentarioMaximo"
+                    placeholder="Explica el motivo de la cancelación..."
+                    [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
+          <small class="contador">{{ comentario().length }}/{{ d.comentarioMaximo }}</small>
+        </div>
+      </div>
+    }
+  }
+
+  <div modalFooter class="footer-modal">
+    <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Volver</app-button>
+    @if (datos()?.puedeCancelar) {
+      <app-button variant="danger" tamano="md" icono="block"
+                  [disabled]="!puedeGuardar()" [cargando]="guardando()"
+                  (clic)="cancelar()">
+        {{ guardando() ? 'Cancelando...' : 'Cancelar programación' }}
+      </app-button>
+    }
+  </div>
+</app-modal>

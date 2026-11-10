@@ -60,6 +60,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notificaciones',
+        loadComponent: () =>
+          import('./features/notificaciones/centro-notificaciones/centro-notificaciones.component').then(
+            m => m.CentroNotificacionesComponent
+          ),
+      },
+      {
         path: 'maestros/clientes',
         loadComponent: () =>
           import('./features/maestros/clientes/lista-clientes/lista-clientes.component').then(
@@ -263,6 +270,54 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/crm/ordenes-servicio/ficha-orden-servicio/ficha-orden-servicio.component').then(
             m => m.FichaOrdenServicioComponent
+          ),
+      },
+      // ─── Módulo 8 — Programación Operativa (Sprint 5) ─────────────────────
+      {
+        path: 'operaciones/programacion',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/lista-programacion-operativa/lista-programacion-operativa.component').then(
+            m => m.ListaProgramacionOperativaComponent
+          ),
+      },
+      {
+        path: 'operaciones/programacion/ordenes/:idOs/programar',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/ficha-programar-os/ficha-programar-os.component').then(
+            m => m.FichaProgramarOsComponent
+          ),
+      },
+      {
+        path: 'operaciones/programacion/:idProgramacion/reprogramar',
+        loadComponent: () =>
+          import('./features/operaciones/programacion-operativa/ficha-reprogramar/ficha-reprogramar.component').then(
+            m => m.FichaReprogramarComponent
+          ),
+      },
+      // ─── Módulo 11 — Seguimiento Operativo (Control de Campo) ────────────
+      {
+        path: 'operaciones/seguimiento-operativo',
+        canActivate: [permisoRutaGuard('seg_bandeja')],
+        loadComponent: () =>
+          import('./features/operaciones/seguimiento-operativo/lista-seguimiento-operativo/lista-seguimiento-operativo.component').then(
+            m => m.ListaSeguimientoOperativoComponent
+          ),
+      },
+      // ─── Módulo 12 — Revisión de Informes Técnicos ───────────────────────
+      {
+        path: 'servicio-tecnico/revision-informes',
+        canActivate: [permisoRutaGuard('rt_bandeja')],
+        loadComponent: () =>
+          import('./features/servicio-tecnico/revision-informes/lista-revision-informes/lista-revision-informes.component').then(
+            m => m.ListaRevisionInformesComponent
+          ),
+      },
+      {
+        path: 'servicio-tecnico/revision-informes/:id/editar',
+        canActivate: [permisoRutaGuard('rt_editar')],
+        loadComponent: () =>
+          import('./features/servicio-tecnico/revision-informes/ficha-edicion-informe/ficha-edicion-informe.component').then(
+            m => m.FichaEdicionInformeComponent
           ),
       },
       {

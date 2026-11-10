@@ -29,7 +29,7 @@
       >
         <span class="material-symbols-outlined">notifications</span>
         @if (noLeidas() > 0) {
-          <span class="topbar__badge"></span>
+          <span class="topbar__badge-count">{{ badgeTexto() }}</span>
         }
       </button>
 
@@ -44,30 +44,43 @@
                 <span class="topbar__badge-panel">{{ noLeidas() }}</span>
               }
             </div>
-            <button class="topbar__marcar-leidas" (click)="marcarLeidas()">Marcar leídas</button>
+            <span class="topbar__notif-subt">Últimas 5</span>
           </div>
 
           <!-- Lista -->
           <ul class="topbar__notif-lista" role="list">
-            @for (n of notificaciones(); track n.idNotificacion) {
-              <li class="topbar__notif-item" [class.topbar__notif-item--no-leida]="!n.leida">
+            @for (n of top5(); track n.idNotificacion) {
+              <li class="topbar__notif-item"
+                  [class.topbar__notif-item--no-leida]="!n.leida"
+                  [class.topbar__notif-item--alerta]="n.esAlertaOperativa"
+                  (click)="abrirNotificacion(n)">
                 <div class="topbar__notif-fila">
-                  <div class="topbar__notif-izq">
-                    <span class="topbar__notif-dot" [style.background]="n.tipoDot"></span>
-                    <span class="topbar__notif-titulo">{{ n.titulo }}</span>
-                  </div>
+                  <span class="topbar__notif-titulo">{{ n.titulo }}</span>
                   <span class="topbar__notif-tiempo">{{ n.tiempo }}</span>
                 </div>
                 <div class="topbar__notif-cuerpo">{{ n.cuerpo }}</div>
               </li>
             } @empty {
-              <li class="topbar__notif-vacio">Sin notificaciones</li>
+              <li class="topbar__notif-vacio">
+                <span class="material-symbols-outlined">done_all</span>
+                Sin notificaciones
+              </li>
             }
           </ul>
 
           <!-- Footer -->
           <div class="topbar__notif-footer">
-            <button class="topbar__notif-footer-link">Ver todo el historial de alertas</button>
+            @if (noLeidasVisibles() > 0) {
+              <button class="topbar__notif-footer-link topbar__notif-footer-link--sec"
+                      (click)="marcarLasVisiblesLeidas()">
+                <span class="material-symbols-outlined">done_all</span>
+                Marcar {{ noLeidasVisibles() }} como {{ noLeidasVisibles() === 1 ? 'leída' : 'leídas' }}
+              </button>
+            }
+            <button class="topbar__notif-footer-link" (click)="irACentroNotificaciones()">
+              Ir a la bandeja
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
           </div>
 
         </div>

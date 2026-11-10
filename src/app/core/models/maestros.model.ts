@@ -62,6 +62,11 @@ export interface ClienteDetalle {
   idCategoria: number | null;
   nombreCategoria: string | null;
   estado: string;
+  // Observación 4 (31/10, back 2026-11-04): Cartera asignada desde la ficha.
+  idComercialCartera?: number | null;
+  comercialCartera?: string | null;
+  carteraAsignadoEn?: string | null;
+  carteraAsignadoPor?: string | null;
 }
 
 export interface GuardarClienteRequest {
@@ -87,6 +92,11 @@ export interface GuardarClienteRequest {
   ssomaExamenMedico: boolean;
   ssomaNotas: string | null;
   idCategoria: number | null;
+  /** Observación 4 (31/10, back 2026-11-04): id del comercial en la cartera.
+   *  OJO: `null` o `0` = quitar de la cartera. La ficha debe mandar SIEMPRE el
+   *  valor actual del select, si no, desasigna por error.
+   *  Solo se aplica si el usuario tiene permiso `cartera_asignar`. */
+  idComercialCartera?: number | null;
 }
 
 export interface CambiarEstadoClienteRequest {
@@ -261,4 +271,49 @@ export interface ConsultaRuc {
   desdeCache:       boolean;
   advertencias:     string[];
   clienteExistente: ClienteExistenteRuc | null;
+}
+
+// ─── Cartera de clientes (observación 31/10) ───────────────────────────────
+
+export interface ClienteCartera {
+  idCliente:    number;
+  razonSocial:  string;
+  ruc:          string | null;
+  estado:       string | null;
+  idComercial:  number | null;
+  comercial:    string | null;
+  asignadoEn:   string | null;
+  asignadoPor:  string | null;
+}
+
+export interface ComercialCartera {
+  id:        number;
+  nombre:    string;
+  cargo:     string | null;
+  clientes:  number;
+}
+
+export interface CarteraClientes {
+  items:        ClienteCartera[];
+  total:        number;
+  pagina:       number;
+  porPagina:    number;
+  comerciales:  ComercialCartera[];
+  /** true cuando el usuario tiene la acción `cartera_asignar` (Administrador). */
+  puedeAsignar: boolean;
+}
+
+export interface FiltrosCartera {
+  idComercial?: number | null;
+  busqueda?:    string;
+  /** Vacío | 'todos' | 'asignados' | 'sin_asignar'. */
+  asignacion?:  '' | 'todos' | 'asignados' | 'sin_asignar';
+  pagina?:      number;
+  porPagina?:   number;
+}
+
+export interface AsignarCarteraComando {
+  /** null o 0 = quitar los clientes de la cartera (desasignar). */
+  idComercial: number | null;
+  idsClientes: number[];
 }

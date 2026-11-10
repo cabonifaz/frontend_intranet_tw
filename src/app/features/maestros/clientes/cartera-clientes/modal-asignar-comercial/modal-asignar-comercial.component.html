@@ -1,0 +1,54 @@
+<app-modal titulo="Asignar comercial" ancho="md" (cerrar)="cancelar()">
+  <div class="asig">
+    <p class="asig__desc">
+      Vas a asignar <strong>{{ cantidadClientes() }}</strong> cliente(s) a un comercial.
+      El comercial podrá verlos como parte de su cartera.
+    </p>
+
+    <!-- Buscador de comercial -->
+    <div class="asig__buscador">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text"
+             [ngModel]="busqueda()"
+             (ngModelChange)="busqueda.set($event)"
+             placeholder="Buscar comercial por nombre o cargo..." />
+    </div>
+
+    <!-- Lista de comerciales -->
+    <div class="asig__lista">
+      @if (comercialesFiltrados().length === 0) {
+        <div class="asig__vacio">
+          <span class="material-symbols-outlined">search_off</span>
+          No se encontraron comerciales con "{{ busqueda() }}".
+        </div>
+      } @else {
+        @for (c of comercialesFiltrados(); track c.id) {
+          <label class="asig-com"
+                 [class.asig-com--selec]="idComercialSel() === c.id">
+            <input type="radio" name="comercial" [value]="c.id"
+                   [checked]="idComercialSel() === c.id"
+                   (change)="elegir(c.id)" />
+            <span class="asig-com__avatar">{{ c.nombre.charAt(0) }}</span>
+            <div class="asig-com__info">
+              <div class="asig-com__nombre">{{ c.nombre }}</div>
+              <div class="asig-com__cargo">
+                {{ c.cargo ?? '—' }} ·
+                <span class="asig-com__cantidad">{{ c.clientes }} cliente(s) en cartera</span>
+              </div>
+            </div>
+          </label>
+        }
+      }
+    </div>
+  </div>
+
+  <div modalFooter class="modal-footer">
+    <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+    <app-button variant="primary"
+                icono="check"
+                [disabled]="!idComercialSel()"
+                (clic)="confirmar()">
+      Asignar a {{ comercialElegido()?.nombre ?? 'comercial' }}
+    </app-button>
+  </div>
+</app-modal>

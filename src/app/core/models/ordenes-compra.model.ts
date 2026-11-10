@@ -178,6 +178,7 @@ export interface CondicionPagoDto {
 export interface PropuestaDisponibleOcDto {
   idPropuesta:    number;
   numero:         string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:        number;
   idCliente?:     number | null;
   razonSocial?:   string | null;
@@ -531,6 +532,7 @@ export interface ItemBandejaOrdenCompraDto {
   idPropuesta?:           number | null;
   numeroPropuesta?:       string | null;
   versionPropuesta?:      number | null;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   propuestasVinculadas:   number;
   propuestasAdicionales:  number;
   idMoneda:               number;
@@ -645,6 +647,7 @@ export interface CabeceraDetalleOcDto {
 export interface PropuestaVinculadaOcDto {
   idPropuesta:              number;
   numero:                   string;
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                  number;
   estadoPropuesta?:         string | null;
   aceptada:                 boolean;

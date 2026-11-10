@@ -58,12 +58,8 @@
                     @if (c.observaciones) {
                       <div class="tt-row">{{ c.observaciones }}</div>
                     }
-                    @if (c.fechaLimite) {
-                      <div class="tt-row">
-                        <strong>Límite:</strong> {{ c.fechaLimite | date:'dd/MM/yyyy HH:mm' }}
-                        @if (c.vencida) { <span class="tt-vencida">VENCIDA</span> }
-                      </div>
-                    }
+                    <!-- Observación 27 (31/10): fecha límite eliminada del flujo. -->
+
                   </span>
                 </span>
               }
@@ -193,10 +189,6 @@
                     <div class="info-valor">
                       {{ d.propuesta.aplicaIgv ? 'Sí' : 'No' }} ({{ resumenEconomico().igvPct }}%)
                     </div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-label">CONTRATO MARCO</div>
-                    <div class="info-valor">{{ d.numeroContratoMarco || 'Sin vincular' }}</div>
                   </div>
                   <div class="info-item">
                     <div class="info-label">SECCIONES INCLUIDAS</div>
@@ -688,13 +680,7 @@
                   {{ c.solicitadoEn ? (c.solicitadoEn | date:"dd/MM/yyyy · HH:mm") : '—' }}
                 </div>
               </div>
-              <div class="info-item">
-                <div class="info-label">FECHA LÍMITE</div>
-                <div class="info-valor">
-                  {{ c.fechaLimite ? (c.fechaLimite | date:"dd/MM/yyyy · HH:mm") : '—' }}
-                  @if (c.vencida) { <span class="pill-vencido">VENCIDA</span> }
-                </div>
-              </div>
+              <!-- Observación 27 (31/10): bloque "FECHA LÍMITE" eliminado. -->
               <div class="info-item">
                 <div class="info-label">RESPONSABLE DE CORREGIR</div>
                 <div class="info-valor">{{ c.nombreResponsable || '—' }}</div>
@@ -752,29 +738,28 @@
                   Anular
                 </app-button>
               }
-              @if (esAprobado()) {
-                <!-- HU-13b — En lugar de Anular en estado aprobado, el comercial puede pedir al jefe revocar la aprobación. -->
-                <app-button *twSiPermiso="'propuesta_solicitar_revocacion'"
-                            variant="danger-ghost" tamano="md" icono="undo" (clic)="pedirSolicitarRevocacion()">
-                  Solicitar Revocación
-                </app-button>
-              }
-              @if (datos()?.acciones?.puedeEditar) {
+              <!-- Enviar a VB solo cuando NO está aprobada (es decir, en borrador/correccion). -->
+              @if (datos()?.acciones?.puedeEditar && !esAprobado()) {
                 <app-button *twSiPermiso="'propuesta_enviar_vb'"
                             variant="secondary" tamano="md" icono="send" (clic)="pedirEnviarVB()">
                   Enviar a VB
                 </app-button>
               }
-              @if (datos()?.acciones?.accionPrincipal === 'editar') {
+              <!-- Botón Editar: secundario si está aprobada (post-VB), primario si está en borrador. -->
+              @if (esAprobado()) {
                 <app-button *twSiPermiso="'propuesta_guardar'"
-                            variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
+                            variant="secondary" tamano="md" icono="edit" (clic)="irAEditar()">
                   Editar Propuesta
                 </app-button>
-              } @else if (esAprobado()) {
-                <!-- HU-10b — Propuesta aprobada por VB: siguiente paso es enviarla al cliente. -->
+                <!-- HU-10b — Propuesta aprobada: acción principal es enviarla al cliente. -->
                 <app-button *twSiPermiso="'propuesta_enviar_cliente'"
                             variant="primary" tamano="md" icono="send" (clic)="pedirEnviarCliente()">
                   Enviar al Cliente
+                </app-button>
+              } @else if (datos()?.acciones?.accionPrincipal === 'editar') {
+                <app-button *twSiPermiso="'propuesta_guardar'"
+                            variant="primary" tamano="md" icono="edit" (clic)="irAEditar()">
+                  Editar Propuesta
                 </app-button>
               } @else if (datos()?.acciones?.accionPrincipal === 'nueva_version') {
                 <app-button *twSiPermiso="'propuesta_nueva_version'"
@@ -784,11 +769,10 @@
               }
             }
           } @else {
-            <!-- Modo Aprobador (HU-15): acciones de VB. Las 3 son del supervisor con propuesta_vb_resolver. -->
+            <!-- Modo Aprobador (HU-15): acciones de VB.
+                 Observación 28 (31/10): se quitó la acción "Rechazar". Solo quedan
+                 "Solicitar Corrección" y "Aprobar". -->
             <ng-container *twSiPermiso="'propuesta_vb_resolver'">
-              <app-button variant="danger-ghost" tamano="md" icono="cancel" (clic)="accionAprobador.emit('rechazar')">
-                Rechazar
-              </app-button>
               <app-button variant="secondary" tamano="md" icono="edit" (clic)="accionAprobador.emit('solicitar_correccion')">
                 Solicitar Corrección
               </app-button>

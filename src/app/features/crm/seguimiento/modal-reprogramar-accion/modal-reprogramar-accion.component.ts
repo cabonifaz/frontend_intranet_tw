@@ -57,7 +57,12 @@ export class ModalReprogramarAccionComponent {
       this.datos.set(d);
       this.idTipoAccion.set(d.accionActual.idTipoAccion ?? null);
       this.idPrioridad.set(d.accionActual.idPrioridad ?? null);
-      this.idResponsable.set(d.accionActual.idResponsable ?? null);
+
+      // Observación 31 (31/10): autocompletar Responsable con el usuario actual
+      // y mantenerlo fijo (no editable). El usuario aclaró que el responsable
+      // siempre es quien programa la acción y no se cambia.
+      const yoMismo = d.responsables.find(r => r.esUsuarioActual)?.id ?? null;
+      this.idResponsable.set(d.accionActual.idResponsable ?? yoMismo);
     } catch (e: unknown) {
       this.toast.error(e instanceof Error ? e.message : 'Error al cargar la reprogramación.');
     } finally {

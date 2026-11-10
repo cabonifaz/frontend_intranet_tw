@@ -1,0 +1,418 @@
+<app-modal
+  titulo="Gestionar Viáticos"
+  [subtitulo]="cabecera() ? (cabecera()!.codigo + ' · ' + (cabecera()!.razonSocial ?? '—')) : null"
+  icono="payments"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="cerrar.emit()">
+
+  @if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando viáticos…
+    </div>
+  } @else if (cabecera(); as cab) {
+
+    <!-- ── Header contextual ────────────────────────────────────────────── -->
+    <section class="ctx">
+      <div class="ctx__item">
+        <small>ORDEN</small>
+        <strong>{{ cab.tipo }} {{ cab.numeroOs }}</strong>
+      </div>
+      <div class="ctx__item">
+        <small>CLIENTE</small>
+        <strong>{{ cab.razonSocial ?? '—' }}</strong>
+      </div>
+      <div class="ctx__item">
+        <small>EJECUCIÓN</small>
+        <strong>{{ cab.fechaEjecucion ?? '—' }} · {{ cab.horaInicio }}–{{ cab.horaFin }}</strong>
+      </div>
+      <div class="ctx__item">
+        <small>PRINCIPAL</small>
+        <strong>{{ cab.tecnicoPrincipal ?? '—' }}</strong>
+      </div>
+      <div class="ctx__item">
+        <small>ESTADO</small>
+        <span class="chip chip--azul">{{ cab.estadoLabel }}</span>
+        @if (cab.rendicionCerrada) { <span class="chip chip--verde">Rendición cerrada</span> }
+      </div>
+    </section>
+
+    @if (!cab.puedeGestionar && cab.motivoNoGestionar) {
+      <div class="banner banner--ambar">
+        <span class="material-symbols-outlined">info</span>
+        <p>{{ cab.motivoNoGestionar }}</p>
+      </div>
+    }
+
+    <!-- ── Tabs ────────────────────────────────────────────────────────── -->
+    <nav class="tabs">
+      <button type="button" class="tabs__item" [class.tabs__item--activo]="tabActivo() === 'asignacion'"
+              (click)="tabActivo.set('asignacion')">
+        <span class="material-symbols-outlined">assignment</span>
+        Asignación de Viáticos
+      </button>
+      <button type="button" class="tabs__item" [class.tabs__item--activo]="tabActivo() === 'rendicion'"
+              (click)="tabActivo.set('rendicion')">
+        <span class="material-symbols-outlined">receipt_long</span>
+        Rendición de Gastos
+        @if (resumen()?.pendientesRevision) {
+          <span class="badge-pend">{{ resumen()!.pendientesRevision }}</span>
+        }
+      </button>
+    </nav>
+
+    <!-- ── TAB 1: ASIGNACIÓN ───────────────────────────────────────────── -->
+    @if (tabActivo() === 'asignacion') {
+      <section class="asig">
+        @if (tecnicos().length === 0) {
+          <div class="vacio">
+            <span class="material-symbols-outlined">person_off</span>
+            <p>Esta Programación no tiene técnicos asignados todavía.</p>
+          </div>
+        }
+        @for (t of tecnicos(); track t.idUsuario) {
+          <div class="tec-card">
+            <header class="tec-card__head">
+              <div>
+                <strong>{{ t.nombre }}</strong>
+                <small>{{ t.cargo ?? '—' }} · {{ t.rol === 'principal' ? 'Principal' : 'Apoyo' }}</small>
+              </div>
+              <div class="tec-card__sub">
+                <span>Subtotal</span>
+                <strong>{{ moneda() }} {{ subtotalTecnico(t.idUsuario).toFixed(2) }}</strong>
+              </div>
+            </header>
+            @if (lineasPorTecnico().get(t.idUsuario); as ls) {
+              <table class="tabla">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th class="tr">Monto</th>
+                    <th>Estado depósito</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (l of ls; track $index) {
+                    <tr [class.ro]="!l.editable">
+                      <td>
+                        {{ l.concepto }}
+                        @if (!l.editable) {
+                          <small class="muted"> · {{ l.fechaDeposito }}</small>
+                        }
+                      </td>
+                      <td class="tr">
+                        @if (l.editable && puedeEditar()) {
+                          <input type="number" min="0" step="0.01" class="inp-monto"
+                                 [ngModel]="l.monto"
+                                 (ngModelChange)="actualizarMonto(l, $event)" />
+                        } @else {
+                          <strong>{{ moneda() }} {{ l.monto.toFixed(2) }}</strong>
+                        }
+                      </td>
+                      <td>
+                        <span [class]="chipDeposito(l.estadoDeposito)">{{ labelDeposito(l.estadoDeposito) }}</span>
+                      </td>
+                      <td>
+                        @if (l.editable && puedeEditar()) {
+                          <button type="button" class="icon-btn icon-btn--rojo"
+                                  (click)="quitarLinea(l)" title="Quitar línea">
+                            <span class="material-symbols-outlined">close</span>
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            } @else {
+              <p class="muted-row">Sin conceptos asignados todavía.</p>
+            }
+            @if (puedeEditar()) {
+              <button type="button" class="link-azul"
+                      (click)="abrirAgregarConcepto(t.idUsuario)">
+                <span class="material-symbols-outlined">add</span>
+                Agregar concepto
+              </button>
+            }
+          </div>
+        }
+
+        @if (tecnicos().length > 0) {
+          <footer class="totales">
+            <div class="totales__item">
+              <small>TOTAL ASIGNADO</small>
+              <strong>{{ moneda() }} {{ totalAsignado().toFixed(2) }}</strong>
+            </div>
+            <div class="totales__item">
+              <small>TOTAL DEPOSITADO</small>
+              <strong>{{ moneda() }} {{ totalDepositado().toFixed(2) }}</strong>
+            </div>
+            <div class="totales__item">
+              <small>PENDIENTE DE DEPÓSITO</small>
+              <strong class="ambar">{{ moneda() }} {{ totalPendiente().toFixed(2) }}</strong>
+            </div>
+          </footer>
+        }
+      </section>
+    }
+
+    <!-- ── TAB 2: RENDICIÓN ────────────────────────────────────────────── -->
+    @if (tabActivo() === 'rendicion') {
+      <section class="rend">
+        @if (resumen(); as r) {
+          <div class="kpis">
+            <div class="kpi">
+              <small>SOLICITADO</small>
+              <strong>{{ moneda() }} {{ r.totalSolicitado.toFixed(2) }}</strong>
+              <span class="kpi__sub">{{ r.nGastos }} gasto{{ r.nGastos === 1 ? '' : 's' }}</span>
+            </div>
+            <div class="kpi kpi--verde">
+              <small>APROBADO</small>
+              <strong>{{ moneda() }} {{ r.totalAprobado.toFixed(2) }}</strong>
+              <span class="kpi__sub">{{ r.nAprobados }} aprobado{{ r.nAprobados === 1 ? '' : 's' }}</span>
+            </div>
+            <div class="kpi kpi--ambar">
+              <small>OBSERVADO</small>
+              <strong>{{ moneda() }} {{ r.totalObservado.toFixed(2) }}</strong>
+            </div>
+            <div class="kpi">
+              <small>PENDIENTE</small>
+              <strong>{{ moneda() }} {{ r.totalPendiente.toFixed(2) }}</strong>
+              @if (r.pendientesRevision) {
+                <span class="kpi__sub">{{ r.pendientesRevision }} por revisar</span>
+              }
+            </div>
+            <div class="kpi">
+              <small>SALDO vs ASIGNADO</small>
+              <strong>{{ moneda() }} {{ r.saldoVsAsignado.toFixed(2) }}</strong>
+              <span [class]="chipTipoSaldo(r.tipoSaldo)">{{ labelTipoSaldo(r.tipoSaldo) }}</span>
+            </div>
+          </div>
+        }
+
+        @if (gastos().length === 0) {
+          <div class="vacio">
+            <span class="material-symbols-outlined">receipt</span>
+            <p>Aún no hay gastos rendidos por el técnico desde la app móvil.</p>
+          </div>
+        } @else {
+          <table class="tabla tabla--gastos">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Técnico</th>
+                <th>Concepto</th>
+                <th class="tr">Monto</th>
+                <th>Comprobante</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (g of gastos(); track g.idGasto) {
+                <tr>
+                  <td>{{ g.fecha ?? '—' }}</td>
+                  <td>{{ g.tecnico }}</td>
+                  <td>
+                    {{ g.concepto }}
+                    @if (g.descripcion) { <small class="muted"> · {{ g.descripcion }}</small> }
+                    @if (g.comentarioRevision) {
+                      <div class="comentario-rev">
+                        <span class="material-symbols-outlined">forum</span>
+                        {{ g.comentarioRevision }}
+                      </div>
+                    }
+                  </td>
+                  <td class="tr"><strong>{{ moneda() }} {{ g.monto.toFixed(2) }}</strong></td>
+                  <td>
+                    @if (g.tieneComprobante) {
+                      <button type="button" class="icon-btn" (click)="verComprobante(g)" title="Ver comprobante">
+                        <span class="material-symbols-outlined">visibility</span>
+                      </button>
+                    } @else {
+                      <span class="muted">—</span>
+                    }
+                  </td>
+                  <td><span [class]="chipGasto(g.estado)">{{ labelGasto(g.estado) }}</span></td>
+                  <td class="acciones">
+                    @if (g.puedeAprobar) {
+                      <button type="button" class="icon-btn icon-btn--verde"
+                              [disabled]="revisando()"
+                              (click)="aprobarGasto(g)" title="Aprobar">
+                        <span class="material-symbols-outlined">check</span>
+                      </button>
+                    }
+                    @if (g.puedeObservar) {
+                      <button type="button" class="icon-btn icon-btn--ambar"
+                              [disabled]="revisando()"
+                              (click)="abrirObservar(g)" title="Observar">
+                        <span class="material-symbols-outlined">priority_high</span>
+                      </button>
+                    }
+                    @if (g.puedeRechazar) {
+                      <button type="button" class="icon-btn icon-btn--rojo"
+                              [disabled]="revisando()"
+                              (click)="abrirRechazar(g)" title="Rechazar">
+                        <span class="material-symbols-outlined">block</span>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+
+        @if (cierre(); as c) {
+          <div class="cierre-info">
+            <span class="material-symbols-outlined">lock</span>
+            <div>
+              <strong>Rendición cerrada</strong>
+              <small>{{ c.cerradoEn }} · por {{ c.cerradoPor ?? '—' }} · Saldo: {{ moneda() }} {{ c.saldo.toFixed(2) }} ({{ labelTipoSaldo(c.tipoSaldo) }})</small>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+  } @else {
+    <div class="vacio">
+      <span class="material-symbols-outlined">error</span>
+      <p>No se pudieron cargar los viáticos.</p>
+    </div>
+  }
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+  <div modalFooter class="modal-footer-estandar">
+    @if (tabActivo() === 'asignacion' && puedeEditar()) {
+      <app-button variant="primary" icono="save" tamano="md"
+                  [disabled]="guardando()" (clic)="guardarAsignacion()">
+        {{ guardando() ? 'Guardando…' : 'Guardar asignación' }}
+      </app-button>
+    }
+    @if (tabActivo() === 'rendicion' && resumen()?.puedeCerrar) {
+      <app-button variant="primary" icono="lock" tamano="md"
+                  [disabled]="cerrandoRendicion()" (clic)="abrirConfirmarCierre()">
+        Cerrar rendición
+      </app-button>
+    }
+  </div>
+</app-modal>
+
+<!-- ── Modal secundario: agregar concepto ─────────────────────────────────── -->
+@if (idTecnicoNuevoConcepto() !== null) {
+  <app-modal titulo="Agregar concepto" icono="add_circle" ancho="sm" (cerrar)="cerrarAgregarConcepto()">
+    <div class="form">
+      <div class="campo">
+        <label>Concepto <span class="req">*</span></label>
+        <select [ngModel]="conceptoSeleccionado()"
+                (ngModelChange)="conceptoSeleccionado.set($event); conceptoNuevo.set('')">
+          <option [ngValue]="null">— Elige un concepto —</option>
+          @for (c of conceptosDisponibles(); track c.idConcepto) {
+            <option [ngValue]="c.idConcepto">{{ c.nombre }}</option>
+          }
+        </select>
+        <small class="hint">O crea uno nuevo:</small>
+        <input type="text" placeholder="Nombre del nuevo concepto"
+               [ngModel]="conceptoNuevo()"
+               (ngModelChange)="conceptoNuevo.set($event); conceptoSeleccionado.set(null)" />
+      </div>
+      <div class="campo">
+        <label>Monto ({{ moneda() }}) <span class="req">*</span></label>
+        <input type="number" min="0" step="0.01" placeholder="0.00"
+               [ngModel]="montoNuevo()"
+               (ngModelChange)="montoNuevo.set($event)" />
+      </div>
+    </div>
+    <div modalFooter class="modal-footer-estandar">
+      <app-button variant="secondary" (clic)="cerrarAgregarConcepto()">Cancelar</app-button>
+      <app-button variant="primary" (clic)="confirmarAgregarConcepto()">Agregar</app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ── Modal secundario: observar / rechazar ──────────────────────────────── -->
+@if (gastoRevision() && accionRevision()) {
+  <app-modal
+    [titulo]="accionRevision() === 'observar' ? 'Observar gasto' : 'Rechazar gasto'"
+    [subtitulo]="gastoRevision()!.concepto + ' · ' + moneda() + ' ' + gastoRevision()!.monto.toFixed(2)"
+    [icono]="accionRevision() === 'observar' ? 'priority_high' : 'block'"
+    [iconoColor]="accionRevision() === 'observar' ? 'ambar' : 'rojo'"
+    ancho="md"
+    (cerrar)="cerrarModalRevision()">
+    <div class="form">
+      <div class="campo">
+        <label>
+          {{ accionRevision() === 'observar' ? 'Comentario' : 'Motivo del rechazo' }}
+          <span class="req">*</span>
+        </label>
+        <textarea rows="4" [ngModel]="comentarioRevision()"
+                  (ngModelChange)="comentarioRevision.set($event)"
+                  [placeholder]="accionRevision() === 'observar'
+                    ? 'Explica al técnico qué debe corregir o qué comprobante falta…'
+                    : 'Explica por qué se rechaza el gasto…'"></textarea>
+      </div>
+    </div>
+    <div modalFooter class="modal-footer-estandar">
+      <app-button variant="secondary" (clic)="cerrarModalRevision()">Cancelar</app-button>
+      <app-button
+        [variant]="accionRevision() === 'observar' ? 'primary' : 'danger'"
+        [disabled]="revisando()"
+        (clic)="confirmarRevision()">
+        {{ accionRevision() === 'observar' ? 'Observar' : 'Rechazar' }}
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ── Modal secundario: comprobante ──────────────────────────────────────── -->
+@if (comprobanteAbierto(); as c) {
+  <app-modal
+    titulo="Comprobante"
+    [subtitulo]="c.concepto + ' · ' + moneda() + ' ' + c.monto.toFixed(2) + ' · ' + c.tecnico"
+    icono="receipt"
+    ancho="lg"
+    (cerrar)="cerrarComprobante()">
+    <div class="comprobante-viewer">
+      @if (esImagen(c.url)) {
+        <img [src]="c.url" alt="Comprobante" />
+      } @else {
+        <div class="comprobante-pdf">
+          <span class="material-symbols-outlined">picture_as_pdf</span>
+          <p>Comprobante en PDF. Ábrelo en pestaña nueva para visualizarlo.</p>
+        </div>
+      }
+    </div>
+    <div modalFooter class="modal-footer-estandar">
+      <app-button variant="secondary" (clic)="cerrarComprobante()">Cerrar</app-button>
+      <a [href]="c.url" target="_blank" rel="noopener" class="link-azul">
+        <span class="material-symbols-outlined">open_in_new</span>
+        Abrir en pestaña nueva
+      </a>
+    </div>
+  </app-modal>
+}
+
+<!-- ── Modal secundario: confirmar cierre de rendición ────────────────────── -->
+@if (confirmandoCierre()) {
+  <app-modal
+    titulo="Cerrar rendición"
+    [subtitulo]="resumen()?.advertenciaCierre ?? 'Se calculará el saldo final y Contabilidad será notificada.'"
+    icono="lock"
+    iconoColor="ambar"
+    ancho="sm"
+    (cerrar)="cerrarConfirmarCierre()">
+    <p class="confirm-text">
+      Una vez cerrada, no podrás seguir revisando gastos de esta Programación.
+      El saldo se notificará a Contabilidad para el ajuste correspondiente.
+    </p>
+    <div modalFooter class="modal-footer-estandar">
+      <app-button variant="secondary" (clic)="cerrarConfirmarCierre()">Cancelar</app-button>
+      <app-button variant="primary" [disabled]="cerrandoRendicion()" (clic)="confirmarCierreRendicion()">
+        {{ cerrandoRendicion() ? 'Cerrando…' : 'Confirmar cierre' }}
+      </app-button>
+    </div>
+  </app-modal>
+}

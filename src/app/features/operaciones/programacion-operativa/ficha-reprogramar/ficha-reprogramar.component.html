@@ -1,0 +1,297 @@
+<div class="pagina">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-hero-header
+    [titulo]="datos()?.modo === 'solicitud' ? 'Solicitar Reprogramación' : 'Reprogramar Programación'"
+    [descripcion]="datos() ? (datos()!.codigo + ' · ' + (datos()!.razonSocial ?? '')) : 'Cargando...'" />
+
+  @if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando datos de la programación...
+    </div>
+  } @else if (datos(); as d) {
+
+  <div class="layout">
+    <div class="main">
+
+    <!-- ── 1. Datos actuales (readonly) ───────────────────────────────── -->
+    <app-seccion icono="description" titulo="1. Programación actual" subtitulo="Datos vigentes antes de reprogramar">
+      <div class="info-grid">
+        <div class="info-item"><small>Programación</small><strong>{{ d.codigo }}</strong></div>
+        <div class="info-item"><small>Estado actual</small><strong>{{ d.estadoLabel }}</strong></div>
+        <div class="info-item"><small>OS</small><strong>{{ d.numeroOs }}</strong></div>
+        <div class="info-item"><small>Cliente</small><strong>{{ d.razonSocial ?? '—' }}</strong></div>
+        <div class="info-item"><small>Sede</small><strong>{{ d.sede ?? '—' }}</strong></div>
+        <div class="info-item"><small>Tipo servicio</small><strong>{{ d.tipoServicio ?? '—' }}</strong></div>
+        <div class="info-item"><small>Fecha actual</small><strong>{{ d.fechaEjecucion ?? '—' }}</strong></div>
+        <div class="info-item"><small>Horario actual</small><strong>{{ d.horaInicio ?? '—' }} – {{ d.horaFin ?? '—' }}</strong></div>
+        <div class="info-item"><small>Técnico principal</small><strong>{{ d.tecnicoPrincipal ?? '—' }}</strong></div>
+      </div>
+
+      @if (!d.puedeReprogramar && d.motivoNoReprogramable) {
+        <div class="banner banner--rojo">
+          <span class="material-symbols-outlined">block</span>
+          {{ d.motivoNoReprogramable }}
+        </div>
+      }
+
+      @if (d.viaticosDepositados > 0) {
+        <div class="banner banner--ambar">
+          <span class="material-symbols-outlined">payments</span>
+          Ya se depositaron viáticos por <strong>S/ {{ d.viaticosDepositados | number:'1.2-2' }}</strong>.
+          Si cambias la fecha, coordina con el técnico.
+        </div>
+      }
+
+      @if (d.modo === 'solicitud') {
+        <div class="banner banner--azul">
+          <span class="material-symbols-outlined">info</span>
+          <div>
+            Esta <strong>solicitud</strong> quedará <strong>pendiente de aprobación del Jefe</strong>.
+            Mientras tanto la programación queda igual y podrás retirar la solicitud si cambias de opinión.
+          </div>
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ── 2. Nuevo cronograma ──────────────────────────────────────── -->
+    <app-seccion icono="event" titulo="2. Nuevo cronograma" subtitulo="Modifica fecha y horario si corresponde">
+      <div class="form-grid">
+        <div class="campo">
+          <label>Nueva fecha de ejecución <span class="req">*</span></label>
+          <input type="date" [ngModel]="fechaEjecucion()" (ngModelChange)="fechaEjecucion.set($event)" />
+        </div>
+        <div class="campo">
+          <label>Hora inicio <span class="req">*</span></label>
+          <input type="time" [ngModel]="horaInicio()" (ngModelChange)="horaInicio.set($event)" />
+        </div>
+        <div class="campo">
+          <label>Hora fin <span class="req">*</span></label>
+          <input type="time" [ngModel]="horaFin()" (ngModelChange)="horaFin.set($event)" />
+        </div>
+      </div>
+
+      @if (cambiaFechaHora() && datos()?.estado === 'confirmada') {
+        <div class="nota-inline">
+          <span class="material-symbols-outlined">info</span>
+          Al cambiar fecha u hora, la programación volverá a <strong>Pendiente confirmación cliente</strong>
+          y habrá que registrar la respuesta nuevamente.
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ── 3. Equipos ─────────────────────────────────────────────────── -->
+    <app-seccion icono="precision_manufacturing" titulo="3. Equipos a intervenir"
+                 [subtitulo]="d.equipos.length + ' equipo(s) de la OS'">
+      @if (d.equipos.length > 0) {
+        <ul class="lista-rows">
+          @for (e of d.equipos; track e.idEquipo) {
+            <li class="row" [class.row--selec]="idsEquipos().includes(e.idEquipo)"
+                (click)="toggleEquipo(e.idEquipo)">
+              <input type="checkbox" [checked]="idsEquipos().includes(e.idEquipo)"
+                     (click)="$event.stopPropagation()"
+                     (change)="toggleEquipo(e.idEquipo)" />
+              <div class="row__main">
+                <strong class="row__titulo">{{ e.marca ?? '—' }} {{ e.modelo ?? '' }}</strong>
+                <div class="row__meta">
+                  <span>N° {{ e.numSerie ?? '—' }}</span>
+                  <span class="row__sep">·</span>
+                  <span>{{ e.codigoTw ?? '—' }}</span>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="vacio">No hay equipos en la OS.</div>
+      }
+    </app-seccion>
+
+    <!-- ── 4. Asignación de Recursos ─────────────────────────────────── -->
+    <app-seccion icono="engineering" titulo="4. Asignación de Recursos"
+                 subtitulo="Ajusta técnico principal y apoyos si es necesario">
+
+      @if (!idTecnicoPrincipal() && idsTecnicosApoyo().length === 0) {
+        <div class="vacio">
+          <span class="material-symbols-outlined">person_add</span>
+          <p>Sin recursos asignados.</p>
+          <app-button variant="primary" tamano="md" icono="group_add" (clic)="abrirModalAsignar()">
+            Asignar Recurso
+          </app-button>
+        </div>
+      } @else {
+        <div class="recursos-asignados">
+          <div class="recursos-asignados__head">
+            <span class="recursos-asignados__count">
+              {{ (idTecnicoPrincipal() ? 1 : 0) + idsTecnicosApoyo().length }} recurso(s) asignado(s)
+            </span>
+            <app-button variant="secondary" tamano="sm" icono="edit" (clic)="abrirModalAsignar()">
+              Modificar Asignación
+            </app-button>
+          </div>
+          <ul class="lista-rows">
+            @if (tecnicoPrincipalResumen(); as p) {
+              <li class="row row--selec">
+                <div class="row__main">
+                  <strong class="row__titulo">{{ p.nombre }}</strong>
+                  <div class="row__meta">
+                    <span class="chip chip--azul">Técnico Principal</span>
+                    @if (p.cargo) { <span class="row__sep">·</span><span>{{ p.cargo }}</span> }
+                  </div>
+                </div>
+              </li>
+            }
+            @for (a of apoyosResumen(); track a.idUsuario) {
+              <li class="row row--apoyo">
+                <div class="row__main">
+                  <strong class="row__titulo">{{ a.nombre }}</strong>
+                  <div class="row__meta">
+                    <span class="chip chip--gris">Apoyo</span>
+                    @if (a.cargo) { <span class="row__sep">·</span><span>{{ a.cargo }}</span> }
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ── 5. Motivo + comentario ───────────────────────────────────── -->
+    <app-seccion icono="notes" titulo="5. Motivo de la reprogramación" subtitulo="Obligatorio para el log y auditoría">
+      <div class="form-grid form-grid--1">
+        <div class="campo">
+          <label>Motivo <span class="req">*</span></label>
+          <select [ngModel]="idMotivo()" (ngModelChange)="idMotivo.set($event)">
+            <option [ngValue]="null">Seleccione...</option>
+            @for (m of d.motivos; track m.idMotivo) {
+              <option [ngValue]="m.idMotivo">{{ m.nombre }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label>
+          Comentario
+          @if (d.modo === 'solicitud') { <span class="req">*</span> }
+          <span class="hint">(máx. {{ d.comentarioMaximo }})</span>
+        </label>
+        <textarea class="observaciones" rows="3" [maxlength]="d.comentarioMaximo"
+                  [placeholder]="d.modo === 'solicitud' ? 'Explica al Jefe por qué solicitas la reprogramación...' : 'Explica el motivo de la reprogramación...'"
+                  [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
+        <small class="contador">{{ comentario().length }}/{{ d.comentarioMaximo }}</small>
+      </div>
+    </app-seccion>
+
+    </div>
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────── -->
+    <aside class="sidebar">
+      <div class="panel">
+        <div class="panel__head">
+          <span class="material-symbols-outlined">fact_check</span>
+          <h4>Checklist de Validación</h4>
+        </div>
+        <ul class="checklist">
+          <li [class.ok]="checkCronograma()" [class.err]="!checkCronograma()">
+            <span class="material-symbols-outlined">{{ checkCronograma() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Cronograma válido</strong>
+              <small>{{ checkCronograma() ? (fechaCorta(fechaEjecucion()) + ' · ' + horaInicio() + '–' + horaFin()) : 'Define fecha y horario' }}</small>
+            </div>
+          </li>
+          <li [class.ok]="checkTecnico()" [class.err]="!checkTecnico()">
+            <span class="material-symbols-outlined">{{ checkTecnico() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Técnico asignado</strong>
+              <small>{{ checkTecnico() ? (tecnicoPrincipalResumen()?.nombre ?? 'Asignado') : 'Asigna al menos 1 técnico' }}</small>
+            </div>
+          </li>
+          <li [class.ok]="checkEquipos()" [class.err]="!checkEquipos()">
+            <span class="material-symbols-outlined">{{ checkEquipos() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Equipos reservados</strong>
+              <small>{{ idsEquipos().length }} equipo(s) seleccionado(s)</small>
+            </div>
+          </li>
+          <li [class.ok]="checkMotivo()" [class.err]="!checkMotivo()">
+            <span class="material-symbols-outlined">{{ checkMotivo() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Motivo registrado</strong>
+              <small>{{ checkMotivo() ? 'Motivo seleccionado' : 'Elige un motivo' }}</small>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head">
+          <span class="material-symbols-outlined">event_note</span>
+          <h4>Resumen</h4>
+        </div>
+        <table class="resumen">
+          <tbody>
+            <tr>
+              <th>CAMBIA FECHA/HORA</th>
+              <td>{{ cambiaFechaHora() ? 'Sí' : 'No' }}</td>
+            </tr>
+            <tr>
+              <th>TÉCNICOS</th>
+              <td>{{ totalTecnicos() }} asignado(s)</td>
+            </tr>
+            <tr>
+              <th>EQUIPOS</th>
+              <td>{{ idsEquipos().length }} reservado(s)</td>
+            </tr>
+            <tr>
+              <th>DURACIÓN</th>
+              <td>{{ duracionCalculada() }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="nota-flujo">
+        <span class="material-symbols-outlined">lightbulb</span>
+        <p>
+          Si cambia fecha u hora, la programación volverá a
+          <strong>PENDIENTE CONFIRMACIÓN CLIENTE</strong> y hay que re-registrar
+          la respuesta del cliente.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <div class="footer-fijo">
+    <div class="footer-fijo__contenido">
+      <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">Cancelar</app-button>
+      <app-button variant="primary" tamano="md" icono="edit_calendar"
+                  [disabled]="!puedeGuardar()" [cargando]="guardando()"
+                  (clic)="guardar()">
+        {{ guardando() ? 'Guardando...' : (datos()?.modo === 'solicitud' ? 'Enviar solicitud' : 'Reprogramar') }}
+      </app-button>
+    </div>
+  </div>
+  }
+
+  <!-- Modal Asignar Recurso -->
+  @if (modalAsignarAbierto() && datos()) {
+    <app-modal-asignar-recurso
+      [idOs]="datos()!.idOs"
+      [fecha]="fechaEjecucion()"
+      [horaInicio]="horaInicio()"
+      [horaFin]="horaFin()"
+      [idPrincipalInicial]="idTecnicoPrincipal()"
+      [idsApoyoInicial]="idsTecnicosApoyo()"
+      [razonSocial]="datos()?.razonSocial ?? null"
+      [sede]="datos()?.sede ?? null"
+      [tipoServicio]="datos()?.tipoServicio ?? null"
+      (cerrar)="modalAsignarAbierto.set(false)"
+      (confirmado)="onRecursosConfirmados($event)"
+    />
+  }
+</div>

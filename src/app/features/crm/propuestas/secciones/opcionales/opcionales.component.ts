@@ -35,7 +35,7 @@ export class OpcionalesComponent implements OnInit {
   readonly modalDescuentoAbierto = signal(false);
 
   abrirModalDescuento(): void {
-    if (!this.draftSvc.draft().idPropuesta) return;
+    // Observación 22 (31/10): el modal acepta modo local cuando la propuesta aún no se guardó.
     this.modalDescuentoAbierto.set(true);
   }
   cerrarModalDescuento(): void { this.modalDescuentoAbierto.set(false); }
@@ -54,15 +54,27 @@ export class OpcionalesComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     this.cargandoCatalogo.set(true);
     try {
-      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', true, 1, 200);
-      const items: SumCatalogo[] = r.items.map(s => ({
-        id:          s.idSuministro,
-        codigo:      `SUM-${String(s.idSuministro).padStart(4, '0')}`,
-        descripcion: s.descripcion,
-        tipo:        s.tipoLabel    ?? '',
-        subtipo:     s.subtipoLabel ?? '',
-        precio:      0,
-      }));
+      // Observación 16 (31/10): pedimos todos los suministros activos (sin filtro "usar en propuestas").
+      // Temporalmente dejamos `true` hasta que el back arregle el DTO `SuministroListaItemDto`
+      // (campo `IdPrimerProcedimiento` tipeado como `long?` pero la columna de BD contiene strings).
+      // Observación 16 (fix 2026-11-04): back ya arregló el DTO; sin filtro + 1000.
+      const r = await this.sumsSvc.obtenerSuministros(undefined, undefined, undefined, 'Activo', false, 1, 1000);
+      const items: SumCatalogo[] = r.items.map(s => {
+        // Observación 18 (v2 2026-11-04): abreviación compacta "Prcdmt 1/2".
+        const lineas: string[] = [];
+        if (s.primerProcedimiento)   lineas.push(`Prcdmt 1: ${s.primerProcedimiento}`);
+        if (s.segundoProcedimiento)  lineas.push(`Prcdmt 2: ${s.segundoProcedimiento}`);
+        return {
+          id:          s.idSuministro,
+          codigo:      `SUM-${String(s.idSuministro).padStart(4, '0')}`,
+          descripcion: lineas.length > 0
+            ? `${s.descripcion}\n${lineas.join('\n')}`
+            : s.descripcion,
+          tipo:        s.tipoLabel    ?? '',
+          subtipo:     s.subtipoLabel ?? '',
+          precio:      0,
+        };
+      });
       this.catalogo.set(items);
       this.catalogoFiltrado.set(items);
     } catch { /* silencioso */ }

@@ -1,0 +1,130 @@
+.asig {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0;
+
+  &__desc {
+    color: #334155;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  &__buscador {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .material-symbols-outlined {
+      position: absolute;
+      left: 12px;
+      color: #94A3B8;
+      font-size: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px 14px 10px 40px;
+      border: 1px solid #E2E8F0;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      outline: none;
+
+      &:focus { border-color: #2563EB; }
+    }
+  }
+
+  &__lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  &__vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    color: #94A3B8;
+    text-align: center;
+    font-size: 0.875rem;
+
+    .material-symbols-outlined { font-size: 36px; }
+  }
+}
+
+.asig-com {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+  }
+
+  &--selec {
+    background: #EFF6FF;
+    border-color: #2563EB;
+  }
+
+  input[type="radio"] {
+    flex-shrink: 0;
+    accent-color: #2563EB;
+  }
+
+  &__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #DBEAFE;
+    color: #1E3A8A;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__nombre {
+    color: #0F172A;
+    font-weight: 600;
+    font-size: 0.925rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__cargo {
+    color: #64748B;
+    font-size: 0.8rem;
+  }
+
+  &__cantidad {
+    color: #2563EB;
+    font-weight: 500;
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

@@ -1,0 +1,153 @@
+<div class="cartera-page">
+
+  <!-- Chips de filtro con contadores (reemplaza las cards KPI, misma información embebida en la UX). -->
+  <div class="cartera-chips">
+    <button type="button"
+            class="cartera-chip"
+            [class.cartera-chip--activo]="asignacionFiltro === ''"
+            (click)="setAsignacion('')">
+      Todos
+      <span class="cartera-chip__count">{{ totalKpi() }}</span>
+    </button>
+    <button type="button"
+            class="cartera-chip cartera-chip--ok"
+            [class.cartera-chip--activo]="asignacionFiltro === 'asignados'"
+            (click)="setAsignacion('asignados')">
+      Asignados
+      <span class="cartera-chip__count">{{ totalAsignados() }}</span>
+    </button>
+    <button type="button"
+            class="cartera-chip cartera-chip--warn"
+            [class.cartera-chip--activo]="asignacionFiltro === 'sin_asignar'"
+            (click)="setAsignacion('sin_asignar')">
+      Sin asignar
+      <span class="cartera-chip__count">{{ totalSinAsignar() }}</span>
+    </button>
+    <span class="cartera-chips__sep"></span>
+    <span class="cartera-chips__info">
+      <span class="material-symbols-outlined">groups</span>
+      {{ totalComerciales() }} comerciales con cartera
+    </span>
+  </div>
+
+  <!-- Filtros -->
+  <app-filtros-bar
+    [(busqueda)]="busqueda"
+    placeholder="Buscar por razón social o RUC..."
+    (buscar)="cargar(true)"
+  >
+    @if (puedeAsignar()) {
+      <select [(ngModel)]="idComercialFiltro" (change)="cargar(true)">
+        <option value="">Todos los comerciales</option>
+        @for (co of comerciales(); track co.id) {
+          <option [value]="co.id">{{ co.nombre }} ({{ co.clientes }})</option>
+        }
+      </select>
+    }
+  </app-filtros-bar>
+
+  <!-- Acciones masivas (solo visible para quien puede asignar + con selección activa) -->
+  @if (puedeAsignar() && seleccionados().size > 0) {
+    <div class="cartera-acciones-masivas">
+      <div class="cartera-acciones-masivas__texto">
+        <strong>{{ seleccionados().size }}</strong> cliente(s) seleccionados
+      </div>
+      <button type="button" class="btn btn--primary" (click)="abrirModalAsignar()">
+        <span class="material-symbols-outlined">assignment_ind</span>
+        Asignar a comercial
+      </button>
+      <button type="button" class="btn btn--ghost" (click)="quitarAsignacionMasiva()">
+        <span class="material-symbols-outlined">person_remove</span>
+        Quitar asignación
+      </button>
+    </div>
+  }
+
+  <!-- Tabla -->
+  <app-tabla-paginada
+    [cargando]="cargando()"
+    [vacio]="clientes().length === 0"
+    [error]="error()"
+    [total]="total()"
+    [pagina]="pagina()"
+    [porPagina]="porPagina"
+    textoCargando="Cargando cartera..."
+    textoVacio="No hay clientes que coincidan con los filtros."
+    textoItems="clientes"
+    iconoVacio="assignment_ind"
+    (paginar)="irAPagina($event)">
+    <thead>
+      <tr>
+        @if (puedeAsignar()) {
+          <th class="cartera__th--check">
+            <input type="checkbox"
+                   [checked]="estanTodosSeleccionados()"
+                   (change)="toggleSeleccionTodos()" />
+          </th>
+        }
+        <th>Cliente</th>
+        <th>RUC</th>
+        <th>Estado</th>
+        <th>Comercial asignado</th>
+        <th>Asignado el</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (c of clientes(); track c.idCliente) {
+        <tr class="tabla__fila" [class.cartera-fila--selec]="seleccionados().has(c.idCliente)">
+          @if (puedeAsignar()) {
+            <td class="cartera__td--check" (click)="$event.stopPropagation()">
+              <input type="checkbox"
+                     [checked]="seleccionados().has(c.idCliente)"
+                     (change)="toggleSeleccion(c.idCliente)" />
+            </td>
+          }
+          <td>
+            <div class="cliente-info__nombre">{{ c.razonSocial }}</div>
+          </td>
+          <td>{{ c.ruc ?? '—' }}</td>
+          <td>
+            <span class="badge-estado"
+                  [class.badge-estado--activo]="c.estado === 'Activo'"
+                  [class.badge-estado--inactivo]="c.estado !== 'Activo'">
+              {{ c.estado ?? '—' }}
+            </span>
+          </td>
+          <td>
+            @if (c.comercial) {
+              <div class="cartera-com">
+                <span class="cartera-com__avatar">{{ c.comercial.charAt(0) }}</span>
+                <span class="cartera-com__nombre">{{ c.comercial }}</span>
+              </div>
+            } @else {
+              <span class="cartera-sin-asig">— Sin asignar —</span>
+            }
+          </td>
+          <td>
+            @if (c.asignadoEn) {
+              <div class="cartera-fecha">
+                <div>{{ c.asignadoEn | date:'dd/MM/yyyy' }}</div>
+                @if (c.asignadoPor) {
+                  <div class="cartera-fecha__por">por {{ c.asignadoPor }}</div>
+                }
+              </div>
+            } @else {
+              —
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </app-tabla-paginada>
+
+  @if (mostrarModalAsignar()) {
+    <app-modal-asignar-comercial
+      [comerciales]="comerciales()"
+      [idComercialSugerido]="idComercialSugerido()"
+      [cantidadClientes]="seleccionados().size"
+      (confirmado)="onConfirmarAsignacion($event)"
+      (cancelado)="mostrarModalAsignar.set(false)"
+    />
+  }
+
+</div>

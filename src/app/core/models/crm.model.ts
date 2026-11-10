@@ -24,47 +24,63 @@ export interface HistorialItem {
   fecha:        string;
 }
 
+export interface AdjuntoRequerimiento {
+  idDocumento:   number;
+  nombreArchivo: string;
+  tipoContenido: string | null;
+  tamanoBytes:   number | null;
+  fechaCarga:    string;
+  subidoPor:     string | null;
+}
+
 export interface RequerimientoFicha {
-  idRequerimiento: number;
-  numero:          string;
-  idCliente:       number;
-  razonSocial:     string;
-  ruc:             string;
-  idContacto:      number | null;
-  idSede:          number | null;
-  nombreContacto:  string | null;
-  nombreSede:      string | null;
-  responsable:     string | null;
-  fechaCreacion:   string;
-  idOrigen:        number;
-  origenLabel:     string | null;
-  idArea:          number;
-  areaLabel:       string | null;
-  idPrioridad:     number;
-  prioridadLabel:  string | null;
-  fechaNecesidad:  string | null;
-  descripcion:     string;
-  notificarCorreo: boolean;
-  requiereVisita:  boolean;
-  clienteDeuda:    boolean;
-  estado:          string;
-  estadoLabel:     string | null;
-  historial:       HistorialItem[];
+  idRequerimiento:          number;
+  numero:                   string;
+  idCliente:                number;
+  razonSocial:              string;
+  ruc:                      string;
+  idContacto:               number | null;
+  idSede:                   number | null;
+  nombreContacto:           string | null;
+  nombreSede:               string | null;
+  responsable:              string | null;
+  fechaCreacion:            string;
+  idOrigen:                 number;
+  origenLabel:              string | null;
+  idArea:                   number;
+  areaLabel:                string | null;
+  idPrioridad:              number;
+  prioridadLabel:           string | null;
+  fechaNecesidad:           string | null;
+  descripcion:              string;
+  notificarCorreo:          boolean;
+  requiereVisita:           boolean;
+  clienteDeuda:             boolean;
+  estado:                   string;
+  estadoLabel:              string | null;
+  historial:                HistorialItem[];
+  idContactoSecundario:     number | null;
+  nombreContactoSecundario: string | null;
+  esAcreditacion:           boolean;
+  cantidadAdjuntos:         number;
+  adjuntos:                 AdjuntoRequerimiento[] | null;
 }
 
 export interface GuardarRequerimientoComando {
-  idRequerimiento: number;
-  idCliente:       number;
-  idSede:          number | null;
-  idContacto:      number | null;
-  idOrigen:        number;
-  idArea:          number;
-  idPrioridad:     number;
-  fechaNecesidad:  string | null;
-  descripcion:     string;
-  notificarCorreo: boolean;
-  requiereVisita:  boolean;
-  clienteDeuda:    boolean;
+  idRequerimiento:      number;
+  idCliente:            number;
+  idSede:               number | null;
+  idContacto:           number | null;
+  idOrigen:             number;
+  idArea:               number;
+  idPrioridad:          number;
+  fechaNecesidad:       string | null;
+  descripcion:          string;
+  notificarCorreo:      boolean;
+  requiereVisita:       boolean;
+  clienteDeuda:         boolean;
+  idContactoSecundario: number | null;
+  esAcreditacion:       boolean;
 }
 
 export interface KpisRequerimientos {

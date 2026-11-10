@@ -1,0 +1,366 @@
+<div class="pagina">
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="Operaciones / Programación Operativa"
+    subtitulo="Planifica las atenciones, confirma con el cliente y gestiona la carga del equipo técnico" />
+
+  <!-- ── KPI Cards ───────────────────────────────────────────────────────── -->
+  <app-kpi-grid [columnas]="5">
+    @if (tarjetas(); as t) {
+      <app-kpi-card icono="today"           etiqueta="SERVICIOS HOY"         [valor]="t.serviciosHoy"       variante="azul" />
+      <app-kpi-card icono="pending"         etiqueta="PENDIENTES"            [valor]="t.totalPendientes"    variante="ambar" />
+      <app-kpi-card icono="event_available" etiqueta="PROGRAMADOS"           [valor]="t.programados"        variante="verde" />
+      <app-kpi-card icono="warning"         etiqueta="CON CONFLICTO"         [valor]="t.conConflicto"       variante="rojo" />
+      <app-kpi-card icono="engineering"     etiqueta="DISPONIBLES"
+                    [valor]="t.tecnicosDisponibles + ' / ' + t.plantillaTecnicos" variante="morado" />
+    }
+  </app-kpi-grid>
+
+  <!-- ── Tabs ────────────────────────────────────────────────────────────── -->
+  <div class="tabs-bandeja">
+    <button class="tab" [class.tab--activa]="tab() === 'vista_principal'" (click)="cambiarTab('vista_principal')">
+      <span class="material-symbols-outlined">dashboard</span>
+      Vista Principal
+    </button>
+    <button class="tab" [class.tab--activa]="tab() === 'pendientes'" (click)="cambiarTab('pendientes')">
+      <span class="material-symbols-outlined">pending_actions</span>
+      Pendientes
+      @if (tarjetas(); as t) { <span class="tab__badge">{{ t.totalPendientes }}</span> }
+    </button>
+    <button class="tab" [class.tab--activa]="tab() === 'programados'" (click)="cambiarTab('programados')">
+      <span class="material-symbols-outlined">event_available</span>
+      Programados
+      @if (tarjetas(); as t) { <span class="tab__badge">{{ t.programados }}</span> }
+    </button>
+  </div>
+
+  <!-- ── Vista Principal (HU-35 fase 2 + HU-39) ──────────────────────── -->
+  @if (tab() === 'vista_principal') {
+    @if (cargandoResumen()) {
+      <div class="vacio-info">
+        <span class="material-symbols-outlined spin">progress_activity</span>
+        <p>Cargando vista principal...</p>
+      </div>
+    } @else if (resumen(); as r) {
+
+      <!-- Conflictos de programación detectados -->
+      @if (r.alertas.length > 0) {
+        <div class="vp-bloque vp-bloque--conflicto">
+          <div class="vp-bloque__head vp-bloque__head--conflicto">
+            <span class="material-symbols-outlined">error</span>
+            <h3>Conflictos de programación detectados ({{ r.alertas.length }})</h3>
+            <span class="badge-urgente">ACCIÓN URGENTE</span>
+          </div>
+          <ul class="alertas-lista">
+            @for (a of r.alertas; track a.titulo + a.detalle) {
+              <li [class.alerta--critica]="a.severidad === 'critica'">
+                <span class="dot" [class.dot--critica]="a.severidad === 'critica'"></span>
+                <div class="alerta__body">
+                  <strong>{{ a.titulo }}</strong>
+                  <span>— {{ a.detalle }}</span>
+                </div>
+                <button class="btn-resolver">RESOLVER</button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <!-- Carga semanal del equipo -->
+      <div class="vp-bloque">
+        <div class="vp-bloque__head">
+          <span class="material-symbols-outlined">bar_chart</span>
+          <h3>Carga semanal del equipo</h3>
+          <div class="nav-semana">
+            <app-button variant="ghost" tamano="sm" icono="chevron_left" [soloIcon]="true"
+                        ariaLabel="Semana anterior" (clic)="cambiarSemana(-1)" />
+            <span class="nav-semana__texto">
+              <span class="material-symbols-outlined">event</span>
+              {{ r.inicioSemana }} — {{ r.finSemana }}
+            </span>
+            <app-button variant="ghost" tamano="sm" icono="chevron_right" [soloIcon]="true"
+                        ariaLabel="Semana siguiente" (clic)="cambiarSemana(1)" />
+            <app-button variant="secondary" tamano="sm" icono="today" (clic)="semanaHoy()">Hoy</app-button>
+          </div>
+        </div>
+        <p class="vp-bloque__hint">Matriz de utilización por técnico y día. Clickea una celda para ver sus Programaciones del día.</p>
+        @if (r.carga.length === 0) {
+          <div class="vacio-sm">No hay técnicos en la plantilla de esta semana.</div>
+        } @else {
+          <div class="carga-tabla-wrap">
+            <table class="carga-tabla">
+              <thead>
+                <tr>
+                  <th>TÉCNICO / ESPECIALIDAD</th>
+                  @for (d of diasLaborales(r.carga[0].dias); track d.fecha) {
+                    <th class="centro">{{ fechaCorta(d.fecha) }}</th>
+                  }
+                  <th class="centro">TOTAL</th>
+                  <th class="centro">UTIL.</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of r.carga; track t.idUsuario) {
+                  <tr>
+                    <td>
+                      <div class="tec-cell">
+                        <div>
+                          <strong>{{ t.nombre }}</strong>
+                          <small>{{ t.cargo ?? '—' }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    @for (d of diasLaborales(t.dias); track d.fecha) {
+                      <td class="celda-dia">
+                        @if (d.servicios > 0) {
+                          <div class="svc-cards">
+                            @for (s of serviciosDia(t.idUsuario, d.fecha); track s.idOs) {
+                              <div class="svc-card" [class]="claseNivelCarga(d.nivel)"
+                                   [class.svc-card--conflicto]="s.enConflicto"
+                                   (click)="abrirDetalleDesdeCalendario(s)"
+                                   role="button" tabindex="0"
+                                   (keyup.enter)="abrirDetalleDesdeCalendario(s)">
+                                <strong class="svc-card__cliente">{{ s.cliente ?? '—' }}</strong>
+                                <small class="svc-card__os">{{ s.numero }}</small>
+                                <small class="svc-card__hora">{{ horaCorta(s.horaInicio) }}–{{ horaCorta(s.horaFin) }}</small>
+
+                                <div class="svc-tooltip">
+                                  <div class="svc-tooltip__sec">
+                                    <small>CLIENTE</small>
+                                    <strong>{{ s.cliente ?? '—' }}</strong>
+                                  </div>
+                                  <div class="svc-tooltip__sec">
+                                    <small>N° OS</small>
+                                    <strong>{{ s.numero }}</strong>
+                                  </div>
+                                  @if (s.sede) {
+                                    <div class="svc-tooltip__sec">
+                                      <small>SEDE</small>
+                                      <strong>{{ s.sede }}</strong>
+                                    </div>
+                                  }
+                                  <div class="svc-tooltip__sec">
+                                    <small>HORARIO</small>
+                                    <strong>
+                                      {{ horaCorta(s.horaInicio) }} – {{ horaCorta(s.horaFin) }}
+                                      @if (s.horas) { <span class="svc-tooltip__sub">· {{ s.horas }}h</span> }
+                                    </strong>
+                                  </div>
+                                  <div class="svc-tooltip__sec">
+                                    <small>TÉCNICO</small>
+                                    <strong>{{ s.tecnico ?? '—' }} <span class="svc-tooltip__rol">· {{ s.rol === 'principal' ? 'Principal' : 'Apoyo' }}</span></strong>
+                                  </div>
+                                  @if (s.tipoServicio) {
+                                    <div class="svc-tooltip__sec">
+                                      <small>SERVICIO</small>
+                                      <strong>{{ s.tipoServicio }}</strong>
+                                    </div>
+                                  }
+                                  <div class="svc-tooltip__chips">
+                                    <span class="chip-mini">{{ s.subEstado }}</span>
+                                    @if (s.enConflicto) { <span class="chip-mini chip-mini--rojo">Conflicto</span> }
+                                    @if (s.confirmadoCliente) { <span class="chip-mini chip-mini--verde">Cliente OK</span> }
+                                  </div>
+                                </div>
+                              </div>
+                            }
+                          </div>
+                        } @else {
+                          <span class="pill pill--vacio">0h</span>
+                        }
+                      </td>
+                    }
+                    <td class="centro"><strong>{{ t.totalHoras }}h</strong></td>
+                    <td class="centro">
+                      <span class="pill" [class]="claseNivelCarga(t.nivel)">
+                        {{ t.utilizacionPct }}%
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ── Pendientes / Programados ──────────────────────────────────────── -->
+  @if (tab() !== 'vista_principal') {
+
+    <!-- Filtros bar -->
+    <app-barra-filtros-bandeja
+      [cantidadActivos]="0"
+      [(busqueda)]="busqueda"
+      placeholder="Buscar por N° OS/OM, cliente, RUC o técnico..."
+      [conDescarga]="true"
+      (aplicar)="buscar()"
+      (descargar)="descargar()">
+      <div class="col-full">
+        <label>TIPO</label>
+        <div class="chips-tipo">
+          <button class="chip-filtro" [class.chip-filtro--activo]="(filtros().tipo ?? 'todos') === 'todos'"
+                  (click)="cambiarTipo('todos')">Todos</button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtros().tipo === 'OS'"
+                  (click)="cambiarTipo('OS')">OS</button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtros().tipo === 'OM'"
+                  (click)="cambiarTipo('OM')">OM</button>
+        </div>
+      </div>
+    </app-barra-filtros-bandeja>
+
+    <!-- Filtro específico de tab: Rango en Programados -->
+    @if (tab() === 'programados') {
+      <div class="filtros-secundarios">
+        <span class="filtros-secundarios__label">RANGO:</span>
+        @for (r of RANGOS; track r.codigo) {
+          <button class="chip-filtro"
+                  [class.chip-filtro--activo]="(filtros().rango ?? 'esta_semana') === r.codigo"
+                  (click)="cambiarRango(r.codigo)">
+            {{ r.label }}
+          </button>
+        }
+      </div>
+    }
+
+    <!-- Tabla -->
+    <app-tabla-paginada
+      [cargando]="cargando()"
+      [vacio]="!cargando() && items().length === 0"
+      [total]="total()"
+      [pagina]="filtros().pagina"
+      [porPagina]="filtros().porPagina"
+      textoItems="programaciones"
+      textoVacio="No hay programaciones con los filtros aplicados."
+      (paginar)="onPaginaChange($event)">
+      <thead>
+        <tr>
+          <th>N° OS/OM</th>
+          <th>CLIENTE / RUC</th>
+          <th>SEDE / ZONA</th>
+          <th>TÉCNICO(S)</th>
+          <th>FECHA / HORA</th>
+          <th>ESTADO</th>
+          <th class="num">VIÁTICOS</th>
+          <th class="centro">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of items(); track p.idOs) {
+          <tr (click)="verDetalle(p)" class="fila-clic">
+            <td>
+              <strong>{{ p.numero }}</strong>
+              @if (p.numeroPropuesta) {
+                <small class="sub">{{ p.numeroPropuesta }} v{{ p.versionPropuesta }}</small>
+              }
+            </td>
+            <td>
+              <strong>{{ p.razonSocial ?? '—' }}</strong>
+              @if (p.ruc) { <small class="sub">{{ p.ruc }}</small> }
+            </td>
+            <td>
+              <strong>{{ p.sede ?? '—' }}</strong>
+              @if (p.zona) { <small class="sub">{{ p.zona }}</small> }
+            </td>
+            <td>
+              @if (p.tecnico) {
+                <strong>{{ p.tecnico }}</strong>
+                @if (p.tecnicosApoyo) { <small class="sub">+ {{ p.tecnicosApoyo }}</small> }
+              } @else { <span class="muted">sin asignar</span> }
+            </td>
+            <td>
+              @if (p.fechaEjecucion) {
+                <div class="rango-fecha">{{ formatearFecha(p.fechaEjecucion) }}</div>
+                @if (p.horaInicio) {
+                  <div class="rango-fecha">{{ p.horaInicio }}{{ p.horaFin ? ' – ' + p.horaFin : '' }}</div>
+                }
+              } @else if (p.fechaProgramadaDesde || p.fechaProgramadaHasta) {
+                <div class="rango-fecha">{{ formatearFecha(p.fechaProgramadaDesde) }}</div>
+                <div class="rango-fecha">{{ formatearFecha(p.fechaProgramadaHasta) }}</div>
+              } @else { <span class="muted">—</span> }
+            </td>
+            <td>
+              <span [class]="claseSubEstado(p.subEstado)">{{ etiquetaSubEstado(p.subEstado) }}</span>
+            </td>
+            <td class="num">
+              <span [class]="claseViatico(p.viaticoEstado)">
+                {{ p.viaticoMoneda }} {{ p.viaticoMonto | number:'1.2-2' }}
+              </span>
+            </td>
+            <td class="centro acciones" (click)="$event.stopPropagation()">
+              @if (p.puedeVerDetalle) {
+                <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                            ariaLabel="Ver detalle" title="Ver detalle" (clic)="verDetalle(p)" />
+              }
+              @if (p.puedeProgramar) {
+                <app-button variant="ghost" tamano="sm" icono="event" [soloIcon]="true"
+                            ariaLabel="Programar" title="Programar" (clic)="programarOs(p)" />
+              }
+              @if (p.puedeReprogramar || p.puedeSolicitarReprogramacion) {
+                <app-button variant="ghost" tamano="sm" icono="edit_calendar" [soloIcon]="true"
+                            ariaLabel="Reprogramar"
+                            [title]="p.puedeReprogramar ? 'Reprogramar' : 'Solicitar reprogramación'"
+                            (clic)="reprogramar(p)" />
+              }
+              @if (p.puedeCancelar) {
+                <app-button variant="ghost" tamano="sm" icono="block" [soloIcon]="true"
+                            ariaLabel="Cancelar programación" title="Cancelar programación"
+                            (clic)="cancelarProgramacion(p)" />
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </app-tabla-paginada>
+  }
+
+  <!-- Modal detalle de programación (HU-37) -->
+  @if (idDetalleAbierto(); as id) {
+    <app-modal-detalle-programacion
+      [idProgramacion]="id"
+      (cerrar)="cerrarDetalle()"
+      (actualizado)="onDetalleActualizado()"
+      (pedirRegistrarRespuesta)="onPedirRegistrarRespuesta($event)"
+      (pedirCancelar)="onPedirCancelar($event)"
+      (pedirReprogramar)="onPedirReprogramar($event)"
+      (pedirGestionarViaticos)="onPedirGestionarViaticos($event)"
+      (pedirResolverSolicitud)="onPedirResolverSolicitud($event)"
+      (pedirRetirarSolicitud)="onPedirRetirarSolicitud($event)" />
+  }
+
+  <!-- Modal secundario: Registrar respuesta del cliente (HU-37) -->
+  @if (idRespuestaAbierto(); as id) {
+    <app-modal-registrar-respuesta-cliente
+      [idProgramacion]="id"
+      (cerrar)="cerrarRespuesta()"
+      (registrado)="onRespuestaRegistrada($event)" />
+  }
+
+  <!-- Modal secundario: Cancelar programación (HU-38) -->
+  @if (idCancelarAbierto(); as id) {
+    <app-modal-cancelar-programacion
+      [idProgramacion]="id"
+      (cerrar)="cerrarCancelar()"
+      (cancelado)="onCancelado()" />
+  }
+
+  <!-- Modal secundario: Gestionar viáticos (HU-45) -->
+  @if (idViaticosAbierto(); as id) {
+    <app-modal-gestionar-viaticos
+      [idProgramacion]="id"
+      (cerrar)="cerrarViaticos()"
+      (actualizado)="onViaticosActualizado()" />
+  }
+
+  <!-- Modal secundario: Resolver solicitud de reprogramación (HU-38) -->
+  @if (idSolicitudAbierta(); as idSol) {
+    <app-modal-resolver-solicitud
+      [idSolicitud]="idSol"
+      (cerrar)="cerrarSolicitud()"
+      (resuelta)="onSolicitudResuelta()" />
+  }
+
+</div>

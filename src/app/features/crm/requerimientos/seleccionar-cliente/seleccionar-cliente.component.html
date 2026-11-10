@@ -125,20 +125,8 @@
 
   <div modalFooter class="modal-footer">
     <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
-    <div class="modal-footer__der">
-      @if (seleccionado()) {
-        <span class="sc-seleccionado-label">
-          Seleccionado: <strong>{{ seleccionado()!.razonSocial }}</strong>
-        </span>
-      }
-      <app-button
-        variant="primary"
-        icono="check"
-        [disabled]="!seleccionado()"
-        (clic)="confirmar()"
-      >
-        Confirmar Selección
-      </app-button>
-    </div>
+    <span class="sc-seleccionado-label" style="color:#64748B;font-size:0.875rem">
+      Haz clic en un cliente para seleccionarlo.
+    </span>
   </div>
 </app-modal>

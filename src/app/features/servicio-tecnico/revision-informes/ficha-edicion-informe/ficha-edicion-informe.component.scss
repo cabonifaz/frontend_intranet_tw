@@ -1,0 +1,374 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// Ficha de edición del informe de servicio técnico (HU-58, Módulo 12)
+// Stepper 4 pasos + grid 2 columnas (main + sidebar)
+// ═══════════════════════════════════════════════════════════════════════════
+
+.pagina {
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 16px;
+  background: #F8FAFC;
+  min-height: calc(100vh - 56px);
+}
+
+.loading {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 80px; color: #64748B; font-size: 14px;
+}
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.aviso-error {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 22px 24px; border-radius: 10px;
+  background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C;
+  font-size: 13px; font-weight: 500;
+  .material-symbols-outlined { font-size: 22px; }
+  > div { flex: 1; min-width: 220px; }
+  p { margin: 2px 0 0; font-weight: 400; color: #991B1B; }
+}
+.aviso-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  .material-symbols-outlined { font-size: 20px; }
+  &--ambar { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; }
+}
+
+// ── Stepper horizontal (mismo patrón que wizard propuesta) ──────────────
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  overflow-x: auto;
+
+  &__paso {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #94A3B8;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover { background: #F8FAFC; color: #475569; }
+
+    &--completado {
+      color: #059669;
+      .stepper__numero {
+        background: #ECFDF5; color: #059669; border-color: #A7F3D0;
+        .material-symbols-outlined { font-size: 16px; }
+      }
+    }
+
+    &--activo {
+      color: #0F172A; background: #EFF6FF; font-weight: 600;
+      .stepper__numero { background: #2563EB; color: #FFFFFF; border-color: #2563EB; }
+    }
+  }
+
+  &__dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    background: #DC2626; color: #FFF;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 700; line-height: 1;
+  }
+
+  &__numero {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #F1F5F9; color: #64748B;
+    border: 1px solid #E2E8F0;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__separador {
+    flex: 1; min-width: 12px; height: 1px;
+    background: #E2E8F0; margin: 0 2px;
+  }
+}
+
+// ── Grid 2 columnas (main + sidebar) ────────────────────────────────────
+.fe-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px;
+  align-items: start;
+  @media (max-width: 1100px) { grid-template-columns: 1fr; }
+}
+
+.fe-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.fe-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+// Footer vive dentro del grid ocupando TODO el ancho (main + sidebar)
+.ficha-footer { grid-column: 1 / -1; margin-top: 4px; }
+
+// Botones del header de las secciones (usado con headerActions)
+.card__botones { display: flex; gap: 8px; align-items: center; }
+
+// ── Info grid (locked, clave/valor) ─────────────────────────────────────
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
+  &--3 { grid-template-columns: repeat(3, 1fr); @media (max-width: 800px) { grid-template-columns: 1fr 1fr; } }
+}
+.info-item {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0;
+  small { font-size: 10.5px; color: #64748B; font-weight: 600; letter-spacing: 0.3px; display: inline-flex; align-items: center; gap: 4px;
+    .material-symbols-outlined { font-size: 12px; color: #94A3B8; } }
+  strong { font-size: 13px; color: #0F172A; font-weight: 500; }
+  &--wide { grid-column: 1 / -1; }
+}
+.muted { color: #94A3B8; font-weight: 500; }
+.link { color: #2563EB; font-weight: 500; }
+.tec-row { display: inline-flex; align-items: center; gap: 8px; }
+.tec-avatar {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #DBEAFE; color: #1D4ED8;
+  font-size: 10px; font-weight: 700;
+}
+
+// ── Pasos de solo lectura (procedimiento ejecutado por el técnico) ──────
+.pasos-lectura { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.paso-lectura {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  &__check { color: #CBD5E1; display: inline-flex;
+    .material-symbols-outlined { font-size: 20px; }
+    &--ok { color: #16A34A; }
+  }
+  &__body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    strong { font-size: 13px; color: #0F172A; font-weight: 500; }
+    small { font-size: 12px; color: #64748B; }
+  }
+  &--no {
+    background: #F8FAFC;
+    .paso-lectura__body strong { color: #94A3B8; }
+  }
+}
+
+.btn-agregar {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: transparent; border: 1px dashed #CBD5E1; border-radius: 8px;
+  color: #475569; font-size: 12.5px; font-weight: 500; cursor: pointer;
+  padding: 8px 14px;
+  width: 100%; justify-content: center;
+  margin-top: 8px;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #F8FAFC; border-color: #94A3B8; color: #0F172A; }
+  &--mini { width: auto; padding: 6px 10px; font-size: 12px; border-style: solid; background: #F8FAFC; margin-top: 0; }
+}
+
+// ── Forms grid genérico ─────────────────────────────────────────────────
+.form-grid { display: grid; gap: 12px; grid-template-columns: 1fr;
+  &--2 { grid-template-columns: 1fr 1fr; @media (max-width: 700px) { grid-template-columns: 1fr; } }
+  &--3 { grid-template-columns: repeat(3, 1fr); @media (max-width: 900px) { grid-template-columns: 1fr 1fr; } }
+}
+.field {
+  display: flex; flex-direction: column; gap: 4px;
+  label { font-size: 11px; color: #475569; font-weight: 600; letter-spacing: 0.3px; }
+  input, select, textarea {
+    padding: 8px 10px; border: 1px solid #CBD5E1; border-radius: 6px;
+    font-size: 13px; color: #0F172A; background: #FFFFFF; font-family: inherit;
+    &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  &--wide { grid-column: 1 / -1; }
+  &--full { padding-top: 10px; }
+}
+
+.textarea-grande {
+  padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 10px;
+  font-size: 13px; color: #0F172A; background: #FFFFFF; font-family: inherit;
+  resize: vertical; min-height: 120px;
+  &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+}
+
+// ── Tabla editable (ensayos, precotización) — patrón wizard propuesta ───
+.tabla-edit {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  thead { background: #F8FAFC; }
+  th {
+    text-align: left; padding: 8px 6px;
+    font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px;
+    border-bottom: 1px solid #E2E8F0; line-height: 1.2;
+    &.num { text-align: right; }
+  }
+  td { padding: 6px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; color: #475569; }
+  .num { text-align: right; }
+  input, select {
+    width: 100%; padding: 4px 6px;
+    border: 1px solid transparent; border-radius: 4px;
+    font-size: 12px; background: transparent; color: #0F172A;
+    font-family: inherit;
+    &:hover { border-color: #E2E8F0; background: #FFFFFF; }
+    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+  }
+  input[type="number"] { font-family: 'SF Mono', 'Monaco', monospace; text-align: right; }
+}
+
+// ── Hallazgos (observaciones y recomendaciones) ─────────────────────────
+.hallazgo-lista { display: flex; flex-direction: column; gap: 10px; }
+.hallazgo {
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
+  &__head { display: flex; align-items: center; gap: 10px; }
+  &__codigo {
+    background: #F1F5F9; color: #475569;
+    padding: 3px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; font-family: 'SF Mono', 'Monaco', monospace;
+    flex-shrink: 0;
+  }
+  &__titulo {
+    flex: 1; height: 40px; padding: 0 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; font-weight: 500;
+    background: #FFFFFF; font-family: inherit;
+    &::placeholder { color: #94A3B8; }
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
+  }
+  &__nivel {
+    height: 40px; padding: 0 32px 0 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; font-weight: 500;
+    background: #FFFFFF; cursor: pointer; appearance: none; font-family: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.35' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
+  }
+  &__desc {
+    height: auto; min-height: 60px; padding: 10px 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; background: #FFFFFF;
+    resize: vertical; font-family: inherit;
+    &::placeholder { color: #94A3B8; }
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
+  }
+}
+.icono-btn {
+  background: transparent; border: 0; cursor: pointer; color: #94A3B8;
+  width: 28px; height: 28px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  .material-symbols-outlined { font-size: 18px; }
+  &:hover { color: #DC2626; background: #FEF2F2; }
+}
+
+// ── Galería de fotos (Paso 3) ───────────────────────────────────────────
+.galeria { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.foto {
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  overflow: hidden; text-decoration: none; color: inherit;
+  img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  &__pie { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; }
+  &:hover { border-color: #93C5FD; }
+}
+
+// ── Sidebar cards (patrón wizard propuesta) ─────────────────────────────
+.sidebar-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 10px; border-bottom: 1px solid #F1F5F9;
+  }
+  &__modo {
+    font-size: 9px; font-weight: 700; color: #94A3B8;
+    letter-spacing: 0.6px; text-transform: uppercase;
+  }
+}
+.side-list {
+  display: flex; flex-direction: column; gap: 10px;
+  > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px;
+    span { color: #64748B; }
+    strong { color: #0F172A; font-weight: 500; text-align: right; }
+  }
+}
+.checklist {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: #334155;
+    .check { color: #16A34A; font-size: 18px; }
+    .check-rojo { color: #DC2626; font-size: 18px; }
+    > span:not(.material-symbols-outlined) { flex: 1; min-width: 0; }
+  }
+  &__meta {
+    font-size: 12px; color: #64748B; font-weight: 500;
+    margin-left: auto; flex-shrink: 0;
+    &--alerta { color: #B91C1C; font-weight: 600; }
+  }
+  &__li--alerta { color: #0F172A; }
+}
+.timeline-mini {
+  list-style: none; margin: 0; padding: 0 0 0 10px;
+  display: flex; flex-direction: column; gap: 10px;
+  border-left: 2px solid #E2E8F0;
+}
+.ev-mini {
+  position: relative; padding-left: 10px; display: flex; gap: 8px;
+  &__dot {
+    position: absolute; left: -17px; top: 4px;
+    width: 8px; height: 8px; border-radius: 50%; background: #2563EB;
+    border: 2px solid #FFFFFF; box-shadow: 0 0 0 2px #2563EB;
+  }
+  strong { font-size: 12px; color: #0F172A; font-weight: 500; display: block; }
+  small { font-size: 11px; color: #64748B; }
+  p { margin: 2px 0 0; font-size: 12px; color: #334155; }
+}
+
+// ── Vacíos ──────────────────────────────────────────────────────────────
+.vacio {
+  margin: 0; padding: 10px; font-size: 13px; color: #94A3B8; text-align: center; font-style: italic;
+  &--mini { padding: 6px; font-size: 12px; }
+  &--grande {
+    padding: 60px 20px; font-size: 14px; font-style: normal;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    .material-symbols-outlined { font-size: 44px; color: #CBD5E1; }
+  }
+}
+
+// ── Footer sticky (mismo patrón que wizard propuesta) ───────────────────
+.wizard__footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  position: sticky;
+  bottom: 20px;
+  z-index: 10;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+
+  &-izq, &-der {
+    display: flex; gap: 10px; align-items: center;
+  }
+  &-hint { font-size: 12px; color: #64748B; margin-right: 6px; }
+}
+
+// ── Chips (semántica consistente) ───────────────────────────────────────
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  &--azul       { background: #DBEAFE; color: #1D4ED8; }
+  &--verde      { background: #DCFCE7; color: #166534; }
+  &--ambar      { background: #FEF3C7; color: #92400E; }
+  &--rojo       { background: #FEE2E2; color: #B91C1C; }
+  &--gris       { background: #F1F5F9; color: #475569; }
+  &--gris-oscuro{ background: #E2E8F0; color: #334155; }
+  &--mini       { padding: 1px 7px; font-size: 10.5px; }
+}

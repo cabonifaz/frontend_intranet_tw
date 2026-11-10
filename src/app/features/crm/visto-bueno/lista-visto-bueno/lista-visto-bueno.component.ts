@@ -23,11 +23,13 @@ import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 import { ModalDetallePropuestaComponent } from '../../propuestas/modal-detalle-propuesta/modal-detalle-propuesta.component';
 import { ModalCompararVersionesComponent } from '../modal-comparar-versiones/modal-comparar-versiones.component';
 import { ModalAprobarVbComponent } from '../modal-aprobar-vb/modal-aprobar-vb.component';
-import { ModalRechazarVbComponent } from '../modal-rechazar-vb/modal-rechazar-vb.component';
+// Observación 28 (31/10): se eliminó por completo el flujo "Rechazar". El modal queda deprecated.
 import { ModalSolicitarCorreccionComponent } from '../modal-solicitar-correccion/modal-solicitar-correccion.component';
 import { ModalResolverRevocacionComponent } from '../modal-resolver-revocacion/modal-resolver-revocacion.component';
+import { ModalPreviewPdfComponent } from '../../propuestas/modal-preview-pdf/modal-preview-pdf.component';
 
-type AccionVb = 'aprobar' | 'rechazar' | 'solicitar_correccion' | 'comparar_versiones';
+// Observación 28 (31/10): "rechazar" eliminado del flujo VB.
+type AccionVb = 'aprobar' | 'solicitar_correccion' | 'comparar_versiones';
 
 const ESTADOS_VB_TABS: { codigo: string; label: string }[] = [
   { codigo: '',                     label: 'Todos' },
@@ -51,8 +53,8 @@ const SLA_OPCIONES: { codigo: string; label: string }[] = [
     FormsModule, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe, InicialesPipe,
     ModalDetallePropuestaComponent, ModalCompararVersionesComponent,
-    ModalAprobarVbComponent, ModalRechazarVbComponent, ModalSolicitarCorreccionComponent,
-    ModalResolverRevocacionComponent,
+    ModalAprobarVbComponent, ModalSolicitarCorreccionComponent,
+    ModalResolverRevocacionComponent, ModalPreviewPdfComponent,
   ],
   templateUrl: './lista-visto-bueno.component.html',
   styleUrl: './lista-visto-bueno.component.scss',
@@ -132,9 +134,11 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
   readonly idDetalleAbierto      = signal<number | null>(null);
   readonly compararCtx           = signal<{ idPropuesta: number } | null>(null);
   readonly aprobarCtx            = signal<ItemBandejaVb | null>(null);
-  readonly rechazarCtx           = signal<ItemBandejaVb | null>(null);
   readonly solicitarCorreccionCtx= signal<ItemBandejaVb | null>(null);
   readonly revocacionCtx         = signal<ItemBandejaVb | null>(null);
+  /** Observación 26 (31/10): vista previa PDF desde el modo aprobador. */
+  readonly idPdfAbierto          = signal<number | null>(null);
+  readonly codigoPdfAbierto      = signal<string>('');
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
@@ -211,10 +215,37 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
 
     switch (evt) {
       case 'aprobar':              this.aprobarCtx.set(vb); break;
-      case 'rechazar':             this.rechazarCtx.set(vb); break;
       case 'solicitar_correccion': this.solicitarCorreccionCtx.set(vb); break;
       case 'comparar_versiones':   this.compararCtx.set({ idPropuesta: vb.idPropuesta }); break;
     }
+  }
+
+  /** Observación 26 (31/10): el botón "Vista Previa PDF" del detalle emite el
+   *  evento `accion='preview_pdf'`. Antes esta lista no lo escuchaba → nada pasaba.
+   *  Ahora cerramos el detalle y abrimos el modal de preview PDF. Al cerrar el
+   *  PDF, `cerrarPdfYVolverDetalle()` lo reabre. */
+  onAccionPdf(evt: 'preview_pdf'): void {
+    if (evt !== 'preview_pdf') return;
+    const propId = this.idDetalleAbierto();
+    if (!propId) return;
+    const item = this.items().find(i => i.idPropuesta === propId);
+    this.idDetalleAbierto.set(null);
+    this.codigoPdfAbierto.set(item?.numero ?? '');
+    this.idPdfAbierto.set(propId);
+  }
+
+  /** Botón "← Volver" del header del PDF: cierra el PDF y re-abre el detalle. */
+  volverADetalleDesdePdf(): void {
+    const id = this.idPdfAbierto();
+    this.idPdfAbierto.set(null);
+    this.codigoPdfAbierto.set('');
+    if (id) this.idDetalleAbierto.set(id);
+  }
+
+  /** Botón "Cerrar"/X del PDF: cierra todo sin reabrir el detalle. */
+  cerrarPdfCompleto(): void {
+    this.idPdfAbierto.set(null);
+    this.codigoPdfAbierto.set('');
   }
 
   async onResolverConfirmado(idPropuesta: number, dto: ResolverVbRequest, msgOk: string): Promise<void> {
@@ -222,7 +253,6 @@ export class ListaVistoBuenoComponent implements OnInit, OnDestroy {
       await this.vbSvc.resolver(idPropuesta, dto);
       this.toastSvc.exito(msgOk);
       this.aprobarCtx.set(null);
-      this.rechazarCtx.set(null);
       this.solicitarCorreccionCtx.set(null);
       await this.cargar();
     } catch (e: unknown) {

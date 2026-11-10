@@ -52,9 +52,10 @@ export class ModalDetalleOrdenServicioComponent {
   private readonly toast  = inject(ToastService);
   private readonly router = inject(Router);
 
-  readonly cargando = signal(true);
-  readonly error    = signal<string | null>(null);
-  readonly detalle  = signal<DetalleOrdenServicio | null>(null);
+  readonly cargando       = signal(true);
+  readonly error          = signal<string | null>(null);
+  readonly detalle        = signal<DetalleOrdenServicio | null>(null);
+  readonly descargandoPdf = signal(false);
 
   readonly tabActivo = signal<TabInterno>('resumen');
 
@@ -176,13 +177,28 @@ export class ModalDetalleOrdenServicioComponent {
 
   onCerrar(): void { this.cerrar.emit(); }
 
-  // ─── Botones de acción del header ───────────────────────────────────────
-  onDocumentos(): void {
-    this.abrirDocumentos.emit(this.detalle()?.idExpediente ?? null);
-  }
+  // ─── Botones de acción del footer ───────────────────────────────────────
 
-  onAuditoria(): void {
-    this.abrirAuditoria.emit(this.detalle()?.idExpediente ?? null);
+  /** Ticket #4436 — Descarga el PDF de la OS del endpoint del back. */
+  async onDescargarPdf(): Promise<void> {
+    const d = this.detalle();
+    if (!d || this.descargandoPdf()) return;
+    this.descargandoPdf.set(true);
+    try {
+      const blob = await this.svc.obtenerPdfBlob(d.idOs);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `${d.numero || 'orden-servicio'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo descargar el PDF.');
+    } finally {
+      this.descargandoPdf.set(false);
+    }
   }
 
   onSolicitarEdicion(): void {

@@ -205,3 +205,195 @@
     strong { color: #0F172A; font-size: 13px; font-weight: 600; }
   }
 }
+
+// ── Observación 15 v2 (feedback 2026-11-03): selector único de tercero. ────
+.tercero-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// ── Observación 15 v4 (feedback 2026-11-03): autocomplete inline ──────────
+// Label + hint propios, imitando el look de app-campo pero sin estar dentro
+// (así el dropdown no sufre recortes ni conflictos de ::ng-deep).
+.tercero-busqueda {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: #94A3B8;
+    font-weight: 500;
+  }
+
+  // Fila: input (crece) + botón "Nuevo cliente" (fijo a la derecha).
+  &__fila {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+  }
+}
+
+// Botón secundario "Nuevo cliente" al lado del autocomplete.
+.tercero-nuevo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 14px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  color: #1D4ED8;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+  }
+}
+
+.tercero-autocomplete {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+
+  &__icono {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    font-size: 18px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &__input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px 0 40px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0F172A;
+    background: #FFFFFF;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+    box-sizing: border-box;
+
+    &::placeholder { color: #94A3B8; }
+
+    &:focus {
+      border-color: #93C5FD;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+  }
+}
+
+.tercero-sugerencias {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  list-style: none;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+
+  &__estado {
+    padding: 14px;
+    color: #64748B;
+    font-size: 12px;
+    text-align: center;
+
+    &--vacio {
+      a {
+        display: inline-block;
+        margin-left: 4px;
+        color: #1D4ED8;
+        font-weight: 600;
+        text-decoration: none;
+
+        &:hover { text-decoration: underline; }
+      }
+    }
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+
+    strong { color: #0F172A; font-size: 13px; font-weight: 600; }
+    small  { color: #64748B; font-size: 11px; }
+
+    &:hover { background: #EFF6FF; }
+  }
+}
+
+// Estado con cliente elegido: cabecera azul con nombre + 4 campos readonly.
+.tercero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+
+    > .material-symbols-outlined {
+      color: #2563EB;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+  }
+
+  &__titulo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+
+    strong { color: #0F172A; font-size: 14px; font-weight: 600; }
+    small  { color: #64748B; font-size: 12px; }
+  }
+}

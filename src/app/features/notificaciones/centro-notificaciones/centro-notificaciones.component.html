@@ -1,0 +1,221 @@
+<div class="pagina">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="Centro de Notificaciones"
+    subtitulo="Todas tus notificaciones y alertas en un solo lugar — consulta, atiende y archiva">
+    <div class="cn-head-acciones">
+      <span class="chip chip--azul chip--grande">
+        <span class="chip__dot"></span>
+        {{ noLeidas() }} pendientes
+      </span>
+      <app-button variant="secondary" icono="done_all" (clic)="marcarTodasLeidas()">
+        Marcar todas como leídas
+      </app-button>
+    </div>
+  </app-header-bandeja>
+
+  <!-- ── Filtros ─────────────────────────────────────────────────────────── -->
+  <section class="cn-filtros">
+    <div class="cn-filtros__buscador">
+      <span class="material-symbols-outlined">search</span>
+      <input type="text" [ngModel]="busqueda()"
+             (ngModelChange)="busqueda.set($event)"
+             (keyup.enter)="onBuscar()"
+             placeholder="Buscar por N° documento, cliente, usuario o palabra clave…">
+    </div>
+
+    <div class="cn-filtros__grupo">
+      <label>MÓDULO</label>
+      <select [ngModel]="modulo()" (ngModelChange)="modulo.set($event); onCambioFiltro()">
+        @for (o of moduloOpciones; track o.v) {
+          <option [ngValue]="o.v">{{ o.l }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="cn-filtros__grupo">
+      <label>TIPO</label>
+      <select [ngModel]="tipo()" (ngModelChange)="tipo.set($event); onCambioFiltro()">
+        @for (o of tipoOpciones; track o.v) {
+          <option [ngValue]="o.v">{{ o.l }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="cn-filtros__grupo">
+      <label>ESTADO</label>
+      <select [ngModel]="estado()" (ngModelChange)="estado.set($event); onCambioFiltro()">
+        <option value="no_leidas">No leídas</option>
+        <option value="leidas">Leídas</option>
+        <option value="archivadas">Archivadas</option>
+        <option value="todas">Todas</option>
+      </select>
+    </div>
+
+    <div class="cn-filtros__grupo">
+      <label>FECHA</label>
+      <select [ngModel]="rango()" (ngModelChange)="rango.set($event); onCambioFiltro()">
+        <option value="hoy">Hoy</option>
+        <option value="esta_semana">Esta semana</option>
+        <option value="este_mes">Este mes</option>
+        <option value="todas">Todas</option>
+      </select>
+    </div>
+
+    <button class="cn-filtros__refresh" type="button" (click)="cargar()" title="Refrescar">
+      <span class="material-symbols-outlined">refresh</span>
+    </button>
+  </section>
+
+  <!-- ── Grid lista + detalle ────────────────────────────────────────────── -->
+  <section class="cn-grid">
+
+    <!-- ── Lista agrupada ───────────────────────────────────────────────── -->
+    <div class="cn-lista">
+      @if (cargando()) {
+        <div class="loading">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Cargando notificaciones…
+        </div>
+      } @else if (items().length === 0) {
+        <div class="vacio">
+          <span class="material-symbols-outlined">notifications_off</span>
+          <p>No hay notificaciones con los filtros aplicados.</p>
+        </div>
+      } @else {
+        @for (g of grupos(); track g.clave) {
+          <header class="cn-grupo">
+            <span class="cn-grupo__label">{{ g.label }}</span>
+            <span class="cn-grupo__count">
+              {{ g.items.length }} {{ g.items.length === 1 ? 'notificación' : 'notificaciones' }}
+            </span>
+          </header>
+          <ul class="cn-lista__items">
+            @for (n of g.items; track n.idNotificacion) {
+              <li class="cn-item"
+                  [class.cn-item--no-leida]="!n.leida"
+                  [class.cn-item--alerta]="n.esAlertaOperativa"
+                  [class.cn-item--activo]="seleccion()?.idNotificacion === n.idNotificacion"
+                  (click)="abrir(n)">
+                <div class="cn-item__icon-wrap">
+                  <span class="cn-item__icon material-symbols-outlined">
+                    {{ n.esAlertaOperativa ? 'warning' : iconoPorModulo(n.moduloCodigo) }}
+                  </span>
+                </div>
+                <div class="cn-item__body">
+                  <div class="cn-item__fila">
+                    @if (n.esAlertaOperativa) {
+                      <span class="chip chip--rojo chip--mini">ALERTA OPERATIVA</span>
+                    }
+                    <strong class="cn-item__titulo">{{ n.titulo }}</strong>
+                    <span class="cn-item__tiempo">{{ n.tiempo }}</span>
+                  </div>
+                  <p class="cn-item__preview">{{ n.cuerpo }}</p>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </div>
+
+    <!-- ── Detalle ──────────────────────────────────────────────────────── -->
+    <div class="cn-detalle">
+      @if (seleccion(); as n) {
+        <header class="cn-detalle__head">
+          <div class="cn-detalle__head-izq">
+            <div class="cn-detalle__icono">
+              <span class="material-symbols-outlined">{{ iconoPorModulo(n.moduloCodigo) }}</span>
+            </div>
+            <div>
+              <h2 class="cn-detalle__titulo">{{ n.titulo }}</h2>
+              <div class="cn-detalle__chips">
+                <span [class]="chipTipo(n.tipo)">{{ n.tipoLabel }}</span>
+                <span [class]="chipModulo(n.moduloCodigo)">{{ n.moduloLabel }}</span>
+                @if (!n.leida) { <span class="chip chip--ambar">No leída</span> }
+                @if (n.archivada) { <span class="chip chip--gris">Archivada</span> }
+              </div>
+            </div>
+          </div>
+          <div class="cn-detalle__head-der">
+            <button class="cn-detalle__icon-btn" title="Imprimir">
+              <span class="material-symbols-outlined">print</span>
+            </button>
+            <button class="cn-detalle__icon-btn" title="Compartir">
+              <span class="material-symbols-outlined">share</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="cn-detalle__grid">
+          <div class="cn-info">
+            <small>DE</small>
+            <div class="cn-info__remitente">
+              <span class="cn-info__avatar">{{ (n.remitente ?? 'S').charAt(0) }}</span>
+              <strong>{{ n.remitente ?? 'Sistema TotalWeight' }}</strong>
+            </div>
+          </div>
+          <div class="cn-info">
+            <small>FECHA COMPLETA</small>
+            <div class="cn-info__fila">
+              <span class="material-symbols-outlined">schedule</span>
+              <strong>{{ n.creadoEn | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+            </div>
+          </div>
+          <div class="cn-info">
+            <small>MÓDULO ORIGEN</small>
+            <strong>{{ n.moduloLabel }}</strong>
+          </div>
+          <div class="cn-info">
+            <small>TIPO DE EVENTO</small>
+            <strong>{{ n.tipoLabel }}</strong>
+          </div>
+          <div class="cn-info">
+            <small>PRIORIDAD</small>
+            <span [class]="n.esAlertaOperativa ? 'chip chip--rojo' : 'chip chip--ambar'">
+              <span class="chip__dot"></span>
+              {{ n.esAlertaOperativa ? 'Alta' : 'Normal' }}
+            </span>
+          </div>
+          <div class="cn-info">
+            <small>ELEMENTO ASOCIADO</small>
+            @if (n.entidadCodigo) {
+              <a class="cn-info__link" (click)="irAlOrigen(n)">
+                {{ n.entidadCodigo }}
+                <span class="material-symbols-outlined">open_in_new</span>
+              </a>
+            } @else {
+              <span class="muted">—</span>
+            }
+          </div>
+        </div>
+
+        <div class="cn-mensaje">
+          <header class="cn-mensaje__head">
+            <span class="material-symbols-outlined">mail</span>
+            <span>MENSAJE</span>
+          </header>
+          <p class="cn-mensaje__body">{{ n.cuerpo }}</p>
+        </div>
+
+        <footer class="cn-detalle__footer">
+          @if (!n.archivada) {
+            <app-button variant="secondary" icono="archive" (clic)="archivar(n)">Archivar</app-button>
+          }
+          @if (n.entidadCodigo) {
+            <app-button variant="primary" iconoDer="arrow_forward" (clic)="irAlOrigen(n)">
+              Ir al elemento origen
+            </app-button>
+          }
+        </footer>
+      } @else {
+        <div class="cn-detalle__vacio">
+          <span class="material-symbols-outlined">inbox</span>
+          <p>Selecciona una notificación para ver el detalle.</p>
+        </div>
+      }
+    </div>
+  </section>
+</div>

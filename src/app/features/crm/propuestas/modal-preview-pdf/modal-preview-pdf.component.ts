@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { environment } from '../../../../../environments/environment';
+import { GuardarPropuestaDtoApi } from '../../../../core/services/propuestas.service';
 
 /**
  * Modal "Vista Previa PDF" de la propuesta. Mismo patrón que el preview de
@@ -25,7 +26,17 @@ export class ModalPreviewPdfComponent implements OnInit, OnDestroy {
 
   readonly codigo      = input<string>('');
   readonly idPropuesta = input<number>(0);
+  /** Si viene, el modal genera el PDF enviando este draft al endpoint
+   *  POST /propuestas/{id}/pdf-preview (vista previa sin guardar). Si no
+   *  viene, usa GET /propuestas/{id}/pdf (versión ya persistida en BD). */
+  readonly draft       = input<GuardarPropuestaDtoApi | null>(null);
+  /** Observación 26 v3 (feedback 2026-11-03): cuando el PDF se abrió desde un
+   *  modal anterior (ej. detalle VB), el padre pasa `mostrarVolver=true` para
+   *  que aparezca un botón "← Volver" en la esquina superior izquierda del
+   *  header. El `(cerrar)` cierra todo; `(volver)` vuelve al modal anterior. */
+  readonly mostrarVolver = input<boolean>(false);
   readonly cerrar      = output<void>();
+  readonly volver      = output<void>();
 
   readonly cargando = signal(true);
   readonly error    = signal<string>('');
@@ -43,9 +54,11 @@ export class ModalPreviewPdfComponent implements OnInit, OnDestroy {
     }
 
     try {
-      const blob = await firstValueFrom(
-        this.http.get(`${environment.apiUrl}/api/crm/propuestas/${id}/pdf`, { responseType: 'blob' })
-      );
+      const draft = this.draft();
+      const url   = `${environment.apiUrl}/api/crm/propuestas/${id}/${draft ? 'pdf-preview' : 'pdf'}`;
+      const blob  = draft
+        ? await firstValueFrom(this.http.post(url, draft, { responseType: 'blob' }))
+        : await firstValueFrom(this.http.get(url, { responseType: 'blob' }));
       this.blob    = blob;
       this.blobUrl = URL.createObjectURL(blob);
       this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.blobUrl));

@@ -1,0 +1,429 @@
+<app-modal
+  [titulo]="'Detalle de la Programación ' + (cabecera()?.codigo ?? '')"
+  [subtitulo]="cabecera()?.estadoLabel ?? ''"
+  icono="event_note"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="estado">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando detalle...
+    </div>
+  } @else if (detalle(); as d) {
+
+    <!-- Alertas visibles solo si aplican -->
+    @if (d.programacion.bloqueoSsomaActivo || d.programacion.idSolicitudPendiente) {
+      <div class="alertas-cabecera">
+        @if (d.programacion.bloqueoSsomaActivo) {
+          <span class="chip chip--rojo">SSOMA bloquea</span>
+        }
+        @if (d.programacion.idSolicitudPendiente) {
+          <span class="chip chip--ambar">Solicitud pendiente</span>
+        }
+      </div>
+    }
+
+    <!-- ── Tabs ─────────────────────────────────────────────────────────── -->
+    <div class="tabs">
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'datos'" (click)="irATab('datos')">
+        Datos
+      </button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'checklist'" (click)="irATab('checklist')">
+        Checklist + Respuestas
+        @if (d.respuestas.length > 0) { <span class="tabs__dot">{{ d.respuestas.length }}</span> }
+      </button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'viaticos'" (click)="irATab('viaticos')">
+        Viáticos
+      </button>
+      <button class="tabs__item" [class.tabs__item--activo]="tab() === 'historial'" (click)="irATab('historial')">
+        Timeline
+        <span class="tabs__dot">{{ d.historial.length }}</span>
+      </button>
+    </div>
+
+    <!-- ── CONTENIDO ─────────────────────────────────────────────────── -->
+    <div class="contenido">
+
+      <!-- TAB DATOS -->
+      @if (tab() === 'datos') {
+
+        <!-- KPIs fila -->
+        <div class="kpis-fila">
+          <div class="kpi-card">
+            <div class="kpi-icono-wrap">
+              <span class="material-symbols-outlined">business</span>
+            </div>
+            <div class="kpi-texto">
+              <div class="kpi-label">CLIENTE</div>
+              <div class="kpi-valor">{{ d.programacion.razonSocial ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icono-wrap kpi-icono-wrap--morado">
+              <span class="material-symbols-outlined">event</span>
+            </div>
+            <div class="kpi-texto">
+              <div class="kpi-label">FECHA</div>
+              <div class="kpi-valor">{{ d.programacion.fechaEjecucion ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icono-wrap kpi-icono-wrap--ambar">
+              <span class="material-symbols-outlined">schedule</span>
+            </div>
+            <div class="kpi-texto">
+              <div class="kpi-label">HORARIO</div>
+              <div class="kpi-valor">{{ d.programacion.horaInicio ?? '—' }} – {{ d.programacion.horaFin ?? '—' }}</div>
+            </div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icono-wrap kpi-icono-wrap--verde">
+              <span class="material-symbols-outlined">engineering</span>
+            </div>
+            <div class="kpi-texto">
+              <div class="kpi-label">TÉCNICO PPAL.</div>
+              <div class="kpi-valor">{{ d.programacion.tecnicoPrincipal ?? '—' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info general -->
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">info</span>
+            <h4>Información general</h4>
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><small>Sede</small><strong>{{ d.programacion.sede ?? '—' }}</strong></div>
+            <div class="info-item"><small>Ubicación</small><strong>{{ d.programacion.ubicacion ?? '—' }}</strong></div>
+            <div class="info-item"><small>Tipo de servicio</small><strong>{{ d.programacion.tipoServicio ?? '—' }}</strong></div>
+            <div class="info-item"><small>Duración</small><strong>{{ d.programacion.duracionHoras ?? '—' }} h</strong></div>
+            <div class="info-item"><small>Creada por</small><strong>{{ d.programacion.creadoPor ?? '—' }}</strong></div>
+            <div class="info-item"><small>Próximo paso</small><strong>{{ d.programacion.proximoPaso }}</strong></div>
+          </div>
+          @if (d.programacion.observaciones) {
+            <div class="nota">
+              <small>OBSERVACIONES</small>
+              <p>{{ d.programacion.observaciones }}</p>
+            </div>
+          }
+        </div>
+
+        <!-- Técnicos -->
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">engineering</span>
+            <h4>Técnicos asignados</h4>
+            <span class="badge-count">{{ d.tecnicos.length }}</span>
+          </div>
+          @if (d.tecnicos.length === 0) {
+            <div class="vacio-sm">No hay técnicos asignados.</div>
+          } @else {
+            <ul class="lista-rows">
+              @for (t of d.tecnicos; track t.idUsuario) {
+                <li>
+                  <div>
+                    <strong>{{ t.nombre }}</strong>
+                    <small>{{ t.cargo ?? '—' }} · {{ t.rol === 'principal' ? 'Principal' : 'Apoyo' }}</small>
+                  </div>
+                  <span [class]="claseSsoma(t.ssomaActual)">SSOMA: {{ t.ssomaActual ?? 'sin dato' }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <!-- Equipos -->
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">precision_manufacturing</span>
+            <h4>Equipos</h4>
+            <span class="badge-count">{{ d.equipos.length }}</span>
+          </div>
+          @if (d.equipos.length === 0) {
+            <div class="vacio-sm">No hay equipos asociados.</div>
+          } @else {
+            <ul class="lista-rows">
+              @for (e of d.equipos; track e.idEquipo) {
+                <li>
+                  <div>
+                    <strong>{{ e.marca ?? '—' }} {{ e.modelo ?? '' }}</strong>
+                    <small>N° {{ e.numeroSerie ?? '—' }}{{ e.codigoTw ? ' · ' + e.codigoTw : '' }}</small>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <!-- Conceptos -->
+        @if (d.conceptos.length > 0) {
+          <div class="bloque">
+            <div class="bloque__head">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <h4>Conceptos</h4>
+              <span class="badge-count">{{ d.conceptos.length }}</span>
+            </div>
+            <ul class="lista-rows">
+              @for (c of d.conceptos; track c.idOsConcepto) {
+                <li>
+                  <div>
+                    <strong>{{ c.descripcion }}</strong>
+                    @if (c.alcance) { <small>Alcance: {{ c.alcance }}</small> }
+                  </div>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <!-- Alertas SSOMA -->
+        @if (d.alertasSsoma.length > 0) {
+          <div class="bloque bloque--alerta">
+            <div class="bloque__head">
+              <span class="material-symbols-outlined">warning</span>
+              <h4>Alertas SSOMA sobrevenidas</h4>
+              <span class="badge-count badge-count--rojo">{{ d.alertasSsoma.length }}</span>
+            </div>
+            <ul class="lista-rows">
+              @for (a of d.alertasSsoma; track a.idUsuario + (a.requisito ?? '')) {
+                <li class="alerta">
+                  <div>
+                    <strong>{{ a.tecnico }}</strong>
+                    <small>{{ a.mensaje ?? (a.requisito + ' · ' + (a.situacion ?? '')) }}</small>
+                  </div>
+                  <span [class]="a.severidad === 'critica' ? 'chip chip--rojo' : 'chip chip--ambar'">
+                    {{ a.severidad === 'critica' ? 'Crítica' : 'Advertencia' }}
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      }
+
+      <!-- TAB CHECKLIST + RESPUESTAS -->
+      @if (tab() === 'checklist') {
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">fact_check</span>
+            <h4>Checklist de validación</h4>
+          </div>
+          <ul class="checklist">
+            @for (c of d.checklist; track c.item) {
+              <li [class.ok]="c.cumple" [class.err]="!c.cumple && c.requiereAccion">
+                <span class="material-symbols-outlined">{{ c.cumple ? 'check_circle' : 'cancel' }}</span>
+                <div>
+                  <strong>{{ c.titulo }}</strong>
+                  @if (c.detalle) { <small>{{ c.detalle }}</small> }
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">record_voice_over</span>
+            <h4>Respuestas registradas del cliente</h4>
+            <span class="badge-count">{{ d.respuestas.length }}</span>
+          </div>
+          @if (d.respuestas.length === 0) {
+            <div class="vacio-sm">Aún no se registraron respuestas del cliente.</div>
+          } @else {
+            <ul class="lista-rows">
+              @for (r of d.respuestas; track r.id) {
+                <li>
+                  <div>
+                    <strong>{{ r.resultadoLabel }}</strong>
+                    <small>
+                      Canal: {{ r.canalLabel }}
+                      @if (r.registradoPor) { · por {{ r.registradoPor }} }
+                      @if (r.fechaRegistro) { · {{ r.fechaRegistro }} }
+                    </small>
+                    @if (r.comentario) { <p class="comentario">"{{ r.comentario }}"</p> }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <!-- TAB VIÁTICOS -->
+      @if (tab() === 'viaticos') {
+        @if (viaticosCargando()) {
+          <div class="vacio-sm">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Cargando viáticos…
+          </div>
+        } @else if (viaticosError()) {
+          <div class="bloque bloque--alerta">
+            <div class="bloque__head">
+              <span class="material-symbols-outlined">error</span>
+              <h4>{{ viaticosError() }}</h4>
+            </div>
+          </div>
+        } @else if (viaticos(); as v) {
+          <!-- Totales -->
+          <div class="bloque">
+            <div class="bloque__head">
+              <span class="material-symbols-outlined">payments</span>
+              <h4>Resumen de viáticos</h4>
+              @if (v.cabecera.rendicionCerrada) {
+                <span class="chip chip--verde">Rendición cerrada</span>
+              }
+            </div>
+            <div class="info-grid">
+              <div class="info-item"><small>Asignado</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalAsignado | number:'1.2-2' }}</strong></div>
+              <div class="info-item"><small>Depositado</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalDepositado | number:'1.2-2' }}</strong></div>
+              <div class="info-item"><small>Pendiente de depósito</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalPendiente | number:'1.2-2' }}</strong></div>
+              <div class="info-item"><small>Rendido aprobado</small><strong>{{ v.cabecera.moneda }} {{ v.resumen.totalAprobado | number:'1.2-2' }}</strong></div>
+            </div>
+          </div>
+
+          <!-- Líneas por técnico -->
+          <div class="bloque">
+            <div class="bloque__head">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <h4>Líneas asignadas</h4>
+              <span class="badge-count">{{ v.lineas.length }}</span>
+            </div>
+            @if (v.lineas.length === 0) {
+              <div class="vacio-sm">Aún no se asignaron viáticos para esta programación.</div>
+            } @else {
+              <ul class="lista-rows">
+                @for (l of v.lineas; track l.idGasto) {
+                  <li>
+                    <div>
+                      <strong>{{ l.tecnico }} · {{ l.concepto }}</strong>
+                      <small>{{ l.rol === 'principal' ? 'Principal' : 'Apoyo' }} · {{ v.cabecera.moneda }} {{ l.monto | number:'1.2-2' }}</small>
+                    </div>
+                    <span [class]="l.estadoDeposito === 'depositado' ? 'chip chip--verde' : 'chip chip--ambar'">
+                      {{ l.estadoDeposito === 'depositado' ? 'Depositado' : 'Pendiente depósito' }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <!-- Gastos rendidos -->
+          @if (v.gastos.length > 0) {
+            <div class="bloque">
+              <div class="bloque__head">
+                <span class="material-symbols-outlined">request_quote</span>
+                <h4>Gastos rendidos</h4>
+                <span class="badge-count">{{ v.gastos.length }}</span>
+              </div>
+              <ul class="lista-rows">
+                @for (g of v.gastos; track g.idGasto) {
+                  <li>
+                    <div>
+                      <strong>{{ g.tecnico }} · {{ g.concepto }}</strong>
+                      <small>{{ v.cabecera.moneda }} {{ g.monto | number:'1.2-2' }} · {{ g.fecha ?? 'sin fecha' }}</small>
+                    </div>
+                    <span class="chip" [class.chip--verde]="g.estado === 'aprobado'" [class.chip--ambar]="g.estado === 'observado' || g.estado === 'pendiente'" [class.chip--rojo]="g.estado === 'rechazado'">
+                      {{ g.estado }}
+                    </span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (acciones()?.puedeGestionarViaticos) {
+            <div class="bloque">
+              <app-button variant="primary" tamano="md" icono="payments" (clic)="gestionarViaticos()">
+                Gestionar Viáticos
+              </app-button>
+            </div>
+          }
+        }
+      }
+
+      <!-- TAB HISTORIAL -->
+      @if (tab() === 'historial') {
+        <div class="bloque">
+          <div class="bloque__head">
+            <span class="material-symbols-outlined">history</span>
+            <h4>Timeline de eventos</h4>
+            <span class="badge-count">{{ d.historial.length }}</span>
+          </div>
+          @if (d.historial.length === 0) {
+            <div class="vacio-sm">Sin eventos registrados.</div>
+          } @else {
+            <ul class="timeline">
+              @for (e of d.historial; track $index) {
+                <li class="timeline__item">
+                  <span class="timeline__ico">
+                    <span class="material-symbols-outlined">{{ iconoEvento(e.tipo) }}</span>
+                  </span>
+                  <div class="timeline__body">
+                    <div class="timeline__head">
+                      <strong>{{ e.titulo }}</strong>
+                      @if (e.fecha) { <small>{{ e.fecha }}</small> }
+                    </div>
+                    @if (e.descripcion) { <p>{{ e.descripcion }}</p> }
+                    @if (e.usuario) { <small>por {{ e.usuario }}</small> }
+                    @if (e.motivo) { <small>Motivo: {{ e.motivo }}</small> }
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Footer ──────────────────────────────────────────────────────── -->
+  <div modalFooter class="footer-modal">
+    <div class="footer-modal__izq">
+      @if (acciones()?.puedeCancelar) {
+        <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="cancelar()">
+          Cancelar programación
+        </app-button>
+      }
+    </div>
+
+    <div class="footer-modal__der">
+      @if (cabecera(); as c) {
+        @if (c.idSolicitudPendiente && !c.puedeResolverSolicitud) {
+          <span class="chip chip--ambar">
+            <span class="material-symbols-outlined">hourglass_top</span>
+            Esperando aprobación del Jefe
+          </span>
+          <app-button variant="ghost" tamano="md" icono="undo" (clic)="retirarSolicitud()">
+            Retirar solicitud
+          </app-button>
+        }
+      }
+      @if (acciones(); as a) {
+        @if (a.puedeGestionarViaticos) {
+          <app-button variant="ghost" tamano="md" icono="payments" (clic)="gestionarViaticos()">Viáticos</app-button>
+        }
+        @if (cabecera()?.puedeResolverSolicitud) {
+          <app-button variant="primary" tamano="md" icono="rule" (clic)="resolverSolicitud()">
+            Resolver solicitud
+          </app-button>
+        }
+        @if (a.puedeReprogramar) {
+          <app-button variant="secondary" tamano="md" icono="edit_calendar" (clic)="reprogramar()">
+            {{ a.reprogramacionRequiereSolicitud ? 'Solicitar reprogramación' : 'Reprogramar' }}
+          </app-button>
+        }
+        @if (a.puedeRegistrarRespuesta
+             && !cabecera()?.idSolicitudPendiente
+             && cabecera()?.estado === 'pendiente_confirmacion') {
+          <app-button variant="primary" tamano="md" icono="record_voice_over" (clic)="abrirRegistrarRespuesta()">
+            {{ (detalle()?.respuestas?.length ?? 0) > 0 ? 'Actualizar respuesta del cliente' : 'Registrar respuesta del cliente' }}
+          </app-button>
+        }
+      }
+    </div>
+  </div>
+</app-modal>
+

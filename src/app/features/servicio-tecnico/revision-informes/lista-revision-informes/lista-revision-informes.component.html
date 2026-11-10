@@ -1,0 +1,190 @@
+<div class="pagina">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <app-header-bandeja
+    [breadcrumb]="breadcrumb"
+    titulo="Revisión de Informes Técnicos"
+    subtitulo="Supervisa y revisa los informes generados por los técnicos tras cada ejecución de servicio">
+    <app-button variant="secondary" icono="download" (clic)="exportarCsv()">Exportar</app-button>
+  </app-header-bandeja>
+
+  @if (bandeja(); as b) {
+
+    <!-- ── KPI Cards ─────────────────────────────────────────────────── -->
+    <app-kpi-grid [columnas]="4">
+      <app-kpi-card icono="schedule"      etiqueta="PENDIENTES DE REVISIÓN"
+                    [valor]="b.tarjetas.pendientesRevision"
+                    subtitulo="Esperando mi revisión" variante="azul" />
+      <app-kpi-card icono="description"   etiqueta="PEND. DE PRECOTIZACIÓN"
+                    [valor]="b.tarjetas.pendientesPrecotizacion"
+                    subtitulo="Requieren acción" variante="ambar" />
+      <app-kpi-card icono="task_alt"      etiqueta="REVISADOS SIN PRECOT."
+                    [valor]="b.tarjetas.revisadosSinPrecot"
+                    subtitulo="Cerrados sin incidencias" variante="morado" />
+      <app-kpi-card icono="trending_up"   etiqueta="REVISADOS CON PRECOT."
+                    [valor]="b.tarjetas.revisadosConPrecot"
+                    subtitulo="Generaron oportunidad comercial" variante="verde" />
+    </app-kpi-grid>
+
+    <!-- ── Grupos (Todos / Pendientes / Revisados) ─────────────────── -->
+    <div class="grupos-tabs">
+      <button class="grupo-tab" [class.grupo-tab--activo]="grupo() === 'todos'"
+              (click)="cambiarGrupo('todos')">
+        <span class="material-symbols-outlined">inbox</span>
+        Todos
+        <span class="grupo-tab__badge">{{ b.total }}</span>
+      </button>
+      <button class="grupo-tab" [class.grupo-tab--activo]="grupo() === 'pendientes'"
+              (click)="cambiarGrupo('pendientes')">
+        <span class="material-symbols-outlined">pending</span>
+        Pendientes
+        <span class="grupo-tab__badge">{{ b.tarjetas.pendientesRevision + b.tarjetas.pendientesPrecotizacion }}</span>
+      </button>
+      <button class="grupo-tab" [class.grupo-tab--activo]="grupo() === 'revisados'"
+              (click)="cambiarGrupo('revisados')">
+        <span class="material-symbols-outlined">task_alt</span>
+        Revisados
+        <span class="grupo-tab__badge">{{ b.tarjetas.revisadosSinPrecot + b.tarjetas.revisadosConPrecot }}</span>
+      </button>
+    </div>
+
+    <!-- ── Barra de filtros estándar ─────────────────────────────────── -->
+    <app-barra-filtros-bandeja
+      [cantidadActivos]="filtrosActivos()"
+      [(busqueda)]="busqueda"
+      placeholder="Buscar por OS, cliente, técnico o equipo..."
+      (limpiar)="limpiarFiltros()"
+      (aplicar)="aplicarFiltros()">
+      <div>
+        <label>TÉCNICO</label>
+        <select [(ngModel)]="idTecnicoDraft">
+          <option [ngValue]="null">Todos</option>
+          @for (t of tecnicos(); track t.id) { <option [ngValue]="t.id">{{ t.nombre }}</option> }
+        </select>
+      </div>
+      <div>
+        <label>CLIENTE</label>
+        <select [(ngModel)]="idClienteDraft">
+          <option [ngValue]="null">Todos</option>
+          @for (c of clientes(); track c.id) { <option [ngValue]="c.id">{{ c.nombre }}</option> }
+        </select>
+      </div>
+      <div>
+        <label>OBSERVACIONES</label>
+        <select [(ngModel)]="conObservacionesDraft">
+          <option value="todos">Todos</option>
+          <option value="con">Con observaciones</option>
+          <option value="sin">Sin observaciones</option>
+        </select>
+      </div>
+      <div>
+        <label>FECHA DESDE</label>
+        <input type="date" [(ngModel)]="fechaDesdeDraft">
+      </div>
+      <div>
+        <label>FECHA HASTA</label>
+        <input type="date" [(ngModel)]="fechaHastaDraft">
+      </div>
+    </app-barra-filtros-bandeja>
+
+    <!-- ── Tabla ─────────────────────────────────────────────────────── -->
+    <app-tabla-paginada
+      [cargando]="cargando()"
+      [vacio]="!cargando() && items().length === 0"
+      [total]="total()"
+      [pagina]="filtros().pagina ?? 1"
+      [porPagina]="filtros().porPagina ?? 10"
+      textoItems="informes"
+      textoVacio="No hay informes con los filtros aplicados."
+      (paginar)="irPagina($event)">
+      <thead>
+        <tr>
+          <th>FECHA EJEC.</th>
+          <th>N° OS</th>
+          <th>CLIENTE</th>
+          <th>EQUIPO</th>
+          <th>TÉCNICO</th>
+          <th>OBSERVACIONES</th>
+          <th>ESTADO</th>
+          <th class="centro">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (i of items(); track i.idInforme) {
+          <tr class="fila-clic" (click)="verDetalle(i.idInforme)">
+            <td>{{ i.fechaEjecucion | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <strong class="link">{{ i.numeroOs ?? '—' }}</strong>
+              @if (i.numeroInforme) { <small class="sub">{{ i.numeroInforme }}</small> }
+            </td>
+            <td>
+              <strong>{{ i.razonSocial ?? '—' }}</strong>
+              @if (i.sede) { <small class="sub">{{ i.sede }}</small> }
+            </td>
+            <td>
+              <span>{{ i.equipo ?? '—' }}</span>
+              @if (i.codigoTw) { <small class="sub">{{ i.codigoTw }}</small> }
+            </td>
+            <td>
+              <div class="tec">
+                <span class="tec__avatar">{{ i.tecnico | iniciales }}</span>
+                <span>{{ i.tecnico ?? '—' }}</span>
+              </div>
+            </td>
+            <td>
+              <span [class]="claseObservaciones(i.conObservaciones)">
+                <span class="material-symbols-outlined chip__icon">
+                  {{ i.conObservaciones ? 'warning' : 'check' }}
+                </span>
+                {{ i.nObservaciones }}
+              </span>
+            </td>
+            <td>
+              <span [class]="claseEstado(i.grupoEstado, i.estado)">
+                {{ i.estadoLabel ?? '—' }}
+              </span>
+            </td>
+            <td class="centro acciones" (click)="$event.stopPropagation()">
+              <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"
+                          ariaLabel="Ver detalle" title="Ver detalle"
+                          (clic)="verDetalle(i.idInforme)" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </app-tabla-paginada>
+
+  } @else if (error(); as err) {
+    <div class="aviso-error" role="alert">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudo cargar la Revisión de Informes</strong>
+        <p>{{ err }}</p>
+      </div>
+      <app-button variant="primary" tamano="sm" icono="refresh" (clic)="cargar()">Reintentar</app-button>
+    </div>
+  } @else if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando informes...
+    </div>
+  }
+
+  <!-- Modal detalle del informe (HU-57) -->
+  @if (idDetalleAbierto(); as id) {
+    <app-modal-detalle-informe
+      [idInforme]="id"
+      (cerrar)="cerrarDetalle()"
+      (editar)="onEditarInforme($event)"
+      (precotizar)="onPrecotizar($event)"
+      (revisar)="onRegistrarRevision($event)" />
+  }
+
+  <!-- Modal registrar revisión (HU-59) -->
+  @if (idRevisionAbierto(); as id) {
+    <app-modal-registrar-revision
+      [idInforme]="id"
+      (cerrar)="cerrarModalRevision()"
+      (confirmado)="onRevisionConfirmada($event)" />
+  }
+</div>

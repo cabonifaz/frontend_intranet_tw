@@ -1,0 +1,145 @@
+<div class="mr-overlay" (click)="$event.target === $event.currentTarget && onCerrar()">
+  <div class="mr">
+
+    <!-- ── Header ───────────────────────────────────────────────────── -->
+    <div class="mr__header">
+      <div class="mr__header-izq">
+        <div class="mr__icono"><span class="material-symbols-outlined">verified</span></div>
+        <div>
+          <h2 class="mr__titulo">Registrar Revisión del Informe</h2>
+          @if (cabecera(); as c) {
+            <p class="mr__sub">
+              <span class="link">{{ c.numeroOs ?? '—' }}</span> ·
+              {{ c.razonSocial ?? '—' }} · {{ c.equipo ?? '—' }}
+            </p>
+          }
+        </div>
+      </div>
+      <button class="mr__cerrar" type="button" (click)="onCerrar()" title="Cerrar">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- ── Body ─────────────────────────────────────────────────────── -->
+    <div class="mr__body">
+      @if (cargando()) {
+        <div class="loading">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Validando el informe...
+        </div>
+      } @else if (error(); as err) {
+        <div class="aviso-error">
+          <span class="material-symbols-outlined">error</span>
+          <div>
+            <strong>No se pudo preparar la revisión</strong>
+            <p>{{ err }}</p>
+          </div>
+        </div>
+      } @else if (cabecera(); as c) {
+
+        <!-- Banner informativo azul -->
+        <div class="banner-azul">
+          <span class="material-symbols-outlined">info</span>
+          <div>
+            <strong>Al confirmar la revisión, el informe quedará cerrado e inmutable.</strong>
+            <p>Esta acción certifica los datos metrológicos emitidos y no se puede deshacer.</p>
+          </div>
+        </div>
+
+        <!-- Checklist de cumplimiento -->
+        <section class="seccion">
+          <header class="seccion__head">
+            <div>
+              <h3>Checklist de Cumplimiento</h3>
+              <p class="seccion__sub">Validación automática antes de cerrar el informe</p>
+            </div>
+            <span class="chip chip--azul">{{ c.verificados }} / {{ c.total }} Verificado</span>
+          </header>
+
+          <ul class="checklist">
+            @for (item of checklist(); track item.orden) {
+              <li class="check-item" [class.check-item--falla]="!item.cumple && item.obligatorio">
+                <span class="material-symbols-outlined check-item__icono"
+                      [class.check-item__icono--ok]="item.cumple"
+                      [class.check-item__icono--mal]="!item.cumple && item.obligatorio"
+                      [class.check-item__icono--opc]="!item.cumple && !item.obligatorio">
+                  {{ item.cumple ? 'check' : (item.obligatorio ? 'error' : 'remove') }}
+                </span>
+                <div class="check-item__body">
+                  <strong>{{ item.titulo ?? '—' }}</strong>
+                  @if (!item.cumple && item.obligatorio) {
+                    <small class="check-item__obligatorio">Obligatorio</small>
+                  }
+                </div>
+                <small class="check-item__detalle">{{ item.detalle ?? '—' }}</small>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- Nota del supervisor -->
+        <section class="seccion">
+          <header class="seccion__head">
+            <h3>Nota del Supervisor <span class="muted">(opcional)</span></h3>
+            <span class="chip chip--gris">Auditoría técnica</span>
+          </header>
+          <textarea class="textarea" rows="4"
+                    [maxlength]="MAX_NOTA"
+                    [(ngModel)]="nota"
+                    placeholder="Agrega una nota interna sobre la revisión. Esta nota quedará registrada en el historial..."></textarea>
+          <div class="textarea-counter">
+            <span [class.textarea-counter--limit]="nota.length >= MAX_NOTA">
+              {{ nota.length }} / {{ MAX_NOTA }} caracteres
+            </span>
+          </div>
+        </section>
+
+        <!-- Impacto tras el cierre -->
+        <section class="impacto">
+          <div class="impacto__head">IMPACTO TRAS EL CIERRE:</div>
+          <div class="impacto__grid">
+            @if (c.impactoInforme) {
+              <div class="impacto__item">
+                <span class="material-symbols-outlined">picture_as_pdf</span>
+                <span>{{ c.impactoInforme }}</span>
+              </div>
+            }
+            @if (c.impactoPrecotizacion) {
+              <div class="impacto__item">
+                <span class="material-symbols-outlined">campaign</span>
+                <span>{{ c.impactoPrecotizacion }}</span>
+              </div>
+            }
+            @if (c.impactoEstado) {
+              <div class="impacto__item">
+                <span class="material-symbols-outlined">lock</span>
+                <span>Estado: <strong class="chip chip--azul">{{ c.impactoEstado }}</strong></span>
+              </div>
+            }
+            @if (c.impactoNotificacion) {
+              <div class="impacto__item">
+                <span class="material-symbols-outlined">notifications</span>
+                <span>{{ c.impactoNotificacion }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+      }
+    </div>
+
+    <!-- ── Footer ───────────────────────────────────────────────────── -->
+    <div class="mr__footer">
+      <button class="mr__link" type="button" (click)="onCerrar()">Cancelar</button>
+      @if (cabecera(); as c) {
+        <app-button variant="primary" icono="check_circle"
+                    [disabled]="!c.puedeConfirmar || guardando()"
+                    [cargando]="guardando()"
+                    (clic)="confirmar()">
+          Confirmar Revisión
+        </app-button>
+      }
+    </div>
+
+  </div>
+</div>

@@ -9,6 +9,23 @@
     permisoBoton="propuesta_guardar"
     (clicBoton)="irANuevo()" />
 
+  <!-- ── Tabs CRM: Propuestas | Precotizaciones Técnicas (HU-60) ───────────── -->
+  <div class="tabs-crm">
+    <button class="tab-crm" [class.tab-crm--activa]="tabActivo() === 'propuestas'"
+            (click)="cambiarTab('propuestas')">
+      Propuestas
+      <span class="tab-crm__badge">{{ total() }}</span>
+    </button>
+    <button class="tab-crm" [class.tab-crm--activa]="tabActivo() === 'precotizaciones'"
+            (click)="cambiarTab('precotizaciones')">
+      Precotizaciones Técnicas
+    </button>
+  </div>
+
+  @if (tabActivo() === 'precotizaciones') {
+    <app-tab-precotizaciones />
+  } @else {
+
   <!-- ── KPI Cards (sin subtítulos, homologado con Requerimientos) ─────────── -->
   <app-kpi-grid [columnas]="5">
     <app-kpi-card icono="schedule"      etiqueta="PENDIENTES"      [valor]="kpis().pendientes"    variante="azul" />
@@ -100,7 +117,6 @@
             <div class="tabla__propuesta-cell">
               <div class="tabla__propuesta">
                 <span class="tabla__codigo" [title]="'Creada el ' + formatearFecha(item.fechaCreacion)">{{ item.codigo }}</span>
-                <span class="tabla__version">{{ item.version }}</span>
               </div>
               <span class="tabla__rq">{{ item.codigoRequerimiento ?? '—' }}</span>
             </div>
@@ -135,19 +151,33 @@
                           ariaLabel="Ver detalle" title="Ver detalle"
                           (clic)="verDetalle(item.idPropuesta)" />
               @if (!esAnulada(item)) {
-                <ng-container *twSiPermiso="item.estado === 'borrador' ? 'propuesta_guardar' : 'propuesta_nueva_version'">
-                  <app-button variant="ghost" tamano="sm"
-                              [icono]="item.estado === 'borrador' ? 'edit' : 'sync'" [soloIcon]="true"
-                              [ariaLabel]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
-                              [title]="item.estado === 'borrador' ? 'Editar' : 'Generar nueva versión'"
+                <!-- Observación 24 (31/10) + feedback 2026-11-04:
+                     • borrador / por_enviar → ícono Editar (edición en misma versión).
+                     • aprobado               → ícono Editar también (post-VB vuelve a borrador al guardar).
+                     • aceptado / rechazado / vencida → ícono Nueva Versión (solo si cliente lo solicita). -->
+                @if (item.estado === 'borrador' || $any(item.estado) === 'por_enviar' || esAprobadoItem(item)) {
+                  <app-button *twSiPermiso="'propuesta_guardar'"
+                              variant="ghost" tamano="sm" icono="edit" [soloIcon]="true"
+                              ariaLabel="Editar" title="Editar"
                               (clic)="editarPropuesta(item)" />
-                </ng-container>
+                } @else {
+                  <app-button *twSiPermiso="'propuesta_nueva_version'"
+                              variant="ghost" tamano="sm" icono="sync" [soloIcon]="true"
+                              ariaLabel="Generar nueva versión" title="Generar nueva versión"
+                              (clic)="editarPropuesta(item)" />
+                }
               }
               @if (item.estado === 'borrador') {
                 <app-button *twSiPermiso="'propuesta_enviar_vb'"
                             variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
                             ariaLabel="Enviar a Visto Bueno" title="Enviar a Visto Bueno"
                             (clic)="enviarAVistoBueno(item.idPropuesta)" />
+              }
+              @if (esAprobadoItem(item)) {
+                <app-button *twSiPermiso="'propuesta_enviar_cliente'"
+                            variant="ghost" tamano="sm" icono="send" [soloIcon]="true"
+                            ariaLabel="Enviar al Cliente" title="Enviar al Cliente"
+                            (clic)="enviarAlCliente(item.idPropuesta)" />
               }
             </div>
           </td>
@@ -156,6 +186,7 @@
     </tbody>
   </app-tabla-paginada>
 
+  }
 </div>
 
 @if (modalRqAbierto()) {
@@ -189,6 +220,32 @@
     (continuar)="onConfirmarNuevaVersion($event)"
     (cerrar)="nuevaVersionCtx.set(null)"
   />
+}
+
+<!-- ── Observación 24 (31/10): confirmación de edición post-VB ────────────── -->
+@if (confirmarEdicionPostVbCtx(); as ctx) {
+  <app-modal titulo="Editar propuesta aprobada" ancho="md" (cerrar)="onCancelarEdicionPostVb()">
+    <div class="edicion-post-vb">
+      <div class="edicion-post-vb__aviso">
+        <span class="material-symbols-outlined">info</span>
+        <div>
+          <strong>La propuesta {{ ctx.codigoPropuesta }} · {{ ctx.version }} ya fue aprobada por VB.</strong>
+          <p>
+            Al editarla, volverá al estado <strong>BORRADOR</strong> y deberá pasar
+            nuevamente por el flujo de Visto Bueno antes de enviarla al cliente.
+            <br />
+            La misma versión se mantiene (no se crea v2).
+          </p>
+        </div>
+      </div>
+      <div class="edicion-post-vb__acciones">
+        <app-button variant="ghost" (clic)="onCancelarEdicionPostVb()">Cancelar</app-button>
+        <app-button variant="primary" icono="edit" (clic)="onConfirmarEdicionPostVb()">
+          Editar y volver a BORRADOR
+        </app-button>
+      </div>
+    </div>
+  </app-modal>
 }
 
 <!-- ── HU-09 Modal Detalle de Propuesta ──────────────────────────────────── -->

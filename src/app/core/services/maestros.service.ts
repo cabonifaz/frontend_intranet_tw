@@ -20,6 +20,9 @@ import {
   GuardarContactoRequest,
   GuardarSedeRequest,
   SedeListaItem,
+  CarteraClientes,
+  FiltrosCartera,
+  AsignarCarteraComando,
 } from '../models/maestros.model';
 
 @Injectable({ providedIn: 'root' })
@@ -222,5 +225,47 @@ export class MaestrosService {
       )
     );
     if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+  }
+
+  // ─── Cartera de clientes (observación 31/10) ─────────────────────────────
+
+  /**
+   * Trae la cartera: clientes con su comercial asignado, lista de comerciales (con contador por cartera)
+   * y el flag puedeAsignar (true solo si el usuario tiene la acción `cartera_asignar` = Administrador).
+   * Un comercial sin esa acción solo ve sus propios clientes (el back filtra automáticamente).
+   */
+  async obtenerCarteraClientes(filtros: FiltrosCartera = {}): Promise<CarteraClientes> {
+    const params: Record<string, string> = {};
+    if (filtros.idComercial != null) params['idComercial'] = String(filtros.idComercial);
+    if (filtros.busqueda)            params['busqueda']    = filtros.busqueda;
+    if (filtros.asignacion)          params['asignacion']  = filtros.asignacion;
+    if (filtros.pagina)              params['pagina']      = String(filtros.pagina);
+    if (filtros.porPagina)           params['porPagina']   = String(filtros.porPagina);
+
+    try {
+      const r = await firstValueFrom(
+        this.http.get<RespuestaApi<CarteraClientes>>(`${this.base}/clientes/cartera`, { params })
+      );
+      if (!r.datos) throw new Error(r.mensaje);
+      return r.datos;
+    } catch (e) {
+      throw e instanceof HttpErrorResponse
+        ? new Error(e.error?.mensaje ?? e.statusText)
+        : e;
+    }
+  }
+
+  /** Asigna N clientes a un comercial (idComercial null o 0 = quitar de la cartera). Solo Administrador. */
+  async asignarCarteraClientes(comando: AsignarCarteraComando): Promise<void> {
+    try {
+      const r = await firstValueFrom(
+        this.http.put<RespuestaApi<null>>(`${this.base}/clientes/cartera`, comando)
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje);
+    } catch (e) {
+      throw e instanceof HttpErrorResponse
+        ? new Error(e.error?.mensaje ?? e.statusText)
+        : e;
+    }
   }
 }

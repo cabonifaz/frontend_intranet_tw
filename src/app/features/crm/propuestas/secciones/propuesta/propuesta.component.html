@@ -59,12 +59,15 @@
               [class.tabla-editable__fila--activa]="seleccionadoLinea() === $index">
               <td class="celda-desc">{{ l.descripcion }}</td>
               <td>
-                <input type="text" [value]="l.alcance"
-                       (change)="actualizarLinea($index, 'alcance', $any($event.target).value)" />
+                <!-- Observación 17/18 v2 (feedback 2026-11-04): textareas con wrap. -->
+                <textarea class="celda-textarea" rows="1"
+                          [value]="l.alcance"
+                          (change)="actualizarLinea($index, 'alcance', $any($event.target).value)"></textarea>
               </td>
               <td>
-                <input type="text" [value]="l.ptosCalibracion"
-                       (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)" />
+                <textarea class="celda-textarea" rows="1"
+                          [value]="l.ptosCalibracion"
+                          (change)="actualizarLinea($index, 'ptosCalibracion', $any($event.target).value)"></textarea>
               </td>
               <td>
                 <input type="number" min="1" [value]="l.cantidad"
@@ -105,7 +108,10 @@
             </span>
           </div>
         }
-        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()" [disabled]="!draftSvc.draft().idPropuesta">
+        <!-- Observación 22 (31/10): el botón ya no está condicionado a que la propuesta esté guardada.
+             Si aún no hay idPropuesta, el modal entra en "modo local" (persiste al draft; se sincroniza con el back al guardar). -->
+        <button type="button" class="descuento-global__btn" (click)="abrirModalDescuento()"
+                [disabled]="draftSvc.subtotalBruto() <= 0">
           <span class="material-symbols-outlined">percent</span>
           {{ draftSvc.descuentoGlobal() > 0 ? 'Modificar descuento' : 'Aplicar descuento' }}
         </button>
@@ -131,10 +137,15 @@
   </app-doble-panel>
 </app-seccion>
 
-@if (modalDescuentoAbierto() && draftSvc.draft().idPropuesta) {
+@if (modalDescuentoAbierto()) {
   <app-modal-descuento-global
-    [idPropuesta]="draftSvc.draft().idPropuesta!"
-    [codigo]="draftSvc.draft().codigo + ' · ' + draftSvc.draft().version"
+    [idPropuesta]="draftSvc.draft().idPropuesta"
+    [codigo]="draftSvc.draft().codigo"
+    [subtotalLocal]="draftSvc.subtotalBruto()"
+    [forzarLocal]="true"
+    [descuentoActualPct]="draftSvc.draft().descuentoPct"
+    [descuentoActualMonto]="draftSvc.draft().descuentoMonto"
+    [idMotivoActual]="draftSvc.draft().idMotivoDescuento"
     (cerrar)="cerrarModalDescuento()"
     (aplicado)="onDescuentoAplicado($event)"
   />

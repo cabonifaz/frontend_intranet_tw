@@ -102,8 +102,17 @@ export function useAutosaveBorrador<T = unknown>(opts: AutosaveBorradorOptions<T
 
   function activar(k: string): void {
     key = k;
+    // Observación 9 (31/10): al reabrir, cargamos el borrador directamente sin
+    // preguntar si restaurar o empezar de cero. Se avisa al usuario con un toast
+    // para que sepa que lo que ve no son los datos del back.
     const existente = borradorSvc.obtener<T>(key);
-    if (existente) borradorDisponible.set(existente);
+    if (existente) {
+      autoguardadoActivo = false;
+      if (opts.restoreFn) opts.restoreFn(existente.data);
+      else                opts.form.patchValue(existente.data as object, { emitEvent: false });
+      toastSvc.exito(opts.mensajes?.restaurado ?? 'Se restauró tu último borrador automáticamente.');
+      autoguardadoActivo = true;
+    }
 
     autoguardadoActivo = true;
     opts.form.valueChanges

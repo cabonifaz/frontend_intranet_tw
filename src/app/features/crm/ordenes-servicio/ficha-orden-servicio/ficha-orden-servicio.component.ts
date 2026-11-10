@@ -264,8 +264,11 @@ export class FichaOrdenServicioComponent implements OnInit {
       this.edicion.set(ed);
       const d = ed.detalle;
       this.idContactoSel.set(ed.idContactoActual);
-      this.fechaDesde.set(d.datosGenerales.fechaProgramadaDesde ?? '');
-      this.fechaHasta.set(d.datosGenerales.fechaProgramadaHasta ?? '');
+      // Observación 34 (31/10): el input type="date" espera "YYYY-MM-DD".
+      // El back devuelve ISO con hora ("2026-10-15T00:00:00..."), lo que hacía
+      // que el input se renderizara vacío → el rango tentativo se perdía al editar.
+      this.fechaDesde.set(this.soloFecha(d.datosGenerales.fechaProgramadaDesde));
+      this.fechaHasta.set(this.soloFecha(d.datosGenerales.fechaProgramadaHasta));
       this.observaciones.set(d.observaciones ?? '');
       if (d.tipo === 'OM' && d.datosCertificado) {
         this.datosCertificado.set({ ...d.datosCertificado });
@@ -283,6 +286,13 @@ export class FichaOrdenServicioComponent implements OnInit {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  /** Observación 34 (31/10): normaliza una fecha ISO del back al formato
+   *  "YYYY-MM-DD" que esperan los `<input type="date">`. */
+  private soloFecha(iso?: string | null): string {
+    if (!iso) return '';
+    return iso.split('T')[0] || '';
   }
 
   // ─── Handlers ────────────────────────────────────────────────────────────
@@ -348,7 +358,9 @@ export class FichaOrdenServicioComponent implements OnInit {
   }
 
   // ─── Conceptos & Equipos (HU-43) ────────────────────────────────────────
-  readonly codigosConceptosYa = computed(() => this.conceptos().map(c => c.codigo));
+  readonly itemsConceptosYa = computed(() =>
+    this.conceptos().map(c => c.idItem).filter((x): x is number => x != null),
+  );
   readonly idsEquiposYa       = computed(() => this.equipos().map(e => e.idEquipo));
 
   readonly idClienteActual = computed(() =>
@@ -364,18 +376,21 @@ export class FichaOrdenServicioComponent implements OnInit {
   onConceptosAgregados(lista: ConceptoCatalogoOs[]): void {
     const existentes = this.conceptos();
     const nuevos: ConceptoDetalleOs[] = lista.map(c => ({
+      idItem:            c.idItem,
       idConcepto:        c.idSuministro,
       codigo:            c.codigo,
       descripcion:       c.descripcion,
       clasificacion:     c.clasificacion,
       tipo:              c.tipo,
       subtipo:           c.subtipo,
+      alcance:           c.alcance,
       equiposAplicados:  [],
-      deLaPropuesta:     c.deLaPropuesta,
+      deLaPropuesta:     true,   // viene del catálogo filtrado por propuesta
     }));
-    // Deduplicar por código
-    const codsExist = new Set(existentes.map(e => e.codigo));
-    const dedup = nuevos.filter(n => !codsExist.has(n.codigo));
+    // Ticket #4435: deduplicar por idItem (línea de la propuesta), no por código,
+    // para permitir el mismo suministro con distintos alcances.
+    const itemsExist = new Set(existentes.map(e => e.idItem).filter(x => x != null));
+    const dedup = nuevos.filter(n => n.idItem == null || !itemsExist.has(n.idItem));
     this.conceptos.set([...existentes, ...dedup]);
     this.modalAgregarConceptoAbierto.set(false);
     this.toast.exito(`${dedup.length} conceptos agregados.`);
@@ -404,16 +419,23 @@ export class FichaOrdenServicioComponent implements OnInit {
     this.toast.exito(`${dedup.length} equipos agregados.`);
   }
 
-  quitarConcepto(idConcepto: number, evt: Event): void {
+  /** Ticket #4435: identificamos la fila por idItem (línea de la propuesta)
+   *  para permitir el mismo suministro con distintos alcances. Fallback a
+   *  idConcepto para conceptos legacy sin idItem. */
+  quitarConcepto(clave: number, evt: Event): void {
     evt.stopPropagation();
-    const quitado = this.conceptos().find(c => c.idConcepto === idConcepto);
-    this.conceptos.set(this.conceptos().filter(c => c.idConcepto !== idConcepto));
-    // También quitar la referencia en los equipos
+    const quitado = this.conceptos().find(c => (c.idItem ?? c.idConcepto) === clave);
+    this.conceptos.set(this.conceptos().filter(c => (c.idItem ?? c.idConcepto) !== clave));
+    // Solo quitamos la referencia en los equipos si el suministro ya no
+    // tiene ninguna otra línea en la OS (puede haber quedado otro alcance).
     if (quitado) {
-      this.equipos.set(this.equipos().map(e => ({
-        ...e,
-        conceptosAplicados: e.conceptosAplicados.filter(c => c !== quitado.codigo),
-      })));
+      const quedaOtra = this.conceptos().some(c => c.codigo === quitado.codigo);
+      if (!quedaOtra) {
+        this.equipos.set(this.equipos().map(e => ({
+          ...e,
+          conceptosAplicados: e.conceptosAplicados.filter(c => c !== quitado.codigo),
+        })));
+      }
     }
   }
 

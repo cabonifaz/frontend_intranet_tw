@@ -32,6 +32,7 @@ export interface ItemBandejaVb {
   idVb:                        number;
   idPropuesta:                 number;
   numero:                      string;   // ej. "PROP-002590"
+  /** #4437 Código formateado "PC: 0012-1-2026" listo para pintar. */
   version:                     number;
   idRequerimiento?:            number | null;
   numeroRq?:                   string | null;
@@ -99,15 +100,13 @@ export interface BandejaVb {
 
 // ══════════════════════ HU-15 — Resolver ══════════════════════
 
-export type AccionResolver = 'aprobar' | 'corregir' | 'rechazar';
+// Observación 28/29 (31/10): 'rechazar' + validaciones + fechaLimite eliminados del flujo VB.
+export type AccionResolver = 'aprobar' | 'corregir';
 
 export interface ResolverVbRequest {
-  accion:                   AccionResolver;
-  comentario?:              string;
-  validacionesConfirmadas?: string[];
-  idMotivoRechazo?:         number | null;
-  areas?:                   string[];
-  fechaLimite?:             string | null;    // ISO
+  accion:      AccionResolver;
+  comentario?: string;
+  areas?:      string[];
 }
 
 export interface ResultadoResolverVb {
@@ -115,7 +114,6 @@ export interface ResultadoResolverVb {
   estado:        string;
   estadoVb:      string;
   idCorreccion?: number | null;
-  fechaLimite?:  string | null;
 }
 
 // ══════════════════════ HU-13b — Revocación de VB ══════════════════════
@@ -152,12 +150,8 @@ export interface ResultadoResolverRevocacionVb {
 }
 
 // ══════════════════════ HU-15 — Preparar modales de decisión ══════════════════════
-
-export interface ValidacionRequerida {
-  codigo:      string;
-  texto:       string;
-  obligatoria: boolean;
-}
+// Observación 29 (31/10): ValidacionRequerida eliminado; el aprobador no requiere checklist.
+// Observación 28 (31/10): OpcionCatalogoVb/motivosRechazo mantenido como opcional por compatibilidad.
 
 export interface OpcionCatalogoVb {
   id:     number;
@@ -183,8 +177,6 @@ export interface DecisionVb {
   idVistoBueno?:          number | null;
   puedeResolver:          boolean;
   motivoBloqueo?:         string | null;
-  fechaLimiteSugerida?:   string | null;
-  validacionesRequeridas: ValidacionRequerida[];
   motivosRechazo:         OpcionCatalogoVb[];
   areasCorreccion:        AreaCorreccion[];
 }

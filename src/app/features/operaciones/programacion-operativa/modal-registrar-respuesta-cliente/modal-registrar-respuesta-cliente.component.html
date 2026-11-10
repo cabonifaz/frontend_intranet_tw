@@ -1,0 +1,68 @@
+<app-modal
+  titulo="Registrar respuesta del cliente"
+  [subtitulo]="codigo() ? 'Programación ' + codigo() : 'Programación'"
+  icono="record_voice_over"
+  iconoColor="azul"
+  ancho="md"
+  (cerrar)="onCerrar()">
+
+  <div class="cuerpo">
+
+    <div class="hint">
+      <span class="material-symbols-outlined">info</span>
+      <div>
+        <strong>La coordinación con el cliente ocurre FUERA del sistema</strong> (teléfono, correo,
+        WhatsApp o presencial). Acá registramos solo el resultado para dejar trazabilidad.
+        No se envía ningún mensaje automático.
+      </div>
+    </div>
+
+    <!-- Canal utilizado -->
+    <div class="campo">
+      <label>Canal utilizado <span class="req">*</span></label>
+      <div class="opciones-grid">
+        @for (c of CANALES; track c.codigo) {
+          <button type="button" class="opcion-card"
+                  [class.opcion-card--sel]="canal() === c.codigo"
+                  (click)="canal.set(c.codigo)">
+            <span class="material-symbols-outlined">{{ c.icono }}</span>
+            <span>{{ c.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Resultado de la coordinación -->
+    <div class="campo">
+      <label>Resultado <span class="req">*</span></label>
+      <div class="opciones-resultado">
+        @for (r of RESULTADOS; track r.codigo) {
+          <button type="button" class="resultado-card resultado-card--{{ r.variante }}"
+                  [class.resultado-card--sel]="resultado() === r.codigo"
+                  (click)="resultado.set(r.codigo)">
+            <div class="resultado-card__titulo">{{ r.label }}</div>
+            <div class="resultado-card__desc">{{ r.descripcion }}</div>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Comentario opcional -->
+    <div class="campo">
+      <label>Comentario (opcional)</label>
+      <textarea rows="3" maxlength="300" placeholder="Notas sobre la coordinación..."
+                [ngModel]="comentario()" (ngModelChange)="comentario.set($event)"></textarea>
+      <small class="contador">{{ comentario().length }}/300</small>
+    </div>
+  </div>
+
+  <div modalFooter class="footer-modal">
+    <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Cancelar</app-button>
+    <app-button variant="primary" tamano="md" icono="save"
+                [disabled]="!puedeGuardar()" [cargando]="guardando()"
+                (clic)="guardar()">
+      {{ guardando() ? 'Guardando...' : 'Guardar respuesta' }}
+    </app-button>
+  </div>
+
+</app-modal>

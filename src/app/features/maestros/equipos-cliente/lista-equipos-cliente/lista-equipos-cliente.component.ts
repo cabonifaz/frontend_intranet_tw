@@ -131,7 +131,7 @@ export class ListaEquiposClienteComponent implements OnInit {
 
   async toggleEstado(eq: EquipoClienteListaItem, event: Event): Promise<void> {
     event.stopPropagation();
-    const nuevo = eq.estado === 'Inactivo' ? 'Vigente' : 'Inactivo';
+    const nuevo = eq.estado === 'Inactivo' ? 'Activo' : 'Inactivo';
     try {
       await this.equiposSvc.cambiarEstadoEquipo({ idEquipo: eq.idEquipo, estado: nuevo });
       await this.cargar();

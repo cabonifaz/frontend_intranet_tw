@@ -81,3 +81,21 @@
   display: flex !important; justify-content: flex-end; gap: 10px; width: 100%;
   padding: 14px 22px !important; border-top: 1px solid #E2E8F0; background: #FAFBFC;
 }
+
+// Observación 31 (fix 2026-11-03): responsable fijo (texto, no select).
+.responsable-fijo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0F172A;
+  min-height: 38px;
+
+  .material-symbols-outlined { color: #64748B; font-size: 18px; }
+  strong { font-weight: 600; }
+  &--placeholder { color: #94A3B8; font-weight: 400; }
+}

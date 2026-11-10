@@ -25,7 +25,7 @@
         <div class="kpi-icono-wrap"><span class="material-symbols-outlined">description</span></div>
         <div class="kpi-texto">
           <div class="kpi-label">PROPUESTA</div>
-          <div class="kpi-valor">{{ d.cabecera.numero }} · v{{ d.cabecera.version }}</div>
+          <div class="kpi-valor">{{ d.cabecera.numero }}</div>
         </div>
       </div>
       <div class="kpi-card">
@@ -96,7 +96,8 @@
             </div>
             <div class="info-item">
               <div class="info-label">INTERACCIONES</div>
-              <div class="info-valor">{{ d.cabecera.interacciones }}</div>
+              <!-- Observación 32 (31/10): contador recalculado en el front desde el timeline real. -->
+              <div class="info-valor">{{ interaccionesReales() }}</div>
             </div>
           </div>
         </div>

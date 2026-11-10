@@ -11,35 +11,82 @@
 }
 
 @if (drill().datos; as os) {
-  <app-seccion icono="engineering" [titulo]="'OS ' + os.numero">
+  <!-- Feedback cliente 2026-11-04: el drill de OS mostraba demasiados campos
+       dispersos (confirmación, horas, sede, técnico, costo) que pertenecen a
+       Programación / Ejecución. Se simplifica a los datos propios de la OS:
+       RQ, Propuesta, fecha de emisión, fecha tentativa y generada por. -->
+  <app-seccion icono="engineering" [titulo]="'OS ' + os.numero" [subtitulo]="os.estado">
     <div class="info-grid">
-      <div class="info-item"><small>Estado</small><strong>{{ os.estado }}</strong></div>
-      <div class="info-item"><small>Fecha ejecución</small><strong>{{ os.fechaEjecucion ? (os.fechaEjecucion | date:'dd/MM/yyyy') : '—' }}</strong></div>
-      <div class="info-item"><small>Hora inicio</small><strong>{{ os.horaInicio ?? '—' }}</strong></div>
-      <div class="info-item"><small>Hora fin estimada</small><strong>{{ os.horaFinEstimada ?? '—' }}</strong></div>
-      <div class="info-item"><small>Tipo servicio</small><strong>{{ os.tipoServicio ?? '—' }}</strong></div>
-      <div class="info-item"><small>Sede</small><strong>{{ os.sede ?? '—' }}</strong></div>
-      <div class="info-item"><small>Técnico principal</small><strong>{{ os.tecnicoPrincipal ?? '—' }}</strong></div>
-      <div class="info-item"><small>Responsable comercial</small><strong>{{ os.responsableComercial ?? '—' }}</strong></div>
-      <div class="info-item"><small>Costo estimado</small><strong>{{ os.costoTotalEstimado | number:'1.2-2' }}</strong></div>
-      <div class="info-item"><small>Confirmación cliente</small><strong>{{ os.confirmacionCliente ? 'Sí' : 'Pendiente' }}</strong></div>
+      <div class="info-item">
+        <small>Requerimiento</small>
+        <strong>{{ os.numeroRq ?? '—' }}</strong>
+      </div>
+      <div class="info-item">
+        <small>Propuesta</small>
+        <strong>{{ os.numeroPropuesta || '—' }}</strong>
+      </div>
+      <div class="info-item">
+        <small>Fecha de emisión</small>
+        <strong>{{ os.fechaCreacion ? (os.fechaCreacion | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+      </div>
+      <div class="info-item">
+        <small>Fecha tentativa</small>
+        <strong>
+          @if (os.fechaProgramadaDesde || os.fechaProgramadaHasta) {
+            {{ os.fechaProgramadaDesde ? (os.fechaProgramadaDesde | date:'dd/MM/yyyy') : '—' }}
+            →
+            {{ os.fechaProgramadaHasta ? (os.fechaProgramadaHasta | date:'dd/MM/yyyy') : '—' }}
+          } @else { — }
+        </strong>
+      </div>
+      <div class="info-item">
+        <small>Generada por</small>
+        <strong>{{ os.generadoPor ?? '—' }}</strong>
+      </div>
     </div>
-    @if (os.notasOperativas) { <div class="descripcion-bloque"><small>NOTAS</small><p>{{ os.notasOperativas }}</p></div> }
   </app-seccion>
 }
 
-@if (drill().personal.length > 0) {
-  <app-seccion icono="group" titulo="Personal asignado" [subtitulo]="drill().personal.length + ' técnico(s).'">
-    <ul class="lista-simple">
-      @for (p of drill().personal; track p.idUsuario) {
-        <li><strong>{{ p.nombre }}</strong><small>{{ p.rolEnServicio ?? p.cargo ?? '—' }}{{ p.estadoSsoma ? ' · SSOMA: ' + p.estadoSsoma : '' }}</small></li>
-      }
-    </ul>
-  </app-seccion>
-}
+<!-- Conceptos de la OS (suministros de la propuesta) -->
+<app-seccion icono="receipt_long" titulo="Conceptos de la OS"
+             [subtitulo]="(drill().conceptos?.length ?? 0) + ' concepto(s).'">
+  @if ((drill().conceptos?.length ?? 0) > 0) {
+    <table class="tabla-simple">
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Alcance</th>
+          <th class="num">Cant.</th>
+          <th class="num">Frec.</th>
+          <th class="num">P. Unit.</th>
+          <th class="num">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of drill().conceptos ?? []; track c.idItem) {
+          <tr>
+            <td>{{ c.descripcion ?? '—' }}</td>
+            <td>{{ c.alcance ?? '—' }}</td>
+            <td class="num">{{ c.cantidad ?? '—' }}</td>
+            <td class="num">{{ c.frecuencia ?? '—' }}</td>
+            <td class="num">{{ c.simboloMoneda }} {{ (c.precioUnitario ?? 0) | number:'1.2-2' }}</td>
+            <td class="num">{{ c.simboloMoneda }} {{ (c.subtotal ?? 0) | number:'1.2-2' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="vacio-info">
+      <span class="material-symbols-outlined">inventory_2</span>
+      <p>No hay conceptos registrados para esta OS.</p>
+    </div>
+  }
+</app-seccion>
 
-@if (drill().equipos.length > 0) {
-  <app-seccion icono="precision_manufacturing" titulo="Equipos asignados" [subtitulo]="drill().equipos.length + ' equipo(s).'">
+<!-- Equipos del cliente (se aplica a los conceptos) -->
+<app-seccion icono="precision_manufacturing" titulo="Equipos del cliente"
+             [subtitulo]="drill().equipos.length + ' equipo(s).'">
+  @if (drill().equipos.length > 0) {
     <ul class="lista-simple">
       @for (eq of drill().equipos; track eq.idEquipo) {
         <li>
@@ -48,8 +95,58 @@
         </li>
       }
     </ul>
-  </app-seccion>
-}
+  } @else {
+    <div class="vacio-info">
+      <span class="material-symbols-outlined">precision_manufacturing</span>
+      <p>No hay equipos del cliente registrados en la OS.</p>
+    </div>
+  }
+</app-seccion>
+
+<!-- Programación de la OS (si ya se programó, agrupado por visita) -->
+<app-seccion icono="event" titulo="Programación de la OS"
+             [subtitulo]="(drill().programacion?.length ?? 0) > 0 ? ((drill().programacion?.length ?? 0) + ' visita(s) programada(s).') : 'Sin programación.'">
+  @if ((drill().programacion?.length ?? 0) > 0) {
+    <div class="programacion-lista">
+      @for (v of drill().programacion ?? []; track v.idProgramacion) {
+        <div class="visita">
+          <div class="visita__header">
+            <span class="material-symbols-outlined">event</span>
+            <strong>{{ v.fecha | date:'EEE dd/MM/yyyy' }}</strong>
+            @if (v.codigo) {
+              <span class="visita__codigo">{{ v.codigo }}</span>
+            }
+            @if (v.horaInicio || v.horaFin) {
+              <span class="visita__horario">{{ v.horaInicio ?? '—' }} – {{ v.horaFin ?? '—' }}</span>
+            }
+            @if (v.tecnico) {
+              <span class="visita__tecnico">· {{ v.tecnico }} <small>Principal</small></span>
+            }
+            @if (v.tecnicosApoyo) {
+              <span class="visita__apoyos">+ {{ v.tecnicosApoyo }}</span>
+            }
+            @if (v.estadoLabel || v.estado) {
+              <span class="visita__estado">{{ v.estadoLabel ?? v.estado }}</span>
+            }
+          </div>
+          <ul class="visita__equipos">
+            @for (eq of v.equipos; track eq.idEquipo) {
+              <li>
+                <strong>{{ eq.marca ?? '—' }} {{ eq.modelo ?? '' }}</strong>
+                <small>N° {{ eq.numeroSerie ?? '—' }}{{ eq.codigoTw ? ' · ' + eq.codigoTw : '' }}</small>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="vacio-info">
+      <span class="material-symbols-outlined">event_busy</span>
+      <p>Esta OS aún no ha sido programada. Ve al módulo <strong>Programación</strong> para asignar fechas y técnicos.</p>
+    </div>
+  }
+</app-seccion>
 
 @if (drill().gastos.length > 0) {
   <app-seccion icono="account_balance_wallet" titulo="Gastos / Viáticos" [subtitulo]="drill().gastos.length + ' gasto(s).'">

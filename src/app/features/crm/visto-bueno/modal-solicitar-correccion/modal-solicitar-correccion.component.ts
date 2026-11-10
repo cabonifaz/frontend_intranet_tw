@@ -27,13 +27,11 @@ export class ModalSolicitarCorreccionComponent implements OnInit {
   readonly areas          = signal<AreaCorreccion[]>([]);
   readonly areasSel       = signal<Set<string>>(new Set());
   readonly observaciones  = signal<string>('');
-  readonly fechaLimite    = signal<string>('');
   readonly enviando       = signal(false);
 
   readonly puedeEnviar = computed(() =>
     this.areasSel().size > 0 &&
     this.observaciones().trim().length >= 10 &&
-    !!this.fechaLimite() &&
     !this.enviando()
   );
 
@@ -41,12 +39,8 @@ export class ModalSolicitarCorreccionComponent implements OnInit {
     try {
       const d: DecisionVb = await this.svc.prepararDecision(this.contexto().idPropuesta);
       this.areas.set(d.areasCorreccion);
-      this.fechaLimite.set(this.formatearInput(d.fechaLimiteSugerida) || this.fechaDefault());
-    } catch {
-      this.fechaLimite.set(this.fechaDefault());
-    } finally {
-      this.cargandoDatos.set(false);
-    }
+    } catch { /* silencioso */ }
+    finally { this.cargandoDatos.set(false); }
   }
 
   toggleArea(codigo: string): void {
@@ -61,29 +55,16 @@ export class ModalSolicitarCorreccionComponent implements OnInit {
   solicitar(): void {
     if (!this.puedeEnviar()) return;
     this.enviando.set(true);
+    // Observación 27 (31/10): se quitó la fecha límite del flujo; el back ya acepta null.
     this.confirmado.emit({
       idPropuesta: this.contexto().idPropuesta,
       dto: {
         accion:      'corregir',
         areas:       [...this.areasSel()],
         comentario:  this.observaciones().trim(),
-        // Hora local de Lima sin zona (el back y MySQL trabajan en UTC-5)
-        fechaLimite: `${this.formatearInput(this.fechaLimite())}:00`,
       },
     });
   }
 
   onCerrar(): void { this.cerrar.emit(); }
-
-  private fechaDefault(): string {
-    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    return this.formatearInput(d.toISOString());
-  }
-
-  private formatearInput(iso?: string | null): string {
-    if (!iso) return '';
-    const d = new Date(iso);
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
 }

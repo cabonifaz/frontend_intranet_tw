@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { PropuestaDraftService } from '../../../../core/services/propuesta-draft.service';
 import { PropuestasService } from '../../../../core/services/propuestas.service';
-import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
+import { PrecotizacionesService } from '../../../../core/services/precotizaciones.service';
+import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdePrecotizacion, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
 import { PASOS_WIZARD, PasoWizard } from '../../../../core/models/propuesta-detalle.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
@@ -26,6 +27,7 @@ export class PropuestaWizardComponent implements OnInit {
   private readonly route         = inject(ActivatedRoute);
   private readonly router        = inject(Router);
   private readonly propuestasSvc = inject(PropuestasService);
+  private readonly precotSvc     = inject(PrecotizacionesService);
   private readonly toast         = inject(ToastService);
   private readonly destroyRef    = inject(DestroyRef);
   readonly draftSvc              = inject(PropuestaDraftService);
@@ -36,21 +38,18 @@ export class PropuestaWizardComponent implements OnInit {
   readonly esNuevo = computed(() => this.idParam() === 'nueva');
 
   /** Título contextual del header: "Nueva Propuesta Comercial" al crear, o
-   *  "Editar Propuesta PROP-XXX · vN" al editar una versión existente. */
+   *  "Editar Propuesta PC-xxxx-x-xxxx" al editar una versión existente. */
   readonly tituloHeader = computed(() => {
     if (this.esNuevo()) return 'Nueva Propuesta Comercial';
     const d = this.draftSvc.draft();
-    const partes = ['Editar Propuesta'];
-    if (d.codigo) partes.push(d.codigo);
-    if (d.version) partes.push('· ' + d.version);
-    return partes.join(' ');
+    return d.codigo ? `Editar Propuesta ${d.codigo}` : 'Editar Propuesta';
   });
 
   /** Código ficha visible en el header (equivalente a CLI-{año}-NUEVO, USR-..., etc). */
   readonly codigoFicha = computed(() => {
     if (this.esNuevo()) return `PROP-${new Date().getFullYear()}-NUEVA`;
     const d = this.draftSvc.draft();
-    return d.codigo ? (d.version ? `${d.codigo} · ${d.version}` : d.codigo) : `PROP-ID-${this.idParam()}`;
+    return d.codigo || `PROP-ID-${this.idParam()}`;
   });
 
   /** Subtítulo contextual del header. */
@@ -88,6 +87,10 @@ export class PropuestaWizardComponent implements OnInit {
   // de creación desde un RQ que ya tenía una propuesta previa (query param
   // ?versionDe=PROP-002581). En el prototipo aparece siempre arriba.
   readonly propuestaPrevia = signal<{ codigo: string; versionSiguiente: string } | null>(null);
+
+  // HU-60: si venimos del botón "Generar Propuesta" en una Precotización, guardamos
+  // id + número para mostrar banner y, al persistir, marcar la precot como convertida.
+  readonly origenPrecotizacion = signal<{ id: number; numero: string } | null>(null);
 
   /** Última corrección pendiente solicitada por el supervisor en VB (null si no hay). */
   readonly correccion = signal<import('../../../../core/models/visto-bueno.model').CorreccionPropuesta | null>(null);
@@ -135,7 +138,8 @@ export class PropuestaWizardComponent implements OnInit {
     //   - Nueva con ?idRequerimiento: GET /api/crm/propuestas/nueva → prellenar
     //   - Nueva sin query: localStorage (continuar borrador en progreso)
     const qp = this.route.snapshot.queryParamMap;
-    const idRequerimiento = Number(qp.get('idRequerimiento') ?? 0);
+    const idRequerimiento   = Number(qp.get('idRequerimiento') ?? 0);
+    const idOrigenPrecot    = Number(qp.get('origenPrecotizacion') ?? 0);
     // Si viene con decisión tomada ya desde el modal anterior (?independiente=1 o ?versionDe=X),
     // no volvemos a mostrar el banner "Propuesta existente detectada".
     const decisionYaTomada = qp.get('independiente') === '1' || !!qp.get('versionDe');
@@ -152,6 +156,30 @@ export class PropuestaWizardComponent implements OnInit {
         this.correccion.set(corr && corr.estado === 'pendiente' ? corr : null);
         // En modo edición nunca mostramos el banner "Propuesta existente detectada": ya
         // estamos dentro de la versión que el usuario eligió editar, no creando una nueva.
+      } else if (idOrigenPrecot > 0) {
+        // HU-60: flujo "Nace de Precotización" — precarga cliente/RQ/ítems desde la precot.
+        // Además, si la precot tiene RQ vinculado, pedimos los datos del RQ para heredar
+        // la condición de pago del cliente y los flags de acreditación (igual que el flujo RQ).
+        this.draftSvc.limpiarStorage('nueva');
+        const precarga = await this.precotSvc.obtenerPrecargaPropuesta(idOrigenPrecot);
+        this.draftSvc.cargarDraft(prellenarDraftDesdePrecotizacion(precarga));
+        this.origenPrecotizacion.set({
+          id:     precarga.cabecera.idPrecotizacion,
+          numero: precarga.cabecera.numero ?? `PCT-${idOrigenPrecot}`,
+        });
+        const idRqPrecot = precarga.cabecera.idRequerimiento ?? 0;
+        if (idRqPrecot > 0) {
+          try {
+            const datosRq = await this.propuestasSvc.obtenerDatosNueva(idRqPrecot);
+            this.draftSvc.actualizar({
+              esAcreditacionRq:       !!datosRq.esAcreditacion,
+              condicionPagoClienteRq: datosRq.condicionPagoCliente ?? null,
+              condicionPagoCodigoRq:  datosRq.condicionPagoCodigo ?? null,
+            });
+          } catch {
+            // Si falla, dejamos el draft solo con lo que trajo la precot (no bloquea el flujo).
+          }
+        }
       } else if (idRequerimiento > 0) {
         // Si el usuario ya decidió (Restaurar/Descartar) en esta sesión del wizard,
         // respetamos la decisión y no volvemos a mostrar el modal.
@@ -160,17 +188,12 @@ export class PropuestaWizardComponent implements OnInit {
         const esDelMismoRq = borrador?.idRequerimiento === idRequerimiento &&
                              (borrador?.idPropuesta ?? null) === null;
 
-        if (esDelMismoRq && !flagResumido) {
-          // Hay borrador para este RQ y no se resolvió aún → mostramos modal.
-          this.pendienteCargarRq = idRequerimiento;
-          this.borradorDisponible.set({ fechaGuardado: borrador!.ultimaModificacion });
-          this.draftSvc.cargarDesdeStorage('nueva');
-          // La signal se carga ya para que mientras el modal esté abierto el sidebar
-          // y los campos no quede en blanco. Si descarta, hard-reload resetea todo.
-        } else if (esDelMismoRq && flagResumido) {
-          // Usuario ya eligió "Restaurar" en esta sesión → cargar directo sin preguntar.
+        if (esDelMismoRq) {
+          // Observación 9 (31/10): cargar el borrador directamente sin preguntar.
+          // Antes había un modal "¿Restaurar o empezar de cero?"; ahora ya no se muestra.
           sessionStorage.removeItem('tw-propuesta-wizard-resumido');
           this.draftSvc.cargarDesdeStorage('nueva');
+          this.toast.exito('Se restauró tu último borrador automáticamente.');
         } else {
           // Sin borrador útil → cargar fresco desde el RQ.
           if (borrador) this.draftSvc.limpiarStorage('nueva');
@@ -244,8 +267,19 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  /** Cancelar: siempre vuelve a la bandeja de propuestas, sin importar el paso actual. */
+  /** Cancelar: siempre vuelve a la bandeja de propuestas, sin importar el paso actual.
+   *  Feedback 2026-11-03: descarta el borrador autoguardado (localStorage) Y
+   *  resetea el draft en memoria para que al entrar a "Nueva propuesta" otra
+   *  vez el formulario arranque limpio. */
   cancelar(): void {
+    const draft = this.draftSvc.draft();
+    if (this.esNuevo()) {
+      this.draftSvc.limpiarStorage('nueva');
+      sessionStorage.removeItem('tw-propuesta-wizard-resumido');
+    } else if (draft.idPropuesta != null) {
+      this.draftSvc.limpiarStorage(String(draft.idPropuesta));
+    }
+    this.draftSvc.resetear();
     this.router.navigate(['/crm/propuestas']);
   }
 
@@ -292,12 +326,23 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  /** Último paso en modo CREATE: guarda la propuesta como borrador y vuelve a la bandeja. */
+  /** Último paso en modo CREATE: guarda la propuesta como borrador y vuelve a la bandeja.
+   *  Si la propuesta nace de una Precotización (HU-60), además marca la precot como convertida. */
   async generarPropuesta(): Promise<void> {
     const ok = await this.persistir();
     if (!ok) return;
-    const codigo = this.draftSvc.draft().codigo;
-    // Ya quedó persistida en el back → limpio el borrador local.
+    const draft  = this.draftSvc.draft();
+    const codigo = draft.codigo;
+    const origen = this.origenPrecotizacion();
+
+    if (origen && draft.idPropuesta) {
+      try {
+        await this.precotSvc.convertir(origen.id, { idPropuesta: draft.idPropuesta });
+      } catch (e: unknown) {
+        this.toast.error(e instanceof Error ? e.message : 'La propuesta se creó, pero no se pudo marcar la precotización como convertida.');
+      }
+    }
+
     this.draftSvc.limpiarStorage('nueva');
     this.toast.exito(`Propuesta ${codigo} creada como borrador.`);
     this.router.navigate(['/crm/propuestas']);
@@ -335,11 +380,15 @@ export class PropuestaWizardComponent implements OnInit {
   readonly modalAnularAbierto   = signal(false);
   readonly modalPreviewPdfAbierto = signal(false);
 
-  enviarAVistoBueno(): void {
+  /** Feedback 2026-11-04: ahora "Guardar y enviar a VB" primero persiste los cambios
+   *  y solo si se guardan correctamente abre el modal de envío. */
+  async enviarAVistoBueno(): Promise<void> {
     if (!this.draftSvc.draft().idPropuesta) {
       this.toast.error('Guarda la propuesta antes de enviarla a Visto Bueno.');
       return;
     }
+    const ok = await this.persistir();
+    if (!ok) return;
     this.modalEnviarVbAbierto.set(true);
   }
   cerrarEnviarVb(): void { this.modalEnviarVbAbierto.set(false); }
@@ -367,6 +416,13 @@ export class PropuestaWizardComponent implements OnInit {
     this.modalPreviewPdfAbierto.set(true);
   }
   cerrarPreviewPdf(): void { this.modalPreviewPdfAbierto.set(false); }
+
+  /** DTO del draft actual (mismo mapeo que "Guardar cambios") para enviar al
+   *  endpoint de vista previa. El modal lo envía como body del POST
+   *  /propuestas/{id}/pdf-preview para renderizar el PDF sin tocar la BD. */
+  draftPreviewDto() {
+    return mapDraftToGuardarDto(this.draftSvc.draft());
+  }
 
   formatearMonto(valor: number): string {
     const moneda = this.draftSvc.draft().tipoMoneda || 'USD';

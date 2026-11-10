@@ -55,13 +55,59 @@ export class FormaPagoComponent implements OnInit {
       igvDesagregado:     d.igvDesagregado || false,
     }, { emitEvent: false });
 
-    if ((d.cuotas ?? []).length === 0) {
+    // Observación 20 (fix v3 2026-11-03): resolver el valor que debe ir en la
+    // descripción del hito. Prioridad: código del back → código buscado por
+    // nombre en el catálogo → texto crudo (el select agregará una opción
+    // sintética para mostrarlo pre-seleccionado).
+    const resolverCondicionCliente = (): string => {
+      const codigo = d.condicionPagoCodigoRq;
+      const texto  = d.condicionPagoClienteRq;
+      const catalogo = this.condicionesPago();
+      if (codigo) {
+        const match = catalogo.find(c => c.codigo === codigo);
+        if (match) return match.codigo;
+      }
+      if (texto) {
+        const porCodigo = catalogo.find(c => c.codigo === texto);
+        if (porCodigo) return porCodigo.codigo;
+        const porNombre = catalogo.find(c => c.nombre === texto);
+        if (porNombre) return porNombre.codigo;
+        return texto;   // sin match: lo mostramos como opción sintética
+      }
+      return '';
+    };
+
+    const condicionCliente = resolverCondicionCliente();
+    const cuotasActuales = d.cuotas ?? [];
+
+    if (cuotasActuales.length === 0) {
+      if (condicionCliente) {
+        this.draftSvc.actualizar({
+          cuotas: [{
+            id: 'c_cliente_' + Date.now(),
+            porcentaje: 100,
+            descripcion: condicionCliente,
+          }],
+        });
+      } else {
+        this.draftSvc.actualizar({
+          cuotas: [
+            { id: 'c1_' + Date.now(), porcentaje: 50, descripcion: 'Factura a 30 días' },
+            { id: 'c2_' + Date.now(), porcentaje: 20, descripcion: 'Contra la entrega de equipos' },
+            { id: 'c3_' + Date.now(), porcentaje: 30, descripcion: 'Al finalizar la instalación' },
+          ],
+        });
+      }
+    } else if (
+      condicionCliente &&
+      cuotasActuales.length === 1 &&
+      cuotasActuales[0].id.startsWith('c_cliente_') &&
+      cuotasActuales[0].descripcion !== condicionCliente
+    ) {
+      // El hito ya existe (viene del borrador) pero su descripción no coincide
+      // con la que queremos mostrar — la normalizamos.
       this.draftSvc.actualizar({
-        cuotas: [
-          { id: 'c1_' + Date.now(), porcentaje: 50, descripcion: 'Factura a 30 días' },
-          { id: 'c2_' + Date.now(), porcentaje: 20, descripcion: 'Contra la entrega de equipos' },
-          { id: 'c3_' + Date.now(), porcentaje: 30, descripcion: 'Al finalizar la instalación' },
-        ],
+        cuotas: [{ ...cuotasActuales[0], descripcion: condicionCliente }],
       });
     }
 
@@ -81,6 +127,11 @@ export class FormaPagoComponent implements OnInit {
   }
 
   readonly cuotas = computed(() => this.draftSvc.draft().cuotas);
+
+  /** Observación 20 (fix 2026-11-03): ¿esta descripción está en el catálogo? */
+  esDelCatalogo(valor: string): boolean {
+    return this.condicionesPago().some(c => c.codigo === valor);
+  }
 
   agregarCuota(): void {
     this.draftSvc.actualizar({

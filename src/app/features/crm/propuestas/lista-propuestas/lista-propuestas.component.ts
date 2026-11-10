@@ -27,9 +27,11 @@ import { ModalAnularPropuestaComponent } from '../modal-anular-propuesta/modal-a
 import { ModalPreviewPdfComponent } from '../modal-preview-pdf/modal-preview-pdf.component';
 import { BarraFiltrosBandejaComponent } from '../../../../shared/ui/barra-filtros-bandeja/barra-filtros-bandeja.component';
 import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { TabPrecotizacionesComponent } from '../tab-precotizaciones/tab-precotizaciones.component';
 import { MonedaPipe } from '../../../../shared/pipes/moneda.pipe';
 import { DetalleRequerimientoComponent } from '../../requerimientos/detalle-requerimiento/detalle-requerimiento.component';
 import { SiPermisoDirective } from '../../../../core/directives/si-permiso.directive';
+import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 
 @Component({
   selector: 'app-lista-propuestas',
@@ -37,8 +39,8 @@ import { SiPermisoDirective } from '../../../../core/directives/si-permiso.direc
     FormsModule, HeaderBandejaComponent, KpiCardComponent, KpiGridComponent, ButtonComponent,
     ModalElegirRqComponent, ModalPropuestaExistenteComponent, ModalCrearNuevaVersionComponent,
     ModalDetallePropuestaComponent, ModalEnviarVbComponent, ModalAnularPropuestaComponent, ModalPreviewPdfComponent, ModalSolicitarRevocacionComponent, ModalEnviarClienteComponent,
-    BarraFiltrosBandejaComponent, TablaPaginadaComponent, MonedaPipe,
-    DetalleRequerimientoComponent, SiPermisoDirective,
+    BarraFiltrosBandejaComponent, TablaPaginadaComponent, TabPrecotizacionesComponent, MonedaPipe,
+    DetalleRequerimientoComponent, SiPermisoDirective, ModalComponent,
   ],
   templateUrl: './lista-propuestas.component.html',
   styleUrl: './lista-propuestas.component.scss',
@@ -70,6 +72,10 @@ export class ListaPropuestasComponent implements OnInit {
 
   readonly estadoActivo    = signal<EstadoPropuesta | 'todas'>('todas');
   readonly modalRqAbierto  = signal(false);
+
+  /** HU-60: tabs "Propuestas | Precotizaciones Técnicas" dentro de esta misma vista. */
+  readonly tabActivo = signal<'propuestas' | 'precotizaciones'>('propuestas');
+  cambiarTab(t: 'propuestas' | 'precotizaciones'): void { this.tabActivo.set(t); }
 
   // Modal "propuesta existente" — se abre al elegir un RQ que ya tiene una propuesta.
   readonly propuestaExistenteCtx = signal<{
@@ -287,7 +293,7 @@ export class ListaPropuestasComponent implements OnInit {
     else if (evt === 'anular')  this.idAnularAbierto.set(id);
     else if (evt === 'preview_pdf') {
       const item = this.items().find(i => i.idPropuesta === id);
-      this.codigoPdfAbierto.set(item ? `${item.codigo} · ${item.version}` : '');
+      this.codigoPdfAbierto.set(item?.codigo ?? '');
       this.idPdfAbierto.set(id);
     }
     else if (evt === 'nueva_version') {
@@ -314,6 +320,18 @@ export class ListaPropuestasComponent implements OnInit {
     return (item.estado as string) === 'anulado';
   }
 
+  /** Feedback 2026-11-04: una propuesta APROBADA se trata igual que por_enviar
+   *  (editable en misma versión con confirmación — el back revierte a borrador al guardar). */
+  esAprobadoItem(item: PropuestaListaItem): boolean {
+    const e = (item.estado as string);
+    return e === 'aprobado' || e === 'aprobada';
+  }
+
+  /** Acción directa de la lista para propuestas APROBADAS → abrir modal "Enviar al Cliente". */
+  enviarAlCliente(id: number): void {
+    this.idEnviarClienteAbierto.set(id);
+  }
+
   editarPropuesta(item: PropuestaListaItem): void {
     // Nota: EstadoPropuesta no está sincronizado con los estados reales del back ('anulado',
     // 'pendiente_vb', etc.) — por eso comparamos como string.
@@ -325,15 +343,41 @@ export class ListaPropuestasComponent implements OnInit {
     if (item.estado === 'borrador') {
       // Borrador → se puede editar la misma versión directamente.
       this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
-    } else {
-      // Ya fue enviada a VB o más allá → abre modal "Crear nueva versión".
-      this.cargarMotivosNuevaVersion();
-      this.nuevaVersionCtx.set({
-        idPropuesta:     item.idPropuesta,
-        codigoPropuesta: item.codigo,
-        versionActual:   this.parsearVersion(item.version),
-      });
+      return;
     }
+    // Observación 24 (31/10) + feedback 2026-11-04: si la propuesta ya fue aprobada
+    // por VB (estados 'aprobado' o 'por_enviar'), el comercial entra directo al wizard.
+    // La confirmación "volverá a BORRADOR" se muestra al guardar, no al entrar.
+    if ((item.estado as string) === 'por_enviar' || this.esAprobadoItem(item)) {
+      this.router.navigate(['/crm/propuestas', item.idPropuesta, 'editar']);
+      return;
+    }
+    // Resto (pendiente, por_vb, aceptada, rechazada, …) → abre modal "Crear nueva versión".
+    this.cargarMotivosNuevaVersion();
+    this.nuevaVersionCtx.set({
+      idPropuesta:     item.idPropuesta,
+      codigoPropuesta: item.codigo,
+      versionActual:   this.parsearVersion(item.version),
+    });
+  }
+
+  // ── Observación 24: confirmación de edición post-VB ────────────────────────
+  readonly confirmarEdicionPostVbCtx = signal<{
+    idPropuesta:     number;
+    codigoPropuesta: string;
+    version:         string;
+  } | null>(null);
+
+  onConfirmarEdicionPostVb(): void {
+    const ctx = this.confirmarEdicionPostVbCtx();
+    if (!ctx) return;
+    this.confirmarEdicionPostVbCtx.set(null);
+    // El back ya revierte a borrador al guardar; el front solo navega al wizard.
+    this.router.navigate(['/crm/propuestas', ctx.idPropuesta, 'editar']);
+  }
+
+  onCancelarEdicionPostVb(): void {
+    this.confirmarEdicionPostVbCtx.set(null);
   }
 
   /** Modal "crear nueva versión" → llama al back y navega al wizard. */

@@ -71,7 +71,8 @@ export class ModalDetallePropuestaComponent {
   /** Se emite con el idRequerimiento cuando el usuario pide "Abrir RQ". El padre swap-ea los modales. */
   readonly verRequerimiento = output<number>();
   /** Acciones del modo aprobador (HU-15). El padre maneja los modales de VB. */
-  readonly accionAprobador = output<'aprobar' | 'rechazar' | 'solicitar_correccion' | 'comparar_versiones'>();
+  // Observación 28 (31/10): 'rechazar' eliminado del flujo VB.
+  readonly accionAprobador = output<'aprobar' | 'solicitar_correccion' | 'comparar_versiones'>();
   /** El usuario hizo click en una versión distinta a la actual en el tab Versiones. El padre reemplaza el detalle. */
   readonly verVersion = output<number>();
 

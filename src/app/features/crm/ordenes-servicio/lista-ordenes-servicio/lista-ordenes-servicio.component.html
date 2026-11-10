@@ -115,7 +115,7 @@
               <span class="tabla__codigo">{{ item.numero }}</span>
               @if (item.numeroPropuesta) {
                 <a class="os-codigo-cell__link" (click)="irAPropuesta(item.idPropuesta, $event)">
-                  {{ item.numeroPropuesta }}@if (item.versionPropuesta) { v{{ item.versionPropuesta }} }
+                  {{ item.numeroPropuesta }}
                   <span class="material-symbols-outlined">open_in_new</span>
                 </a>
               }

@@ -7,11 +7,35 @@
     titulo="Mantenimiento de Clientes"
     subtitulo="Gestión del directorio de clientes corporativos"
   >
-    <button *appPermiso="'cliente_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
-      <span class="material-symbols-outlined">add</span>
-      Nuevo Cliente
-    </button>
+    @if (tabActivo() === 'lista') {
+      <button *appPermiso="'cliente_guardar'" class="btn-nuevo" type="button" (click)="irANuevo()">
+        <span class="material-symbols-outlined">add</span>
+        Nuevo Cliente
+      </button>
+    }
   </app-page-header>
+
+  <!-- Tabs internos (Observación 31/10: Cartera de clientes) -->
+  <div class="tabs">
+    <button type="button"
+            class="tabs__item"
+            [class.tabs__item--activo]="tabActivo() === 'lista'"
+            (click)="cambiarTab('lista')">
+      <span class="material-symbols-outlined">list</span>
+      Lista
+    </button>
+    <button type="button"
+            class="tabs__item"
+            [class.tabs__item--activo]="tabActivo() === 'cartera'"
+            (click)="cambiarTab('cartera')">
+      <span class="material-symbols-outlined">assignment_ind</span>
+      Cartera
+    </button>
+  </div>
+
+  @if (tabActivo() === 'cartera') {
+    <app-cartera-clientes />
+  } @else {
 
   <app-filtros-bar
     [(busqueda)]="busqueda"
@@ -105,5 +129,7 @@
       }
     </tbody>
   </app-tabla-paginada>
+
+  }
 
 </div>

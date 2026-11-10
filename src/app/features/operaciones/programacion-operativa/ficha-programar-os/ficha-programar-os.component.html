@@ -1,0 +1,262 @@
+<div class="pagina">
+
+  <app-breadcrumb [items]="breadcrumb" />
+
+  <app-hero-header
+    titulo="Programar Servicio"
+    [descripcion]="orden() ? (orden()!.numero + ' · ' + (orden()!.razonSocial ?? '')) : 'Cargando...'" />
+
+  @if (cargando()) {
+    <div class="loading">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando ficha de programación...
+    </div>
+  } @else if (orden(); as o) {
+
+  <div class="layout">
+    <div class="main">
+
+    <!-- ── 1. Datos de la OS (readonly) ────────────────────────────────── -->
+    <app-seccion icono="description" titulo="1. Datos de la Orden" subtitulo="Información heredada de la OS/OM">
+      <div class="info-grid">
+        <div class="info-item"><small>N° Orden</small><strong>{{ o.numero }}</strong></div>
+        <div class="info-item"><small>Cliente</small><strong>{{ o.razonSocial ?? '—' }}</strong></div>
+        <div class="info-item"><small>RUC</small><strong>{{ o.ruc ?? '—' }}</strong></div>
+        <div class="info-item"><small>Sede</small><strong>{{ o.sede ?? '—' }}</strong></div>
+        <div class="info-item"><small>Ubicación</small><strong>{{ o.ubicacion ?? '—' }}</strong></div>
+        <div class="info-item"><small>Propuesta</small><strong>{{ o.numeroPropuesta ?? '—' }} {{ o.versionPropuesta ? 'v' + o.versionPropuesta : '' }}</strong></div>
+        <div class="info-item"><small>Tipo de servicio</small><strong>{{ o.tipoServicio ?? '—' }}</strong></div>
+        <div class="info-item"><small>Área</small><strong>{{ o.area ?? '—' }}</strong></div>
+        <div class="info-item">
+          <small>Rango tentativo</small>
+          <strong>{{ o.fechaProgramadaDesde ?? '—' }} → {{ o.fechaProgramadaHasta ?? '—' }}</strong>
+        </div>
+      </div>
+
+      @if (!o.puedeProgramar && o.motivoNoProgramable) {
+        <div class="banner banner--rojo">
+          <span class="material-symbols-outlined">block</span>
+          {{ o.motivoNoProgramable }}
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ── 2. Cronograma ────────────────────────────────────────────────── -->
+    <app-seccion icono="event" titulo="2. Cronograma Operativo" subtitulo="Define la fecha y rango horario del servicio">
+      <div class="form-grid">
+        <div class="campo">
+          <label>Fecha de ejecución <span class="req">*</span></label>
+          <input type="date" [ngModel]="fechaEjecucion()" (ngModelChange)="fechaEjecucion.set($event)" />
+        </div>
+        <div class="campo">
+          <label>Hora de inicio <span class="req">*</span></label>
+          <input type="time" [ngModel]="horaInicio()" (ngModelChange)="horaInicio.set($event)" />
+        </div>
+        <div class="campo">
+          <label>Hora fin estimada <span class="req">*</span></label>
+          <input type="time" [ngModel]="horaFin()" (ngModelChange)="horaFin.set($event)" />
+        </div>
+      </div>
+    </app-seccion>
+
+    <!-- ── 3. Equipos a intervenir ──────────────────────────────────────── -->
+    <app-seccion icono="precision_manufacturing" titulo="3. Equipos a intervenir"
+                 [subtitulo]="equipos().length + ' equipo(s) de la OS'">
+      @if (equipos().length > 0) {
+        <ul class="lista-rows">
+          @for (e of equipos(); track e.idEquipo) {
+            <li class="row" [class.row--selec]="idsEquipos().includes(e.idEquipo)"
+                (click)="toggleEquipo(e.idEquipo)">
+              <input type="checkbox" [checked]="idsEquipos().includes(e.idEquipo)"
+                     (click)="$event.stopPropagation()"
+                     (change)="toggleEquipo(e.idEquipo)" />
+              <div class="row__main">
+                <strong class="row__titulo">{{ e.marca ?? '—' }} {{ e.modelo ?? '' }}</strong>
+                <div class="row__meta">
+                  <span>N° {{ e.numeroSerie ?? '—' }}</span>
+                  <span class="row__sep">·</span>
+                  <span>{{ e.codigoTw ?? '—' }}</span>
+                  @if (e.ubicacion) {
+                    <span class="row__sep">·</span>
+                    <span>{{ e.ubicacion }}</span>
+                  }
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="vacio">No hay equipos en la OS.</div>
+      }
+    </app-seccion>
+
+    <!-- ── 4. Asignación de Recursos ────────────────────────────────────── -->
+    <app-seccion icono="engineering" titulo="4. Asignación de Recursos"
+                 subtitulo="Selecciona el técnico principal y, opcionalmente, apoyo">
+
+      <!-- Resumen de recursos asignados -->
+      @if (!idTecnicoPrincipal() && idsTecnicosApoyo().length === 0) {
+        <div class="vacio">
+          <span class="material-symbols-outlined">person_add</span>
+          <p>Aún no se asignaron recursos a esta programación.</p>
+          <app-button variant="primary" tamano="md" icono="group_add" (clic)="abrirModalAsignar()">
+            Asignar Recurso
+          </app-button>
+        </div>
+      } @else {
+        <div class="recursos-asignados">
+          <div class="recursos-asignados__head">
+            <span class="recursos-asignados__count">
+              {{ (idTecnicoPrincipal() ? 1 : 0) + idsTecnicosApoyo().length }} recurso(s) asignado(s)
+            </span>
+            <app-button variant="secondary" tamano="sm" icono="edit" (clic)="abrirModalAsignar()">
+              Modificar Asignación
+            </app-button>
+          </div>
+          <ul class="lista-rows">
+            @if (tecnicoPrincipalResumen(); as p) {
+              <li class="row row--selec">
+                <div class="row__main">
+                  <strong class="row__titulo">{{ p.nombre }}</strong>
+                  <div class="row__meta">
+                    <span class="chip chip--azul">Técnico Principal</span>
+                    @if (p.cargo) { <span class="row__sep">·</span><span>{{ p.cargo }}</span> }
+                  </div>
+                </div>
+              </li>
+            }
+            @for (a of apoyosResumen(); track a.idUsuario) {
+              <li class="row row--apoyo">
+                <div class="row__main">
+                  <strong class="row__titulo">{{ a.nombre }}</strong>
+                  <div class="row__meta">
+                    <span class="chip chip--gris">Apoyo</span>
+                    @if (a.cargo) { <span class="row__sep">·</span><span>{{ a.cargo }}</span> }
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </app-seccion>
+
+    <!-- ── 5. Observaciones ──────────────────────────────────────────── -->
+    <app-seccion icono="notes" titulo="5. Observaciones" subtitulo="Opcional">
+      <textarea class="observaciones" rows="3" maxlength="500" placeholder="Notas operativas, instrucciones especiales..."
+                [ngModel]="observaciones()" (ngModelChange)="observaciones.set($event)"></textarea>
+    </app-seccion>
+
+    </div>
+
+    <!-- ── Sidebar: Checklist + Resumen ────────────────────────────────── -->
+    <aside class="sidebar">
+      <!-- Checklist de validación -->
+      <div class="panel">
+        <div class="panel__head">
+          <span class="material-symbols-outlined">fact_check</span>
+          <h4>Checklist de Validación</h4>
+        </div>
+        <ul class="checklist">
+          <li [class.ok]="checkCronograma()" [class.err]="!checkCronograma()">
+            <span class="material-symbols-outlined">{{ checkCronograma() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Cronograma válido</strong>
+              <small>{{ checkCronograma() ? (fechaCorta(fechaEjecucion()) + ' · ' + horaInicio() + '–' + horaFin()) : 'Define fecha y horario' }}</small>
+            </div>
+          </li>
+          <li [class.ok]="checkTecnico()" [class.err]="!checkTecnico()">
+            <span class="material-symbols-outlined">{{ checkTecnico() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Técnico asignado</strong>
+              <small>{{ checkTecnico() ? (tecnicoPrincipalSeleccionado()?.nombre ?? 'Asignado') : 'Seleccioná al menos 1 técnico' }}</small>
+            </div>
+          </li>
+          <li [class.ok]="checkEquipos()" [class.err]="!checkEquipos()">
+            <span class="material-symbols-outlined">{{ checkEquipos() ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <div>
+              <strong>Equipos reservados</strong>
+              <small>{{ idsEquipos().length }} equipo(s) seleccionado(s)</small>
+            </div>
+          </li>
+          <li [class.ok]="checkSsoma()">
+            <span class="material-symbols-outlined">check_circle</span>
+            <div>
+              <strong>SSOMA habilitado</strong>
+              <small>{{ requisitosSsoma().length }} requisito(s) definido(s)</small>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Resumen de la programación -->
+      <div class="panel">
+        <div class="panel__head">
+          <span class="material-symbols-outlined">event_note</span>
+          <h4>Resumen de la Programación</h4>
+        </div>
+        <table class="resumen">
+          <tbody>
+            <tr>
+              <th>ESTADO INICIAL</th>
+              <td><span class="chip chip--ambar">PENDIENTE CONFIRMACIÓN CLIENTE</span></td>
+            </tr>
+            <tr>
+              <th>TÉCNICOS</th>
+              <td>{{ totalTecnicos() }} asignado(s)</td>
+            </tr>
+            <tr>
+              <th>EQUIPOS</th>
+              <td>{{ idsEquipos().length }} reservado(s)</td>
+            </tr>
+            <tr>
+              <th>DURACIÓN</th>
+              <td>{{ duracionCalculada() }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Nota del flujo -->
+      <div class="nota-flujo">
+        <span class="material-symbols-outlined">lightbulb</span>
+        <p>
+          Después de crear la Programación, el estado será <strong>PENDIENTE CONFIRMACIÓN CLIENTE</strong>
+          y se habilitará el flujo de registro de confirmación con el cliente.
+        </p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ── Footer fijo en el pie (ancho completo) ─────────────────────────── -->
+  <div class="footer-fijo">
+    <div class="footer-fijo__contenido">
+      <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">Cancelar</app-button>
+      <app-button variant="primary" tamano="md" icono="event_available"
+                  [disabled]="!puedeGuardar() || guardando()"
+                  [cargando]="guardando()"
+                  (clic)="programar()">
+        {{ guardando() ? 'Creando...' : 'Programar servicio' }}
+      </app-button>
+    </div>
+  </div>
+  }
+
+  <!-- ── Modal Asignar Recurso ─────────────────────────────────────────── -->
+  @if (modalAsignarAbierto() && orden()) {
+    <app-modal-asignar-recurso
+      [idOs]="orden()!.idOs"
+      [fecha]="fechaEjecucion()"
+      [horaInicio]="horaInicio()"
+      [horaFin]="horaFin()"
+      [idPrincipalInicial]="idTecnicoPrincipal()"
+      [idsApoyoInicial]="idsTecnicosApoyo()"
+      [razonSocial]="orden()?.razonSocial ?? null"
+      [sede]="orden()?.sede ?? null"
+      [tipoServicio]="orden()?.tipoServicio ?? null"
+      (cerrar)="modalAsignarAbierto.set(false)"
+      (confirmado)="onRecursosConfirmados($event)"
+    />
+  }
+</div>

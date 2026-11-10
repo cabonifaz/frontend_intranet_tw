@@ -8,7 +8,7 @@
                 class="pill-prop"
                 [class.pill-prop--activa]="p.seleccionada"
                 (click)="cambiarPropuestaVb.emit(p.numero)">
-          {{ p.numero }} v{{ p.version }}
+          {{ p.numero }}
         </button>
       }
     </div>
@@ -23,7 +23,7 @@
       Ir al Módulo VB
     </app-button>
     <div class="info-grid">
-      <div class="info-item"><small>Propuesta en revisión</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionRevision ?? '—' }}</strong></div>
+      <div class="info-item"><small>Propuesta en revisión</small><strong class="valor-codigo">{{ e.numero }}</strong></div>
       <div class="info-item">
         <small>Aprobador asignado</small>
         <div class="responsable-mini">
@@ -31,7 +31,7 @@
           <strong>{{ e.aprobador ?? 'Pendiente' }}</strong>
         </div>
       </div>
-      <div class="info-item"><small>Propuesta aprobada</small><strong class="valor-codigo">{{ e.numero }} v{{ e.versionAprobada ?? '—' }}</strong></div>
+      <div class="info-item"><small>Propuesta aprobada</small><strong class="valor-codigo">{{ e.numero }}</strong></div>
       <div class="info-item">
         <small>Fecha solicitud</small>
         <strong>{{ e.fechaSolicitud ? (e.fechaSolicitud | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>

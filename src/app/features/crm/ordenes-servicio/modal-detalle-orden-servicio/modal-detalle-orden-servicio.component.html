@@ -181,7 +181,7 @@
 
           <div class="mdo-grid">
             <div><label>Código + Versión</label>
-              <span class="mdo-mono">{{ d.propuestaOrigen.codigo }} v{{ d.propuestaOrigen.version }}</span>
+              <span class="mdo-mono">{{ d.propuestaOrigen.codigo + ' v' + d.propuestaOrigen.version }}</span>
             </div>
             <div><label>Estado</label>
               <span class="badge badge--verde">{{ d.propuestaOrigen.estadoLabel }}</span>
@@ -281,10 +281,15 @@
               </tr>
             </thead>
             <tbody>
-              @for (c of d.conceptos; track c.idConcepto) {
+              @for (c of d.conceptos; track (c.idItem ?? c.idConcepto)) {
                 <tr>
                   <td class="mdo-mono">{{ c.codigo }}</td>
-                  <td>{{ c.descripcion }}</td>
+                  <td>
+                    {{ c.descripcion }}
+                    @if (c.alcance) {
+                      <small class="mdo-alcance">Alcance: {{ c.alcance }}</small>
+                    }
+                  </td>
                   <td>{{ c.clasificacion ?? '—' }}</td>
                   <td>
                     @if (c.equiposAplicados.length === 0) {
@@ -397,11 +402,9 @@
     <div modalFooter class="modal-footer">
       <!-- Izquierda: acciones informativas + anular -->
       <div class="modal-footer__izq">
-        <app-button variant="ghost" tamano="md" icono="folder_open" (clic)="onDocumentos()">
-          Documentos
-        </app-button>
-        <app-button variant="ghost" tamano="md" icono="history" (clic)="onAuditoria()">
-          Historial de Auditoría
+        <app-button variant="ghost" tamano="md" icono="picture_as_pdf"
+                    [disabled]="descargandoPdf()" (clic)="onDescargarPdf()">
+          {{ descargandoPdf() ? 'Descargando…' : 'Descargar PDF' }}
         </app-button>
         @if (d.puedeAnular) {
           <app-button variant="danger-ghost" tamano="md" icono="block" (clic)="onAnular()">

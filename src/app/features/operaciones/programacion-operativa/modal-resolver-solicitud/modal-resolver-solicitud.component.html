@@ -1,0 +1,139 @@
+<app-modal
+  titulo="Resolver Solicitud de Reprogramación"
+  [subtitulo]="datos() ? (datos()!.codigo + ' · ' + (datos()!.razonSocial ?? '—')) : null"
+  icono="rule"
+  iconoColor="azul"
+  ancho="xl"
+  (cerrar)="onCerrar()">
+
+  @if (cargando()) {
+    <div class="estado">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando solicitud…
+    </div>
+  } @else if (datos(); as d) {
+
+    <!-- Info del solicitante -->
+    <section class="ctx">
+      <div class="ctx__item">
+        <small>SOLICITANTE</small>
+        <strong>{{ d.solicitante ?? '—' }}</strong>
+        @if (d.cargoSolicitante) { <span class="ctx__sub">{{ d.cargoSolicitante }}</span> }
+      </div>
+      <div class="ctx__item">
+        <small>FECHA SOLICITUD</small>
+        <strong>{{ d.fechaSolicitud ?? '—' }}</strong>
+      </div>
+      <div class="ctx__item ctx__item--wide">
+        <small>MOTIVO</small>
+        <strong>{{ d.motivo ?? '—' }}</strong>
+      </div>
+    </section>
+
+    @if (d.comentario) {
+      <section class="bloque">
+        <div class="bloque__head">
+          <span class="material-symbols-outlined">forum</span>
+          <h4>Comentario del solicitante</h4>
+        </div>
+        <p class="comentario-solicitante">"{{ d.comentario }}"</p>
+      </section>
+    }
+
+    <!-- Comparativa actual vs propuesto -->
+    <section class="bloque">
+      <div class="bloque__head">
+        <span class="material-symbols-outlined">compare_arrows</span>
+        <h4>Cambios propuestos</h4>
+      </div>
+      <div class="comparativa">
+        <div class="comparativa__col">
+          <div class="comparativa__titulo">ACTUAL</div>
+          <div class="info-item"><small>Fecha</small><strong>{{ d.fechaActual ?? '—' }}</strong></div>
+          <div class="info-item"><small>Horario</small><strong>{{ d.horaInicioActual ?? '—' }} – {{ d.horaFinActual ?? '—' }}</strong></div>
+          @if (d.duracionActualHoras !== null && d.duracionActualHoras !== undefined) {
+            <div class="info-item"><small>Duración</small><strong>{{ d.duracionActualHoras }} h</strong></div>
+          }
+          <div class="info-item"><small>Técnico principal</small><strong>{{ d.tecnicoActual ?? '—' }}</strong></div>
+        </div>
+        <div class="comparativa__flecha">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </div>
+        <div class="comparativa__col comparativa__col--propuesto">
+          <div class="comparativa__titulo">PROPUESTO</div>
+          <div class="info-item">
+            <small>Fecha</small>
+            <strong [class.diff]="d.cambiaFechaHora">{{ d.fechaPropuesta ?? '—' }}</strong>
+          </div>
+          <div class="info-item">
+            <small>Horario</small>
+            <strong [class.diff]="d.cambiaFechaHora">{{ d.horaInicioPropuesta ?? '—' }} – {{ d.horaFinPropuesta ?? '—' }}</strong>
+          </div>
+          @if (d.duracionPropuestaHoras !== null && d.duracionPropuestaHoras !== undefined) {
+            <div class="info-item"><small>Duración</small><strong>{{ d.duracionPropuestaHoras }} h</strong></div>
+          }
+          <div class="info-item">
+            <small>Técnico principal</small>
+            <strong [class.diff]="d.cambiaTecnicoPrincipal">{{ d.tecnicoPropuesto ?? d.tecnicoActual ?? '—' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      @if (d.cambiaFechaHora) {
+        <div class="aviso aviso--ambar">
+          <span class="material-symbols-outlined">warning</span>
+          Al aprobar, la programación volverá a <strong>Pendiente confirmación cliente</strong> (hay que re-registrar la respuesta).
+        </div>
+      }
+      @if (d.viaticosDepositados > 0) {
+        <div class="aviso aviso--rojo">
+          <span class="material-symbols-outlined">payments</span>
+          Hay <strong>{{ d.viaticosDepositados }}</strong> viático(s) ya depositado(s). Si apruebas, siguen vigentes.
+        </div>
+      }
+    </section>
+
+    <!-- Comentario del aprobador -->
+    <section class="bloque">
+      <div class="bloque__head">
+        <span class="material-symbols-outlined">edit_note</span>
+        <h4>Tu comentario</h4>
+      </div>
+      <textarea
+        rows="3"
+        maxlength="500"
+        [ngModel]="comentario()"
+        (ngModelChange)="comentario.set($event)"
+        placeholder="Opcional al aprobar · obligatorio al rechazar (mín. 10 caracteres)"></textarea>
+      <div class="hint-row">
+        @if (comentario().trim().length < 10) {
+          <small class="hint hint--ambar">
+            <span class="material-symbols-outlined">info</span>
+            Para rechazar, escribe al menos {{ 10 - comentario().trim().length }} caracter(es) más
+          </small>
+        } @else {
+          <small class="hint hint--ok">Puedes aprobar o rechazar</small>
+        }
+        <small class="hint">{{ comentario().length }} / 500</small>
+      </div>
+    </section>
+
+  }
+
+  <!-- Footer -->
+  <div modalFooter class="footer-modal">
+    <app-button variant="secondary" tamano="md" (clic)="onCerrar()">Volver</app-button>
+    <div class="footer-modal__der">
+      <app-button variant="danger" icono="block" tamano="md"
+                  [disabled]="!puedeRechazar()"
+                  (clic)="rechazar()">
+        {{ guardando() ? 'Procesando…' : 'Rechazar' }}
+      </app-button>
+      <app-button variant="primary" icono="check_circle" tamano="md"
+                  [disabled]="!puedeAprobar()"
+                  (clic)="aprobar()">
+        {{ guardando() ? 'Procesando…' : 'Aprobar' }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

@@ -88,13 +88,23 @@ export class OrdenesCompraService {
     return r.datos;
   }
 
-  async obtenerPropuestasDisponibles(idCliente?: number | null, idOc?: number | null, busqueda?: string): Promise<PropuestaDisponibleOcDto[]> {
+  async obtenerPropuestasDisponibles(
+    idCliente?: number | null,
+    idOc?: number | null,
+    busqueda?: string,
+    /** Observación 33 (back 2026-11-04): el default del endpoint incluye tanto
+     *  propuestas sin OC como las que solo tienen OC autogenerada (vienen con
+     *  `idOcAutogenerada` + `numeroOcAutogenerada`). Al registrar la OC real
+     *  la autogenerada se da de baja. Pasá `false` solo si necesitás excluirlas. */
+    incluirConAutogenerada?: boolean,
+  ): Promise<PropuestaDisponibleOcDto[]> {
     if (this.USAR_MOCK) return this.mockResponse(MOCK_PROPUESTAS_DISPONIBLES);
 
     let params = new HttpParams();
     if (idCliente != null) params = params.set('idCliente', idCliente.toString());
     if (idOc       != null) params = params.set('idOc',      idOc.toString());
     if (busqueda)           params = params.set('busqueda',  busqueda);
+    if (incluirConAutogenerada === false) params = params.set('incluirConAutogenerada', 'false');
     const r = await firstValueFrom(
       this.http.get<RespuestaApi<PropuestaDisponibleOcDto[]>>(
         `${this.base}/api/crm/ordenes-compra/propuestas-disponibles`, { params }),
