@@ -60,6 +60,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notificaciones',
+        loadComponent: () =>
+          import('./features/notificaciones/centro-notificaciones/centro-notificaciones.component').then(
+            m => m.CentroNotificacionesComponent
+          ),
+      },
+      {
         path: 'maestros/clientes',
         loadComponent: () =>
           import('./features/maestros/clientes/lista-clientes/lista-clientes.component').then(
