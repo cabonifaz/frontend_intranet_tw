@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NotificacionesService } from '../../../core/services/notificaciones.service';
 import {
-  EstadoFiltro, GrupoNotificaciones, ModuloCodigo, NotificacionBandeja,
+  DetalleNotificacion, EstadoFiltro, GrupoNotificaciones, ModuloCodigo, NotificacionBandeja,
   RangoFecha, TipoNotificacion,
 } from '../../../core/models/notificaciones.model';
 import { HeaderBandejaComponent } from '../../../shared/ui/header-bandeja/header-bandeja.component';
@@ -34,17 +34,18 @@ export class CentroNotificacionesComponent implements OnInit {
   ];
 
   // Filtros ────────────────────────────────────────────────────────────────
-  readonly estado    = signal<EstadoFiltro>('no_leidas');
+  readonly estado    = signal<EstadoFiltro>('activas');
   readonly modulo    = signal<ModuloCodigo | 'todos'>('todos');
   readonly tipo      = signal<TipoNotificacion | 'todos'>('todos');
-  readonly rango     = signal<RangoFecha>('hoy');
+  readonly rango     = signal<RangoFecha | 'todas'>('hoy');
   readonly busqueda  = signal('');
   readonly cargando  = signal(false);
 
   // Data ───────────────────────────────────────────────────────────────────
   readonly items     = signal<NotificacionBandeja[]>([]);
-  readonly noLeidas  = signal(0);
+  readonly noLeidas  = computed(() => this.svc.estado().noLeidas);
   readonly seleccion = signal<NotificacionBandeja | null>(null);
+  readonly detalle   = signal<DetalleNotificacion | null>(null);
 
   readonly grupos = computed<GrupoNotificaciones[]>(() => this.svc.agrupar(this.items()));
 
@@ -93,13 +94,14 @@ export class CentroNotificacionesComponent implements OnInit {
     try {
       const r = await this.svc.obtenerBandeja({
         estado:   this.estado(),
-        modulo:   this.modulo() === 'todos' ? null : [this.modulo() as ModuloCodigo],
-        tipo:     this.tipo()   === 'todos' ? null : [this.tipo()   as TipoNotificacion],
-        rango:    this.rango(),
+        modulos:  this.modulo() === 'todos' ? null : [this.modulo() as ModuloCodigo],
+        tipos:    this.tipo()   === 'todos' ? null : [this.tipo()   as TipoNotificacion],
+        rango:    this.rango() === 'todas' ? undefined : (this.rango() as RangoFecha),
         busqueda: this.busqueda() || null,
       });
       this.items.set(r.items);
-      this.noLeidas.set(r.noLeidas);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la bandeja.');
     } finally {
       this.cargando.set(false);
     }
@@ -109,26 +111,42 @@ export class CentroNotificacionesComponent implements OnInit {
 
   async abrir(n: NotificacionBandeja): Promise<void> {
     this.seleccion.set(n);
-    if (!n.leida) {
-      const nl = await this.svc.marcarLeida(n.idNotificacion);
-      this.noLeidas.set(nl);
-      this.items.update(list => list.map(i => i.idNotificacion === n.idNotificacion ? { ...i, leida: true } : i));
+    try {
+      // GET /{id} abre la notif → el back la marca como leída y devuelve mensaje completo.
+      const det = await this.svc.obtenerDetalle(n.idNotificacion);
+      this.detalle.set(det);
+      // Reflejo visual en la lista (el service ya actualizó el signal compartido).
+      this.items.update(list => list.map(i =>
+        i.idNotificacion === n.idNotificacion ? { ...i, leida: true } : i,
+      ));
       this.seleccion.update(s => s ? { ...s, leida: true } : s);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo abrir la notificación.');
     }
   }
 
   async marcarTodasLeidas(): Promise<void> {
-    await this.svc.marcarTodasLeidas();
-    this.toast.exito('Todas las notificaciones fueron marcadas como leídas.');
-    await this.cargar();
+    try {
+      await this.svc.marcarTodasLeidas();
+      this.toast.exito('Todas las notificaciones fueron marcadas como leídas.');
+      await this.cargar();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudieron marcar todas.');
+    }
   }
 
   async archivar(n: NotificacionBandeja): Promise<void> {
-    const nl = await this.svc.archivar(n.idNotificacion);
-    this.noLeidas.set(nl);
-    this.toast.exito('Notificación archivada.');
-    this.items.update(list => list.filter(i => i.idNotificacion !== n.idNotificacion));
-    this.seleccion.set(this.items()[0] ?? null);
+    try {
+      await this.svc.archivar(n.idNotificacion);
+      this.toast.exito('Notificación archivada.');
+      this.items.update(list => list.filter(i => i.idNotificacion !== n.idNotificacion));
+      const sig = this.items();
+      this.seleccion.set(sig[0] ?? null);
+      this.detalle.set(null);
+      if (sig[0]) await this.abrir(sig[0]);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo archivar.');
+    }
   }
 
   irAlOrigen(n: NotificacionBandeja): void {
@@ -141,7 +159,7 @@ export class CentroNotificacionesComponent implements OnInit {
   }
 
   limpiarFiltros(): void {
-    this.estado.set('no_leidas');
+    this.estado.set('activas');
     this.modulo.set('todos');
     this.tipo.set('todos');
     this.rango.set('hoy');
@@ -154,6 +172,8 @@ export class CentroNotificacionesComponent implements OnInit {
   onCambioFiltro(): void { void this.cargar(); }
 
   // ─── Helpers visual ──────────────────────────────────────────────────────
+
+  tiempoRelativo(iso: string): string { return this.svc.tiempoRelativo(iso); }
 
   iconoPorModulo(c: ModuloCodigo): string {
     switch (c) {
@@ -182,7 +202,5 @@ export class CentroNotificacionesComponent implements OnInit {
     }
   }
 
-  chipModulo(_: ModuloCodigo): string {
-    return 'chip chip--violeta';
-  }
+  chipModulo(_: ModuloCodigo): string { return 'chip chip--violeta'; }
 }

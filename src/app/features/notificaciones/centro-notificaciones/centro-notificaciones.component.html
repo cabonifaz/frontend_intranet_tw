@@ -47,9 +47,10 @@
     <div class="cn-filtros__grupo">
       <label>ESTADO</label>
       <select [ngModel]="estado()" (ngModelChange)="estado.set($event); onCambioFiltro()">
-        <option value="no_leidas">No leídas</option>
-        <option value="leidas">Leídas</option>
-        <option value="archivadas">Archivadas</option>
+        <option value="activas">Activas</option>
+        <option value="no_leida">No leídas</option>
+        <option value="leida">Leídas</option>
+        <option value="archivada">Archivadas</option>
         <option value="todas">Todas</option>
       </select>
     </div>
@@ -58,8 +59,8 @@
       <label>FECHA</label>
       <select [ngModel]="rango()" (ngModelChange)="rango.set($event); onCambioFiltro()">
         <option value="hoy">Hoy</option>
-        <option value="esta_semana">Esta semana</option>
-        <option value="este_mes">Este mes</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
         <option value="todas">Todas</option>
       </select>
     </div>
@@ -101,7 +102,7 @@
                   (click)="abrir(n)">
                 <div class="cn-item__icon-wrap">
                   <span class="cn-item__icon material-symbols-outlined">
-                    {{ n.esAlertaOperativa ? 'warning' : iconoPorModulo(n.moduloCodigo) }}
+                    {{ n.esAlertaOperativa ? 'warning' : iconoPorModulo(n.modulo) }}
                   </span>
                 </div>
                 <div class="cn-item__body">
@@ -110,9 +111,9 @@
                       <span class="chip chip--rojo chip--mini">ALERTA OPERATIVA</span>
                     }
                     <strong class="cn-item__titulo">{{ n.titulo }}</strong>
-                    <span class="cn-item__tiempo">{{ n.tiempo }}</span>
+                    <span class="cn-item__tiempo">{{ tiempoRelativo(n.fechaCreacion) }}</span>
                   </div>
-                  <p class="cn-item__preview">{{ n.cuerpo }}</p>
+                  <p class="cn-item__preview">{{ n.resumen }}</p>
                 </div>
               </li>
             }
@@ -127,13 +128,13 @@
         <header class="cn-detalle__head">
           <div class="cn-detalle__head-izq">
             <div class="cn-detalle__icono">
-              <span class="material-symbols-outlined">{{ iconoPorModulo(n.moduloCodigo) }}</span>
+              <span class="material-symbols-outlined">{{ iconoPorModulo(n.modulo) }}</span>
             </div>
             <div>
               <h2 class="cn-detalle__titulo">{{ n.titulo }}</h2>
               <div class="cn-detalle__chips">
                 <span [class]="chipTipo(n.tipo)">{{ n.tipoLabel }}</span>
-                <span [class]="chipModulo(n.moduloCodigo)">{{ n.moduloLabel }}</span>
+                <span [class]="chipModulo(n.modulo)">{{ n.moduloLabel }}</span>
                 @if (!n.leida) { <span class="chip chip--ambar">No leída</span> }
                 @if (n.archivada) { <span class="chip chip--gris">Archivada</span> }
               </div>
@@ -153,15 +154,15 @@
           <div class="cn-info">
             <small>DE</small>
             <div class="cn-info__remitente">
-              <span class="cn-info__avatar">{{ (n.remitente ?? 'S').charAt(0) }}</span>
-              <strong>{{ n.remitente ?? 'Sistema TotalWeight' }}</strong>
+              <span class="cn-info__avatar">{{ n.remitente.iniciales }}</span>
+              <strong>{{ n.remitente.nombre }}</strong>
             </div>
           </div>
           <div class="cn-info">
             <small>FECHA COMPLETA</small>
             <div class="cn-info__fila">
               <span class="material-symbols-outlined">schedule</span>
-              <strong>{{ n.creadoEn | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
+              <strong>{{ n.fechaCreacion | date:'dd/MM/yyyy HH:mm:ss' }}</strong>
             </div>
           </div>
           <div class="cn-info">
@@ -174,16 +175,16 @@
           </div>
           <div class="cn-info">
             <small>PRIORIDAD</small>
-            <span [class]="n.esAlertaOperativa ? 'chip chip--rojo' : 'chip chip--ambar'">
+            <span [class]="n.prioridad === 'critica' ? 'chip chip--rojo' : n.prioridad === 'alta' ? 'chip chip--ambar' : 'chip chip--azul'">
               <span class="chip__dot"></span>
-              {{ n.esAlertaOperativa ? 'Alta' : 'Normal' }}
+              {{ n.prioridad === 'critica' ? 'Crítica' : n.prioridad === 'alta' ? 'Alta' : 'Normal' }}
             </span>
           </div>
           <div class="cn-info">
             <small>ELEMENTO ASOCIADO</small>
-            @if (n.entidadCodigo) {
+            @if (n.destino) {
               <a class="cn-info__link" (click)="irAlOrigen(n)">
-                {{ n.entidadCodigo }}
+                Ver origen
                 <span class="material-symbols-outlined">open_in_new</span>
               </a>
             } @else {
@@ -197,14 +198,14 @@
             <span class="material-symbols-outlined">mail</span>
             <span>MENSAJE</span>
           </header>
-          <p class="cn-mensaje__body">{{ n.cuerpo }}</p>
+          <p class="cn-mensaje__body">{{ detalle()?.mensaje ?? n.resumen }}</p>
         </div>
 
         <footer class="cn-detalle__footer">
-          @if (!n.archivada) {
+          @if (!n.archivada && (detalle()?.puedeArchivar ?? true)) {
             <app-button variant="secondary" icono="archive" (clic)="archivar(n)">Archivar</app-button>
           }
-          @if (n.entidadCodigo) {
+          @if (n.destino) {
             <app-button variant="primary" iconoDer="arrow_forward" (clic)="irAlOrigen(n)">
               Ir al elemento origen
             </app-button>

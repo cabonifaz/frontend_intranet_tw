@@ -1,7 +1,5 @@
 // Modelo del Centro de Notificaciones (HU-90, Módulo 16).
-// El back real aún no tiene la bandeja completa — el service corre contra un
-// mock local que simula los endpoints hasta que Bryan los entregue (ver
-// mensaje-back-modulo-16-notificaciones.md).
+// Schema alineado al contrato del back (ver mensaje-back-modulo-16-notificaciones.md).
 
 export type TipoNotificacion =
   | 'recordatorio'
@@ -16,60 +14,158 @@ export type ModuloCodigo =
   | 'programacion' | 'control_campo' | 'ssoma' | 'revision_tecnica'
   | 'expedientes' | 'sistema';
 
-export type EstadoFiltro = 'no_leidas' | 'leidas' | 'archivadas' | 'todas';
-export type RangoFecha   = 'hoy' | 'esta_semana' | 'este_mes' | 'custom' | 'todas';
+export type PrioridadNotif = 'critica' | 'alta' | 'normal';
 
-export interface NotificacionBandeja {
-  idNotificacion:     number;
-  tipo:               TipoNotificacion;
-  tipoLabel:          string;
-  moduloCodigo:       ModuloCodigo;
-  moduloLabel:        string;
-  titulo:             string;
-  cuerpo:             string;
-  tipoDot:            string;   // color hex del dot (ya lo da el back)
-  tiempo:             string;   // "Hace 5m", "Ayer 14:30"
-  creadoEn:           string;   // ISO
-  leida:              boolean;
-  archivada:          boolean;
-  esAlertaOperativa:  boolean;
-  idRemitente:        number | null;
-  remitente:          string | null;   // null = "Sistema"
-  entidadTipo:        string | null;
-  entidadId:          number | null;
-  entidadCodigo:      string | null;
+/** Grupo temporal: lo devuelve ya calculado el back por fila. */
+export type GrupoNotifClave = 'hoy' | 'ayer' | 'semana' | 'antiguas';
+
+export type EstadoFiltro = 'activas' | 'no_leida' | 'leida' | 'archivada' | 'todas';
+export type RangoFecha   = 'hoy' | 'semana' | 'mes' | 'custom';
+
+/** Remitente de la notificación. Si vino del sistema, `idUsuario = 0`. */
+export interface RemitenteNotif {
+  idUsuario: number;
+  nombre:    string;
+  iniciales: string;
 }
 
-export interface BandejaNotificaciones {
-  total:    number;
+/**
+ * Destino navegable para el botón "Ir al elemento origen".
+ * El back lo manda armado — el front solo hace el mapeo accion → ruta Angular.
+ * Si `destino` es null, no hay link profundo (botón deshabilitado).
+ */
+export interface DestinoNotif {
+  accion:       string;   // ej. "os.detalle", "seguimiento.servicio", "propuesta.precotizacion"
+  entidadTipo:  string;
+  idEntidad:    number;
+  tab?:         string | null;
+}
+
+export interface NotificacionBandeja {
+  idNotificacion:    number;
+  titulo:            string;
+  resumen:           string;
+  modulo:            ModuloCodigo;
+  moduloLabel:       string;
+  tipo:              TipoNotificacion;
+  tipoLabel:         string;
+  prioridad:         PrioridadNotif;
+  esAlertaOperativa: boolean;
+  leida:             boolean;
+  archivada:         boolean;
+  remitente:         RemitenteNotif;
+  fechaCreacion:     string;         // ISO en hora Lima
+  grupo:             GrupoNotifClave;
+  destino:           DestinoNotif | null;
+}
+
+/** Respuesta de GET /resumen (badge + popover del bell). */
+export interface ResumenNotificaciones {
   noLeidas: number;
-  items:    NotificacionBandeja[];
+  ultimas:  NotificacionBandeja[];   // 5 filas
+}
+
+/** Respuesta de GET /bandeja. */
+export interface BandejaNotificaciones {
+  total:     number;
+  noLeidas:  number;
+  pagina:    number;
+  porPagina: number;
+  items:     NotificacionBandeja[];
 }
 
 export interface FiltrosBandejaNotif {
-  estado?:      EstadoFiltro;
-  modulo?:      ModuloCodigo[] | null;
-  tipo?:        TipoNotificacion[] | null;
-  idRemitente?: number | null;
-  fechaDesde?:  string | null;
-  fechaHasta?:  string | null;
-  busqueda?:    string | null;
-  rango?:       RangoFecha;
-  pagina?:      number;
-  porPagina?:   number;
+  estado?:     EstadoFiltro;
+  modulos?:    ModuloCodigo[] | null;
+  tipos?:      TipoNotificacion[] | null;
+  rango?:      RangoFecha;
+  fechaDesde?: string | null;    // yyyy-MM-dd (solo con rango='custom')
+  fechaHasta?: string | null;    // yyyy-MM-dd
+  remitente?:  number | null;    // 0 = Sistema
+  busqueda?:   string | null;
+  pagina?:     number;
+  porPagina?:  number;
 }
 
-/** Grupo visual de la lista izquierda del centro: Hoy / Ayer / Esta semana / Más antiguas. */
+/** Opciones para los combos de filtro (GET /filtros con conteos). */
+export interface OpcionesFiltroNotif {
+  modulos:  Array<{ codigo: ModuloCodigo;    label: string; cantidad: number }>;
+  tipos:    Array<{ codigo: TipoNotificacion; label: string; cantidad: number }>;
+  estados:  Array<{ codigo: EstadoFiltro;    label: string; cantidad: number }>;
+  rangos:   Array<{ codigo: RangoFecha;      label: string; cantidad: number }>;
+  remitentes: Array<{ idUsuario: number; nombre: string; iniciales: string; cantidad: number }>;
+}
+
+/** Respuesta del GET /{id} (abre y marca leída). */
+export interface DetalleNotificacion {
+  notificacion:     NotificacionBandeja;
+  mensaje:          string;              // texto completo del body
+  fechaLectura:     string | null;
+  fechaArchivado:   string | null;
+  puedeArchivar:    boolean;
+  noLeidas:         number;
+}
+
+/** Grupo visual agrupado localmente para la lista izquierda del centro. */
 export interface GrupoNotificaciones {
-  clave:  'hoy' | 'ayer' | 'esta_semana' | 'mas_antiguas';
-  label:  string;
-  items:  NotificacionBandeja[];
+  clave: GrupoNotifClave;
+  label: string;
+  items: NotificacionBandeja[];
 }
 
-/** Payload de link profundo. Cada tipo entidad define su ruta destino. */
-export interface LinkDestinoNotif {
-  entidadTipo:   string;
-  entidadId:     number;
-  rutaDestino:   string[];     // ej. ['/operaciones/ordenes-servicio'] + queryParams
-  queryParams?:  Record<string, string | number>;
+/** Resultado de mapear destino del back → ruta Angular. */
+export interface RutaDestinoNotif {
+  rutaDestino:  string[];
+  queryParams?: Record<string, string | number>;
+}
+
+// ─── Eventos SignalR del hub /hubs/notificaciones ─────────────────────────────
+
+export interface EnvolventeEventoNotif<T> {
+  evento: string;
+  fecha:  string;
+  datos:  T;
+}
+
+export interface EventoNotifCreada {
+  notificacion: NotificacionBandeja;
+  noLeidas:     number;
+}
+
+export interface EventoNotifActualizada {
+  ids?:     number[];
+  todas?:   boolean;
+  estado:   'leida' | 'archivada';
+  noLeidas: number;
+}
+
+export interface EventoRefrescoOc {
+  idOc:         number;
+  numeroOc:     string;
+  estado:       string;
+  idsPropuesta: number[];
+  autogenerada: boolean;
+}
+
+export interface EventoRefrescoVb {
+  idPropuesta: number;
+  numero:      string;
+  estado:      string;
+  estadoVb:    string;
+  accion:      string;
+}
+
+export interface EventoRefrescoOs {
+  idOs:        number;
+  numero:      string;
+  tipo:        string;
+  estado:      string;
+  reemitida?:  boolean;
+}
+
+export interface EventoRefrescoPrecotizacion {
+  idPrecotizacion: number;
+  numero:          string;
+  estado:          string;
+  idInforme?:      number | null;
 }
