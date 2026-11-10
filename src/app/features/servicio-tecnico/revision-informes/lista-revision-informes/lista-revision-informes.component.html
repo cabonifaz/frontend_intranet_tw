@@ -78,13 +78,6 @@
         </select>
       </div>
       <div>
-        <label>SLA</label>
-        <label class="chk">
-          <input type="checkbox" [(ngModel)]="slaVencidoDraft">
-          <span>Solo SLA vencido</span>
-        </label>
-      </div>
-      <div>
         <label>FECHA DESDE</label>
         <input type="date" [(ngModel)]="fechaDesdeDraft">
       </div>
@@ -143,16 +136,13 @@
                 <span class="material-symbols-outlined chip__icon">
                   {{ i.conObservaciones ? 'warning' : 'check' }}
                 </span>
-                {{ i.conObservaciones ? 'Con observaciones' : 'Sin observaciones' }}
+                {{ i.nObservaciones }}
               </span>
             </td>
             <td>
               <span [class]="claseEstado(i.grupoEstado, i.estado)">
                 {{ i.estadoLabel ?? '—' }}
               </span>
-              @if (i.slaVencido) {
-                <small class="sub sub--rojo">SLA vencido</small>
-              }
             </td>
             <td class="centro acciones" (click)="$event.stopPropagation()">
               <app-button variant="ghost" tamano="sm" icono="visibility" [soloIcon]="true"

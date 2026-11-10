@@ -10,6 +10,9 @@ import {
   PrioridadItemPrecot, PrioridadRecomendacion, RecomendacionGuardarPayload, ResultadoEnsayosGuardarPayload,
 } from '../../../../core/models/revision-informes-api.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
+import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
+import { SeccionComponent } from '../../../../shared/ui/seccion/seccion.component';
+import { CampoComponent } from '../../../../shared/ui/campo/campo.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 
@@ -28,7 +31,7 @@ type Paso = 1 | 2 | 3 | 4;
  */
 @Component({
   selector: 'app-ficha-edicion-informe',
-  imports: [CommonModule, FormsModule, BreadcrumbComponent, ButtonComponent, InicialesPipe],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, CampoComponent, ButtonComponent, InicialesPipe],
   templateUrl: './ficha-edicion-informe.component.html',
   styleUrl: './ficha-edicion-informe.component.scss',
 })
@@ -89,6 +92,17 @@ export class FichaEdicionInformeComponent implements OnInit {
       case 'revisado_con_precot':     return 'chip chip--verde';
       case 'revisado_sin_precot':     return 'chip chip--gris-oscuro';
       default:                        return 'chip chip--gris';
+    }
+  });
+
+  /** Variante del badge del hero-header según el grupoEstado del informe. */
+  readonly badgeVarianteHero = computed<'ambar-dot' | 'rojo' | 'verde' | 'verde-dot' | 'azul'>(() => {
+    switch (this.cabecera()?.grupoEstado) {
+      case 'pendiente_revision':      return 'ambar-dot';
+      case 'pendiente_precotizacion': return 'rojo';
+      case 'revisado_con_precot':     return 'verde';
+      case 'revisado_sin_precot':     return 'verde-dot';
+      default:                        return 'azul';
     }
   });
 
@@ -162,14 +176,8 @@ export class FichaEdicionInformeComponent implements OnInit {
   anteriorPaso(): void  { if (this.paso() > 1) this.paso.set((this.paso() - 1) as Paso); }
 
   // ─── Procedimiento ──────────────────────────────────────────────────────
-  togglePaso(i: number): void { this.procedimientoDraft[i].realizado = !this.procedimientoDraft[i].realizado; }
-  agregarPaso(): void {
-    this.procedimientoDraft = [
-      ...this.procedimientoDraft,
-      { id: null, titulo: '', detalle: '', realizado: true, nota: null },
-    ];
-  }
-  eliminarPaso(i: number): void { this.procedimientoDraft = this.procedimientoDraft.filter((_, k) => k !== i); }
+  // El procedimiento ejecutado es solo lectura: viene de la app móvil del técnico.
+  // No se edita desde el supervisor; por eso no se envía en el PUT (ver guardar()).
 
   // ─── Ensayos ────────────────────────────────────────────────────────────
   agregarEnsayo(tipo: 'pesaje' | 'excentricidad'): void {
@@ -220,11 +228,11 @@ export class FichaEdicionInformeComponent implements OnInit {
   async guardar(): Promise<void> {
     this.guardando.set(true);
     try {
-      // Pasos 1-3 + hallazgos → PUT principal
+      // Pasos 1-3 + hallazgos → PUT principal.
+      // El procedimiento NO se envía (es solo lectura: lo que registró el técnico en la app).
       const payload: GuardarInformePayload = {
         descripcionComplementaria: this.descripcionDraft,
         resultado:                 this.resultadoDraft,
-        procedimiento:             this.procedimientoDraft,
         ensayos:                   this.ensayosDraft,
         observaciones:             this.observacionesDraft,
         recomendaciones:           this.recomendacionesDraft,

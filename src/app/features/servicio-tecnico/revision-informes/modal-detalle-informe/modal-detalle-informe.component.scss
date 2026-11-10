@@ -273,7 +273,19 @@
 .foto {
   background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
   overflow: hidden; text-decoration: none; color: inherit;
-  img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  &__thumb {
+    position: relative; background: #F8FAFC;
+    aspect-ratio: 4/3; overflow: hidden;
+  }
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  &__fallback {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: #94A3B8; padding: 12px; text-align: center;
+    .material-symbols-outlined { font-size: 36px; }
+    small { font-size: 11px; color: #64748B; line-height: 1.3; }
+    &--visible { display: flex; }
+  }
   &__pie {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     padding: 8px 10px;

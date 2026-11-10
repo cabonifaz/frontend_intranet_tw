@@ -23,6 +23,7 @@ import {
   PropuestaItemApi,
   PropuestaTextoApi,
 } from './propuestas.service';
+import { PrecargaPrecotizacionApi } from '../models/precotizaciones-api.model';
 
 // ─── Catálogo de moneda (back usa IdMoneda numérico) ─────────────────────────
 const MONEDA_ID_A_CODIGO: Record<number, string> = { 1: 'PEN', 2: 'USD' };
@@ -116,6 +117,39 @@ export function mapDetalleToDraft(d: PropuestaDetalleApi): PropuestaDraft {
     equiposVinculados: d.equipos.map(mapEquipoApiToVinculado),
 
     ultimaModificacion: new Date().toISOString(),
+  };
+}
+
+/**
+ * Rellena el draft con los datos iniciales de una Precotización (HU-60, flujo
+ * "Nace de Precotización"): cliente + RQ + contacto + sede + ítems a cotizar
+ * provenientes del supervisor técnico.
+ */
+export function prellenarDraftDesdePrecotizacion(precarga: PrecargaPrecotizacionApi): PropuestaDraft {
+  const base = crearDraftVacio();
+  const c = precarga.cabecera;
+  return {
+    ...base,
+    idRequerimiento:     c.idRequerimiento ?? 0,
+    codigoRequerimiento: c.numeroRq ?? '',
+    idCliente:           c.idCliente ?? 0,
+    razonSocial:         c.razonSocial ?? '',
+    ruc:                 c.ruc ?? '',
+    contacto:            c.contacto ?? '',
+    idContacto:          c.idContacto ?? null,
+    correoContacto:      null,
+    referencia:          c.nota ?? '',
+    tipoPropuesta:       c.tipoServicio ?? '',
+    lineasPropuesta:     precarga.items.map(i => ({
+      idSuministro:    i.idSuministro ?? 0,
+      descripcion:     i.descripcionTecnica || i.descripcion || i.concepto || '',
+      alcance:         '',
+      ptosCalibracion: '',
+      cantidad:        Number(i.cantidad ?? 1),
+      frecuencia:      1,
+      precioUnitario:  Number(i.precioReferencia ?? 0),
+      descuentoPct:    0,
+    })),
   };
 }
 

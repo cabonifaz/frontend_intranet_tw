@@ -66,6 +66,26 @@
           </div>
         }
 
+        <!-- ── Tabs ────────────────────────────────────────────────── -->
+        <div class="mdp__tabs" role="tablist">
+          <button type="button" class="mdp__tab"
+                  [class.mdp__tab--activo]="tab() === 'detalle'"
+                  (click)="cambiarTab('detalle')" role="tab">
+            <span class="material-symbols-outlined">receipt_long</span>
+            Detalle
+          </button>
+          <button type="button" class="mdp__tab"
+                  [class.mdp__tab--activo]="tab() === 'trazabilidad'"
+                  (click)="cambiarTab('trazabilidad')" role="tab">
+            <span class="material-symbols-outlined">timeline</span>
+            Trazabilidad
+            @if (trazabilidad().length > 0) {
+              <span class="mdp__tab-badge">{{ trazabilidad().length }}</span>
+            }
+          </button>
+        </div>
+
+        @if (tab() === 'detalle') {
         <!-- ── Cliente + equipo + servicio ─────────────────────────── -->
         <section class="card">
           <header class="card__head">
@@ -215,7 +235,9 @@
             </div>
           }
         </section>
+        }
 
+        @if (tab() === 'trazabilidad') {
         <!-- ── Trazabilidad (timeline horizontal) ─────────────────── -->
         @if (trazabilidad().length > 0) {
           <section class="card">
@@ -240,6 +262,12 @@
               }
             </ol>
           </section>
+        } @else {
+          <div class="traza-vacio">
+            <span class="material-symbols-outlined">timeline</span>
+            <p>No hay eventos de trazabilidad registrados.</p>
+          </div>
+        }
         }
 
       }

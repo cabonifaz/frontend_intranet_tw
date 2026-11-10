@@ -19,51 +19,63 @@
     <!-- ── Header ─────────────────────────────────────────────────────── -->
     <app-breadcrumb [items]="breadcrumb()" />
 
-    <section class="fe-head">
-      <div class="fe-head__izq">
-        <div class="fe-head__icono">
-          <span class="material-symbols-outlined">edit_document</span>
-        </div>
-        <div class="fe-head__textos">
-          <h1 class="fe-head__titulo">Editar Informe de Servicio Técnico</h1>
-          <p class="fe-head__sub">
-            Técnico <strong>{{ c.tecnico ?? '—' }}</strong> ·
-            {{ c.razonSocial ?? '—' }} · {{ c.equipo ?? '—' }} ·
-            ejecutado el {{ c.fechaEjecucion | date:'dd/MM/yyyy' }}
-          </p>
-        </div>
-      </div>
-      <div class="fe-head__der">
-        <span class="fe-head__os">{{ c.numeroOs ?? '—' }} · v{{ c.version }}</span>
-        <span [class]="chipEstado()">{{ c.estadoLabel ?? '—' }}</span>
-      </div>
-    </section>
+    <app-hero-header
+      icono="edit_document"
+      titulo="Editar Informe de Servicio Técnico"
+      [descripcion]="(c.tecnico ?? '—') + ' · ' + (c.razonSocial ?? '—') + ' · ' + (c.equipo ?? '—') + ' · ejecutado el ' + ((c.fechaEjecucion | date:'dd/MM/yyyy') ?? '—')"
+      [codigoFicha]="(c.numeroOs ?? '—') + ' · v' + c.version"
+      [badgeTexto]="c.estadoLabel ?? ''"
+      [badgeVariant]="badgeVarianteHero()"
+      (volver)="cancelar()" />
 
-    <!-- ── Stepper ────────────────────────────────────────────────────── -->
-    <section class="stepper">
-      <button class="step" [class.step--activo]="paso() === 1" [class.step--hecho]="paso() > 1" (click)="irPaso(1)">
-        <span class="step__num">1</span>
-        <span class="step__info"><small>PASO 1</small><strong>Datos y Procedimiento</strong></span>
-      </button>
-      <span class="step__linea"></span>
-      <button class="step" [class.step--activo]="paso() === 2" [class.step--hecho]="paso() > 2" (click)="irPaso(2)">
-        <span class="step__num">2</span>
-        <span class="step__info"><small>PASO 2</small><strong>Ensayos</strong></span>
-      </button>
-      <span class="step__linea"></span>
-      <button class="step" [class.step--activo]="paso() === 3" [class.step--hecho]="paso() > 3" (click)="irPaso(3)">
-        <span class="step__num">3</span>
-        <span class="step__info"><small>PASO 3</small><strong>Fotos y Descripción</strong></span>
-      </button>
-      <span class="step__linea"></span>
-      <button class="step" [class.step--activo]="paso() === 4" (click)="irPaso(4)">
-        <span class="step__num">4</span>
-        <span class="step__info">
-          <small>PASO 4 @if (requierePrecotizacion()) { <span class="chip chip--rojo chip--mini">Obligatorio</span> }</small>
-          <strong>Hallazgos y Precotización</strong>
+    <!-- ── Stepper (patrón wizard propuesta) ──────────────────────────── -->
+    <div class="stepper">
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 1"
+         [class.stepper__paso--completado]="paso() > 1"
+         (click)="irPaso(1)">
+        <span class="stepper__numero">
+          @if (paso() > 1) { <span class="material-symbols-outlined">check</span> }
+          @else { 1 }
         </span>
-      </button>
-    </section>
+        <span class="stepper__label">Datos y Procedimiento</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 2"
+         [class.stepper__paso--completado]="paso() > 2"
+         (click)="irPaso(2)">
+        <span class="stepper__numero">
+          @if (paso() > 2) { <span class="material-symbols-outlined">check</span> }
+          @else { 2 }
+        </span>
+        <span class="stepper__label">Ensayos</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 3"
+         [class.stepper__paso--completado]="paso() > 3"
+         (click)="irPaso(3)">
+        <span class="stepper__numero">
+          @if (paso() > 3) { <span class="material-symbols-outlined">check</span> }
+          @else { 3 }
+        </span>
+        <span class="stepper__label">Fotos y Descripción</span>
+      </a>
+      <span class="stepper__separador"></span>
+
+      <a class="stepper__paso"
+         [class.stepper__paso--activo]="paso() === 4"
+         (click)="irPaso(4)">
+        <span class="stepper__numero">4</span>
+        <span class="stepper__label">Hallazgos y Precotización</span>
+        @if (requierePrecotizacion()) {
+          <span class="stepper__dot" title="Obligatorio">!</span>
+        }
+      </a>
+    </div>
 
     <!-- ── Grid 2 columnas (contenido + sidebar) ──────────────────────── -->
     <div class="fe-grid">
@@ -73,128 +85,112 @@
         <!-- ═══ PASO 1: DATOS Y PROCEDIMIENTO ═══════════════════════════ -->
         @if (paso() === 1) {
 
-          <section class="card card--locked">
-            <header class="card__head">
-              <span class="material-symbols-outlined">lock</span>
-              <div>
-                <h3>1. Datos Generales del Servicio</h3>
-                <p class="card__sub">Información cargada desde la OS — no editable</p>
-              </div>
-              <span class="chip chip--gris">LECTURA PROTEGIDA</span>
-            </header>
+          <app-seccion
+            icono="lock"
+            titulo="1. Datos Generales del Servicio"
+            subtitulo="Información cargada desde la OS — no editable"
+            badgeTexto="LECTURA PROTEGIDA"
+            badgeVariant="dark">
             <div class="info-grid info-grid--3">
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> CLIENTE</small><strong>{{ c.razonSocial ?? '—' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> SEDE</small><strong>{{ c.sede ?? '—' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> EQUIPO</small><strong>{{ c.equipo ?? '—' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> TIPO DE SERVICIO</small><strong>{{ c.tipoServicio ?? '—' }}</strong></div>
+              <div class="info-item"><small>CLIENTE</small><strong>{{ c.razonSocial ?? '—' }}</strong></div>
+              <div class="info-item"><small>SEDE</small><strong>{{ c.sede ?? '—' }}</strong></div>
+              <div class="info-item"><small>EQUIPO</small><strong>{{ c.equipo ?? '—' }}</strong></div>
+              <div class="info-item"><small>TIPO DE SERVICIO</small><strong>{{ c.tipoServicio ?? '—' }}</strong></div>
               <div class="info-item">
-                <small><span class="material-symbols-outlined">lock</span> TÉCNICO ASIGNADO</small>
+                <small>TÉCNICO ASIGNADO</small>
                 <div class="tec-row"><span class="tec-avatar">{{ c.tecnico | iniciales }}</span><strong>{{ c.tecnico ?? '—' }}</strong></div>
               </div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> CONTACTO EN SITIO</small><strong>{{ c.contacto ?? '—' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> FECHA DE EJECUCIÓN</small><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> HORARIO DE TRABAJO</small><strong>{{ c.horaInicio ?? '—' }} - {{ c.horaFin ?? '—' }}</strong></div>
-              <div class="info-item"><small><span class="material-symbols-outlined">lock</span> PROPUESTA ORIGEN</small><strong class="link">{{ c.numeroPropuesta ?? '—' }} <span class="muted">v{{ c.versionPropuesta }}</span></strong></div>
+              <div class="info-item"><small>CONTACTO EN SITIO</small><strong>{{ c.contacto ?? '—' }}</strong></div>
+              <div class="info-item"><small>FECHA DE EJECUCIÓN</small><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }}</strong></div>
+              <div class="info-item"><small>HORARIO DE TRABAJO</small><strong>{{ c.horaInicio ?? '—' }} - {{ c.horaFin ?? '—' }}</strong></div>
+              <div class="info-item"><small>PROPUESTA ORIGEN</small><strong class="link">{{ c.numeroPropuesta ?? '—' }} <span class="muted">v{{ c.versionPropuesta }}</span></strong></div>
             </div>
-          </section>
+          </app-seccion>
 
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">checklist</span>
-              <div>
-                <h3>2. Detalle del Procedimiento Ejecutado</h3>
-                <p class="card__sub">Marca los procedimientos realizados en campo. Puedes añadir o quitar según corresponda.</p>
-              </div>
-              <span class="chip chip--azul">{{ pasosEjecutados() }} / {{ procedimientoDraft.length }} ejecutados</span>
-            </header>
+          <app-seccion
+            icono="checklist"
+            titulo="2. Detalle del Procedimiento Ejecutado"
+            subtitulo="Pasos ejecutados por el técnico desde la app móvil. Solo lectura."
+            [badgeTexto]="'LECTURA PROTEGIDA'"
+            badgeVariant="dark">
 
             @if (procedimientoDraft.length === 0) {
-              <p class="vacio">Aún no hay pasos registrados.</p>
+              <p class="vacio">El técnico no registró pasos para este servicio.</p>
             }
 
-            <ol class="pasos-edit">
+            <ol class="pasos-lectura">
               @for (p of procedimientoDraft; track $index) {
-                <li class="paso-edit" [class.paso-edit--no]="!p.realizado">
-                  <button class="paso-edit__check" type="button" (click)="togglePaso($index)"
-                          [attr.aria-pressed]="p.realizado">
-                    <span class="material-symbols-outlined">{{ p.realizado ? 'check_box' : 'check_box_outline_blank' }}</span>
-                  </button>
-                  <div class="paso-edit__body">
-                    <input class="paso-edit__titulo" type="text" placeholder="Título del procedimiento"
-                           [(ngModel)]="p.titulo">
-                    <input class="paso-edit__detalle" type="text" placeholder="Detalle / nota"
-                           [(ngModel)]="p.detalle">
+                <li class="paso-lectura" [class.paso-lectura--no]="!p.realizado">
+                  <span class="paso-lectura__check" [class.paso-lectura__check--ok]="p.realizado">
+                    <span class="material-symbols-outlined">{{ p.realizado ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                  </span>
+                  <div class="paso-lectura__body">
+                    <strong>{{ p.titulo }}</strong>
+                    @if (p.detalle) { <small>{{ p.detalle }}</small> }
                   </div>
                   @if (!p.realizado) {
                     <span class="chip chip--ambar">No realizado</span>
                   }
-                  <button class="paso-edit__del" type="button" (click)="eliminarPaso($index)" title="Eliminar">
-                    <span class="material-symbols-outlined">delete</span>
-                  </button>
                 </li>
               }
             </ol>
-
-            <button class="btn-agregar" type="button" (click)="agregarPaso()">
-              <span class="material-symbols-outlined">add_circle</span>
-              Agregar procedimiento adicional
-            </button>
-          </section>
+          </app-seccion>
         }
 
         <!-- ═══ PASO 2: ENSAYOS ═════════════════════════════════════════ -->
         @if (paso() === 2) {
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">science</span>
-              <div>
-                <h3>1. Resultado Global de los Ensayos</h3>
-                <p class="card__sub">Parámetros de referencia y conclusión técnica</p>
-              </div>
-            </header>
-            <div class="form-grid form-grid--3">
-              <div class="field"><label>NORMATIVA</label>
-                <input type="text" [(ngModel)]="resultadoDraft.normativa" placeholder="OIML R-76 / INACAL"></div>
-              <div class="field"><label>PATRÓN DE ENSAYO</label>
-                <input type="text" [(ngModel)]="resultadoDraft.patronEnsayo" placeholder="M1 #LOT-2024"></div>
-              <div class="field"><label>TOLERANCIA EXCENTRICIDAD</label>
-                <input type="number" step="0.01" [(ngModel)]="resultadoDraft.toleranciaExcentricidad"></div>
-              <div class="field"><label>RESULTADO GLOBAL</label>
+          <app-seccion
+            icono="science"
+            titulo="1. Resultado Global de los Ensayos"
+            subtitulo="Parámetros de referencia y conclusión técnica">
+            <div class="grid-cols-3">
+              <app-campo label="Normativa">
+                <input type="text" [(ngModel)]="resultadoDraft.normativa" placeholder="OIML R-76 / INACAL">
+              </app-campo>
+              <app-campo label="Patrón de ensayo">
+                <input type="text" [(ngModel)]="resultadoDraft.patronEnsayo" placeholder="M1 #LOT-2024">
+              </app-campo>
+              <app-campo label="Tolerancia excentricidad">
+                <input type="number" step="0.01" [(ngModel)]="resultadoDraft.toleranciaExcentricidad">
+              </app-campo>
+              <app-campo label="Resultado global">
                 <select [(ngModel)]="resultadoDraft.resultadoGlobal">
                   <option [ngValue]="null">Sin definir</option>
                   <option [ngValue]="'dentro'">Dentro de tolerancia</option>
                   <option [ngValue]="'fuera'">Fuera de tolerancia</option>
-                </select></div>
-              <div class="field"><label>ERROR MÁXIMO</label>
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.errorMaximo"></div>
-              <div class="field"><label>DETALLE DEL ERROR MÁX.</label>
-                <input type="text" [(ngModel)]="resultadoDraft.errorMaximoDetalle" placeholder="%, kg, g..."></div>
-              <div class="field"><label>INCERTIDUMBRE</label>
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.incertidumbre"></div>
-              <div class="field"><label>FACTOR K</label>
-                <input type="number" step="0.1" [(ngModel)]="resultadoDraft.factorK"></div>
-              <div class="field field--wide"><label>DECISIÓN TÉCNICA</label>
-                <textarea rows="2" [(ngModel)]="resultadoDraft.decisionTecnica"
-                          placeholder="Ej. Equipo apto para seguir en operación."></textarea></div>
+                </select>
+              </app-campo>
+              <app-campo label="Error máximo">
+                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.errorMaximo">
+              </app-campo>
+              <app-campo label="Detalle del error máx.">
+                <input type="text" [(ngModel)]="resultadoDraft.errorMaximoDetalle" placeholder="%, kg, g...">
+              </app-campo>
+              <app-campo label="Incertidumbre">
+                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.incertidumbre">
+              </app-campo>
+              <app-campo label="Factor K">
+                <input type="number" step="0.1" [(ngModel)]="resultadoDraft.factorK">
+              </app-campo>
             </div>
-          </section>
+            <app-campo label="Decisión técnica">
+              <textarea rows="2" [(ngModel)]="resultadoDraft.decisionTecnica"
+                        placeholder="Ej. Equipo apto para seguir en operación."></textarea>
+            </app-campo>
+          </app-seccion>
 
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">monitor_weight</span>
-              <div>
-                <h3>2. Ensayos Registrados</h3>
-                <p class="card__sub">Pesaje y excentricidad. {{ ensayosNoConformes() }} no conformes.</p>
-              </div>
-              <div class="card__botones">
-                <button class="btn-agregar btn-agregar--mini" type="button" (click)="agregarEnsayo('pesaje')">
-                  <span class="material-symbols-outlined">add</span> Pesaje
-                </button>
-                <button class="btn-agregar btn-agregar--mini" type="button" (click)="agregarEnsayo('excentricidad')">
-                  <span class="material-symbols-outlined">add</span> Excentricidad
-                </button>
-              </div>
-            </header>
+          <app-seccion
+            icono="monitor_weight"
+            titulo="2. Ensayos Registrados"
+            [subtitulo]="'Pesaje y excentricidad. ' + ensayosNoConformes() + ' no conformes.'">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('pesaje')">
+                Pesaje
+              </app-button>
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('excentricidad')">
+                Excentricidad
+              </app-button>
+            </div>
 
             @if (ensayosDraft.length === 0) {
               <p class="vacio">Aún no hay ensayos registrados.</p>
@@ -235,20 +231,17 @@
                 </tbody>
               </table>
             }
-          </section>
+          </app-seccion>
         }
 
         <!-- ═══ PASO 3: FOTOS Y DESCRIPCIÓN ═════════════════════════════ -->
         @if (paso() === 3) {
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">photo_library</span>
-              <div>
-                <h3>1. Fotos del Servicio</h3>
-                <p class="card__sub">Capturadas por el técnico desde la app móvil. Solo lectura.</p>
-              </div>
-              <span class="chip chip--gris">{{ fotos().length }} fotos</span>
-            </header>
+          <app-seccion
+            icono="photo_library"
+            titulo="1. Fotos del Servicio"
+            subtitulo="Capturadas por el técnico desde la app móvil. Solo lectura."
+            [badgeTexto]="fotos().length + ' fotos'"
+            badgeVariant="dark">
 
             @if (fotos().length === 0) {
               <p class="vacio vacio--grande">
@@ -268,20 +261,18 @@
                 }
               </div>
             }
-          </section>
+          </app-seccion>
 
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">description</span>
-              <div>
-                <h3>2. Descripción Complementaria del Supervisor</h3>
-                <p class="card__sub">Notas internas o contexto adicional que acompañan el informe</p>
-              </div>
-            </header>
-            <textarea class="textarea-grande" rows="6"
-                      [(ngModel)]="descripcionDraft"
-                      placeholder="Observaciones adicionales del supervisor técnico sobre este servicio..."></textarea>
-          </section>
+          <app-seccion
+            icono="description"
+            titulo="2. Descripción Complementaria del Supervisor"
+            subtitulo="Notas internas o contexto adicional que acompañan el informe">
+            <app-campo>
+              <textarea rows="6"
+                        [(ngModel)]="descripcionDraft"
+                        placeholder="Observaciones adicionales del supervisor técnico sobre este servicio..."></textarea>
+            </app-campo>
+          </app-seccion>
         }
 
         <!-- ═══ PASO 4: HALLAZGOS Y PRECOTIZACIÓN ═══════════════════════ -->
@@ -296,17 +287,15 @@
           }
 
           <!-- Observaciones -->
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">warning</span>
-              <div>
-                <h3>1. Observaciones Detectadas</h3>
-                <p class="card__sub">Hallazgos encontrados durante el servicio</p>
-              </div>
-              <button class="btn-agregar btn-agregar--mini" type="button" (click)="agregarObservacion()">
-                <span class="material-symbols-outlined">add</span> Observación
-              </button>
-            </header>
+          <app-seccion
+            icono="warning"
+            titulo="1. Observaciones Detectadas"
+            subtitulo="Hallazgos encontrados durante el servicio">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarObservacion()">
+                Observación
+              </app-button>
+            </div>
 
             @if (observacionesDraft.length === 0) {
               <p class="vacio">Este servicio se cerró sin observaciones.</p>
@@ -319,8 +308,7 @@
                     <span class="hallazgo__codigo">OBS-{{ $index + 1 }}</span>
                     <input class="hallazgo__titulo" type="text" placeholder="Título de la observación"
                            [(ngModel)]="o.titulo">
-                    <select class="hallazgo__nivel" [(ngModel)]="o.nivelAfectacion"
-                            [class]="claseNivel(o.nivelAfectacion)">
+                    <select class="hallazgo__nivel" [(ngModel)]="o.nivelAfectacion">
                       <option [ngValue]="'critico'">Crítico</option>
                       <option [ngValue]="'alto'">Alto</option>
                       <option [ngValue]="'medio'">Medio</option>
@@ -341,20 +329,18 @@
                 </article>
               }
             </div>
-          </section>
+          </app-seccion>
 
           <!-- Recomendaciones -->
-          <section class="card">
-            <header class="card__head">
-              <span class="material-symbols-outlined">lightbulb</span>
-              <div>
-                <h3>2. Recomendaciones Técnicas</h3>
-                <p class="card__sub">Acciones correctivas sugeridas al cliente</p>
-              </div>
-              <button class="btn-agregar btn-agregar--mini" type="button" (click)="agregarRecomendacion()">
-                <span class="material-symbols-outlined">add</span> Recomendación
-              </button>
-            </header>
+          <app-seccion
+            icono="lightbulb"
+            titulo="2. Recomendaciones Técnicas"
+            subtitulo="Acciones correctivas sugeridas al cliente">
+            <div headerActions class="card__botones">
+              <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarRecomendacion()">
+                Recomendación
+              </app-button>
+            </div>
 
             @if (recomendacionesDraft.length === 0) {
               <p class="vacio">Sin recomendaciones registradas.</p>
@@ -367,8 +353,7 @@
                     <span class="hallazgo__codigo">REC-{{ $index + 1 }}</span>
                     <input class="hallazgo__titulo" type="text" placeholder="Título de la recomendación"
                            [(ngModel)]="r.titulo">
-                    <select class="hallazgo__nivel" [(ngModel)]="r.prioridad"
-                            [class]="clasePrioridadRecom(r.prioridad)">
+                    <select class="hallazgo__nivel" [(ngModel)]="r.prioridad">
                       <option [ngValue]="'alta'">Prioridad Alta</option>
                       <option [ngValue]="'media'">Prioridad Media</option>
                       <option [ngValue]="'baja'">Prioridad Baja</option>
@@ -386,23 +371,21 @@
                 </article>
               }
             </div>
-          </section>
+          </app-seccion>
 
           <!-- Precotización -->
           @if (requierePrecotizacion()) {
-            <section class="card card--acento-rojo">
-              <header class="card__head">
-                <span class="material-symbols-outlined">receipt_long</span>
-                <div>
-                  <h3>3. Precotización Técnica
-                    <span class="chip chip--rojo chip--mini">Obligatoria</span>
-                  </h3>
-                  <p class="card__sub">Ítems/repuestos a cotizar. Se envía a Comercial como insumo para la propuesta derivada.</p>
-                </div>
-                <button class="btn-agregar btn-agregar--mini" type="button" (click)="agregarItemPrecot()">
-                  <span class="material-symbols-outlined">add</span> Ítem
-                </button>
-              </header>
+            <app-seccion
+              icono="receipt_long"
+              titulo="3. Precotización Técnica"
+              subtitulo="Ítems/repuestos a cotizar. Se envía a Comercial como insumo para la propuesta derivada."
+              badgeTexto="Obligatoria"
+              badgeVariant="rojo">
+              <div headerActions class="card__botones">
+                <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarItemPrecot()">
+                  Ítem
+                </app-button>
+              </div>
 
               @if (precotizacionDraft.length === 0) {
                 <p class="vacio">Aún no has registrado ítems en la precotización.</p>
@@ -445,85 +428,86 @@
                 <textarea rows="2" [(ngModel)]="notaPrecotDraft"
                           placeholder="Contexto u observaciones del supervisor para el área comercial..."></textarea>
               </div>
-            </section>
+            </app-seccion>
           }
         }
       </main>
 
       <!-- ═══ SIDEBAR DERECHO ══════════════════════════════════════════ -->
       <aside class="fe-side">
-        <section class="side-card">
-          <header class="side-card__head">
-            <span class="material-symbols-outlined">folder</span>
-            <h4>Resumen del Informe</h4>
-          </header>
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">RESUMEN DEL INFORME</span>
+          </div>
           <div class="side-list">
-            <div><span>Orden de Servicio:</span><strong>{{ c.numeroOs ?? '—' }}</strong></div>
-            <div><span>Requerimiento origen:</span><strong class="link">{{ c.numeroRq ?? '—' }}</strong></div>
-            <div><span>Cliente:</span><strong>{{ c.razonSocial ?? '—' }}</strong></div>
+            <div><span>Orden de Servicio</span><strong>{{ c.numeroOs ?? '—' }}</strong></div>
+            <div><span>Requerimiento</span><strong class="link">{{ c.numeroRq ?? '—' }}</strong></div>
+            <div><span>Cliente</span><strong>{{ c.razonSocial ?? '—' }}</strong></div>
             <div>
-              <span>Técnico de campo:</span>
-              <strong class="tec-row">
-                <span class="tec-avatar">{{ c.tecnico | iniciales }}</span>
-                {{ c.tecnico ?? '—' }}
-              </strong>
+              <span>Técnico de campo</span>
+              <strong>{{ c.tecnico ?? '—' }}</strong>
             </div>
-            <div><span>Ejecutado el:</span><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }} {{ c.horaInicio }}</strong></div>
-            <div><span>Duración en campo:</span>
+            <div><span>Ejecutado el</span><strong>{{ c.fechaEjecucion | date:'dd/MM/yyyy' }} {{ c.horaInicio }}</strong></div>
+            <div><span>Duración en campo</span>
               <strong>
                 @if (c.duracionMin) { {{ (c.duracionMin / 60) | number:'1.0-0' }}h {{ c.duracionMin % 60 }}m }
                 @else { — }
               </strong>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="side-card">
-          <header class="side-card__head">
-            <span class="material-symbols-outlined">fact_check</span>
-            <h4>Checklist de Guardado</h4>
-          </header>
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">CHECKLIST DE GUARDADO</span>
+          </div>
           <ul class="checklist">
-            <li><span class="material-symbols-outlined check">check_circle</span> Datos generales <span class="chip chip--verde">Completado</span></li>
             <li>
               <span class="material-symbols-outlined check">check_circle</span>
-              Procedimiento registrado
-              <span class="chip chip--azul">{{ pasosEjecutados() }}/{{ procedimientoDraft.length }}</span>
+              <span>Datos generales</span>
+              <small class="checklist__meta">Completo</small>
             </li>
             <li>
               <span class="material-symbols-outlined check">check_circle</span>
-              Observaciones
-              <span class="chip chip--azul">{{ observacionesDraft.length }}</span>
+              <span>Procedimiento registrado</span>
+              <small class="checklist__meta">{{ pasosEjecutados() }} / {{ procedimientoDraft.length }}</small>
             </li>
             <li>
               <span class="material-symbols-outlined check">check_circle</span>
-              Recomendaciones
-              <span class="chip chip--azul">{{ recomendacionesDraft.length }}</span>
+              <span>Observaciones</span>
+              <small class="checklist__meta">{{ observacionesDraft.length }}</small>
             </li>
             <li>
               <span class="material-symbols-outlined check">check_circle</span>
-              Ensayos registrados
-              <span class="chip chip--azul">{{ ensayosDraft.length }}</span>
+              <span>Recomendaciones</span>
+              <small class="checklist__meta">{{ recomendacionesDraft.length }}</small>
+            </li>
+            <li>
+              <span class="material-symbols-outlined check">check_circle</span>
+              <span>Ensayos registrados</span>
+              <small class="checklist__meta">{{ ensayosDraft.length }}</small>
             </li>
             @if (requierePrecotizacion()) {
-              <li>
-                <span class="material-symbols-outlined check-rojo">warning</span>
-                Precotización completa
-                @if (precotizacionDraft.length === 0) {
-                  <span class="chip chip--rojo">Pendiente</span>
-                } @else {
-                  <span class="chip chip--verde">{{ precotizacionDraft.length }} ítems</span>
-                }
+              <li [class.checklist__li--alerta]="precotizacionDraft.length === 0">
+                <span class="material-symbols-outlined"
+                      [class.check]="precotizacionDraft.length > 0"
+                      [class.check-rojo]="precotizacionDraft.length === 0">
+                  {{ precotizacionDraft.length > 0 ? 'check_circle' : 'warning' }}
+                </span>
+                <span>Precotización</span>
+                <small class="checklist__meta" [class.checklist__meta--alerta]="precotizacionDraft.length === 0">
+                  @if (precotizacionDraft.length === 0) { Pendiente }
+                  @else { {{ precotizacionDraft.length }} ítems }
+                </small>
               </li>
             }
           </ul>
-        </section>
+        </div>
 
-        <section class="side-card">
-          <header class="side-card__head">
-            <span class="material-symbols-outlined">history</span>
-            <h4>Historial Reciente</h4>
-          </header>
+        <div class="sidebar-card">
+          <div class="sidebar-card__header">
+            <span class="sidebar-card__modo">HISTORIAL RECIENTE</span>
+          </div>
           @if (historialReciente().length === 0) {
             <p class="vacio vacio--mini">Sin eventos aún.</p>
           } @else {
@@ -540,32 +524,39 @@
               }
             </ul>
           }
-        </section>
+        </div>
       </aside>
-    </div>
 
-    <!-- ── Footer sticky ─────────────────────────────────────────────── -->
-    <div class="fe-footer">
-      <div class="fe-footer__izq">
-        <button class="mdi__link" type="button" (click)="cancelar()">
-          <span class="material-symbols-outlined">arrow_back</span>
-          Cancelar
-        </button>
-        @if (ultimoGuardado(); as fecha) {
-          <span class="fe-footer__hint">Último guardado {{ fecha | date:'HH:mm' }}</span>
-        }
-      </div>
-      <div class="fe-footer__der">
-        <app-button variant="ghost" icono="chevron_left" [disabled]="paso() === 1" (clic)="anteriorPaso()">Anterior</app-button>
-        @if (paso() < 4) {
-          <app-button variant="secondary" icono="chevron_right" (clic)="siguientePaso()">Siguiente</app-button>
-        }
-        <app-button variant="primary" icono="save"
-                    [disabled]="guardando()"
-                    [cargando]="guardando()"
-                    (clic)="guardar()">
-          Guardar cambios
-        </app-button>
+      <!-- ── Footer sticky dentro del grid (patrón wizard propuesta) ──── -->
+      <div class="ficha-footer">
+        <div class="wizard__footer">
+          <div class="wizard__footer-izq">
+            @if (paso() > 1) {
+              <app-button variant="secondary" tamano="md" icono="arrow_back" (clic)="anteriorPaso()">
+                Atrás
+              </app-button>
+            }
+            <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">
+              Cancelar
+            </app-button>
+          </div>
+          <div class="wizard__footer-der">
+            @if (ultimoGuardado(); as fecha) {
+              <small class="wizard__footer-hint">Último guardado {{ fecha | date:'HH:mm' }}</small>
+            }
+            <app-button variant="ghost" tamano="md" icono="save"
+                        [disabled]="guardando()"
+                        [cargando]="guardando()"
+                        (clic)="guardar()">
+              {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+            </app-button>
+            @if (paso() < 4) {
+              <app-button variant="primary" tamano="md" icono="chevron_right" (clic)="siguientePaso()">
+                Continuar
+              </app-button>
+            }
+          </div>
+        </div>
       </div>
     </div>
 

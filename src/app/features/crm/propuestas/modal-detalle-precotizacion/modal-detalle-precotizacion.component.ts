@@ -43,6 +43,10 @@ export class ModalDetallePrecotizacionComponent implements OnInit {
 
   readonly chipEstado = computed(() => this.esConvertida() ? 'chip chip--verde' : 'chip chip--ambar');
 
+  readonly tab = signal<'detalle' | 'trazabilidad'>('detalle');
+
+  cambiarTab(t: 'detalle' | 'trazabilidad'): void { this.tab.set(t); }
+
   async ngOnInit(): Promise<void> { await this.cargar(); }
 
   async cargar(): Promise<void> {

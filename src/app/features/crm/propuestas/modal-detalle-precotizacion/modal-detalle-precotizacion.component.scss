@@ -60,6 +60,43 @@
   display: flex; flex-direction: column; gap: 16px;
 }
 
+// ── Tabs ────────────────────────────────────────────────────────────────
+.mdp__tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 4px;
+}
+.mdp__tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: transparent; border: 0; cursor: pointer;
+  color: #64748B; font-size: 13px; font-weight: 600;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+  .material-symbols-outlined { font-size: 18px; }
+  &:hover { color: #0F172A; }
+  &--activo {
+    color: #2563EB;
+    border-bottom-color: #2563EB;
+  }
+}
+.mdp__tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px;
+  background: #DBEAFE; color: #1D4ED8;
+  font-size: 11px; font-weight: 700;
+}
+
+.traza-vacio {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 60px 20px;
+  color: #94A3B8; text-align: center;
+  .material-symbols-outlined { font-size: 36px; }
+  p { margin: 0; font-size: 13px; }
+}
+
 .loading {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 80px; color: #64748B; font-size: 14px;

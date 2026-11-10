@@ -46,6 +46,22 @@
     </div>
   }
 
+  <!-- ── Banner "Nace de Precotización" (HU-60) ──────────────────────────────── -->
+  @if (origenPrecotizacion(); as p) {
+    <div class="banner-precot">
+      <span class="material-symbols-outlined banner-precot__icono">receipt_long</span>
+      <div class="banner-precot__texto">
+        <strong>Propuesta derivada de la Precotización
+          <span class="banner-precot__codigo">{{ p.numero }}</span>
+        </strong>
+        <span>
+          Se precargaron el cliente, el requerimiento y los ítems sugeridos por el supervisor técnico.
+          Al generar la propuesta, la precotización quedará marcada como <em>Convertida</em>.
+        </span>
+      </div>
+    </div>
+  }
+
   <!-- ── Banner propuesta existente ──────────────────────────────────────────── -->
   @if (propuestaPrevia() && !bannerCerrado()) {
     <div class="banner-aviso">

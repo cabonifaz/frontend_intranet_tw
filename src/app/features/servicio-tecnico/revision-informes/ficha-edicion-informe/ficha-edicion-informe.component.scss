@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 .pagina {
-  padding: 24px 24px 100px; // extra bottom para que no tape el footer sticky
+  padding: 24px;
   display: flex; flex-direction: column; gap: 16px;
   background: #F8FAFC;
   min-height: calc(100vh - 56px);
@@ -34,90 +34,85 @@
   &--ambar { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; }
 }
 
-// ── Header ──────────────────────────────────────────────────────────────
-.fe-head {
-  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
-  padding: 18px 22px;
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 16px;
-}
-.fe-head__izq { display: flex; gap: 14px; align-items: flex-start; flex: 1; min-width: 0; }
-.fe-head__icono {
-  width: 46px; height: 46px; border-radius: 10px;
-  background: #DBEAFE; color: #1D4ED8;
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  .material-symbols-outlined { font-size: 24px; }
-}
-.fe-head__titulo { margin: 0; font-size: 20px; font-weight: 700; color: #0F172A; }
-.fe-head__sub { margin: 4px 0 0; font-size: 13px; color: #64748B; strong { color: #0F172A; font-weight: 600; } }
-.fe-head__der { display: flex; align-items: center; gap: 10px; }
-.fe-head__os {
-  background: #F1F5F9; color: #0F172A;
-  padding: 4px 10px; border-radius: 6px;
-  font-size: 12.5px; font-weight: 700; font-family: monospace;
-}
-
-// ── Stepper ────────────────────────────────────────────────────────────
+// ── Stepper horizontal (mismo patrón que wizard propuesta) ──────────────
 .stepper {
-  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
-  padding: 16px 22px;
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
   overflow-x: auto;
-}
-.step {
-  background: transparent; border: 0; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 10px; padding: 2px 6px;
-  &__num {
-    width: 34px; height: 34px; border-radius: 50%;
+
+  &__paso {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #94A3B8;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover { background: #F8FAFC; color: #475569; }
+
+    &--completado {
+      color: #059669;
+      .stepper__numero {
+        background: #ECFDF5; color: #059669; border-color: #A7F3D0;
+        .material-symbols-outlined { font-size: 16px; }
+      }
+    }
+
+    &--activo {
+      color: #0F172A; background: #EFF6FF; font-weight: 600;
+      .stepper__numero { background: #2563EB; color: #FFFFFF; border-color: #2563EB; }
+    }
+  }
+
+  &__dot {
     display: inline-flex; align-items: center; justify-content: center;
-    background: #F1F5F9; color: #94A3B8;
-    font-size: 15px; font-weight: 700;
-    border: 2px solid #E2E8F0;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    background: #DC2626; color: #FFF;
+    border-radius: 999px;
+    font-size: 10px; font-weight: 700; line-height: 1;
+  }
+
+  &__numero {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #F1F5F9; color: #64748B;
+    border: 1px solid #E2E8F0;
+    font-size: 12px; font-weight: 700;
     flex-shrink: 0;
   }
-  &__info { display: flex; flex-direction: column; text-align: left; min-width: 0;
-    small { font-size: 10.5px; color: #94A3B8; font-weight: 700; letter-spacing: 0.4px; display: inline-flex; align-items: center; gap: 6px; }
-    strong { font-size: 13.5px; color: #64748B; font-weight: 600; white-space: nowrap; }
-  }
-  &__linea { flex: 1; min-width: 20px; max-width: 80px; border-top: 2px dashed #E2E8F0; }
 
-  &--activo {
-    .step__num { background: #2563EB; border-color: #2563EB; color: #FFFFFF; }
-    .step__info small { color: #2563EB; }
-    .step__info strong { color: #0F172A; }
-  }
-  &--hecho {
-    .step__num { background: #DBEAFE; border-color: #93C5FD; color: #1D4ED8; }
-    .step__info strong { color: #0F172A; }
+  &__separador {
+    flex: 1; min-width: 12px; height: 1px;
+    background: #E2E8F0; margin: 0 2px;
   }
 }
 
 // ── Grid 2 columnas (main + sidebar) ────────────────────────────────────
 .fe-grid {
-  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px;
+  align-items: start;
   @media (max-width: 1100px) { grid-template-columns: 1fr; }
 }
 
 .fe-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .fe-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
-// ── Cards ───────────────────────────────────────────────────────────────
-.card {
-  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
-  padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 14px;
-  &__head {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding-bottom: 12px; border-bottom: 1px solid #F1F5F9;
-    > .material-symbols-outlined { color: #2563EB; font-size: 22px; flex-shrink: 0; margin-top: 2px; }
-    > div { flex: 1; min-width: 0; }
-    h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0F172A; display: inline-flex; align-items: center; gap: 8px; }
-    .card__sub { margin: 4px 0 0; font-size: 12.5px; color: #64748B; }
-  }
-  &__botones { display: flex; gap: 8px; align-items: center; }
-  &--locked { background: #F8FAFC; }
-  &--acento-rojo { border-left: 3px solid #DC2626; }
-}
+// Footer vive dentro del grid ocupando TODO el ancho (main + sidebar)
+.ficha-footer { grid-column: 1 / -1; margin-top: 4px; }
+
+// Botones del header de las secciones (usado con headerActions)
+.card__botones { display: flex; gap: 8px; align-items: center; }
 
 // ── Info grid (locked, clave/valor) ─────────────────────────────────────
 .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px;
@@ -127,46 +122,48 @@
   display: flex; flex-direction: column; gap: 3px; min-width: 0;
   small { font-size: 10.5px; color: #64748B; font-weight: 600; letter-spacing: 0.3px; display: inline-flex; align-items: center; gap: 4px;
     .material-symbols-outlined { font-size: 12px; color: #94A3B8; } }
-  strong { font-size: 13px; color: #0F172A; font-weight: 600; }
+  strong { font-size: 13px; color: #0F172A; font-weight: 500; }
   &--wide { grid-column: 1 / -1; }
 }
 .muted { color: #94A3B8; font-weight: 500; }
-.link { color: #2563EB; }
+.link { color: #2563EB; font-weight: 500; }
 .tec-row { display: inline-flex; align-items: center; gap: 8px; }
 .tec-avatar {
   width: 24px; height: 24px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  background: #0F172A; color: #FFFFFF;
+  background: #DBEAFE; color: #1D4ED8;
   font-size: 10px; font-weight: 700;
 }
 
-// ── Pasos editable (checklist procedimiento) ────────────────────────────
-.pasos-edit { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.paso-edit {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; background: #EFF6FF; border: 1px solid #DBEAFE; border-radius: 10px;
-  &__check { background: transparent; border: 0; cursor: pointer; color: #2563EB; display: inline-flex;
-    .material-symbols-outlined { font-size: 26px; } }
-  &__body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  &__titulo { background: transparent; border: 0; font-size: 14px; color: #0F172A; font-weight: 600; outline: none;
-    &:focus { border-bottom: 1px solid #2563EB; } }
-  &__detalle { background: transparent; border: 0; font-size: 12.5px; color: #64748B; outline: none;
-    &:focus { border-bottom: 1px solid #93C5FD; } }
-  &__del { background: transparent; border: 0; cursor: pointer; color: #94A3B8;
-    &:hover { color: #DC2626; } }
-  &--no { background: #F8FAFC; border-color: #E2E8F0;
-    .paso-edit__check { color: #94A3B8; } }
+// ── Pasos de solo lectura (procedimiento ejecutado por el técnico) ──────
+.pasos-lectura { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.paso-lectura {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  &__check { color: #CBD5E1; display: inline-flex;
+    .material-symbols-outlined { font-size: 20px; }
+    &--ok { color: #16A34A; }
+  }
+  &__body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    strong { font-size: 13px; color: #0F172A; font-weight: 500; }
+    small { font-size: 12px; color: #64748B; }
+  }
+  &--no {
+    background: #F8FAFC;
+    .paso-lectura__body strong { color: #94A3B8; }
+  }
 }
 
 .btn-agregar {
   display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; border: 1px dashed #93C5FD; border-radius: 10px;
-  color: #2563EB; font-size: 13px; font-weight: 600; cursor: pointer;
-  padding: 10px 14px;
+  background: transparent; border: 1px dashed #CBD5E1; border-radius: 8px;
+  color: #475569; font-size: 12.5px; font-weight: 500; cursor: pointer;
+  padding: 8px 14px;
   width: 100%; justify-content: center;
-  .material-symbols-outlined { font-size: 18px; }
-  &:hover { background: #EFF6FF; border-color: #2563EB; }
-  &--mini { width: auto; padding: 6px 10px; font-size: 12px; border-style: solid; background: #EFF6FF; }
+  margin-top: 8px;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #F8FAFC; border-color: #94A3B8; color: #0F172A; }
+  &--mini { width: auto; padding: 6px 10px; font-size: 12px; border-style: solid; background: #F8FAFC; margin-top: 0; }
 }
 
 // ── Forms grid genérico ─────────────────────────────────────────────────
@@ -194,49 +191,65 @@
   &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 }
 
-// ── Tabla editable (ensayos, precotización) ─────────────────────────────
+// ── Tabla editable (ensayos, precotización) — patrón wizard propuesta ───
 .tabla-edit {
-  width: 100%; border-collapse: collapse; font-size: 13px;
-  th { text-align: left; padding: 10px 10px; font-size: 10.5px; color: #64748B;
-    font-weight: 700; letter-spacing: 0.3px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; }
-  td { padding: 8px 6px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  thead { background: #F8FAFC; }
+  th {
+    text-align: left; padding: 8px 6px;
+    font-size: 10px; font-weight: 700; color: #64748B; letter-spacing: 0.4px;
+    border-bottom: 1px solid #E2E8F0; line-height: 1.2;
+    &.num { text-align: right; }
+  }
+  td { padding: 6px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; color: #475569; }
   .num { text-align: right; }
   input, select {
-    width: 100%; padding: 6px 8px; border: 1px solid #E2E8F0; border-radius: 6px;
-    font-size: 13px; background: #FFFFFF; font-family: inherit;
-    &:focus { outline: none; border-color: #2563EB; }
+    width: 100%; padding: 4px 6px;
+    border: 1px solid transparent; border-radius: 4px;
+    font-size: 12px; background: transparent; color: #0F172A;
+    font-family: inherit;
+    &:hover { border-color: #E2E8F0; background: #FFFFFF; }
+    &:focus { outline: none; border-color: #93C5FD; background: #FFFFFF; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
   }
-  input[type="number"] { font-family: monospace; }
+  input[type="number"] { font-family: 'SF Mono', 'Monaco', monospace; text-align: right; }
 }
 
 // ── Hallazgos (observaciones y recomendaciones) ─────────────────────────
 .hallazgo-lista { display: flex; flex-direction: column; gap: 10px; }
 .hallazgo {
   background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
   &__head { display: flex; align-items: center; gap: 10px; }
   &__codigo {
-    background: #F1F5F9; color: #0F172A;
+    background: #F1F5F9; color: #475569;
     padding: 3px 8px; border-radius: 6px;
-    font-size: 11px; font-weight: 700; font-family: monospace;
+    font-size: 11px; font-weight: 700; font-family: 'SF Mono', 'Monaco', monospace;
     flex-shrink: 0;
   }
   &__titulo {
-    flex: 1; padding: 6px 10px; border: 1px solid #E2E8F0; border-radius: 6px;
-    font-size: 13.5px; font-weight: 600; color: #0F172A;
-    &:focus { outline: none; border-color: #2563EB; }
+    flex: 1; height: 40px; padding: 0 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; font-weight: 500;
+    background: #FFFFFF; font-family: inherit;
+    &::placeholder { color: #94A3B8; }
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
   }
   &__nivel {
-    padding: 4px 10px; border: 0; border-radius: 999px;
-    font-size: 11.5px; font-weight: 700; cursor: pointer;
-    appearance: none;
-    &:focus { outline: 2px solid #2563EB; }
+    height: 40px; padding: 0 32px 0 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; font-weight: 500;
+    background: #FFFFFF; cursor: pointer; appearance: none; font-family: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.35' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
   }
   &__desc {
-    padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 6px;
-    font-size: 13px; color: #334155; background: #FFFFFF;
+    height: auto; min-height: 60px; padding: 10px 12px;
+    border: 1px solid #E2E8F0; border-radius: 8px;
+    font-size: 13px; color: #0F172A; background: #FFFFFF;
     resize: vertical; font-family: inherit;
-    &:focus { outline: none; border-color: #2563EB; }
+    &::placeholder { color: #94A3B8; }
+    &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
   }
 }
 .icono-btn {
@@ -257,31 +270,48 @@
   &:hover { border-color: #93C5FD; }
 }
 
-// ── Sidebar cards ───────────────────────────────────────────────────────
-.side-card {
-  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
-  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
-  &__head {
-    display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid #F1F5F9;
-    .material-symbols-outlined { color: #2563EB; font-size: 18px; }
-    h4 { margin: 0; font-size: 13.5px; font-weight: 700; color: #0F172A; }
+// ── Sidebar cards (patrón wizard propuesta) ─────────────────────────────
+.sidebar-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 10px; border-bottom: 1px solid #F1F5F9;
+  }
+  &__modo {
+    font-size: 9px; font-weight: 700; color: #94A3B8;
+    letter-spacing: 0.6px; text-transform: uppercase;
   }
 }
 .side-list {
   display: flex; flex-direction: column; gap: 10px;
   > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px;
     span { color: #64748B; }
-    strong { color: #0F172A; font-weight: 600; text-align: right; }
+    strong { color: #0F172A; font-weight: 500; text-align: right; }
   }
 }
 .checklist {
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: column; gap: 10px;
-  li { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #334155;
+  li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: #334155;
     .check { color: #16A34A; font-size: 18px; }
     .check-rojo { color: #DC2626; font-size: 18px; }
-    .chip { margin-left: auto; }
+    > span:not(.material-symbols-outlined) { flex: 1; min-width: 0; }
   }
+  &__meta {
+    font-size: 12px; color: #64748B; font-weight: 500;
+    margin-left: auto; flex-shrink: 0;
+    &--alerta { color: #B91C1C; font-weight: 600; }
+  }
+  &__li--alerta { color: #0F172A; }
 }
 .timeline-mini {
   list-style: none; margin: 0; padding: 0 0 0 10px;
@@ -295,7 +325,7 @@
     width: 8px; height: 8px; border-radius: 50%; background: #2563EB;
     border: 2px solid #FFFFFF; box-shadow: 0 0 0 2px #2563EB;
   }
-  strong { font-size: 12px; color: #0F172A; display: block; }
+  strong { font-size: 12px; color: #0F172A; font-weight: 500; display: block; }
   small { font-size: 11px; color: #64748B; }
   p { margin: 2px 0 0; font-size: 12px; color: #334155; }
 }
@@ -311,27 +341,22 @@
   }
 }
 
-// ── Footer sticky ───────────────────────────────────────────────────────
-.fe-footer {
-  position: sticky; bottom: 0;
-  background: #FFFFFF; border-top: 1px solid #E2E8F0;
-  padding: 14px 24px;
+// ── Footer sticky (mismo patrón que wizard propuesta) ───────────────────
+.wizard__footer {
   display: flex; justify-content: space-between; align-items: center;
-  gap: 16px;
-  margin: 0 -24px -100px; // compensa el padding de .pagina
-  box-shadow: 0 -4px 10px -3px rgba(15, 23, 42, 0.05);
+  padding: 14px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  position: sticky;
+  bottom: 20px;
   z-index: 10;
-}
-.fe-footer__izq { display: flex; align-items: center; gap: 16px; }
-.fe-footer__der { display: flex; align-items: center; gap: 10px; }
-.fe-footer__hint { font-size: 12px; color: #64748B; }
-.mdi__link {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: transparent; border: 0; cursor: pointer;
-  color: #475569; font-size: 13px; font-weight: 500;
-  padding: 6px 10px; border-radius: 8px;
-  .material-symbols-outlined { font-size: 18px; }
-  &:hover { background: #F1F5F9; color: #0F172A; }
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+
+  &-izq, &-der {
+    display: flex; gap: 10px; align-items: center;
+  }
+  &-hint { font-size: 12px; color: #64748B; margin-right: 6px; }
 }
 
 // ── Chips (semántica consistente) ───────────────────────────────────────

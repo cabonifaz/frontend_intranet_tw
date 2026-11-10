@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { PropuestaDraftService } from '../../../../core/services/propuesta-draft.service';
 import { PropuestasService } from '../../../../core/services/propuestas.service';
-import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
+import { PrecotizacionesService } from '../../../../core/services/precotizaciones.service';
+import { mapDetalleToDraft, mapDraftToGuardarDto, prellenarDraftDesdePrecotizacion, prellenarDraftDesdeRq } from '../../../../core/services/propuesta-mapper';
 import { PASOS_WIZARD, PasoWizard } from '../../../../core/models/propuesta-detalle.model';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
@@ -26,6 +27,7 @@ export class PropuestaWizardComponent implements OnInit {
   private readonly route         = inject(ActivatedRoute);
   private readonly router        = inject(Router);
   private readonly propuestasSvc = inject(PropuestasService);
+  private readonly precotSvc     = inject(PrecotizacionesService);
   private readonly toast         = inject(ToastService);
   private readonly destroyRef    = inject(DestroyRef);
   readonly draftSvc              = inject(PropuestaDraftService);
@@ -86,6 +88,10 @@ export class PropuestaWizardComponent implements OnInit {
   // ?versionDe=PROP-002581). En el prototipo aparece siempre arriba.
   readonly propuestaPrevia = signal<{ codigo: string; versionSiguiente: string } | null>(null);
 
+  // HU-60: si venimos del botón "Generar Propuesta" en una Precotización, guardamos
+  // id + número para mostrar banner y, al persistir, marcar la precot como convertida.
+  readonly origenPrecotizacion = signal<{ id: number; numero: string } | null>(null);
+
   /** Última corrección pendiente solicitada por el supervisor en VB (null si no hay). */
   readonly correccion = signal<import('../../../../core/models/visto-bueno.model').CorreccionPropuesta | null>(null);
   private readonly vbSvc = inject(VistoBuenoService);
@@ -132,7 +138,8 @@ export class PropuestaWizardComponent implements OnInit {
     //   - Nueva con ?idRequerimiento: GET /api/crm/propuestas/nueva → prellenar
     //   - Nueva sin query: localStorage (continuar borrador en progreso)
     const qp = this.route.snapshot.queryParamMap;
-    const idRequerimiento = Number(qp.get('idRequerimiento') ?? 0);
+    const idRequerimiento   = Number(qp.get('idRequerimiento') ?? 0);
+    const idOrigenPrecot    = Number(qp.get('origenPrecotizacion') ?? 0);
     // Si viene con decisión tomada ya desde el modal anterior (?independiente=1 o ?versionDe=X),
     // no volvemos a mostrar el banner "Propuesta existente detectada".
     const decisionYaTomada = qp.get('independiente') === '1' || !!qp.get('versionDe');
@@ -149,6 +156,30 @@ export class PropuestaWizardComponent implements OnInit {
         this.correccion.set(corr && corr.estado === 'pendiente' ? corr : null);
         // En modo edición nunca mostramos el banner "Propuesta existente detectada": ya
         // estamos dentro de la versión que el usuario eligió editar, no creando una nueva.
+      } else if (idOrigenPrecot > 0) {
+        // HU-60: flujo "Nace de Precotización" — precarga cliente/RQ/ítems desde la precot.
+        // Además, si la precot tiene RQ vinculado, pedimos los datos del RQ para heredar
+        // la condición de pago del cliente y los flags de acreditación (igual que el flujo RQ).
+        this.draftSvc.limpiarStorage('nueva');
+        const precarga = await this.precotSvc.obtenerPrecargaPropuesta(idOrigenPrecot);
+        this.draftSvc.cargarDraft(prellenarDraftDesdePrecotizacion(precarga));
+        this.origenPrecotizacion.set({
+          id:     precarga.cabecera.idPrecotizacion,
+          numero: precarga.cabecera.numero ?? `PCT-${idOrigenPrecot}`,
+        });
+        const idRqPrecot = precarga.cabecera.idRequerimiento ?? 0;
+        if (idRqPrecot > 0) {
+          try {
+            const datosRq = await this.propuestasSvc.obtenerDatosNueva(idRqPrecot);
+            this.draftSvc.actualizar({
+              esAcreditacionRq:       !!datosRq.esAcreditacion,
+              condicionPagoClienteRq: datosRq.condicionPagoCliente ?? null,
+              condicionPagoCodigoRq:  datosRq.condicionPagoCodigo ?? null,
+            });
+          } catch {
+            // Si falla, dejamos el draft solo con lo que trajo la precot (no bloquea el flujo).
+          }
+        }
       } else if (idRequerimiento > 0) {
         // Si el usuario ya decidió (Restaurar/Descartar) en esta sesión del wizard,
         // respetamos la decisión y no volvemos a mostrar el modal.
@@ -295,12 +326,23 @@ export class PropuestaWizardComponent implements OnInit {
     }
   }
 
-  /** Último paso en modo CREATE: guarda la propuesta como borrador y vuelve a la bandeja. */
+  /** Último paso en modo CREATE: guarda la propuesta como borrador y vuelve a la bandeja.
+   *  Si la propuesta nace de una Precotización (HU-60), además marca la precot como convertida. */
   async generarPropuesta(): Promise<void> {
     const ok = await this.persistir();
     if (!ok) return;
-    const codigo = this.draftSvc.draft().codigo;
-    // Ya quedó persistida en el back → limpio el borrador local.
+    const draft  = this.draftSvc.draft();
+    const codigo = draft.codigo;
+    const origen = this.origenPrecotizacion();
+
+    if (origen && draft.idPropuesta) {
+      try {
+        await this.precotSvc.convertir(origen.id, { idPropuesta: draft.idPropuesta });
+      } catch (e: unknown) {
+        this.toast.error(e instanceof Error ? e.message : 'La propuesta se creó, pero no se pudo marcar la precotización como convertida.');
+      }
+    }
+
     this.draftSvc.limpiarStorage('nueva');
     this.toast.exito(`Propuesta ${codigo} creada como borrador.`);
     this.router.navigate(['/crm/propuestas']);

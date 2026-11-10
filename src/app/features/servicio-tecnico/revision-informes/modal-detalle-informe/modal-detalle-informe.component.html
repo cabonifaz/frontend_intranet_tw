@@ -449,7 +449,14 @@
               <div class="galeria">
                 @for (f of fotos(); track f.idEvidencia) {
                   <a class="foto" [href]="f.urlArchivo" target="_blank">
-                    <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''">
+                    <div class="foto__thumb">
+                      <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''"
+                           (error)="$any($event.target).style.display='none'; $any($event.target).nextElementSibling?.classList.add('foto__fallback--visible')">
+                      <div class="foto__fallback">
+                        <span class="material-symbols-outlined">broken_image</span>
+                        <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
+                      </div>
+                    </div>
                     <div class="foto__pie">
                       <span class="foto__momento chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
                       @if (f.georreferenciada) {

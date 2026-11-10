@@ -107,34 +107,35 @@
 .check-item {
   display: grid; grid-template-columns: 24px 1fr auto;
   align-items: center; gap: 12px;
-  padding: 11px 14px; border-radius: 8px;
-  background: #EFF6FF;
+  padding: 10px 14px; border-radius: 8px;
+  background: #FFFFFF; border: 1px solid #E2E8F0;
 
   &__icono {
     font-size: 20px;
-    &--ok  { color: #2563EB; }
+    &--ok  { color: #16A34A; }
     &--mal { color: #DC2626; }
     &--opc { color: #94A3B8; }
   }
   &__body { display: flex; flex-direction: column; gap: 2px; min-width: 0;
-    strong { font-size: 13.5px; color: #0F172A; font-weight: 600; }
+    strong { font-size: 13px; color: #0F172A; font-weight: 500; }
   }
   &__obligatorio { font-size: 10.5px; color: #B91C1C; font-weight: 700; letter-spacing: 0.3px; }
   &__detalle {
-    font-size: 12.5px; color: #64748B; text-align: right; font-weight: 500;
+    font-size: 12px; color: #64748B; text-align: right; font-weight: 500;
   }
-  &--falla { background: #FEF2F2; }
+  &--falla { background: #FEF2F2; border-color: #FECACA; }
 }
 
 // ── Textarea nota ───────────────────────────────────────────────────────
 .textarea {
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #BFDBFE; border-radius: 10px;
-  background: #EFF6FF;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0; border-radius: 8px;
+  background: #FFFFFF;
   font-size: 13px; color: #0F172A; font-family: inherit;
   resize: vertical; min-height: 80px;
-  &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); background: #FFFFFF; }
+  &::placeholder { color: #94A3B8; }
+  &:focus { outline: none; border-color: #93C5FD; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); }
 }
 .textarea-counter {
   text-align: right; font-size: 11.5px; color: #64748B; font-weight: 600;
