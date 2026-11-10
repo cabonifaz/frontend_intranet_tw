@@ -56,9 +56,9 @@
                   (click)="abrirNotificacion(n)">
                 <div class="topbar__notif-fila">
                   <span class="topbar__notif-titulo">{{ n.titulo }}</span>
-                  <span class="topbar__notif-tiempo">{{ n.tiempo }}</span>
+                  <span class="topbar__notif-tiempo">{{ tiempoRelativo(n.fechaCreacion) }}</span>
                 </div>
-                <div class="topbar__notif-cuerpo">{{ n.cuerpo }}</div>
+                <div class="topbar__notif-cuerpo">{{ n.resumen }}</div>
               </li>
             } @empty {
               <li class="topbar__notif-vacio">

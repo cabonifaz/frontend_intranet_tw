@@ -1,278 +1,309 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import {
-  BandejaNotificaciones, FiltrosBandejaNotif, GrupoNotificaciones,
-  LinkDestinoNotif, NotificacionBandeja,
+  BandejaNotificaciones, DetalleNotificacion, DestinoNotif, FiltrosBandejaNotif,
+  GrupoNotifClave, GrupoNotificaciones, ModuloCodigo, NotificacionBandeja,
+  OpcionesFiltroNotif, ResumenNotificaciones, RutaDestinoNotif, TipoNotificacion,
 } from '../models/notificaciones.model';
 
 /**
  * HU-90 — Centro de Notificaciones (Módulo 16).
  *
- * MODO ACTUAL: mock local — el back aún no tiene los endpoints de bandeja/leer/archivar.
- * Contrato pedido en `mensaje-back-modulo-16-notificaciones.md`. Al estar listo, cablar
- * los métodos `obtenerBandeja / marcarLeida / marcarVariasLeidas / archivar / desarchivar`
- * contra el HTTP real y conectar el hub SignalR `/hubs/notificaciones`.
+ * Endpoints (NotificacionesController, /api/notificaciones):
+ *  - GET  /resumen                                → badge + popover del bell (5 últimas + noLeidas)
+ *  - GET  /bandeja?estado=&modulos=&tipos=&...    → bandeja paginada
+ *  - GET  /filtros                                → opciones para los combos (con conteos)
+ *  - GET  /{id}                                   → detalle (marca como leída al abrir)
+ *  - POST /marcar-leidas                          → { ids: [..] } o { todas: true }
+ *  - POST /{id}/archivar                          → solo si está leída
+ *
+ * El tiempo real llega por SignalR en NotificacionesRealtimeService, que actualiza
+ * el mismo signal `estado` que este service expone para que el topbar y la bandeja
+ * se mantengan sincronizados sin refetch manual.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificacionesService {
-  // State compartido — el topbar y la bandeja leen el mismo signal para mantener el badge
-  // y la lista en sync cuando el usuario lee o archiva algo (en la bandeja → afecta el bell).
-  readonly estado = signal<BandejaNotificaciones>({ total: 0, noLeidas: 0, items: [] });
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/api/notificaciones`;
 
-  constructor() { this.cargarMock(); }
+  /**
+   * Estado compartido (topbar + bandeja). Lo mantiene actualizado:
+   *  - Las acciones del usuario: marcarLeidas, archivar, abrir detalle.
+   *  - Los eventos SignalR (NotificacionesRealtimeService).
+   */
+  readonly estado = signal<ResumenNotificaciones>({ noLeidas: 0, ultimas: [] });
 
   // ─── Lectura ───────────────────────────────────────────────────────────
 
+  /** Resumen liviano para el bell. También lo llama el realtime al conectar/reconectar. */
+  async obtenerResumen(): Promise<ResumenNotificaciones> {
+    try {
+      const r = await this.get<ResumenNotificaciones>(`${this.base}/resumen`);
+      this.estado.set(r);
+      return r;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el resumen de notificaciones.');
+    }
+  }
+
   async obtenerBandeja(filtros: FiltrosBandejaNotif = {}): Promise<BandejaNotificaciones> {
-    await this.delay(150);
-    const items = this.aplicarFiltros(this.estado().items, filtros);
-    const noLeidas = this.estado().items.filter(n => !n.leida && !n.archivada).length;
-    return { total: items.length, noLeidas, items };
+    try {
+      const r = await this.get<BandejaNotificaciones>(`${this.base}/bandeja`, this.aQueryParams(filtros));
+      // Sincronizo noLeidas global por si la bandeja fue el primer fetch.
+      this.estado.update(s => ({ ...s, noLeidas: r.noLeidas }));
+      return r;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar la bandeja de notificaciones.');
+    }
   }
 
-  /**
-   * Devuelve las 5 notificaciones más recientes no archivadas (leídas o no).
-   * El popover funciona como un "feed": una leída sigue visible hasta que llega
-   * otra más nueva que la desplaza.
-   */
-  async obtenerPopover(): Promise<NotificacionBandeja[]> {
-    await this.delay(80);
-    return this.estado().items
-      .filter(n => !n.archivada)
-      .slice()
-      .sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime())
-      .slice(0, 5);
+  async obtenerOpcionesFiltro(): Promise<OpcionesFiltroNotif> {
+    try {
+      return await this.get<OpcionesFiltroNotif>(`${this.base}/filtros`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar las opciones de filtro.');
+    }
   }
 
-  async marcarLeida(id: number): Promise<number> {
-    await this.delay(80);
-    this.actualizarItems(items => items.map(n => n.idNotificacion === id ? { ...n, leida: true } : n));
-    return this.contarNoLeidas();
+  /** Abre la notificación: el back la marca como leída y devuelve el nuevo noLeidas. */
+  async obtenerDetalle(id: number): Promise<DetalleNotificacion> {
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Notificación inválida.');
+    try {
+      const r = await this.get<DetalleNotificacion>(`${this.base}/${id}`);
+      // La notif queda leída en el back → reflejo en el signal local.
+      this.aplicarLectura([id], r.noLeidas);
+      return r;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar la notificación.');
+    }
   }
+
+  // ─── Escritura ─────────────────────────────────────────────────────────
 
   async marcarVariasLeidas(ids: number[]): Promise<number> {
-    await this.delay(80);
-    const setIds = new Set(ids);
-    this.actualizarItems(items => items.map(n => setIds.has(n.idNotificacion) ? { ...n, leida: true } : n));
-    return this.contarNoLeidas();
+    if (ids.length === 0) return this.estado().noLeidas;
+    try {
+      const r = await this.post<{ marcadas: number; noLeidas: number }>(
+        `${this.base}/marcar-leidas`, { ids },
+      );
+      this.aplicarLectura(ids, r.noLeidas);
+      return r.noLeidas;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron marcar las notificaciones como leídas.');
+    }
   }
 
   async marcarTodasLeidas(): Promise<number> {
-    await this.delay(100);
-    this.actualizarItems(items => items.map(n => n.archivada ? n : { ...n, leida: true }));
-    return 0;
+    try {
+      const r = await this.post<{ marcadas: number; noLeidas: number }>(
+        `${this.base}/marcar-leidas`, { todas: true },
+      );
+      this.aplicarLecturaTodas(r.noLeidas);
+      return r.noLeidas;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron marcar todas como leídas.');
+    }
   }
 
   async archivar(id: number): Promise<number> {
-    await this.delay(80);
-    this.actualizarItems(items => items.map(n => n.idNotificacion === id ? { ...n, archivada: true, leida: true } : n));
-    return this.contarNoLeidas();
-  }
-
-  async desarchivar(id: number): Promise<number> {
-    await this.delay(80);
-    this.actualizarItems(items => items.map(n => n.idNotificacion === id ? { ...n, archivada: false } : n));
-    return this.contarNoLeidas();
-  }
-
-  // ─── Agrupación visual Hoy / Ayer / Esta semana / Más antiguas ──────────
-
-  agrupar(items: NotificacionBandeja[]): GrupoNotificaciones[] {
-    const hoy  = new Date(); hoy.setHours(0, 0, 0, 0);
-    const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
-    const haceSemana = new Date(hoy); haceSemana.setDate(haceSemana.getDate() - 7);
-
-    const g: Record<GrupoNotificaciones['clave'], NotificacionBandeja[]> = {
-      hoy: [], ayer: [], esta_semana: [], mas_antiguas: [],
-    };
-    for (const n of items) {
-      const f = new Date(n.creadoEn);
-      if (f >= hoy)            g.hoy.push(n);
-      else if (f >= ayer)      g.ayer.push(n);
-      else if (f >= haceSemana) g.esta_semana.push(n);
-      else                     g.mas_antiguas.push(n);
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Notificación inválida.');
+    try {
+      const r = await this.post<{ noLeidas: number }>(`${this.base}/${id}/archivar`, {});
+      this.aplicarArchivado(id, r.noLeidas);
+      return r.noLeidas;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo archivar la notificación.');
     }
-    const r: GrupoNotificaciones[] = [];
-    if (g.hoy.length)          r.push({ clave: 'hoy',          label: 'Hoy',           items: g.hoy });
-    if (g.ayer.length)         r.push({ clave: 'ayer',         label: 'Ayer',          items: g.ayer });
-    if (g.esta_semana.length)  r.push({ clave: 'esta_semana',  label: 'Esta semana',   items: g.esta_semana });
-    if (g.mas_antiguas.length) r.push({ clave: 'mas_antiguas', label: 'Más antiguas',  items: g.mas_antiguas });
-    return r;
   }
 
-  /** Mapea una notif a la ruta destino para el botón "Ir al elemento origen". */
-  resolverDestino(n: NotificacionBandeja): LinkDestinoNotif | null {
-    if (!n.entidadTipo || n.entidadId == null) return null;
-    const base: LinkDestinoNotif = {
-      entidadTipo: n.entidadTipo, entidadId: n.entidadId,
-      rutaDestino: [], queryParams: {},
+  // ─── Realtime hooks: los invoca NotificacionesRealtimeService ──────────
+
+  /** El back empujó una notificación nueva — la insertamos arriba y actualizamos el badge. */
+  aplicarCreada(n: NotificacionBandeja, noLeidas: number): void {
+    this.estado.update(s => {
+      // Si ya la tenemos (por doble push), ignorar.
+      if (s.ultimas.some(x => x.idNotificacion === n.idNotificacion)) {
+        return { ...s, noLeidas };
+      }
+      return { noLeidas, ultimas: [n, ...s.ultimas].slice(0, 5) };
+    });
+  }
+
+  /** Marcadas como leídas (o archivadas) desde otra pestaña — sincronizamos badge. */
+  aplicarSincronizacion(noLeidas: number): void {
+    this.estado.update(s => ({ ...s, noLeidas }));
+  }
+
+  // ─── Agrupación visual ─────────────────────────────────────────────────
+
+  /**
+   * Agrupa items por el campo `grupo` que ya devuelve el back (hoy / ayer / semana / antiguas).
+   * Mantiene el orden original de items dentro de cada grupo.
+   */
+  agrupar(items: NotificacionBandeja[]): GrupoNotificaciones[] {
+    const buckets: Record<GrupoNotifClave, NotificacionBandeja[]> = {
+      hoy: [], ayer: [], semana: [], antiguas: [],
     };
-    switch (n.entidadTipo) {
-      case 'os':             return { ...base, rutaDestino: ['/operaciones/ordenes-servicio'],      queryParams: { idOs: n.entidadId } };
-      case 'propuesta':      return { ...base, rutaDestino: ['/crm/propuestas'],                    queryParams: { idPropuesta: n.entidadId } };
-      case 'oc':             return { ...base, rutaDestino: ['/crm/ordenes-compra'],                queryParams: { idOc: n.entidadId } };
-      case 'precotizacion':  return { ...base, rutaDestino: ['/crm/propuestas'],                    queryParams: { tab: 'precotizaciones', idPrecot: n.entidadId } };
-      case 'informe':        return { ...base, rutaDestino: ['/servicio-tecnico/revision-informes'], queryParams: { idInforme: n.entidadId } };
-      case 'expediente':     return { ...base, rutaDestino: ['/crm/expedientes-digitales'],         queryParams: { idExp: n.entidadId } };
-      case 'seguimiento':    return { ...base, rutaDestino: ['/operaciones/seguimiento-operativo'], queryParams: { idServicio: n.entidadId } };
-      default:               return null;
+    for (const n of items) buckets[n.grupo].push(n);
+
+    const labels: Record<GrupoNotifClave, string> = {
+      hoy:      'Hoy',
+      ayer:     'Ayer',
+      semana:   'Esta semana',
+      antiguas: 'Más antiguas',
+    };
+
+    const orden: GrupoNotifClave[] = ['hoy', 'ayer', 'semana', 'antiguas'];
+    return orden
+      .filter(k => buckets[k].length > 0)
+      .map(k => ({ clave: k, label: labels[k], items: buckets[k] }));
+  }
+
+  /**
+   * Convierte la fecha ISO (en hora Lima) en una etiqueta relativa:
+   * "Hace 5m", "Hace 2h", "Ayer 14:30", o fecha absoluta para antiguas.
+   */
+  tiempoRelativo(fechaIso: string): string {
+    const f    = new Date(fechaIso);
+    const now  = new Date();
+    const diff = (now.getTime() - f.getTime()) / 1000;   // segundos
+
+    if (diff < 60)        return 'Ahora';
+    if (diff < 3600)      return `Hace ${Math.floor(diff / 60)}m`;
+    if (diff < 24 * 3600) return `Hace ${Math.floor(diff / 3600)}h`;
+
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1);
+    const hh = String(f.getHours()).padStart(2, '0');
+    const mm = String(f.getMinutes()).padStart(2, '0');
+    if (f >= ayer && f < hoy) return `Ayer ${hh}:${mm}`;
+
+    const dd = String(f.getDate()).padStart(2, '0');
+    const mo = String(f.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mo} ${hh}:${mm}`;
+  }
+
+  /**
+   * Mapea `destino.accion` del back → ruta Angular + queryParams.
+   * Si retorna null, el botón "Ir al elemento origen" queda deshabilitado.
+   *
+   * Acciones soportadas (contrato back):
+   *   os.detalle, programacion.os, seguimiento.servicio (tab opcional),
+   *   propuesta.detalle, vb.detalle, seguimiento.propuesta, propuesta.precotizacion,
+   *   oc.detalle, expediente.detalle, programacion.detalle, informe.detalle,
+   *   equipo.detalle, cliente.detalle
+   */
+  resolverDestino(n: NotificacionBandeja): RutaDestinoNotif | null {
+    const d = n.destino;
+    if (!d) return null;
+    const qp: Record<string, string | number> = {};
+
+    switch (d.accion) {
+      case 'os.detalle':
+        return { rutaDestino: ['/crm/ordenes-servicio'], queryParams: { idOs: d.idEntidad } };
+      case 'programacion.os':
+        return { rutaDestino: ['/operaciones/programacion-operativa'], queryParams: { idOs: d.idEntidad } };
+      case 'programacion.detalle':
+        return { rutaDestino: ['/operaciones/programacion-operativa'], queryParams: { idProgramacion: d.idEntidad } };
+      case 'seguimiento.servicio': {
+        if (d.tab) qp['tab'] = d.tab;
+        qp['idServicio'] = d.idEntidad;
+        return { rutaDestino: ['/operaciones/seguimiento-operativo'], queryParams: qp };
+      }
+      case 'seguimiento.propuesta':
+        return { rutaDestino: ['/crm/seguimiento'], queryParams: { idPropuesta: d.idEntidad } };
+      case 'propuesta.detalle':
+        return { rutaDestino: ['/crm/propuestas'], queryParams: { idPropuesta: d.idEntidad } };
+      case 'propuesta.precotizacion':
+        return { rutaDestino: ['/crm/propuestas'], queryParams: { tab: 'precotizaciones', idPrecot: d.idEntidad } };
+      case 'vb.detalle':
+        return { rutaDestino: ['/crm/visto-bueno'], queryParams: { idPropuesta: d.idEntidad } };
+      case 'oc.detalle':
+        return { rutaDestino: ['/crm/ordenes-compra'], queryParams: { idOc: d.idEntidad } };
+      case 'expediente.detalle':
+        return { rutaDestino: ['/crm/expedientes-digitales'], queryParams: { idExp: d.idEntidad } };
+      case 'informe.detalle':
+        return { rutaDestino: ['/servicio-tecnico/revision-informes'], queryParams: { idInforme: d.idEntidad } };
+      case 'equipo.detalle':
+        return { rutaDestino: ['/maestros/equipos'], queryParams: { idEquipo: d.idEntidad } };
+      case 'cliente.detalle':
+        return { rutaDestino: ['/maestros/clientes'], queryParams: { idCliente: d.idEntidad } };
+      default:
+        return null;
     }
   }
 
   // ─── Helpers privados ──────────────────────────────────────────────────
 
-  private contarNoLeidas(): number {
-    return this.estado().items.filter(n => !n.leida && !n.archivada).length;
+  private aplicarLectura(ids: number[], noLeidas: number): void {
+    const set = new Set(ids);
+    this.estado.update(s => ({
+      noLeidas,
+      ultimas: s.ultimas.map(n => set.has(n.idNotificacion) ? { ...n, leida: true } : n),
+    }));
   }
 
-  /**
-   * Centraliza el update del signal: aplica la mutación sobre items y mantiene el
-   * campo `noLeidas` del estado en sync — el topbar lo observa vía computed.
-   */
-  private actualizarItems(mut: (items: NotificacionBandeja[]) => NotificacionBandeja[]): void {
-    this.estado.update(s => {
-      const items = mut(s.items);
-      const noLeidas = items.filter(n => !n.leida && !n.archivada).length;
-      return { ...s, items, noLeidas };
-    });
+  private aplicarLecturaTodas(noLeidas: number): void {
+    this.estado.update(s => ({
+      noLeidas,
+      ultimas: s.ultimas.map(n => ({ ...n, leida: true })),
+    }));
   }
 
-  private aplicarFiltros(items: NotificacionBandeja[], f: FiltrosBandejaNotif): NotificacionBandeja[] {
-    let r = items;
-    const estado = f.estado ?? 'no_leidas';
-    if (estado === 'no_leidas')  r = r.filter(n => !n.leida && !n.archivada);
-    if (estado === 'leidas')     r = r.filter(n => n.leida && !n.archivada);
-    if (estado === 'archivadas') r = r.filter(n => n.archivada);
-    if (estado === 'todas')      r = r.filter(n => !n.archivada);  // "todas" excluye archivadas por defecto
-    if (f.modulo?.length) r = r.filter(n => f.modulo!.includes(n.moduloCodigo));
-    if (f.tipo?.length)   r = r.filter(n => f.tipo!.includes(n.tipo));
-    if (f.idRemitente != null) r = r.filter(n => n.idRemitente === f.idRemitente || (f.idRemitente === 0 && n.idRemitente === null));
-    if (f.busqueda) {
-      const q = f.busqueda.toLowerCase();
-      r = r.filter(n =>
-        n.titulo.toLowerCase().includes(q) ||
-        n.cuerpo.toLowerCase().includes(q) ||
-        (n.entidadCodigo?.toLowerCase().includes(q) ?? false),
-      );
+  private aplicarArchivado(id: number, noLeidas: number): void {
+    this.estado.update(s => ({
+      noLeidas,
+      ultimas: s.ultimas.filter(n => n.idNotificacion !== id),
+    }));
+  }
+
+  private aQueryParams(f: FiltrosBandejaNotif): HttpParams {
+    let p = new HttpParams();
+    if (f.estado)                   p = p.set('estado',     f.estado);
+    if (f.modulos && f.modulos.length) p = p.set('modulos', f.modulos.join(','));
+    if (f.tipos   && f.tipos.length)   p = p.set('tipos',   f.tipos.join(','));
+    if (f.rango)                    p = p.set('rango',      f.rango);
+    if (f.fechaDesde)               p = p.set('fechaDesde', f.fechaDesde);
+    if (f.fechaHasta)               p = p.set('fechaHasta', f.fechaHasta);
+    if (f.remitente != null)        p = p.set('remitente',  String(f.remitente));
+    if (f.busqueda)                 p = p.set('busqueda',   f.busqueda);
+    if (f.pagina    != null)        p = p.set('pagina',     String(f.pagina));
+    if (f.porPagina != null)        p = p.set('porPagina',  String(f.porPagina));
+    return p;
+  }
+
+  private async get<T>(url: string, params?: HttpParams): Promise<T> {
+    const r = await firstValueFrom(
+      this.http.get<{ idTipoMensaje: number; mensaje: string; datos: T | null }>(url, { params }),
+    );
+    if (r.idTipoMensaje !== 2 || r.datos === null || r.datos === undefined) {
+      throw new Error(r.mensaje || 'El servidor no devolvió datos.');
     }
-    if (f.fechaDesde) r = r.filter(n => new Date(n.creadoEn) >= new Date(f.fechaDesde!));
-    if (f.fechaHasta) r = r.filter(n => new Date(n.creadoEn) <= new Date(f.fechaHasta! + 'T23:59:59'));
-    if (f.rango === 'hoy') {
-      const h = new Date(); h.setHours(0, 0, 0, 0);
-      r = r.filter(n => new Date(n.creadoEn) >= h);
-    } else if (f.rango === 'esta_semana') {
-      const s = new Date(); s.setDate(s.getDate() - 7);
-      r = r.filter(n => new Date(n.creadoEn) >= s);
-    } else if (f.rango === 'este_mes') {
-      const m = new Date(); m.setDate(m.getDate() - 30);
-      r = r.filter(n => new Date(n.creadoEn) >= m);
+    return r.datos;
+  }
+
+  private async post<T>(url: string, body: unknown): Promise<T> {
+    const r = await firstValueFrom(
+      this.http.post<{ idTipoMensaje: number; mensaje: string; datos: T | null }>(url, body),
+    );
+    if (r.idTipoMensaje !== 2 || r.datos === null || r.datos === undefined) {
+      throw new Error(r.mensaje || 'El servidor no procesó la acción.');
     }
-    return r.slice().sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
+    return r.datos;
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise(r => setTimeout(r, ms));
-  }
-
-  // ─── MOCK DATA ─────────────────────────────────────────────────────────
-
-  private cargarMock(): void {
-    const now  = new Date();
-    const hace = (mins: number) => new Date(now.getTime() - mins * 60_000).toISOString();
-
-    const items: NotificacionBandeja[] = [
-      {
-        idNotificacion: 1, tipo: 'cambio_estado', tipoLabel: 'Cambio de estado',
-        moduloCodigo: 'expedientes', moduloLabel: 'Expedientes Digitales',
-        titulo: 'OS-000793 esperando emisión',
-        cuerpo: 'La OS está lista para emitirse al cliente — módulo Expedientes Digitales. Requiere validación de firma y fecha técnica.',
-        tipoDot: '#1D4ED8', tiempo: 'Hace 15m', creadoEn: hace(15),
-        leida: false, archivada: false, esAlertaOperativa: false,
-        idRemitente: null, remitente: 'Sistema TotalWeight',
-        entidadTipo: 'os', entidadId: 793, entidadCodigo: 'OS-000793',
-      },
-      {
-        idNotificacion: 2, tipo: 'cambio_estado', tipoLabel: 'Nueva precotización',
-        moduloCodigo: 'propuestas', moduloLabel: 'Propuestas',
-        titulo: 'Nueva precotización técnica recibida',
-        cuerpo: 'Carlos Vega generó precotización en RQ-000479 (Las Bambas Mining) con 3 ítems y nota del supervisor.',
-        tipoDot: '#166534', tiempo: 'Hace 1h', creadoEn: hace(60),
-        leida: false, archivada: false, esAlertaOperativa: false,
-        idRemitente: 12, remitente: 'Carlos Vega',
-        entidadTipo: 'precotizacion', entidadId: 2, entidadCodigo: 'PCT-000002',
-      },
-      {
-        idNotificacion: 3, tipo: 'alerta_operativa', tipoLabel: 'Alerta operativa',
-        moduloCodigo: 'control_campo', moduloLabel: 'Control de Campo',
-        titulo: 'Técnico Luis Herrera · sin movimiento',
-        cuerpo: 'Sin movimiento en los últimos 12 min — Mina Chalcobamba. Verificar cobertura satelital o reporte de campo.',
-        tipoDot: '#B91C1C', tiempo: 'Hace 2h', creadoEn: hace(135),
-        leida: false, archivada: false, esAlertaOperativa: true,
-        idRemitente: null, remitente: 'Sistema TotalWeight',
-        entidadTipo: 'seguimiento', entidadId: 48, entidadCodigo: 'OS-000748',
-      },
-      {
-        idNotificacion: 4, tipo: 'aprobacion_pendiente', tipoLabel: 'Aprobación pendiente',
-        moduloCodigo: 'propuestas', moduloLabel: 'Propuestas',
-        titulo: 'Propuesta aceptada por Cerámica Lima',
-        cuerpo: 'PROP-000312 aceptada por USD 1,450. Requiere generación de orden de compra en Expediente CL-2026-012.',
-        tipoDot: '#166534', tiempo: 'Hace 3h', creadoEn: hace(180),
-        leida: false, archivada: false, esAlertaOperativa: false,
-        idRemitente: null, remitente: 'Sistema TotalWeight',
-        entidadTipo: 'propuesta', entidadId: 312, entidadCodigo: 'PROP-000312',
-      },
-      {
-        idNotificacion: 5, tipo: 'cambio_estado', tipoLabel: 'Reasignación',
-        moduloCodigo: 'expedientes', moduloLabel: 'Expedientes Digitales',
-        titulo: 'Expediente EXP-2026-05 reasignado a ti',
-        cuerpo: 'Luis Yamada aprobó la reasignación comercial por solicitud de Ana Torres.',
-        tipoDot: '#1D4ED8', tiempo: 'Ayer 16:40', creadoEn: hace(24 * 60 + 60),
-        leida: false, archivada: false, esAlertaOperativa: false,
-        idRemitente: 5, remitente: 'Luis Yamada',
-        entidadTipo: 'expediente', entidadId: 205, entidadCodigo: 'EXP-2026-05',
-      },
-      {
-        idNotificacion: 6, tipo: 'aprobacion_pendiente', tipoLabel: 'Propuesta aceptada',
-        moduloCodigo: 'propuestas', moduloLabel: 'Propuestas',
-        titulo: 'Propuesta PROP-000198 aceptada',
-        cuerpo: 'Antamina aceptó por USD 14,580 — pasa a emisión de Orden de Compra.',
-        tipoDot: '#166534', tiempo: 'Ayer 11:20', creadoEn: hace(24 * 60 + 180),
-        leida: true, archivada: false, esAlertaOperativa: false,
-        idRemitente: null, remitente: 'Sistema TotalWeight',
-        entidadTipo: 'propuesta', entidadId: 198, entidadCodigo: 'PROP-000198',
-      },
-      {
-        idNotificacion: 7, tipo: 'ssoma', tipoLabel: 'SSOMA',
-        moduloCodigo: 'ssoma', moduloLabel: 'SSOMA',
-        titulo: 'Documento SSOMA SCTR por vencer',
-        cuerpo: 'Tu SCTR vence en 7 días — Técnico Luis Herrera no podrá ingresar a mina si no se renueva.',
-        tipoDot: '#92400E', tiempo: 'Ayer 09:10', creadoEn: hace(24 * 60 + 360),
-        leida: false, archivada: false, esAlertaOperativa: false,
-        idRemitente: null, remitente: 'Sistema TotalWeight',
-        entidadTipo: null, entidadId: null, entidadCodigo: null,
-      },
-      {
-        idNotificacion: 8, tipo: 'cambio_estado', tipoLabel: 'Visto Bueno',
-        moduloCodigo: 'vb', moduloLabel: 'Visto Bueno',
-        titulo: 'Propuesta PROP-000176 requiere tu VB',
-        cuerpo: 'Jazir Olivera envió la propuesta a Visto Bueno. Prioridad normal.',
-        tipoDot: '#1D4ED8', tiempo: 'Hace 4d', creadoEn: hace(4 * 24 * 60),
-        leida: true, archivada: false, esAlertaOperativa: false,
-        idRemitente: 1, remitente: 'Jazir Olivera',
-        entidadTipo: 'propuesta', entidadId: 176, entidadCodigo: 'PROP-000176',
-      },
-      {
-        idNotificacion: 9, tipo: 'cambio_estado', tipoLabel: 'Revisión',
-        moduloCodigo: 'revision_tecnica', moduloLabel: 'Revisión Técnica',
-        titulo: 'Informe INF-DEMO-003 revisado',
-        cuerpo: 'Manuel Rojas marcó el informe como revisado con precotización generada.',
-        tipoDot: '#166534', tiempo: 'Hace 5d', creadoEn: hace(5 * 24 * 60),
-        leida: true, archivada: false, esAlertaOperativa: false,
-        idRemitente: 8, remitente: 'Manuel Rojas',
-        entidadTipo: 'informe', entidadId: 3, entidadCodigo: 'INF-DEMO-003',
-      },
-    ];
-
-    const noLeidas = items.filter(n => !n.leida && !n.archivada).length;
-    this.estado.set({ total: items.length, noLeidas, items });
+  private comoError(e: unknown, porDefecto: string): Error {
+    if (e instanceof HttpErrorResponse) {
+      if (e.status === 0)   return new Error('No se pudo conectar con el servidor. Revisa tu conexión.');
+      if (e.status === 400) return new Error(e.error?.mensaje || porDefecto);
+      if (e.status === 403) return new Error('No tienes permiso para esta acción.');
+      return new Error(porDefecto);
+    }
+    return e instanceof Error && e.message ? e : new Error(porDefecto);
   }
 }
+
+// Reexport usado por componentes.
+export type { DestinoNotif, ModuloCodigo, TipoNotificacion };
