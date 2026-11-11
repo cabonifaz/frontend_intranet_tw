@@ -448,14 +448,26 @@
             } @else {
               <div class="galeria">
                 @for (f of fotos(); track f.idEvidencia) {
-                  <a class="foto" [href]="f.urlArchivo" target="_blank">
+                  <button type="button" class="foto"
+                          appEnViewport (entra)="solicitarFoto(f.idEvidencia)"
+                          (click)="abrirLightbox(f)">
                     <div class="foto__thumb">
-                      <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''"
-                           (error)="$any($event.target).style.display='none'; $any($event.target).nextElementSibling?.classList.add('foto__fallback--visible')">
-                      <div class="foto__fallback">
-                        <span class="material-symbols-outlined">broken_image</span>
-                        <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
-                      </div>
+                      @switch (estadoDe(f.idEvidencia).estado) {
+                        @case ('listo') {
+                          <img [src]="safeUrlFoto(f.idEvidencia)" [alt]="f.descripcion ?? ''">
+                        }
+                        @case ('error') {
+                          <div class="foto__fallback foto__fallback--visible">
+                            <span class="material-symbols-outlined">broken_image</span>
+                            <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
+                          </div>
+                        }
+                        @default {
+                          <div class="foto__skeleton" aria-label="Cargando foto">
+                            <span class="material-symbols-outlined foto__skeleton-icono">image</span>
+                          </div>
+                        }
+                      }
                     </div>
                     <div class="foto__pie">
                       <span class="foto__momento chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
@@ -466,7 +478,7 @@
                         <span class="chip chip--rojo">{{ f.codigoObservacion }}</span>
                       }
                     </div>
-                  </a>
+                  </button>
                 }
               </div>
             }
@@ -569,3 +581,41 @@
 
   </div>
 </div>
+
+<!-- ── Lightbox / visor en grande (HU-57) ─────────────────────────────── -->
+@if (lightbox(); as foto) {
+  <div class="lightbox" (click)="cerrarLightbox()">
+    <button type="button" class="lightbox__cerrar" (click)="cerrarLightbox()" aria-label="Cerrar visor">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="lightbox__contenido" (click)="$event.stopPropagation()">
+      @switch (estadoDe(foto.idEvidencia).estado) {
+        @case ('listo') {
+          <img class="lightbox__img" [src]="safeUrlFoto(foto.idEvidencia)" [alt]="foto.descripcion ?? ''">
+        }
+        @case ('error') {
+          <div class="lightbox__fallback">
+            <span class="material-symbols-outlined">broken_image</span>
+            <p>No se pudo cargar esta evidencia.</p>
+          </div>
+        }
+        @default {
+          <div class="lightbox__cargando">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            <p>Cargando…</p>
+          </div>
+        }
+      }
+      <div class="lightbox__pie">
+        <strong>{{ foto.momentoLabel ?? foto.momento }}</strong>
+        @if (foto.descripcion) { <span>— {{ foto.descripcion }}</span> }
+        @if (foto.georreferenciada) {
+          <span class="material-symbols-outlined lightbox__gps" title="Georreferenciada">location_on</span>
+        }
+        @if (foto.codigoObservacion) {
+          <span class="chip chip--rojo">{{ foto.codigoObservacion }}</span>
+        }
+      </div>
+    </div>
+  </div>
+}

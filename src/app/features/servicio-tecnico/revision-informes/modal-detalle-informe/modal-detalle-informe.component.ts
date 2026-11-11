@@ -1,5 +1,6 @@
-import { Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RevisionInformesService } from '../../../../core/services/revision-informes.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
@@ -9,6 +10,17 @@ import {
 } from '../../../../core/models/revision-informes-api.model';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
+import { EnViewportDirective } from '../../../../shared/directives/en-viewport.directive';
+
+/**
+ * Estado interno de carga de un archivo de evidencia (HU-57).
+ * Las URLs blob viven solo en memoria del componente; se revocan al destruir.
+ */
+type EstadoFoto =
+  | { estado: 'pendiente' }
+  | { estado: 'cargando' }
+  | { estado: 'listo'; url: string; safeUrl: SafeUrl }
+  | { estado: 'error' };
 
 type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendaciones' | 'ensayos' | 'fotos' | 'historial';
 
@@ -22,13 +34,14 @@ type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendac
  */
 @Component({
   selector: 'app-modal-detalle-informe',
-  imports: [CommonModule, ButtonComponent, InicialesPipe],
+  imports: [CommonModule, ButtonComponent, InicialesPipe, EnViewportDirective],
   templateUrl: './modal-detalle-informe.component.html',
   styleUrl: './modal-detalle-informe.component.scss',
 })
-export class ModalDetalleInformeComponent implements OnInit {
-  private readonly svc   = inject(RevisionInformesService);
-  private readonly toast = inject(ToastService);
+export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
+  private readonly svc       = inject(RevisionInformesService);
+  private readonly toast     = inject(ToastService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly idInforme = input.required<number>();
 
@@ -44,6 +57,17 @@ export class ModalDetalleInformeComponent implements OnInit {
 
   // ─── Filtros de galería de fotos ────────────────────────────────────────
   readonly filtroMomento = signal<MomentoFoto | 'TODOS'>('TODOS');
+
+  // ─── Carga diferida de blobs de fotos (HU-57) ───────────────────────────
+  /** Caché de estados de carga por idEvidencia. Tanto miniaturas como visor grande se cachean aquí. */
+  readonly estadoFotos = signal<Record<number, EstadoFoto>>({});
+  /** Límite de descargas en paralelo (Bryan pidió ~4 para no saturar al back con informes de 28 fotos). */
+  private readonly MAX_CONCURRENTES = 4;
+  private activas = 0;
+  private cola: Array<{ idInforme: number; idEvidencia: number; cuadro: boolean }> = [];
+
+  // ─── Visor en grande (lightbox) ─────────────────────────────────────────
+  readonly lightbox = signal<FotoInformeApi | null>(null);
 
   // ─── Historial (tab 8) ──────────────────────────────────────────────────
   readonly categoriaHistorial = signal<CategoriaHistorial>('todos');
@@ -92,6 +116,16 @@ export class ModalDetalleInformeComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.cargar();
+  }
+
+  ngOnDestroy(): void {
+    // Liberamos TODAS las URLs blob creadas para no fugar memoria.
+    // Esto cubre: cierre del modal, cambio de informe y destrucción normal del componente.
+    for (const e of Object.values(this.estadoFotos())) {
+      if (e.estado === 'listo') URL.revokeObjectURL(e.url);
+    }
+    this.estadoFotos.set({});
+    this.cola = [];
   }
 
   async cargar(): Promise<void> {
@@ -146,6 +180,65 @@ export class ModalDetalleInformeComponent implements OnInit {
   readonly eventosHistorial = computed<EventoHistorialApi[]>(() => this.historialCompleto()?.eventos ?? []);
   readonly contadoresHistorial = computed(() => this.historialCompleto()?.contadores);
   cambiarFiltroMomento(m: MomentoFoto | 'TODOS'): void { this.filtroMomento.set(m); }
+
+  // ─── Carga diferida de blobs — API pública del componente ───────────────
+
+  /** Estado actual del archivo de una evidencia. Si nunca se pidió, devuelve pendiente. */
+  estadoDe(idEvidencia: number): EstadoFoto {
+    return this.estadoFotos()[idEvidencia] ?? { estado: 'pendiente' };
+  }
+
+  /** SafeUrl para pintar en <img [src]="..."> cuando la foto ya cargó; null si todavía no. */
+  safeUrlFoto(idEvidencia: number): SafeUrl | null {
+    const e = this.estadoDe(idEvidencia);
+    return e.estado === 'listo' ? e.safeUrl : null;
+  }
+
+  /**
+   * Solicita el archivo de una evidencia. Idempotente: si ya está cargado/cargando/error, no hace nada.
+   * Respeta el semáforo de MAX_CONCURRENTES y encola el resto.
+   * Se llama desde (entra) de la directiva appEnViewport en cada tarjeta.
+   */
+  solicitarFoto(idEvidencia: number, cuadro = true): void {
+    const estado = this.estadoDe(idEvidencia).estado;
+    if (estado !== 'pendiente') return;
+    this.establecerEstado(idEvidencia, { estado: 'cargando' });
+    if (this.activas < this.MAX_CONCURRENTES) this.ejecutarDescarga(idEvidencia, cuadro);
+    else                                       this.cola.push({ idInforme: this.idInforme(), idEvidencia, cuadro });
+  }
+
+  private async ejecutarDescarga(idEvidencia: number, cuadro: boolean): Promise<void> {
+    this.activas++;
+    try {
+      const blob = await this.svc.obtenerArchivoFoto(this.idInforme(), idEvidencia, cuadro);
+      // Si el componente se destruyó entremedio, el estado ya se limpió: no sobrescribimos.
+      if (!(idEvidencia in this.estadoFotos())) return;
+      const url = URL.createObjectURL(blob);
+      const safeUrl = this.sanitizer.bypassSecurityTrustUrl(url);
+      this.establecerEstado(idEvidencia, { estado: 'listo', url, safeUrl });
+    } catch {
+      this.establecerEstado(idEvidencia, { estado: 'error' });
+    } finally {
+      this.activas--;
+      const sig = this.cola.shift();
+      if (sig) void this.ejecutarDescarga(sig.idEvidencia, sig.cuadro);
+    }
+  }
+
+  private establecerEstado(idEvidencia: number, nuevo: EstadoFoto): void {
+    this.estadoFotos.update(mapa => ({ ...mapa, [idEvidencia]: nuevo }));
+  }
+
+  // ─── Visor en grande (lightbox) ─────────────────────────────────────────
+
+  abrirLightbox(f: FotoInformeApi): void {
+    // Reusamos el blob de la miniatura (ya está pedido con cuadro=true, y es la misma imagen).
+    // Si todavía no cargó, lo encolamos y el visor mostrará el skeleton hasta que llegue.
+    this.solicitarFoto(f.idEvidencia, true);
+    this.lightbox.set(f);
+  }
+
+  cerrarLightbox(): void { this.lightbox.set(null); }
 
   onCerrar(): void { this.cerrar.emit(); }
   onEditar(): void {
