@@ -112,17 +112,27 @@ export class ModalRegistrarSeguimientoComponent {
     return canal?.codigo === 'LLAMADA';
   });
 
+  /** El resultado seleccionado implica conversación efectiva (flag `requiereDuracion` del catálogo).
+   *  Solo entonces exigimos duración y notas en una llamada; caso "No contesta" no las pide. */
+  readonly resultadoRequiereDuracion = computed(() => {
+    const r = this.datos()?.resultados.find(x => x.id === this.idResultado());
+    return !!r?.requiereDuracion;
+  });
+
+  /** Mostrar y exigir el campo Duración (y notas obligatorias): solo en llamada CON conversación. */
+  readonly exigirDuracion = computed(() => this.esCanalLlamada() && this.resultadoRequiereDuracion());
+
   readonly puedeGuardar = computed(() => {
     const d = this.datos();
     if (!d) return false;
     if (this.variante() === 'correo') {
       return this.correoPara().trim().length > 0 && !!this.correoAsunto().trim() && !!this.correoCuerpo().trim();
     }
-    // General: tipo + resultado obligatorios. Si es llamada, duración > 0.
+    // General: tipo + resultado obligatorios. Si es llamada con conversación, duración > 0 y notas ≥ 5.
     if (this.idCanal() === null || this.idResultado() === null) return false;
-    if (this.esCanalLlamada()) {
-      const d = this.duracionMinutos();
-      if (d === null || d <= 0) return false;
+    if (this.exigirDuracion()) {
+      const min = this.duracionMinutos();
+      if (min === null || min <= 0) return false;
       if (this.notas().trim().length < 5) return false;
     }
     return true;
