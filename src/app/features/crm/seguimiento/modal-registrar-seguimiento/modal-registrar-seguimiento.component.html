@@ -77,8 +77,9 @@
             }
           </select>
         </div>
-        <!-- Duración dinámica: solo si el tipo seleccionado es Llamada -->
-        @if (esCanalLlamada()) {
+        <!-- Duración dinámica: solo si es Llamada y el resultado implica conversación efectiva
+             (flag requiereDuracion del catálogo). En "No contesta"/"Buzón"/"Pendiente" no se pide. -->
+        @if (exigirDuracion()) {
           <div class="campo">
             <label>DURACIÓN (MIN) *</label>
             <input type="number" min="1" placeholder="Ej: 5"
@@ -99,9 +100,9 @@
           <input type="datetime-local" [ngModel]="fechaInteraccion()" (ngModelChange)="fechaInteraccion.set($event)" />
         </div>
         <div class="campo campo--full">
-          <label>{{ esCanalLlamada() ? 'NOTAS DE LA LLAMADA *' : 'DETALLE DEL SEGUIMIENTO' }}</label>
+          <label>{{ exigirDuracion() ? 'NOTAS DE LA LLAMADA *' : 'DETALLE DEL SEGUIMIENTO' }}</label>
           <textarea rows="4"
-                    [placeholder]="esCanalLlamada() ? 'Describe los puntos discutidos...' : 'Puntos clave de la conversación o avances logrados...'"
+                    [placeholder]="exigirDuracion() ? 'Describe los puntos discutidos...' : 'Puntos clave de la conversación o avances logrados...'"
                     [ngModel]="notas()" (ngModelChange)="notas.set($event)"></textarea>
         </div>
       </div>

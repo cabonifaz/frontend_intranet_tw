@@ -295,6 +295,10 @@ export interface OpcionSeguimiento {
   id:     number;
   nombre: string;
   codigo?: string | null;
+  /** Solo aplica a `resultados` de seguimiento: si true, la llamada exige duración > 0 y notas ≥ 5
+   *  (caso "Contactado", "Reunión agendada", "Solicita ajuste"). Si false/undefined, la llamada se
+   *  puede registrar sin duración (caso "No contesta", "Buzón", "Pendiente"). */
+  requiereDuracion?: boolean;
 }
 
 export interface ContactoRegistroSeguimiento {

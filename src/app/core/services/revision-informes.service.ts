@@ -134,6 +134,24 @@ export class RevisionInformesService {
     }
   }
 
+  /**
+   * HU-57 — Descarga el archivo binario de una evidencia (foto o video) del informe.
+   * El GET pasa por el interceptor de auth (Bearer), de ahí que no se pueda usar <img src> directo.
+   * @param cuadro Si true, pide el cuadro estático (miniatura). Útil para videos.
+   */
+  async obtenerArchivoFoto(idInforme: number, idEvidencia: number, cuadro = false): Promise<Blob> {
+    if (!Number.isInteger(idInforme)   || idInforme   <= 0) throw new Error('El informe indicado no es válido.');
+    if (!Number.isInteger(idEvidencia) || idEvidencia <= 0) throw new Error('La evidencia indicada no es válida.');
+    try {
+      const params = cuadro ? new HttpParams().set('cuadro', 'true') : undefined;
+      return await firstValueFrom(
+        this.http.get(`${this.base}/${idInforme}/fotos/${idEvidencia}/archivo`, { params, responseType: 'blob' }),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo descargar el archivo de la evidencia.');
+    }
+  }
+
   // ─── HTTP ────────────────────────────────────────────────────────────────
 
   private aQueryParams(filtros?: FiltrosBandejaInformesQs): HttpParams {

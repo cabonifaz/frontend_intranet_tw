@@ -273,6 +273,7 @@
 .foto {
   background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
   overflow: hidden; text-decoration: none; color: inherit;
+  padding: 0; cursor: pointer; font: inherit; text-align: inherit;
   &__thumb {
     position: relative; background: #F8FAFC;
     aspect-ratio: 4/3; overflow: hidden;
@@ -286,13 +287,71 @@
     small { font-size: 11px; color: #64748B; line-height: 1.3; }
     &--visible { display: flex; }
   }
+  &__skeleton {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+    background-size: 200% 100%;
+    animation: fotoShimmer 1.4s ease-in-out infinite;
+  }
+  &__skeleton-icono { color: #CBD5E1; font-size: 36px; }
   &__pie {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     padding: 8px 10px;
   }
   &__gps { color: #16A34A; font-size: 16px; }
   &:hover { border-color: #93C5FD; }
+  &:focus-visible { outline: 2px solid #3B82F6; outline-offset: 2px; }
 }
+
+@keyframes fotoShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// ── Lightbox / visor en grande (HU-57) ──────────────────────────────────
+.lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(15, 23, 42, 0.88);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: lightboxFade 0.15s ease-out;
+  &__cerrar {
+    position: absolute; top: 16px; right: 20px;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: #FFFFFF; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    &:hover { background: rgba(255,255,255,0.2); }
+    .material-symbols-outlined { font-size: 22px; }
+  }
+  &__contenido {
+    max-width: min(92vw, 1400px); max-height: 88vh;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+  &__img {
+    max-width: 100%; max-height: 82vh; object-fit: contain;
+    border-radius: 8px; background: #000;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  &__cargando, &__fallback {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; color: #CBD5E1; min-width: 320px; min-height: 240px;
+    background: rgba(255,255,255,0.03); border-radius: 8px; padding: 32px;
+    .material-symbols-outlined { font-size: 48px; }
+    .spin { animation: lightboxSpin 1s linear infinite; }
+  }
+  &__pie {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    color: #F1F5F9; font-size: 13px; max-width: 92vw;
+    strong { color: #FFFFFF; }
+  }
+  &__gps { color: #4ADE80; font-size: 16px; }
+}
+
+@keyframes lightboxFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lightboxSpin { to { transform: rotate(360deg); } }
 
 // ── Timeline (historial del informe, tab 8) ──────────────────────────────
 .hist-filtros {
