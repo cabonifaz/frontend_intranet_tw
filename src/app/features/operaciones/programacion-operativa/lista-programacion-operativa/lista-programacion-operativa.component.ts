@@ -468,4 +468,14 @@ export class ListaProgramacionOperativaComponent implements OnInit {
       default:                     return 'chip';
     }
   }
+
+  tooltipViatico(p: ItemProgramacion): string {
+    const monto = `${p.viaticoMoneda} ${p.viaticoMonto.toFixed(2)}`;
+    switch (p.viaticoEstado) {
+      case 'depositado':         return `${monto} depositado`;
+      case 'pendiente_deposito': return `${monto} pendiente de depósito`;
+      case 'sin_asignar':        return 'Sin viáticos asignados';
+      default:                    return monto;
+    }
+  }
 }

@@ -11,6 +11,9 @@ import {
 import {
   BandejaSeguimientoOperativo, DetalleServicioSeguimiento, ParteBandeja, ParteDetalle,
 } from '../models/seguimiento-operativo.model';
+import {
+  AprobacionesServicio, ResolverAprobacionInput, RevisarGastoServicioInput, TipoAprobacion, ViaticosOs,
+} from '../models/aprobaciones-viaticos-servicio.model';
 import { ensamblarBandeja, ensamblarDetalle } from './seguimiento-operativo-mapper';
 
 /** Tamaño de página máximo que acepta el backend en /servicios. */
@@ -270,6 +273,84 @@ export class SeguimientoOperativoService {
     } catch (e) {
       throw this.comoError(e, 'No se pudo cargar la evidencia.');
     }
+  }
+
+  // ─── HU-52 — Aprobaciones del servicio ──────────────────────────────────
+
+  /** GET bandeja unificada de aprobaciones (salida | llegada | evidencia | ensayo) de la OS. */
+  async obtenerAprobacionesServicio(idOs: number): Promise<AprobacionesServicio> {
+    this.validarIdOs(idOs);
+    try {
+      return await this.get<AprobacionesServicio>(`${this.base}/servicios/${idOs}/aprobaciones`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar las aprobaciones del servicio.');
+    }
+  }
+
+  /** PUT resolver (aprobar o rechazar) una aprobación por tipo + id. Comentario 1–500. */
+  async resolverAprobacion(idOs: number, tipo: TipoAprobacion, id: number, body: ResolverAprobacionInput): Promise<unknown> {
+    this.validarIdOs(idOs);
+    if (!Number.isInteger(id) || id <= 0) throw new Error('La aprobación indicada no es válida.');
+    try {
+      const r = await firstValueFrom(
+        this.http.put<RespuestaSeguimientoApi<unknown>>(
+          `${this.base}/servicios/${idOs}/aprobaciones/${tipo}/${id}`,
+          { aprobar: body.aprobar, comentario: body.comentario },
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo resolver la aprobación.');
+      return r.datos ?? null;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo resolver la aprobación.');
+    }
+  }
+
+  // ─── HU-52 — Viáticos del servicio ──────────────────────────────────────
+
+  /** GET viáticos agregados de la OS (cabecera + resumen + líneas + gastos + cierre?). */
+  async obtenerViaticosServicio(idOs: number): Promise<ViaticosOs> {
+    this.validarIdOs(idOs);
+    try {
+      return await this.get<ViaticosOs>(`${this.base}/servicios/${idOs}/viaticos`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar los viáticos del servicio.');
+    }
+  }
+
+  /** POST revisar un gasto (aprobar | observar | rechazar). Comentario obligatorio al observar o rechazar. */
+  async revisarGastoServicio(idOs: number, idGasto: number, body: RevisarGastoServicioInput): Promise<unknown> {
+    this.validarIdOs(idOs);
+    if (!Number.isInteger(idGasto) || idGasto <= 0) throw new Error('El gasto indicado no es válido.');
+    try {
+      const r = await firstValueFrom(
+        this.http.post<RespuestaSeguimientoApi<unknown>>(
+          `${this.base}/servicios/${idOs}/viaticos/gastos/${idGasto}/revision`,
+          { accion: body.accion, comentario: body.comentario },
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo revisar el gasto.');
+      return r.datos ?? null;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo revisar el gasto.');
+    }
+  }
+
+  /** GET foto `n` (1..5) del comprobante del gasto como blob autenticado. */
+  async obtenerComprobanteGasto(idOs: number, idGasto: number, n: number): Promise<Blob> {
+    this.validarIdOs(idOs);
+    if (!Number.isInteger(idGasto) || idGasto <= 0) throw new Error('El gasto indicado no es válido.');
+    if (!Number.isInteger(n) || n < 1 || n > 5)     throw new Error('El número de foto debe estar entre 1 y 5.');
+    try {
+      return await firstValueFrom(
+        this.http.get(`${this.base}/servicios/${idOs}/viaticos/gastos/${idGasto}/comprobante/${n}`, { responseType: 'blob' }),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el comprobante.');
+    }
+  }
+
+  private validarIdOs(idOs: number): void {
+    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('El servicio indicado no es válido.');
   }
 
   // ─── HTTP ──────────────────────────────────────────────────────────────────

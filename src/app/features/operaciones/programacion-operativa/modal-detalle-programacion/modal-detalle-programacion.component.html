@@ -266,81 +266,17 @@
               <h4>{{ viaticosError() }}</h4>
             </div>
           </div>
-        } @else if (viaticos(); as v) {
-          <!-- Totales -->
-          <div class="bloque">
-            <div class="bloque__head">
-              <span class="material-symbols-outlined">payments</span>
-              <h4>Resumen de viáticos</h4>
-              @if (v.cabecera.rendicionCerrada) {
-                <span class="chip chip--verde">Rendición cerrada</span>
-              }
-            </div>
-            <div class="info-grid">
-              <div class="info-item"><small>Asignado</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalAsignado | number:'1.2-2' }}</strong></div>
-              <div class="info-item"><small>Depositado</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalDepositado | number:'1.2-2' }}</strong></div>
-              <div class="info-item"><small>Pendiente de depósito</small><strong>{{ v.cabecera.moneda }} {{ v.totales.totalPendiente | number:'1.2-2' }}</strong></div>
-              <div class="info-item"><small>Rendido aprobado</small><strong>{{ v.cabecera.moneda }} {{ v.resumen.totalAprobado | number:'1.2-2' }}</strong></div>
-            </div>
+        } @else if (cabecera()?.estado === 'pendiente_confirmacion') {
+          <div class="vacio-sm">
+            <span class="material-symbols-outlined">schedule</span>
+            Se asignan cuando el cliente confirme la programación.
           </div>
-
-          <!-- Líneas por técnico -->
-          <div class="bloque">
-            <div class="bloque__head">
-              <span class="material-symbols-outlined">receipt_long</span>
-              <h4>Líneas asignadas</h4>
-              <span class="badge-count">{{ v.lineas.length }}</span>
-            </div>
-            @if (v.lineas.length === 0) {
-              <div class="vacio-sm">Aún no se asignaron viáticos para esta programación.</div>
-            } @else {
-              <ul class="lista-rows">
-                @for (l of v.lineas; track l.idGasto) {
-                  <li>
-                    <div>
-                      <strong>{{ l.tecnico }} · {{ l.concepto }}</strong>
-                      <small>{{ l.rol === 'principal' ? 'Principal' : 'Apoyo' }} · {{ v.cabecera.moneda }} {{ l.monto | number:'1.2-2' }}</small>
-                    </div>
-                    <span [class]="l.estadoDeposito === 'depositado' ? 'chip chip--verde' : 'chip chip--ambar'">
-                      {{ l.estadoDeposito === 'depositado' ? 'Depositado' : 'Pendiente depósito' }}
-                    </span>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-
-          <!-- Gastos rendidos -->
-          @if (v.gastos.length > 0) {
-            <div class="bloque">
-              <div class="bloque__head">
-                <span class="material-symbols-outlined">request_quote</span>
-                <h4>Gastos rendidos</h4>
-                <span class="badge-count">{{ v.gastos.length }}</span>
-              </div>
-              <ul class="lista-rows">
-                @for (g of v.gastos; track g.idGasto) {
-                  <li>
-                    <div>
-                      <strong>{{ g.tecnico }} · {{ g.concepto }}</strong>
-                      <small>{{ v.cabecera.moneda }} {{ g.monto | number:'1.2-2' }} · {{ g.fecha ?? 'sin fecha' }}</small>
-                    </div>
-                    <span class="chip" [class.chip--verde]="g.estado === 'aprobado'" [class.chip--ambar]="g.estado === 'observado' || g.estado === 'pendiente'" [class.chip--rojo]="g.estado === 'rechazado'">
-                      {{ g.estado }}
-                    </span>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-
-          @if (acciones()?.puedeGestionarViaticos) {
-            <div class="bloque">
-              <app-button variant="primary" tamano="md" icono="payments" (clic)="gestionarViaticos()">
-                Gestionar Viáticos
-              </app-button>
-            </div>
-          }
+        } @else if (viaticosVm(); as vm) {
+          <app-resumen-viaticos
+            modo="asignacion"
+            [vm]="vm"
+            [puedeGestionar]="!!acciones()?.puedeGestionarViaticos"
+            (abrirGestion)="gestionarViaticos()" />
         }
       }
 

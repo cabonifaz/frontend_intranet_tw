@@ -11,14 +11,20 @@ import {
   EstadoTecnicoCampo, FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
 } from '../../../../core/models/seguimiento-operativo.model';
 import { FormularioRegistroAsistenteApi, SeccionEquipo, SeccionEquipoApi } from '../../../../core/models/seguimiento-operativo-api.model';
+import {
+  AprobacionesServicio, AprobacionServicio, TipoAprobacion, ViaticosOs,
+} from '../../../../core/models/aprobaciones-viaticos-servicio.model';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { KpiGridComponent } from '../../../../shared/ui/kpi-grid/kpi-grid.component';
 import { KpiCardComponent } from '../../../../shared/ui/kpi-card/kpi-card.component';
 import { TablaPaginadaComponent } from '../../../../shared/ui/tabla-paginada/tabla-paginada.component';
+import { ResumenViaticosComponent, AccionRevisionGasto } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.component';
+import { viaticosOsAVm } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.vm';
 import {
   CirculoMapa, MapaSeguimientoComponent, MarcadorMapa, RutaMapa,
 } from '../mapa-seguimiento.component';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 /** Respaldo si el backend no manda RefrescoSegundos (parámetro SEG_DETALLE_REFRESCO_SEGUNDOS). */
 const REFRESCO_POR_DEFECTO_SEG = 15;
@@ -26,7 +32,9 @@ const REFRESCO_MINIMO_SEG = 5;
 
 type TabDetalle =
   | 'resumen' | 'equipos' | 'mapa' | 'timeline'
-  | 'demoras' | 'registrar' | 'cierre';
+  | 'demoras' | 'aprobaciones' | 'viaticos' | 'registrar' | 'cierre';
+
+type FiltroTipoAprobacion = TipoAprobacion | 'todas';
 
 /**
  * HU-52 — Modal "Detalle del Servicio en Ruta" (Módulo 11 Control de Campo).
@@ -39,6 +47,7 @@ type TabDetalle =
   imports: [
     CommonModule, FormsModule, ModalComponent, ButtonComponent,
     KpiGridComponent, KpiCardComponent, TablaPaginadaComponent, MapaSeguimientoComponent,
+    ResumenViaticosComponent,
   ],
   templateUrl: './modal-detalle-servicio.component.html',
   styleUrl: './modal-detalle-servicio.component.scss',
@@ -139,7 +148,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly cabecera = computed(() => this.detalle()?.cabecera);
 
   readonly tabsVisibles = computed<TabDetalle[]>(() => {
-    const base: TabDetalle[] = ['resumen', 'equipos', 'mapa', 'timeline', 'demoras', 'registrar'];
+    const base: TabDetalle[] = ['resumen', 'equipos', 'mapa', 'timeline', 'demoras', 'aprobaciones', 'viaticos', 'registrar'];
     return this.cabecera()?.esFinalizado ? [...base, 'cierre'] : base;
   });
 
@@ -213,6 +222,56 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     return p && p.mostrarRadio ? { lat: p.lat, lng: p.lng, radioM: p.radioM } : null;
   });
 
+  // ─── HU-52 · Aprobaciones del servicio ─────────────────────────────────
+  private readonly sanitizer = inject(DomSanitizer);
+
+  readonly aprobaciones         = signal<AprobacionesServicio | null>(null);
+  readonly cargandoAprobaciones = signal(false);
+  readonly errorAprobaciones    = signal<string | null>(null);
+  readonly filtroAprobacion     = signal<FiltroTipoAprobacion>('todas');
+
+  readonly aprobacionesFiltradas = computed<AprobacionServicio[]>(() => {
+    const data = this.aprobaciones();
+    if (!data) return [];
+    const f = this.filtroAprobacion();
+    return f === 'todas' ? data.aprobaciones : data.aprobaciones.filter(a => a.tipo === f);
+  });
+
+  readonly conteoPorTipo = computed(() => {
+    const data = this.aprobaciones();
+    if (!data) return { salida: 0, llegada: 0, evidencia: 0, ensayo: 0 };
+    const pend = (t: TipoAprobacion) => data.aprobaciones.filter(a => a.tipo === t && a.estado === 'pendiente').length;
+    return { salida: pend('salida'), llegada: pend('llegada'), evidencia: pend('evidencia'), ensayo: pend('ensayo') };
+  });
+
+  /** Modal secundario: resolver (aprobar/rechazar) una aprobación. */
+  readonly itemResolver        = signal<AprobacionServicio | null>(null);
+  readonly accionResolver      = signal<'aprobar' | 'rechazar' | null>(null);
+  readonly comentarioResolver  = signal('');
+  readonly resolviendo         = signal(false);
+
+  // ─── HU-52 · Viáticos y Gastos del servicio ────────────────────────────
+  readonly viaticos         = signal<ViaticosOs | null>(null);
+  readonly cargandoViaticos = signal(false);
+  readonly errorViaticos    = signal<string | null>(null);
+  readonly viaticosVm       = computed(() => {
+    const v = this.viaticos();
+    return v ? viaticosOsAVm(v) : null;
+  });
+
+  /** Modal secundario: revisar un gasto (aprobar/observar/rechazar). */
+  readonly gastoRevisar        = signal<{ idGasto: number; concepto: string } | null>(null);
+  readonly accionRevisarGasto  = signal<AccionRevisionGasto | null>(null);
+  readonly comentarioRevisar   = signal('');
+  readonly revisandoGasto      = signal(false);
+
+  /** Lightbox para el comprobante blob. */
+  readonly comprobanteAbierto    = signal<{ idGasto: number; n: number; nFotos: number } | null>(null);
+  readonly comprobanteCargando   = signal(false);
+  readonly comprobanteError      = signal<string | null>(null);
+  readonly comprobanteSafeUrl    = signal<SafeUrl | null>(null);
+  private comprobanteUrl: string | null = null;
+
   async ngOnInit(): Promise<void> {
     await this.cargar();
   }
@@ -222,6 +281,200 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     this.limpiarTemporizador();
     const previo = this.evidenciaPreview();
     if (previo) URL.revokeObjectURL(previo);
+    if (this.comprobanteUrl) URL.revokeObjectURL(this.comprobanteUrl);
+  }
+
+  // ─── Aprobaciones · acciones ───────────────────────────────────────────
+
+  async cargarAprobaciones(): Promise<void> {
+    if (this.cargandoAprobaciones()) return;
+    this.cargandoAprobaciones.set(true);
+    this.errorAprobaciones.set(null);
+    try {
+      this.aprobaciones.set(await this.svc.obtenerAprobacionesServicio(this.idServicio()));
+    } catch (e: unknown) {
+      this.errorAprobaciones.set(e instanceof Error ? e.message : 'No se pudieron cargar las aprobaciones.');
+    } finally {
+      this.cargandoAprobaciones.set(false);
+    }
+  }
+
+  abrirResolver(item: AprobacionServicio, accion: 'aprobar' | 'rechazar'): void {
+    this.itemResolver.set(item);
+    this.accionResolver.set(accion);
+    this.comentarioResolver.set('');
+  }
+  cerrarResolver(): void {
+    if (this.resolviendo()) return;
+    this.itemResolver.set(null);
+    this.accionResolver.set(null);
+    this.comentarioResolver.set('');
+  }
+  async confirmarResolver(): Promise<void> {
+    const item   = this.itemResolver();
+    const accion = this.accionResolver();
+    if (!item || !accion) return;
+    const com = this.comentarioResolver().trim();
+    if (accion === 'rechazar' && com.length < 1) {
+      this.toast.error('El comentario es obligatorio al rechazar.');
+      return;
+    }
+    if (com.length > 500) {
+      this.toast.error('El comentario no puede superar 500 caracteres.');
+      return;
+    }
+    this.resolviendo.set(true);
+    try {
+      await this.svc.resolverAprobacion(this.idServicio(), item.tipo, item.id, {
+        aprobar:    accion === 'aprobar',
+        comentario: com,
+      });
+      this.toast.exito(accion === 'aprobar' ? 'Aprobación registrada.' : 'Solicitud rechazada.');
+      this.cerrarResolver();
+      await this.cargarAprobaciones();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo resolver la aprobación.');
+    } finally {
+      this.resolviendo.set(false);
+    }
+  }
+
+  cambiarFiltroAprobacion(f: FiltroTipoAprobacion): void { this.filtroAprobacion.set(f); }
+
+  // ─── Viáticos · acciones ───────────────────────────────────────────────
+
+  async cargarViaticos(): Promise<void> {
+    if (this.cargandoViaticos()) return;
+    this.cargandoViaticos.set(true);
+    this.errorViaticos.set(null);
+    try {
+      this.viaticos.set(await this.svc.obtenerViaticosServicio(this.idServicio()));
+    } catch (e: unknown) {
+      this.errorViaticos.set(e instanceof Error ? e.message : 'No se pudieron cargar los viáticos.');
+    } finally {
+      this.cargandoViaticos.set(false);
+    }
+  }
+
+  abrirRevisarGasto(ev: { idGasto: number; accion: AccionRevisionGasto }): void {
+    const g = this.viaticos()?.gastos.find(x => x.idGasto === ev.idGasto);
+    if (!g) return;
+    this.gastoRevisar.set({ idGasto: g.idGasto, concepto: g.concepto });
+    this.accionRevisarGasto.set(ev.accion);
+    this.comentarioRevisar.set('');
+  }
+  cerrarRevisarGasto(): void {
+    if (this.revisandoGasto()) return;
+    this.gastoRevisar.set(null);
+    this.accionRevisarGasto.set(null);
+    this.comentarioRevisar.set('');
+  }
+  async confirmarRevisarGasto(): Promise<void> {
+    const g      = this.gastoRevisar();
+    const accion = this.accionRevisarGasto();
+    if (!g || !accion) return;
+    const com = this.comentarioRevisar().trim();
+    const requiereComentario = accion === 'observar' || accion === 'rechazar';
+    if (requiereComentario && com.length < 1) {
+      this.toast.error('El comentario es obligatorio al observar o rechazar.');
+      return;
+    }
+    if (com.length > 500) {
+      this.toast.error('El comentario no puede superar 500 caracteres.');
+      return;
+    }
+    this.revisandoGasto.set(true);
+    try {
+      await this.svc.revisarGastoServicio(this.idServicio(), g.idGasto, {
+        accion,
+        comentario: com || null,
+      });
+      this.toast.exito('Gasto actualizado.');
+      this.cerrarRevisarGasto();
+      await this.cargarViaticos();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo revisar el gasto.');
+    } finally {
+      this.revisandoGasto.set(false);
+    }
+  }
+
+  // ─── Comprobante · lightbox ────────────────────────────────────────────
+
+  async abrirComprobante(ev: { idGasto: number; n: number }): Promise<void> {
+    const g = this.viaticos()?.gastos.find(x => x.idGasto === ev.idGasto);
+    if (!g) return;
+    this.cerrarComprobante();
+    this.comprobanteAbierto.set({ idGasto: g.idGasto, n: ev.n, nFotos: g.nFotos });
+    await this.cargarComprobante(g.idGasto, ev.n);
+  }
+
+  async cambiarFotoComprobante(delta: number): Promise<void> {
+    const c = this.comprobanteAbierto();
+    if (!c) return;
+    const n = ((c.n - 1 + delta + c.nFotos) % c.nFotos) + 1;
+    this.comprobanteAbierto.set({ ...c, n });
+    await this.cargarComprobante(c.idGasto, n);
+  }
+
+  private async cargarComprobante(idGasto: number, n: number): Promise<void> {
+    if (this.comprobanteUrl) { URL.revokeObjectURL(this.comprobanteUrl); this.comprobanteUrl = null; }
+    this.comprobanteSafeUrl.set(null);
+    this.comprobanteError.set(null);
+    this.comprobanteCargando.set(true);
+    try {
+      const blob = await this.svc.obtenerComprobanteGasto(this.idServicio(), idGasto, n);
+      this.comprobanteUrl = URL.createObjectURL(blob);
+      this.comprobanteSafeUrl.set(this.sanitizer.bypassSecurityTrustUrl(this.comprobanteUrl));
+    } catch (e: unknown) {
+      this.comprobanteError.set(e instanceof Error ? e.message : 'No se pudo cargar el comprobante.');
+    } finally {
+      this.comprobanteCargando.set(false);
+    }
+  }
+
+  cerrarComprobante(): void {
+    if (this.comprobanteUrl) { URL.revokeObjectURL(this.comprobanteUrl); this.comprobanteUrl = null; }
+    this.comprobanteSafeUrl.set(null);
+    this.comprobanteError.set(null);
+    this.comprobanteCargando.set(false);
+    this.comprobanteAbierto.set(null);
+  }
+
+  // ─── Labels ────────────────────────────────────────────────────────────
+
+  labelTipoAprobacion(t: TipoAprobacion): string {
+    switch (t) {
+      case 'salida':    return 'Salida';
+      case 'llegada':   return 'Llegada';
+      case 'evidencia': return 'Evidencia';
+      case 'ensayo':    return 'Ensayo';
+    }
+  }
+
+  iconoTipoAprobacion(t: TipoAprobacion): string {
+    switch (t) {
+      case 'salida':    return 'logout';
+      case 'llegada':   return 'login';
+      case 'evidencia': return 'photo_camera';
+      case 'ensayo':    return 'science';
+    }
+  }
+
+  chipEstadoAprobacion(e: 'pendiente' | 'aprobada' | 'rechazada'): string {
+    switch (e) {
+      case 'pendiente': return 'chip chip--ambar';
+      case 'aprobada':  return 'chip chip--verde';
+      case 'rechazada': return 'chip chip--rojo';
+    }
+  }
+
+  labelEstadoAprobacion(e: 'pendiente' | 'aprobada' | 'rechazada'): string {
+    switch (e) {
+      case 'pendiente': return 'Pendiente';
+      case 'aprobada':  return 'Aprobada';
+      case 'rechazada': return 'Rechazada';
+    }
   }
 
   async cargar(silencioso = false): Promise<void> {
@@ -362,6 +615,13 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     if (t === 'registrar' && !this.formRegistro() && !this.cargandoFormRegistro()) {
       this.cargarFormularioRegistro();
     }
+    // HU-52: lazy load Aprobaciones y Viáticos la primera vez que se abren
+    if (t === 'aprobaciones' && !this.aprobaciones() && !this.cargandoAprobaciones()) {
+      void this.cargarAprobaciones();
+    }
+    if (t === 'viaticos' && !this.viaticos() && !this.cargandoViaticos()) {
+      void this.cargarViaticos();
+    }
   }
 
   /** Exportar CSV de Demoras/Incidencias — sin confirmaciones, descarga directa. */
@@ -500,13 +760,15 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   tabIcono(t: TabDetalle): string {
     switch (t) {
-      case 'resumen':    return 'description';
-      case 'equipos':    return 'precision_manufacturing';
-      case 'mapa':       return 'map';
-      case 'timeline':   return 'history';
-      case 'demoras':    return 'warning';
-      case 'registrar':  return 'edit_note';
-      case 'cierre':     return 'check_circle';
+      case 'resumen':       return 'description';
+      case 'equipos':       return 'precision_manufacturing';
+      case 'mapa':          return 'map';
+      case 'timeline':      return 'history';
+      case 'demoras':       return 'warning';
+      case 'aprobaciones':  return 'task_alt';
+      case 'viaticos':      return 'account_balance_wallet';
+      case 'registrar':     return 'edit_note';
+      case 'cierre':        return 'check_circle';
     }
   }
 
@@ -784,13 +1046,15 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   tabLabel(t: TabDetalle): string {
     switch (t) {
-      case 'resumen':    return 'Resumen';
-      case 'equipos':    return 'Avance por Equipos';
-      case 'mapa':       return 'Mapa GPS';
-      case 'timeline':   return 'Timeline del Día';
-      case 'demoras':    return 'Demoras / Incidencias';
-      case 'registrar':  return 'Registrar';
-      case 'cierre':     return 'Cierre del Servicio';
+      case 'resumen':       return 'Resumen';
+      case 'equipos':       return 'Avance por Equipos';
+      case 'mapa':          return 'Mapa GPS';
+      case 'timeline':      return 'Timeline del Día';
+      case 'demoras':       return 'Demoras / Incidencias';
+      case 'aprobaciones':  return 'Aprobaciones';
+      case 'viaticos':      return 'Viáticos y Gastos';
+      case 'registrar':     return 'Registrar';
+      case 'cierre':        return 'Cierre del Servicio';
     }
   }
 }

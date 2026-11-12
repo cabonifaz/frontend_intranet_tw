@@ -804,6 +804,121 @@
       </div>
     }
 
+    <!-- ══════════ TAB APROBACIONES (HU-52) ══════════ -->
+    @if (tab() === 'aprobaciones') {
+      @if (cargandoAprobaciones()) {
+        <div class="bloque"><p><span class="material-symbols-outlined spin">progress_activity</span> Cargando aprobaciones…</p></div>
+      } @else if (errorAprobaciones()) {
+        <div class="bloque bloque--alerta"><p>{{ errorAprobaciones() }}</p></div>
+      } @else if (aprobaciones(); as data) {
+        <app-kpi-grid [columnas]="4">
+          <app-kpi-card icono="list_alt"      etiqueta="Total"      variante="azul"  [valor]="data.totales.total" />
+          <app-kpi-card icono="pending"       etiqueta="Pendientes" variante="ambar" [valor]="data.totales.pendientes" />
+          <app-kpi-card icono="check_circle"  etiqueta="Aprobadas"  variante="verde" [valor]="data.totales.aprobadas" />
+          <app-kpi-card icono="block"         etiqueta="Rechazadas" variante="rojo"  [valor]="data.totales.rechazadas" />
+        </app-kpi-grid>
+
+        <!-- Filtros por tipo -->
+        <div class="chips-filtro">
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'todas'"
+                  (click)="cambiarFiltroAprobacion('todas')">
+            Todas <span class="count">{{ data.aprobaciones.length }}</span>
+          </button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'salida'"
+                  (click)="cambiarFiltroAprobacion('salida')">
+            <span class="material-symbols-outlined">logout</span> Salida
+            @if (conteoPorTipo().salida) { <span class="count">{{ conteoPorTipo().salida }}</span> }
+          </button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'llegada'"
+                  (click)="cambiarFiltroAprobacion('llegada')">
+            <span class="material-symbols-outlined">login</span> Llegada
+            @if (conteoPorTipo().llegada) { <span class="count">{{ conteoPorTipo().llegada }}</span> }
+          </button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'evidencia'"
+                  (click)="cambiarFiltroAprobacion('evidencia')">
+            <span class="material-symbols-outlined">photo_camera</span> Evidencias
+            @if (conteoPorTipo().evidencia) { <span class="count">{{ conteoPorTipo().evidencia }}</span> }
+          </button>
+          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'ensayo'"
+                  (click)="cambiarFiltroAprobacion('ensayo')">
+            <span class="material-symbols-outlined">science</span> Ensayos
+            @if (conteoPorTipo().ensayo) { <span class="count">{{ conteoPorTipo().ensayo }}</span> }
+          </button>
+        </div>
+
+        <!-- Lista de tarjetas -->
+        @if (aprobacionesFiltradas().length === 0) {
+          <div class="bloque">
+            <p class="vacio-sm"><span class="material-symbols-outlined">inbox</span> Sin solicitudes en este filtro.</p>
+          </div>
+        } @else {
+          <div class="apb-lista">
+            @for (a of aprobacionesFiltradas(); track a.tipo + ':' + a.id) {
+              <article class="apb-card" [class.apb-card--urgente]="a.urgente">
+                <header class="apb-card__head">
+                  <div class="apb-card__tipo">
+                    <span class="material-symbols-outlined">{{ iconoTipoAprobacion(a.tipo) }}</span>
+                    <strong>{{ labelTipoAprobacion(a.tipo) }}</strong>
+                    @if (a.urgente) { <span class="chip chip--rojo">Urgente</span> }
+                  </div>
+                  <span [class]="chipEstadoAprobacion(a.estado)">{{ labelEstadoAprobacion(a.estado) }}</span>
+                </header>
+                <div class="apb-card__body">
+                  @if (a.titulo) { <h5>{{ a.titulo }}</h5> }
+                  <small class="muted">
+                    @if (a.solicitante) { Solicitó: <strong>{{ a.solicitante }}</strong> · }
+                    @if (a.solicitadoEn) { {{ a.solicitadoEn | date:'dd/MM/yyyy HH:mm' }} }
+                  </small>
+                  @if (a.motivo)  { <p><strong>Motivo:</strong> {{ a.motivo }}</p> }
+                  @if (a.detalle) { <p>{{ a.detalle }}</p> }
+                  @if (a.resueltoPor) {
+                    <div class="apb-card__decision">
+                      <small><strong>{{ a.resueltoPor }}</strong>
+                      @if (a.cargo)      { · {{ a.cargo }} }
+                      @if (a.resueltoEn) { · {{ a.resueltoEn | date:'dd/MM/yyyy HH:mm' }} }
+                      </small>
+                      @if (a.comentario) { <p class="apb-card__coment">"{{ a.comentario }}"</p> }
+                    </div>
+                  }
+                </div>
+                @if (a.puedeResolver && a.estado === 'pendiente') {
+                  <footer class="apb-card__footer">
+                    <app-button variant="danger"  tamano="sm" icono="block"
+                                (clic)="abrirResolver(a, 'rechazar')">Rechazar</app-button>
+                    <app-button variant="primary" tamano="sm" icono="check"
+                                (clic)="abrirResolver(a, 'aprobar')">Aprobar</app-button>
+                  </footer>
+                }
+              </article>
+            }
+          </div>
+        }
+
+        <div class="link-cross">
+          <app-button variant="link" tamano="sm" icono="account_balance_wallet"
+                      (clic)="cambiarTab('viaticos')">Ir a Viáticos y Gastos</app-button>
+        </div>
+      }
+    }
+
+    <!-- ══════════ TAB VIÁTICOS Y GASTOS (HU-52) ══════════ -->
+    @if (tab() === 'viaticos') {
+      @if (cargandoViaticos()) {
+        <div class="bloque"><p><span class="material-symbols-outlined spin">progress_activity</span> Cargando viáticos…</p></div>
+      } @else if (errorViaticos()) {
+        <div class="bloque bloque--alerta"><p>{{ errorViaticos() }}</p></div>
+      } @else if (viaticosVm(); as vm) {
+        <app-resumen-viaticos
+          modo="en-curso"
+          [vm]="vm"
+          [puedeGestionar]="!!viaticos()?.cabecera?.puedeGestionar"
+          (revisarGasto)="abrirRevisarGasto($event)"
+          (verComprobante)="abrirComprobante($event)" />
+      } @else {
+        <div class="bloque"><p>Sin datos de viáticos.</p></div>
+      }
+    }
+
     <!-- ══════════ TAB REGISTRAR (HU-53) ══════════ -->
     @if (tab() === 'registrar') {
       <div class="reg-grid">
@@ -1299,15 +1414,6 @@
       }
     }
 
-    <!-- Placeholder para tabs no implementados aún -->
-    @if (tab() !== 'resumen' && tab() !== 'equipos' && tab() !== 'mapa' && tab() !== 'timeline'
-         && tab() !== 'demoras' && tab() !== 'registrar' && tab() !== 'cierre') {
-      <div class="estado">
-        <span class="material-symbols-outlined">build</span>
-        <p><strong>{{ tabLabel(tab()) }}</strong></p>
-        <p>Pantalla en construcción (fase 2.2).</p>
-      </div>
-    }
   }
 
   <!-- ─── Footer ─────────────────────────────────────────────────────────── -->
@@ -1327,3 +1433,133 @@
     </div>
   }
 </app-modal>
+
+<!-- ══════════ Modal: Resolver aprobación (HU-52) ══════════ -->
+@if (itemResolver(); as it) {
+  <app-modal
+    [titulo]="(accionResolver() === 'aprobar' ? 'Aprobar' : 'Rechazar') + ' · ' + labelTipoAprobacion(it.tipo)"
+    [subtitulo]="it.titulo"
+    [icono]="accionResolver() === 'aprobar' ? 'check_circle' : 'cancel'"
+    [iconoColor]="accionResolver() === 'aprobar' ? 'azul' : 'rojo'"
+    ancho="md"
+    [cerrable]="!resolviendo()"
+    (cerrar)="cerrarResolver()">
+
+    <div class="dlg-body">
+      @if (it.solicitante) {
+        <p class="dlg-body__meta">
+          <span class="material-symbols-outlined">person</span>
+          Solicitante: <strong>{{ it.solicitante }}</strong>
+        </p>
+      }
+      @if (it.motivo) {
+        <p class="dlg-body__meta">
+          <span class="material-symbols-outlined">comment</span>
+          <span>{{ it.motivo }}</span>
+        </p>
+      }
+
+      <label class="dlg-body__campo">
+        <span class="dlg-body__label">
+          Comentario
+          @if (accionResolver() === 'rechazar') { <span class="req">*</span> }
+          <small class="muted">{{ comentarioResolver().length }}/500</small>
+        </span>
+        <textarea maxlength="500" rows="4"
+                  [ngModel]="comentarioResolver()"
+                  (ngModelChange)="comentarioResolver.set($event)"
+                  [placeholder]="accionResolver() === 'rechazar'
+                    ? 'Explica el motivo del rechazo (obligatorio)'
+                    : 'Comentario opcional'"></textarea>
+      </label>
+    </div>
+
+    <div modalFooter class="dlg-footer">
+      <app-button variant="secondary" tamano="md" [disabled]="resolviendo()" (clic)="cerrarResolver()">Cancelar</app-button>
+      <app-button [variant]="accionResolver() === 'aprobar' ? 'primary' : 'danger'" tamano="md"
+                  [icono]="accionResolver() === 'aprobar' ? 'check' : 'block'"
+                  [disabled]="resolviendo()" (clic)="confirmarResolver()">
+        {{ accionResolver() === 'aprobar' ? 'Confirmar aprobación' : 'Confirmar rechazo' }}
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ══════════ Modal: Revisar gasto (HU-52) ══════════ -->
+@if (gastoRevisar(); as g) {
+  <app-modal
+    [titulo]="(accionRevisarGasto() === 'aprobar' ? 'Aprobar gasto'
+             : accionRevisarGasto() === 'observar' ? 'Observar gasto'
+             : 'Rechazar gasto')"
+    [subtitulo]="g.concepto"
+    [icono]="accionRevisarGasto() === 'aprobar' ? 'check_circle'
+             : accionRevisarGasto() === 'observar' ? 'flag'
+             : 'cancel'"
+    [iconoColor]="accionRevisarGasto() === 'rechazar' ? 'rojo' : 'azul'"
+    ancho="md"
+    [cerrable]="!revisandoGasto()"
+    (cerrar)="cerrarRevisarGasto()">
+
+    <div class="dlg-body">
+      <label class="dlg-body__campo">
+        <span class="dlg-body__label">
+          Comentario
+          @if (accionRevisarGasto() === 'observar' || accionRevisarGasto() === 'rechazar') { <span class="req">*</span> }
+          <small class="muted">{{ comentarioRevisar().length }}/500</small>
+        </span>
+        <textarea maxlength="500" rows="4"
+                  [ngModel]="comentarioRevisar()"
+                  (ngModelChange)="comentarioRevisar.set($event)"
+                  [placeholder]="accionRevisarGasto() === 'aprobar'
+                    ? 'Comentario opcional'
+                    : 'Explica el motivo (obligatorio)'"></textarea>
+      </label>
+    </div>
+
+    <div modalFooter class="dlg-footer">
+      <app-button variant="secondary" tamano="md" [disabled]="revisandoGasto()" (clic)="cerrarRevisarGasto()">Cancelar</app-button>
+      <app-button [variant]="accionRevisarGasto() === 'rechazar' ? 'danger' : 'primary'" tamano="md"
+                  [icono]="accionRevisarGasto() === 'aprobar' ? 'check'
+                           : accionRevisarGasto() === 'observar' ? 'flag'
+                           : 'block'"
+                  [disabled]="revisandoGasto()" (clic)="confirmarRevisarGasto()">
+        Confirmar
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ══════════ Lightbox: comprobante del gasto (HU-52) ══════════ -->
+@if (comprobanteAbierto(); as c) {
+  <div class="comp-lightbox" (click)="cerrarComprobante()">
+    <button type="button" class="comp-lightbox__cerrar" (click)="cerrarComprobante()" aria-label="Cerrar visor">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="comp-lightbox__contenido" (click)="$event.stopPropagation()">
+      @if (comprobanteCargando()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          <p>Cargando comprobante…</p>
+        </div>
+      } @else if (comprobanteError()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined">broken_image</span>
+          <p>{{ comprobanteError() }}</p>
+        </div>
+      } @else if (comprobanteSafeUrl(); as url) {
+        <img class="comp-lightbox__img" [src]="url" alt="Comprobante del gasto">
+      }
+      @if (c.nFotos > 1) {
+        <div class="comp-lightbox__nav">
+          <button type="button" (click)="cambiarFotoComprobante(-1)" aria-label="Anterior">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <span>{{ c.n }} / {{ c.nFotos }}</span>
+          <button type="button" (click)="cambiarFotoComprobante(1)" aria-label="Siguiente">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -11,6 +11,9 @@ import {
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 import { EnViewportDirective } from '../../../../shared/directives/en-viewport.directive';
+import { ResumenViaticosComponent } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.component';
+import { viaticosOsAVm } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.vm';
+import { ViaticosOs } from '../../../../core/models/aprobaciones-viaticos-servicio.model';
 
 /**
  * Estado interno de carga de un archivo de evidencia (HU-57).
@@ -22,7 +25,7 @@ type EstadoFoto =
   | { estado: 'listo'; url: string; safeUrl: SafeUrl }
   | { estado: 'error' };
 
-type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendaciones' | 'ensayos' | 'fotos' | 'historial';
+type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendaciones' | 'ensayos' | 'fotos' | 'viaticos' | 'historial';
 
 /**
  * HU-57 — Modal Detalle del Servicio Técnico (Módulo 12).
@@ -34,7 +37,7 @@ type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendac
  */
 @Component({
   selector: 'app-modal-detalle-informe',
-  imports: [CommonModule, ButtonComponent, InicialesPipe, EnViewportDirective],
+  imports: [CommonModule, ButtonComponent, InicialesPipe, EnViewportDirective, ResumenViaticosComponent],
   templateUrl: './modal-detalle-informe.component.html',
   styleUrl: './modal-detalle-informe.component.scss',
 })
@@ -75,6 +78,15 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
   readonly categoriaHistorial = signal<CategoriaHistorial>('todos');
   readonly historialCompleto  = signal<HistorialInformeApi | null>(null);
   readonly cargandoHistorial  = signal(false);
+
+  // ─── Viáticos (tab, HU-57 cierre) ──────────────────────────────────────
+  readonly viaticos         = signal<ViaticosOs | null>(null);
+  readonly cargandoViaticos = signal(false);
+  readonly errorViaticos    = signal<string | null>(null);
+  readonly viaticosVm       = computed(() => {
+    const v = this.viaticos();
+    return v ? viaticosOsAVm(v) : null;
+  });
 
   // ─── Derivados ──────────────────────────────────────────────────────────
   readonly cabecera        = computed<CabeceraInformeApi | null>(() => this.detalle()?.cabecera ?? null);
@@ -139,6 +151,9 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     this.error.set(null);
     try {
       this.detalle.set(await this.svc.obtenerDetalle(this.idInforme()));
+      // Dispara en background la carga de viáticos para que el chip del Resumen
+      // de Validaciones (y el tab Viáticos) estén listos sin esperar al click.
+      void this.cargarViaticos();
     } catch (e: unknown) {
       const m = e instanceof Error && e.message ? e.message : 'No se pudo cargar el detalle del informe.';
       this.error.set(m);
@@ -154,6 +169,10 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     if (t === 'historial' && !this.historialCompleto()) {
       void this.cargarHistorial();
     }
+    // HU-57 · viáticos del informe (modo cierre): lazy load.
+    if (t === 'viaticos' && !this.viaticos() && !this.cargandoViaticos()) {
+      void this.cargarViaticos();
+    }
   }
 
   async cargarHistorial(): Promise<void> {
@@ -164,6 +183,19 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el historial.');
     } finally {
       this.cargandoHistorial.set(false);
+    }
+  }
+
+  async cargarViaticos(): Promise<void> {
+    if (this.cargandoViaticos()) return;
+    this.cargandoViaticos.set(true);
+    this.errorViaticos.set(null);
+    try {
+      this.viaticos.set(await this.svc.obtenerViaticosInforme(this.idInforme()));
+    } catch (e: unknown) {
+      this.errorViaticos.set(e instanceof Error ? e.message : 'No se pudieron cargar los viáticos.');
+    } finally {
+      this.cargandoViaticos.set(false);
     }
   }
 
@@ -350,5 +382,24 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     if (pct === 100) return { clase: 'chip chip--verde', label: '100% completado' };
     if (pct === 0)   return { clase: 'chip chip--gris',  label: 'Sin registro' };
     return { clase: 'chip chip--ambar', label: `${pct}% completado` };
+  }
+
+  /** Chip del Resumen de Validaciones para la fila "Rendición de viáticos" (HU-57). */
+  chipViaticos(): { clase: string, label: string } {
+    const v = this.viaticos();
+    if (!v) return { clase: 'chip chip--gris', label: 'Click para ver' };
+    const c = v.cierre;
+    if (c && c.estado === 'cerrada') {
+      const moneda = v.cabecera.moneda || 'PEN';
+      switch (c.tipo) {
+        case 'reembolso':  return { clase: 'chip chip--azul',  label: `Cerrada · Reembolso ${moneda} ${c.saldo.toFixed(2)}` };
+        case 'devolucion': return { clase: 'chip chip--ambar', label: `Cerrada · Devolución ${moneda} ${Math.abs(c.saldo).toFixed(2)}` };
+        case 'cuadrado':   return { clase: 'chip chip--verde', label: 'Cerrada · Cuadrado' };
+      }
+    }
+    const n = v.resumen.nPorRevisar;
+    return n > 0
+      ? { clase: 'chip chip--ambar', label: `Abierta · ${n} gasto${n === 1 ? '' : 's'} por revisar` }
+      : { clase: 'chip chip--ambar', label: 'Abierta' };
   }
 }

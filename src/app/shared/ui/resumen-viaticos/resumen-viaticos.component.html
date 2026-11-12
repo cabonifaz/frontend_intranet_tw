@@ -1,0 +1,316 @@
+<div class="rv">
+
+  <!-- ─── MODO ASIGNACIÓN ─────────────────────────────────────────── -->
+  @if (modo() === 'asignacion') {
+    <app-kpi-grid [columnas]="3">
+      <app-kpi-card icono="account_balance_wallet" etiqueta="Asignado"
+                    variante="azul"
+                    [valor]="moneda() + ' ' + (totales().asignado | number:'1.2-2')" />
+      <app-kpi-card icono="check_circle" etiqueta="Depositado"
+                    variante="verde"
+                    [valor]="moneda() + ' ' + (totales().depositado | number:'1.2-2')" />
+      <app-kpi-card icono="hourglass_top" etiqueta="Pendiente de depósito"
+                    variante="ambar"
+                    [valor]="moneda() + ' ' + (totales().pendienteDeposito | number:'1.2-2')" />
+    </app-kpi-grid>
+
+    <section class="rv__bloque">
+      <header class="rv__head">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h4>Líneas asignadas por técnico y concepto</h4>
+        <span class="rv__badge">{{ lineas().length }}</span>
+      </header>
+      @if (lineas().length === 0) {
+        <p class="rv__vacio">Aún no se asignaron viáticos para esta programación.</p>
+      } @else {
+        <table class="rv__tabla">
+          <thead>
+            <tr><th>Técnico</th><th>Rol</th><th>Concepto</th><th class="derecha">Monto</th><th>Depósito</th></tr>
+          </thead>
+          <tbody>
+            @for (l of lineas(); track l.clave) {
+              <tr>
+                <td>{{ l.tecnico }}</td>
+                <td><small class="rv__rol">{{ l.rol === 'principal' ? 'Principal' : 'Apoyo' }}</small></td>
+                <td>{{ l.concepto }}</td>
+                <td class="derecha mono">{{ moneda() }} {{ l.asignado | number:'1.2-2' }}</td>
+                <td>
+                  <span [class]="chipDeposito(l).clase">{{ chipDeposito(l).texto }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
+  <!-- ─── MODO EN CURSO ───────────────────────────────────────────── -->
+  @if (modo() === 'en-curso') {
+    <app-kpi-grid [columnas]="5">
+      <app-kpi-card icono="account_balance_wallet" etiqueta="Asignado"
+                    variante="azul"
+                    [valor]="moneda() + ' ' + (totales().asignado | number:'1.2-2')" />
+      <app-kpi-card icono="check_circle" etiqueta="Depositado"
+                    variante="verde"
+                    [valor]="moneda() + ' ' + (totales().depositado | number:'1.2-2')" />
+      <app-kpi-card icono="price_check" etiqueta="Rendido"
+                    variante="morado"
+                    [valor]="moneda() + ' ' + (totales().rendido | number:'1.2-2')" />
+      <app-kpi-card icono="pending_actions" etiqueta="Por revisar"
+                    variante="ambar"
+                    [valor]="totales().nPorRevisar"
+                    [subtitulo]="totales().nPorRevisar
+                      ? moneda() + ' ' + (totales().porRevisar | number:'1.2-2')
+                      : 'Sin pendientes'" />
+      <app-kpi-card icono="hourglass_bottom" etiqueta="Por rendir"
+                    variante="rosa"
+                    [valor]="moneda() + ' ' + (totales().porRendir | number:'1.2-2')" />
+    </app-kpi-grid>
+
+    <!-- Tabla 1: adelanto por técnico y concepto -->
+    <section class="rv__bloque">
+      <header class="rv__head">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <h4>Adelanto por técnico y concepto</h4>
+        <span class="rv__badge">{{ lineas().length }}</span>
+      </header>
+      @if (lineas().length === 0) {
+        <p class="rv__vacio">Sin adelantos asignados.</p>
+      } @else {
+        <table class="rv__tabla">
+          <thead>
+            <tr>
+              <th>Técnico</th><th>Concepto</th>
+              <th class="derecha">Asignado</th>
+              <th class="derecha">Rendido</th>
+              <th class="derecha">Por rendir</th>
+              <th>Depósito</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of lineas(); track l.clave) {
+              <tr>
+                <td>{{ l.tecnico }}</td>
+                <td>{{ l.concepto }}</td>
+                <td class="derecha mono">{{ moneda() }} {{ l.asignado | number:'1.2-2' }}</td>
+                <td class="derecha mono">{{ moneda() }} {{ l.rendido | number:'1.2-2' }}</td>
+                <td class="derecha mono">
+                  @if (l.porRendir > 0) {
+                    <strong>{{ moneda() }} {{ l.porRendir | number:'1.2-2' }}</strong>
+                  } @else {
+                    <span class="rv__ok">—</span>
+                  }
+                </td>
+                <td><span [class]="chipDeposito(l).clase">{{ chipDeposito(l).texto }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
+    <!-- Tabla 2: gastos rendidos -->
+    <section class="rv__bloque">
+      <header class="rv__head">
+        <span class="material-symbols-outlined">request_quote</span>
+        <h4>Gastos rendidos</h4>
+        <span class="rv__badge">{{ gastos().length }}</span>
+      </header>
+      @if (gastos().length === 0) {
+        <p class="rv__vacio">El técnico aún no registró gastos.</p>
+      } @else {
+        <table class="rv__tabla rv__tabla--gastos">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Concepto · descripción</th>
+              <th>Técnico</th>
+              <th class="derecha">Monto</th>
+              <th class="centro">Comprobante</th>
+              <th>Lectura IA</th>
+              <th>Estado</th>
+              <th class="derecha">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of gastos(); track g.idGasto) {
+              <tr>
+                <td class="nowrap">{{ g.fecha ?? '—' }}</td>
+                <td>
+                  <strong>{{ g.concepto }}</strong>
+                  @if (g.descripcion) { <small class="rv__desc">{{ g.descripcion }}</small> }
+                </td>
+                <td>{{ g.tecnico }}</td>
+                <td class="derecha mono">{{ moneda() }} {{ g.monto | number:'1.2-2' }}</td>
+                <td class="centro">
+                  @if (g.nFotos > 0) {
+                    <div class="rv__thumbs">
+                      @for (n of fotos(g); track n) {
+                        <button type="button" class="rv__thumb" (click)="onVerComprobante(g, n)"
+                                [attr.aria-label]="'Ver foto ' + n + ' del comprobante'">
+                          <span class="material-symbols-outlined">image</span>
+                          @if (g.nFotos > 1) { <small>{{ n }}</small> }
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <span class="chip chip--gris" [title]="g.motivoSinFoto ?? ''">SIN FOTO</span>
+                    @if (g.motivoSinFoto) {
+                      <small class="rv__desc rv__desc--centro">{{ g.motivoSinFoto }}</small>
+                    }
+                  }
+                </td>
+                <td>
+                  @if (g.montoIa != null) {
+                    <div class="rv__ia">
+                      <span class="mono">{{ moneda() }} {{ g.montoIa | number:'1.2-2' }}</span>
+                      @if (g.coincideIa) {
+                        <span class="chip chip--verde">✓ coincide</span>
+                      } @else {
+                        <span class="chip chip--ambar">no coincide</span>
+                      }
+                    </div>
+                  } @else {
+                    <small class="rv__desc">sin lectura</small>
+                  }
+                </td>
+                <td>
+                  <span [class]="chipEstadoGasto(g.estado)">{{ etiquetaEstadoGasto(g.estado) }}</span>
+                  @if (g.comentarioRevision) {
+                    <small class="rv__desc" [title]="g.comentarioRevision">{{ g.comentarioRevision }}</small>
+                  }
+                  @if (g.revisadoPor) {
+                    <small class="rv__desc">{{ g.revisadoPor }}</small>
+                  }
+                </td>
+                <td class="rv__acciones derecha">
+                  @if (g.puedeAprobar) {
+                    <button type="button" class="rv__btn rv__btn--verde" (click)="onRevisar(g, 'aprobar')">
+                      <span class="material-symbols-outlined">check</span> Aprobar
+                    </button>
+                  }
+                  @if (g.puedeObservar) {
+                    <button type="button" class="rv__btn rv__btn--ambar" (click)="onRevisar(g, 'observar')">
+                      <span class="material-symbols-outlined">flag</span> Observar
+                    </button>
+                  }
+                  @if (g.puedeRechazar) {
+                    <button type="button" class="rv__btn rv__btn--rojo" (click)="onRevisar(g, 'rechazar')">
+                      <span class="material-symbols-outlined">block</span> Rechazar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
+  <!-- ─── MODO CIERRE (solo lectura) ──────────────────────────────── -->
+  @if (modo() === 'cierre') {
+    @if (cierre(); as c) {
+      <section class="rv__bloque rv__bloque--cierre">
+        <header class="rv__head">
+          <span class="material-symbols-outlined">task_alt</span>
+          <h4>Rendición cerrada</h4>
+          <span [class]="chipSaldo(c.tipo)">{{ etiquetaSaldo(c.tipo, c.saldo, moneda()) }}</span>
+        </header>
+        <div class="rv__cierre-info">
+          <div><small>Asignado</small><strong>{{ moneda() }} {{ c.asignado | number:'1.2-2' }}</strong></div>
+          <div><small>Aprobado</small><strong>{{ moneda() }} {{ c.aprobado | number:'1.2-2' }}</strong></div>
+          <div><small>Rechazado</small><strong>{{ moneda() }} {{ c.rechazado | number:'1.2-2' }}</strong></div>
+          <div><small>Saldo</small><strong>{{ moneda() }} {{ c.saldo | number:'1.2-2' }}</strong></div>
+          @if (c.cerradoPor) {
+            <div class="rv__cierre-por">
+              <small>Cerrado por</small>
+              <strong>{{ c.cerradoPor }}{{ c.cerradoEn ? ' · ' + c.cerradoEn : '' }}</strong>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <app-kpi-grid [columnas]="4">
+      <app-kpi-card icono="account_balance_wallet" etiqueta="Asignado"
+                    variante="azul"
+                    [valor]="moneda() + ' ' + (totales().asignado | number:'1.2-2')" />
+      <app-kpi-card icono="price_check" etiqueta="Rendido"
+                    variante="morado"
+                    [valor]="moneda() + ' ' + (totales().rendido | number:'1.2-2')" />
+      <app-kpi-card icono="check_circle" etiqueta="Aprobado"
+                    variante="verde"
+                    [valor]="moneda() + ' ' + (totales().aprobado | number:'1.2-2')" />
+      <app-kpi-card icono="block" etiqueta="Rechazado"
+                    variante="rojo"
+                    [valor]="moneda() + ' ' + (totales().rechazado | number:'1.2-2')" />
+    </app-kpi-grid>
+
+    <section class="rv__bloque">
+      <header class="rv__head">
+        <span class="material-symbols-outlined">request_quote</span>
+        <h4>Gastos de la rendición</h4>
+        <span class="rv__badge">{{ gastos().length }}</span>
+      </header>
+      @if (gastos().length === 0) {
+        <p class="rv__vacio">Sin gastos registrados.</p>
+      } @else {
+        <table class="rv__tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Concepto · descripción</th><th>Técnico</th>
+              <th class="derecha">Monto</th>
+              <th class="centro">Comprobante</th>
+              <th>Estado final</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (g of gastos(); track g.idGasto) {
+              <tr>
+                <td class="nowrap">{{ g.fecha ?? '—' }}</td>
+                <td>
+                  <strong>{{ g.concepto }}</strong>
+                  @if (g.descripcion) { <small class="rv__desc">{{ g.descripcion }}</small> }
+                </td>
+                <td>{{ g.tecnico }}</td>
+                <td class="derecha mono">{{ moneda() }} {{ g.monto | number:'1.2-2' }}</td>
+                <td class="centro">
+                  @if (g.nFotos > 0) {
+                    <div class="rv__thumbs">
+                      @for (n of fotos(g); track n) {
+                        <button type="button" class="rv__thumb" (click)="onVerComprobante(g, n)">
+                          <span class="material-symbols-outlined">image</span>
+                          @if (g.nFotos > 1) { <small>{{ n }}</small> }
+                        </button>
+                      }
+                    </div>
+                  } @else {
+                    <span class="chip chip--gris">SIN FOTO</span>
+                  }
+                </td>
+                <td>
+                  <span [class]="chipEstadoGasto(g.estado)">{{ etiquetaEstadoGasto(g.estado) }}</span>
+                  @if (g.comentarioRevision) {
+                    <small class="rv__desc" [title]="g.comentarioRevision">{{ g.comentarioRevision }}</small>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+
+  <!-- Footer con "Gestionar viáticos" (asignación y en-curso) -->
+  @if ((modo() === 'asignacion' || modo() === 'en-curso') && puedeGestionar()) {
+    <footer class="rv__footer">
+      <app-button variant="primary" tamano="md" icono="payments" (clic)="onAbrirGestion()">
+        Gestionar viáticos
+      </app-button>
+    </footer>
+  }
+
+</div>
