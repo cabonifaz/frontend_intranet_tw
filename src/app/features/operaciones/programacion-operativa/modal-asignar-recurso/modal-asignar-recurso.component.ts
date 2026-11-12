@@ -115,13 +115,23 @@ export class ModalAsignarRecursoComponent implements OnInit {
   }
 
   seleccionarPrincipal(idUsuario: number): void {
+    // Toggle: si ya es el principal, lo desmarca (queda sin principal hasta elegir otro).
+    if (this.idPrincipal() === idUsuario) {
+      this.idPrincipal.set(null);
+      return;
+    }
     this.idPrincipal.set(idUsuario);
-    // Si estaba en apoyo, quitarlo
+    // Si estaba en apoyo, quitarlo (no puede estar en ambos roles a la vez).
     this.idsApoyo.set(this.idsApoyo().filter(id => id !== idUsuario));
   }
 
   toggleApoyo(idUsuario: number): void {
-    if (this.idPrincipal() === idUsuario) return;
+    // Si era el principal, degradarlo a apoyo directamente (sin pasar por "deseleccionar primero").
+    if (this.idPrincipal() === idUsuario) {
+      this.idPrincipal.set(null);
+      this.idsApoyo.set([...this.idsApoyo(), idUsuario]);
+      return;
+    }
     const list = this.idsApoyo();
     this.idsApoyo.set(
       list.includes(idUsuario) ? list.filter(id => id !== idUsuario) : [...list, idUsuario]
