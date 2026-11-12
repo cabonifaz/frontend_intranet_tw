@@ -455,16 +455,21 @@
                       @switch (estadoDe(f.idEvidencia).estado) {
                         @case ('listo') {
                           <img [src]="safeUrlFoto(f.idEvidencia)" [alt]="f.descripcion ?? ''">
+                          @if (f.esVideo) {
+                            <span class="foto__play" aria-label="Video">
+                              <span class="material-symbols-outlined">play_circle</span>
+                            </span>
+                          }
                         }
                         @case ('error') {
                           <div class="foto__fallback foto__fallback--visible">
-                            <span class="material-symbols-outlined">broken_image</span>
+                            <span class="material-symbols-outlined">{{ f.esVideo ? 'videocam_off' : 'broken_image' }}</span>
                             <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
                           </div>
                         }
                         @default {
                           <div class="foto__skeleton" aria-label="Cargando foto">
-                            <span class="material-symbols-outlined foto__skeleton-icono">image</span>
+                            <span class="material-symbols-outlined foto__skeleton-icono">{{ f.esVideo ? 'movie' : 'image' }}</span>
                           </div>
                         }
                       }
@@ -589,21 +594,41 @@
       <span class="material-symbols-outlined">close</span>
     </button>
     <div class="lightbox__contenido" (click)="$event.stopPropagation()">
-      @switch (estadoDe(foto.idEvidencia).estado) {
-        @case ('listo') {
-          <img class="lightbox__img" [src]="safeUrlFoto(foto.idEvidencia)" [alt]="foto.descripcion ?? ''">
+      @if (foto.esVideo) {
+        @switch (estadoVideoDe(foto.idEvidencia).estado) {
+          @case ('listo') {
+            <video class="lightbox__img" controls autoplay [src]="safeUrlVideo(foto.idEvidencia)"></video>
+          }
+          @case ('error') {
+            <div class="lightbox__fallback">
+              <span class="material-symbols-outlined">videocam_off</span>
+              <p>No se pudo cargar el video.</p>
+            </div>
+          }
+          @default {
+            <div class="lightbox__cargando">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              <p>Cargando video…</p>
+            </div>
+          }
         }
-        @case ('error') {
-          <div class="lightbox__fallback">
-            <span class="material-symbols-outlined">broken_image</span>
-            <p>No se pudo cargar esta evidencia.</p>
-          </div>
-        }
-        @default {
-          <div class="lightbox__cargando">
-            <span class="material-symbols-outlined spin">progress_activity</span>
-            <p>Cargando…</p>
-          </div>
+      } @else {
+        @switch (estadoDe(foto.idEvidencia).estado) {
+          @case ('listo') {
+            <img class="lightbox__img" [src]="safeUrlFoto(foto.idEvidencia)" [alt]="foto.descripcion ?? ''">
+          }
+          @case ('error') {
+            <div class="lightbox__fallback">
+              <span class="material-symbols-outlined">broken_image</span>
+              <p>No se pudo cargar esta evidencia.</p>
+            </div>
+          }
+          @default {
+            <div class="lightbox__cargando">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              <p>Cargando…</p>
+            </div>
+          }
         }
       }
       <div class="lightbox__pie">

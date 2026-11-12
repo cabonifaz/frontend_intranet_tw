@@ -295,6 +295,17 @@
     animation: fotoShimmer 1.4s ease-in-out infinite;
   }
   &__skeleton-icono { color: #CBD5E1; font-size: 36px; }
+  &__play {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%);
+    .material-symbols-outlined {
+      font-size: 56px; color: #FFFFFF;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+      font-variation-settings: 'FILL' 1;
+    }
+  }
   &__pie {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     padding: 8px 10px;
@@ -335,6 +346,7 @@
     border-radius: 8px; background: #000;
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
+  video.lightbox__img { width: auto; display: block; }
   &__cargando, &__fallback {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 10px; color: #CBD5E1; min-width: 320px; min-height: 240px;
