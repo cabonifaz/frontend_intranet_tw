@@ -286,7 +286,7 @@
               <span [class]="claseSubEstado(p.subEstado)">{{ etiquetaSubEstado(p.subEstado) }}</span>
             </td>
             <td class="num">
-              <span [class]="claseViatico(p.viaticoEstado)">
+              <span [class]="claseViatico(p.viaticoEstado)" [title]="tooltipViatico(p)">
                 {{ p.viaticoMoneda }} {{ p.viaticoMonto | number:'1.2-2' }}
               </span>
             </td>

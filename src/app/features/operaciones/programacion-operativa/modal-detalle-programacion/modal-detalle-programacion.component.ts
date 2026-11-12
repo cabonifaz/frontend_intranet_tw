@@ -7,6 +7,8 @@ import { DetalleProgramacion } from '../../../../core/models/programacion-operat
 import { ViaticosProgramacion } from '../../../../core/models/programacion-viaticos.model';
 import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
+import { ResumenViaticosComponent } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.component';
+import { viaticosProgramacionAVm } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.vm';
 
 type Tab = 'datos' | 'checklist' | 'historial' | 'viaticos';
 
@@ -21,7 +23,7 @@ type Tab = 'datos' | 'checklist' | 'historial' | 'viaticos';
  */
 @Component({
   selector: 'app-modal-detalle-programacion',
-  imports: [CommonModule, ModalComponent, ButtonComponent],
+  imports: [CommonModule, ModalComponent, ButtonComponent, ResumenViaticosComponent],
   templateUrl: './modal-detalle-programacion.component.html',
   styleUrl: './modal-detalle-programacion.component.scss',
 })
@@ -49,6 +51,11 @@ export class ModalDetalleProgramacionComponent implements OnInit {
   readonly viaticos         = signal<ViaticosProgramacion | null>(null);
   readonly viaticosCargando = signal(false);
   readonly viaticosError    = signal<string | null>(null);
+
+  readonly viaticosVm = computed(() => {
+    const v = this.viaticos();
+    return v ? viaticosProgramacionAVm(v) : null;
+  });
 
   readonly cabecera = computed(() => this.detalle()?.programacion);
   readonly acciones = computed(() => this.cabecera()?.acciones);

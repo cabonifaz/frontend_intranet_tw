@@ -8,6 +8,7 @@ import {
   InformeRevisadoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
   RespuestaRevisionApi,
 } from '../models/revision-informes-api.model';
+import { ViaticosOs } from '../models/aprobaciones-viaticos-servicio.model';
 
 /**
  * HU-56 a HU-59 — Servicio Técnico › Revisión de Informes (Sprint 5, Módulo 12).
@@ -149,6 +150,16 @@ export class RevisionInformesService {
       );
     } catch (e) {
       throw this.comoError(e, 'No se pudo descargar el archivo de la evidencia.');
+    }
+  }
+
+  /** HU-57 — GET viáticos (modo cierre, solo lectura) asociados al informe. */
+  async obtenerViaticosInforme(idInforme: number): Promise<ViaticosOs> {
+    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+    try {
+      return await this.get<ViaticosOs>(`${this.base}/${idInforme}/viaticos`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar los viáticos del informe.');
     }
   }
 

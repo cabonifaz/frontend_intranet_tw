@@ -444,3 +444,25 @@
   &--gris       { background: #F1F5F9; color: #475569; }
   &--gris-oscuro{ background: #E2E8F0; color: #334155; }
 }
+
+// ── HU-57 · Banner tab Viáticos (rendición abierta) ───────────────────
+.mdi__banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  margin-bottom: 12px;
+  &--ambar {
+    background: #FEF3C7; border: 1px solid #FDE68A; color: #92400E;
+  }
+  .material-symbols-outlined { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  div {
+    display: flex; flex-direction: column; gap: 2px;
+    strong { font-size: 13px; }
+    small  { font-size: 12px; opacity: 0.85; }
+  }
+}
+.mdi__alerta {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 10px;
+  background: #FEE2E2; border: 1px solid #FECACA; color: #B91C1C;
+  p { margin: 0; font-size: 13px; }
+}

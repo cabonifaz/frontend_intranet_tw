@@ -57,6 +57,9 @@
         Fotos
         @if (fotosTodas().length) { <span class="mdi__tab-badge">{{ fotosTodas().length }}</span> }
       </button>
+      <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'viaticos'" (click)="cambiarTab('viaticos')">
+        Viáticos y Gastos
+      </button>
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'historial'" (click)="cambiarTab('historial')">Historial</button>
     </div>
 
@@ -215,6 +218,11 @@
                   <span class="material-symbols-outlined val-item__icon">checklist</span>
                   <span class="val-item__label">Checklist del procedimiento</span>
                   <span [class]="chipProcedimiento(c).clase">{{ chipProcedimiento(c).label }}</span>
+                </li>
+                <li class="val-item" (click)="cambiarTab('viaticos')" style="cursor:pointer">
+                  <span class="material-symbols-outlined val-item__icon">account_balance_wallet</span>
+                  <span class="val-item__label">Rendición de viáticos</span>
+                  <span [class]="chipViaticos().clase">{{ chipViaticos().label }}</span>
                 </li>
               </ul>
             </section>
@@ -487,6 +495,34 @@
                 }
               </div>
             }
+          }
+        }
+
+        <!-- ── TAB VIÁTICOS Y GASTOS (HU-57 modo cierre) ───────────── -->
+        @if (tab() === 'viaticos') {
+          @if (cargandoViaticos()) {
+            <div class="loading">
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              Cargando viáticos…
+            </div>
+          } @else if (errorViaticos()) {
+            <div class="mdi__alerta">
+              <span class="material-symbols-outlined">error</span>
+              <p>{{ errorViaticos() }}</p>
+            </div>
+          } @else if (viaticosVm(); as vm) {
+            @if (viaticos()?.cabecera?.rendicionCerrada === false) {
+              <div class="mdi__banner mdi__banner--ambar">
+                <span class="material-symbols-outlined">pending_actions</span>
+                <div>
+                  <strong>Rendición pendiente de cierre por el Jefe de Operaciones</strong>
+                  <small>Los montos y el saldo final pueden cambiar cuando se cierre la rendición.</small>
+                </div>
+              </div>
+            }
+            <app-resumen-viaticos modo="cierre" [vm]="vm" />
+          } @else {
+            <div class="vacio">Este informe no tiene una rendición asociada.</div>
           }
         }
 
