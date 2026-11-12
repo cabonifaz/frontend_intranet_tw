@@ -59,8 +59,10 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
   readonly filtroMomento = signal<MomentoFoto | 'TODOS'>('TODOS');
 
   // ─── Carga diferida de blobs de fotos (HU-57) ───────────────────────────
-  /** Caché de estados de carga por idEvidencia. Tanto miniaturas como visor grande se cachean aquí. */
+  /** Caché de la miniatura (imagen o cuadro estático del video) por idEvidencia. */
   readonly estadoFotos = signal<Record<number, EstadoFoto>>({});
+  /** Caché aparte del MP4 completo para videos en el lightbox (cuadro=false). */
+  readonly estadoVideos = signal<Record<number, EstadoFoto>>({});
   /** Límite de descargas en paralelo (Bryan pidió ~4 para no saturar al back con informes de 28 fotos). */
   private readonly MAX_CONCURRENTES = 4;
   private activas = 0;
@@ -124,7 +126,11 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     for (const e of Object.values(this.estadoFotos())) {
       if (e.estado === 'listo') URL.revokeObjectURL(e.url);
     }
+    for (const e of Object.values(this.estadoVideos())) {
+      if (e.estado === 'listo') URL.revokeObjectURL(e.url);
+    }
     this.estadoFotos.set({});
+    this.estadoVideos.set({});
     this.cola = [];
   }
 
@@ -183,14 +189,25 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
 
   // ─── Carga diferida de blobs — API pública del componente ───────────────
 
-  /** Estado actual del archivo de una evidencia. Si nunca se pidió, devuelve pendiente. */
+  /** Estado del archivo "miniatura" (imagen completa o cuadro estático del video). */
   estadoDe(idEvidencia: number): EstadoFoto {
     return this.estadoFotos()[idEvidencia] ?? { estado: 'pendiente' };
+  }
+
+  /** Estado del video MP4 (solo para evidencias donde `esVideo === true`). */
+  estadoVideoDe(idEvidencia: number): EstadoFoto {
+    return this.estadoVideos()[idEvidencia] ?? { estado: 'pendiente' };
   }
 
   /** SafeUrl para pintar en <img [src]="..."> cuando la foto ya cargó; null si todavía no. */
   safeUrlFoto(idEvidencia: number): SafeUrl | null {
     const e = this.estadoDe(idEvidencia);
+    return e.estado === 'listo' ? e.safeUrl : null;
+  }
+
+  /** SafeUrl del MP4 completo para <video [src]="...">. */
+  safeUrlVideo(idEvidencia: number): SafeUrl | null {
+    const e = this.estadoVideoDe(idEvidencia);
     return e.estado === 'listo' ? e.safeUrl : null;
   }
 
@@ -200,9 +217,9 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
    * Se llama desde (entra) de la directiva appEnViewport en cada tarjeta.
    */
   solicitarFoto(idEvidencia: number, cuadro = true): void {
-    const estado = this.estadoDe(idEvidencia).estado;
+    const estado = cuadro ? this.estadoDe(idEvidencia).estado : this.estadoVideoDe(idEvidencia).estado;
     if (estado !== 'pendiente') return;
-    this.establecerEstado(idEvidencia, { estado: 'cargando' });
+    this.establecerEstado(idEvidencia, { estado: 'cargando' }, cuadro);
     if (this.activas < this.MAX_CONCURRENTES) this.ejecutarDescarga(idEvidencia, cuadro);
     else                                       this.cola.push({ idInforme: this.idInforme(), idEvidencia, cuadro });
   }
@@ -211,13 +228,14 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     this.activas++;
     try {
       const blob = await this.svc.obtenerArchivoFoto(this.idInforme(), idEvidencia, cuadro);
+      const mapa = cuadro ? this.estadoFotos() : this.estadoVideos();
       // Si el componente se destruyó entremedio, el estado ya se limpió: no sobrescribimos.
-      if (!(idEvidencia in this.estadoFotos())) return;
+      if (!(idEvidencia in mapa)) return;
       const url = URL.createObjectURL(blob);
       const safeUrl = this.sanitizer.bypassSecurityTrustUrl(url);
-      this.establecerEstado(idEvidencia, { estado: 'listo', url, safeUrl });
+      this.establecerEstado(idEvidencia, { estado: 'listo', url, safeUrl }, cuadro);
     } catch {
-      this.establecerEstado(idEvidencia, { estado: 'error' });
+      this.establecerEstado(idEvidencia, { estado: 'error' }, cuadro);
     } finally {
       this.activas--;
       const sig = this.cola.shift();
@@ -225,16 +243,18 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private establecerEstado(idEvidencia: number, nuevo: EstadoFoto): void {
-    this.estadoFotos.update(mapa => ({ ...mapa, [idEvidencia]: nuevo }));
+  private establecerEstado(idEvidencia: number, nuevo: EstadoFoto, cuadro = true): void {
+    const sig = cuadro ? this.estadoFotos : this.estadoVideos;
+    sig.update(mapa => ({ ...mapa, [idEvidencia]: nuevo }));
   }
 
   // ─── Visor en grande (lightbox) ─────────────────────────────────────────
 
   abrirLightbox(f: FotoInformeApi): void {
-    // Reusamos el blob de la miniatura (ya está pedido con cuadro=true, y es la misma imagen).
-    // Si todavía no cargó, lo encolamos y el visor mostrará el skeleton hasta que llegue.
+    // La miniatura (cuadro=true) ya está pedida o en curso por appEnViewport de la galería.
+    // Si es video, además pedimos el MP4 completo (cuadro=false) para <video controls> del visor.
     this.solicitarFoto(f.idEvidencia, true);
+    if (f.esVideo) this.solicitarFoto(f.idEvidencia, false);
     this.lightbox.set(f);
   }
 

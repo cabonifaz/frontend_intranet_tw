@@ -261,6 +261,7 @@ export interface FotoInformeApi {
   idEvidencia:      number;
   urlArchivo:       string | null;
   descripcion:      string | null;
+  esVideo:          boolean;
   momento:          MomentoFoto | null;
   momentoLabel:     string | null;
   fechaCaptura:     string | null;
