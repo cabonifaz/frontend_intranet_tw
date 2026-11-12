@@ -193,15 +193,13 @@
               (clic)="seleccionarPrincipal(t.idUsuario)">
               Principal
             </app-button>
-            @if (idPrincipal() !== t.idUsuario) {
-              <app-button
-                [variant]="idsApoyo().includes(t.idUsuario) ? 'primary' : 'ghost'"
-                tamano="md"
-                [icono]="idsApoyo().includes(t.idUsuario) ? 'check' : 'group_add'"
-                (clic)="toggleApoyo(t.idUsuario)">
-                Apoyo
-              </app-button>
-            }
+            <app-button
+              [variant]="idsApoyo().includes(t.idUsuario) ? 'primary' : 'ghost'"
+              tamano="md"
+              [icono]="idsApoyo().includes(t.idUsuario) ? 'check' : 'group_add'"
+              (clic)="toggleApoyo(t.idUsuario)">
+              Apoyo
+            </app-button>
           </div>
         </div>
       } @else {
