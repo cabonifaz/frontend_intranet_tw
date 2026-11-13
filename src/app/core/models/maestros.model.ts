@@ -115,6 +115,9 @@ export interface SedeListaItem {
   urbanizacion: string | null;
   direccionExacta: string | null;
   estado: string;
+  /** Coordenadas opcionales de la planta en el mapa (reverse geocoding INEI). */
+  latitud: number | null;
+  longitud: number | null;
 }
 
 export interface GuardarSedeRequest {
@@ -127,6 +130,11 @@ export interface GuardarSedeRequest {
   distrito: string | null;
   urbanizacion: string | null;
   direccionExacta: string;
+  /** Ambas se envían juntas o ninguna. Si vienen en null al editar, se conservan las actuales. */
+  latitud?: number | null;
+  longitud?: number | null;
+  /** true solo al editar para borrar la ubicación ya guardada (lat/lng van null). */
+  quitarUbicacion?: boolean;
 }
 
 export interface CambiarEstadoSedeRequest {

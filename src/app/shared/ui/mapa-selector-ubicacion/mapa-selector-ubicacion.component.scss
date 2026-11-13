@@ -1,0 +1,57 @@
+.mapa-sel {
+  display: flex; flex-direction: column; gap: 10px;
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
+  padding: 10px;
+
+  &__barra {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__coords {
+    display: flex; align-items: center; gap: 8px; color: #334155; font-size: 13px;
+    .material-symbols-outlined { color: #3B82F6; font-size: 20px; }
+    strong { font-variant-numeric: tabular-nums; color: #0F172A; }
+  }
+
+  &__hint { color: #64748B; }
+
+  &__acciones {
+    display: flex; gap: 6px;
+  }
+
+  &__btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 10px; font-size: 12px; font-weight: 500;
+    background: #F1F5F9; border: 1px solid #E2E8F0; color: #334155;
+    border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    .material-symbols-outlined { font-size: 16px; }
+    &:hover:not(:disabled) { background: #E0E7FF; border-color: #93C5FD; color: #3B82F6; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &--rojo {
+      background: #FEE2E2; border-color: #FECACA; color: #B91C1C;
+      &:hover:not(:disabled) { background: #FECACA; border-color: #F87171; }
+    }
+  }
+
+  &__mapa {
+    width: 100%; border-radius: 8px; overflow: hidden;
+    border: 1px solid #E2E8F0;
+    // Leaflet necesita z-index local para que los tooltips no se solapen con el modal.
+    z-index: 0;
+  }
+}
+
+/* Pin SVG custom del map-sel: contenedor del divIcon */
+:global(.map-pin) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Chip reutilizado localmente */
+.chip {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  &--ambar { background: #FEF3C7; color: #B45309; }
+}

@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { UbigeoService, UbigeoItem } from '../../../../core/services/ubigeo.service';
+import { NominatimService } from '../../../../core/services/nominatim.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CatalogoItem, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
@@ -11,10 +12,11 @@ import { ModalComponent }  from '../../../../shared/ui/modal/modal.component';
 import { ModalBorradorComponent } from '../../../../shared/ui/modal-borrador/modal-borrador.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { CampoComponent }  from '../../../../shared/ui/campo/campo.component';
+import { MapaSelectorUbicacionComponent } from '../../../../shared/ui/mapa-selector-ubicacion/mapa-selector-ubicacion.component';
 
 @Component({
   selector: 'app-modal-sede',
-  imports: [ReactiveFormsModule, ModalComponent, ModalBorradorComponent, ButtonComponent, CampoComponent],
+  imports: [ReactiveFormsModule, ModalComponent, ModalBorradorComponent, ButtonComponent, CampoComponent, MapaSelectorUbicacionComponent],
   templateUrl: './modal-sede.component.html',
   styleUrl: './modal-sede.component.scss',
 })
@@ -22,6 +24,7 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly ubigeoSvc   = inject(UbigeoService);
+  private readonly nominatim   = inject(NominatimService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly destroyRef  = inject(DestroyRef);
@@ -36,6 +39,15 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
   readonly guardando       = signal(false);
   readonly error           = signal('');
   readonly tiposInstalacion = signal<CatalogoItem[]>([]);
+
+  // Ubicación en el mapa (opcional). Si vienen vacías al guardar se envía como "sin cambios"
+  // (o quitarUbicacion=true cuando el user hizo click en Quitar en modo editar).
+  readonly lat              = signal<number | null>(null);
+  readonly lng              = signal<number | null>(null);
+  readonly ubicacionAproximada = signal(false);
+  readonly resolviendoUbigeo   = signal(false);
+  /** Se marca true cuando el user hace click en "Quitar" sobre una sede que YA tenía ubicación. */
+  private quitarUbicacionAlGuardar = false;
 
   // Ubigeo INEI (cascada): depende de la selección del padre.
   readonly departamentos = signal<UbigeoItem[]>([]);
@@ -131,6 +143,11 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
         urbanizacion:    sede.urbanizacion    ?? '',
         direccionExacta: sede.direccionExacta ?? '',
       }, { emitEvent: false });
+      // Hidratar coordenadas si la sede ya tenía ubicación guardada.
+      if (sede.latitud != null && sede.longitud != null) {
+        this.lat.set(sede.latitud);
+        this.lng.set(sede.longitud);
+      }
     }
 
     // Habilitar borrador solo cuando hay cliente persistido (idCliente > 0)
@@ -186,6 +203,74 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
     this.toastSvc.exito('Borrador descartado.');
   }
 
+  // ─── Mapa: selección de ubicación + reverse geocoding ──────────────────
+
+  /** Emitido por el selector cuando el user mueve el pin (click o drag) o lo borra (null). */
+  async ubicacionCambiada(ev: { lat: number; lng: number } | null): Promise<void> {
+    if (ev === null) {
+      // Pin borrado desde el selector: también vaciamos la cascada para que el user
+      // complete los 3 selects a mano (o marque otro punto en el mapa).
+      this.lat.set(null);
+      this.lng.set(null);
+      this.ubicacionAproximada.set(false);
+      this.autoguardadoActivo = false;
+      this.formulario.patchValue({ region: '', provincia: '', distrito: '' }, { emitEvent: true });
+      this.provincias.set([]);
+      this.distritos.set([]);
+      this.autoguardadoActivo = true;
+      // Si la sede ya tenía ubicación guardada, al guardar hay que enviar quitarUbicacion:true.
+      if (this.esEdicion && (this.sedeEditar()?.latitud != null)) {
+        this.quitarUbicacionAlGuardar = true;
+      }
+      return;
+    }
+    this.lat.set(ev.lat);
+    this.lng.set(ev.lng);
+    this.quitarUbicacionAlGuardar = false;
+    await this.resolverUbigeoDesdeCoords(ev.lat, ev.lng);
+  }
+
+  private async resolverUbigeoDesdeCoords(lat: number, lng: number): Promise<void> {
+    this.resolviendoUbigeo.set(true);
+    // Lanzamos las dos lookups en paralelo: ubigeo oficial (back TW) + dirección legible
+    // (OpenStreetMap). El ubigeo es canónico y lo necesitamos sí o sí; Nominatim puede
+    // fallar silenciosamente, en cuyo caso el user escribe la dirección a mano.
+    const [ubigeoPromesa, nominatimPromesa] = [
+      this.ubigeoSvc.reverseUbigeo(lat, lng),
+      this.nominatim.reverse(lat, lng),
+    ];
+    try {
+      const r = await ubigeoPromesa;
+      this.ubicacionAproximada.set(r.aproximado);
+      // La cascada de ubigeo ya está suscrita a los cambios: al patchear region/provincia,
+      // los efectos cargan provincias y distritos. Esperamos cada carga antes del siguiente patch.
+      this.autoguardadoActivo = false;
+      this.formulario.patchValue({ region: r.departamento.nombre }, { emitEvent: true });
+      this.provincias.set(await this.ubigeoSvc.obtenerProvincias(r.departamento.nombre));
+      this.formulario.patchValue({ provincia: r.provincia.nombre }, { emitEvent: true });
+      this.distritos.set(await this.ubigeoSvc.obtenerDistritos(r.departamento.nombre, r.provincia.nombre));
+      this.formulario.patchValue({ distrito: r.distrito.nombre }, { emitEvent: false });
+      this.autoguardadoActivo = true;
+      if (r.aproximado) {
+        this.toastSvc.info('Ubicación aproximada: verifica el distrito antes de guardar.');
+      }
+
+      // Dirección exacta desde Nominatim: sobrescribe siempre que haya una mejor opción
+      // que lo que ya hay escrito. El user puede editarlo después si está impreciso.
+      const nomi = await nominatimPromesa;
+      if (nomi.direccionCorta) {
+        this.autoguardadoActivo = false;
+        this.formulario.patchValue({ direccionExacta: nomi.direccionCorta }, { emitEvent: true });
+        this.autoguardadoActivo = true;
+      }
+    } catch (e: unknown) {
+      this.ubicacionAproximada.set(false);
+      this.toastSvc.error(e instanceof Error ? e.message : 'No se pudo determinar el ubigeo.');
+    } finally {
+      this.resolviendoUbigeo.set(false);
+    }
+  }
+
   async guardar(): Promise<void> {
     if (this.formulario.invalid || this.guardando()) return;
 
@@ -200,6 +285,9 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
       distrito:        v.distrito        || null,
       urbanizacion:    v.urbanizacion    || null,
       direccionExacta: v.direccionExacta,
+      latitud:         this.lat(),
+      longitud:        this.lng(),
+      quitarUbicacion: this.quitarUbicacionAlGuardar || undefined,
     };
 
     if (this.idCliente() === 0) {
