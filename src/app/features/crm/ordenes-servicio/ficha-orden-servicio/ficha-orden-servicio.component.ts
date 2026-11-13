@@ -33,7 +33,7 @@ import { ModalAnularOsComponent } from '../modal-anular-os/modal-anular-os.compo
 type ModoFicha = 'nueva' | 'editar';
 
 /**
- * HU-40 — Ficha Nueva/Editar OS/OM.
+ * HU-40 — Ficha Nueva/Editar OS.
  *
  * 7 secciones apiladas full-width (sin panel lateral):
  *   1. Datos del Cliente (solo contacto editable)
@@ -44,7 +44,7 @@ type ModoFicha = 'nueva' | 'editar';
  *   6. Observaciones (textarea libre)
  *   7. Datos del Certificado (solo si tipo = OM)
  *
- * Footer sticky: Cancelar · Guardar borrador · Emitir OS/OM (o Guardar y re-emitir en modo editar).
+ * Footer sticky: Cancelar · Guardar borrador · Emitir OS (o Guardar y re-emitir en modo editar).
  *
  * Modo "editar" requiere que exista una solicitud de edición aprobada por el Jefe Comercial;
  * en ese caso se muestra el banner verde "Edición autorizada".
@@ -170,7 +170,7 @@ export class FichaOrdenServicioComponent implements OnInit {
 
   readonly breadcrumb = computed(() => breadcrumbCrm(
     { label: 'Órdenes de Servicio', ruta: '/crm/ordenes-servicio' },
-    this.modo() === 'nueva' ? 'Nueva OS/OM' : this.numeroDocumento(),
+    this.modo() === 'nueva' ? 'Nueva OS' : this.numeroDocumento(),
   ));
 
   readonly puedeGuardar = computed(() => !!this.idContactoSel());
@@ -250,7 +250,7 @@ export class FichaOrdenServicioComponent implements OnInit {
       this.codigosEquiposPropuestaTw.set((p.equiposSugeridos ?? []).map(e => e.codigoTw));
       this.codigosConceptosPropuesta.set((p.conceptosSugeridos ?? []).map(c => c.codigo));
     } catch (e: any) {
-      this.error.set(e?.message ?? 'No se pudo cargar la preparación de la OS/OM.');
+      this.error.set(e?.message ?? 'No se pudo cargar la preparación de la OS.');
     } finally {
       this.cargando.set(false);
     }
@@ -282,7 +282,7 @@ export class FichaOrdenServicioComponent implements OnInit {
       // en cada item) en PreparacionEdicionOs. Mientras tanto, la columna "EN PROPUESTA"
       // se oculta en modo edición (ver template con [esModoEdicion]).
     } catch (e: any) {
-      this.error.set(e?.message ?? 'No se pudo cargar la OS/OM para edición.');
+      this.error.set(e?.message ?? 'No se pudo cargar la OS para edición.');
     } finally {
       this.cargando.set(false);
     }
@@ -343,7 +343,7 @@ export class FichaOrdenServicioComponent implements OnInit {
       this.router.navigate(['/crm/ordenes-servicio']);
     } catch (e: any) {
       const accion = this.modo() === 'editar' ? 'actualizar' : 'registrar';
-      this.toast.error(e?.message ?? `No se pudo ${accion} la OS/OM.`);
+      this.toast.error(e?.message ?? `No se pudo ${accion} la OS.`);
     } finally {
       this.emitiendo.set(false);
     }

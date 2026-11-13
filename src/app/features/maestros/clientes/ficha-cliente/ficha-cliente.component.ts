@@ -528,6 +528,8 @@ export class FichaClienteComponent implements OnInit {
       urbanizacion:    dto.urbanizacion,
       direccionExacta: dto.direccionExacta,
       estado:          ESTADO.ACTIVO,
+      latitud:         dto.latitud ?? null,
+      longitud:        dto.longitud ?? null,
     };
     this.sedesTemp.update(list => [...list, item]);
     this.autosave.marcarCambio();

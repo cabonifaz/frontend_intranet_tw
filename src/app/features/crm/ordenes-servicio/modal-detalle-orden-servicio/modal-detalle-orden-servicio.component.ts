@@ -23,7 +23,7 @@ type TabInterno =
   | 'certificado';
 
 /**
- * HU-42 — Modal de detalle unificado de OS/OM (solo lectura).
+ * HU-42 — Modal de detalle unificado de OS (solo lectura).
  *
  * 6 tabs base + 7mo "Certificado" solo si tipo = OM.
  * Las acciones (Solicitar Edición / Anular) se emiten como output para que el padre
@@ -66,7 +66,7 @@ export class ModalDetalleOrdenServicioComponent {
   readonly tituloModal = computed(() => {
     const d = this.detalle();
     const nombreTipo = d?.tipo === 'OM' ? 'Orden de Metrología' : 'Orden de Servicio';
-    return d ? `Detalle de ${nombreTipo}` : 'Detalle de OS/OM';
+    return d ? `Detalle de ${nombreTipo}` : 'Detalle de OS';
   });
 
   /** Número del documento (OS-000001) pintado en azul al lado del título. */
@@ -116,7 +116,7 @@ export class ModalDetalleOrdenServicioComponent {
       const d = await this.svc.obtenerDetalle(this.idOs());
       this.detalle.set(d);
     } catch (e: any) {
-      this.error.set(e?.message ?? 'No se pudo cargar el detalle de la OS/OM.');
+      this.error.set(e?.message ?? 'No se pudo cargar el detalle de la OS.');
     } finally {
       this.cargando.set(false);
     }
@@ -231,7 +231,7 @@ export class ModalDetalleOrdenServicioComponent {
   irAProgramacion(): void {
     const d = this.detalle();
     if (!d?.programacion.idProgramacion) {
-      this.toast.info('Esta OS/OM todavía no fue programada. Operaciones la verá en el Módulo 8.');
+      this.toast.info('Esta OS todavía no fue programada. Operaciones la verá en el Módulo 8.');
       return;
     }
     this.toast.info('Navegación a Módulo 8 Programación (pendiente).');

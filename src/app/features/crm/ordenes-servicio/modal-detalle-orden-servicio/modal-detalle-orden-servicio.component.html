@@ -19,7 +19,7 @@
   @if (cargando()) {
     <div class="mdo-loading">
       <div class="mdo-spinner"></div>
-      <span>Cargando detalle de la OS/OM…</span>
+      <span>Cargando detalle de la OS…</span>
     </div>
   }
 
@@ -69,7 +69,7 @@
           </header>
 
           <div class="mdo-grid">
-            <div><label>N° OS/OM</label><span class="mdo-mono">{{ d.datosGenerales.numero }}</span></div>
+            <div><label>N° OS</label><span class="mdo-mono">{{ d.datosGenerales.numero }}</span></div>
             <div><label>Fecha de Emisión</label>
               <span>{{ (d.datosGenerales.fechaEmision | date:'dd/MM/yyyy') || '—' }}</span>
             </div>
@@ -204,7 +204,7 @@
             <div><label>N° de Conceptos Cotizados</label><span>{{ d.propuestaOrigen.cantidadConceptosCotizados }}</span></div>
 
             @if (d.propuestaOrigen.osActivas != null) {
-              <div><label>OS/OM Activas desde esta Propuesta</label><span>{{ d.propuestaOrigen.osActivas }}</span></div>
+              <div><label>OS Activas desde esta Propuesta</label><span>{{ d.propuestaOrigen.osActivas }}</span></div>
             }
           </div>
         </section>
@@ -316,7 +316,7 @@
           } @else {
             <div class="mdo-vacio-card">
               <span class="material-symbols-outlined">inbox</span>
-              Esta OS/OM no tiene observaciones registradas.
+              Esta OS no tiene observaciones registradas.
             </div>
           }
         </section>
@@ -358,7 +358,7 @@
             <div class="mdo-vacio-card">
               <span class="material-symbols-outlined">event_busy</span>
               <div>
-                <strong>Esta OS/OM está pendiente de programación.</strong>
+                <strong>Esta OS está pendiente de programación.</strong>
                 <p>Operaciones la verá en el Módulo 8 Programación Operativa.</p>
               </div>
             </div>

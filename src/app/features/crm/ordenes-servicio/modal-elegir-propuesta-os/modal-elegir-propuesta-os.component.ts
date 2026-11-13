@@ -8,7 +8,7 @@ import { PropuestaDisponibleOs, TipoOrden } from '../../../../core/models/ordene
 
 /**
  * Modal pequeño "+ Registrar OS" — lista las propuestas aceptadas disponibles
- * para generar una OS/OM. Reglas: propuesta en estado `aceptada` + sin OS/OM
+ * para generar una OS. Reglas: propuesta en estado `aceptada` + sin OS
  * activa (todas anuladas o ninguna).
  *
  * Al elegir una propuesta, emite el output `elegida(idPropuesta)` para que el

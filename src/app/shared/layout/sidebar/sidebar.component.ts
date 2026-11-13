@@ -55,6 +55,7 @@ export class SidebarComponent {
         { etiqueta: 'Seguimiento',    ruta: '/crm/seguimiento',    accion: 'propuesta_seguimiento_bandeja' },
         { etiqueta: 'Órdenes de Compra',    ruta: '/crm/ordenes-compra' },
         { etiqueta: 'Órdenes de Servicio',  ruta: '/crm/ordenes-servicio' },
+        { etiqueta: 'Órdenes de Metrología', ruta: '/crm/ordenes-metrologia' },
         { etiqueta: 'Expedientes Digitales', ruta: '/crm/expedientes-digitales' },
       ],
     },

@@ -1,0 +1,35 @@
+<div class="mapa-sel">
+
+  <!-- Barra superior: coordenadas + acciones -->
+  <div class="mapa-sel__barra">
+    <div class="mapa-sel__coords">
+      @if (lat() != null && lng() != null) {
+        <span class="material-symbols-outlined">place</span>
+        <strong>{{ lat() | number:'1.6-6' }}, {{ lng() | number:'1.6-6' }}</strong>
+        @if (aproximado()) {
+          <span class="chip chip--ambar">Aproximada</span>
+        }
+      } @else {
+        <span class="material-symbols-outlined">add_location_alt</span>
+        <span class="mapa-sel__hint">Haz click en el mapa o arrastra el pin para marcar la ubicación</span>
+      }
+    </div>
+    <div class="mapa-sel__acciones">
+      <button type="button" class="mapa-sel__btn" (click)="pedirMiUbicacion()"
+              [disabled]="deshabilitado()" title="Centrar en mi ubicación actual">
+        <span class="material-symbols-outlined">my_location</span>
+        <span>Mi ubicación</span>
+      </button>
+      @if (lat() != null && lng() != null) {
+        <button type="button" class="mapa-sel__btn mapa-sel__btn--rojo"
+                (click)="quitar()" [disabled]="deshabilitado()" title="Borrar la ubicación">
+          <span class="material-symbols-outlined">delete</span>
+          <span>Quitar</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Mapa Leaflet -->
+  <div #mapaDiv class="mapa-sel__mapa" [style.height.px]="alto()"></div>
+</div>

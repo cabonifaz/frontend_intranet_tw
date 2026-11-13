@@ -3,8 +3,8 @@
   <!-- ── Header ──────────────────────────────────────────────────────────── -->
   <app-header-bandeja
     [breadcrumb]="breadcrumb"
-    titulo="Órdenes de Servicio / Metrología"
-    subtitulo="Pipeline consolidado de OS y OM emitidas por el área comercial"
+    titulo="Órdenes de Servicio"
+    subtitulo="Pipeline de órdenes de servicio emitidas por el área comercial"
     textoBoton="Registrar OS"
     iconoBoton="add"
     (clicBoton)="registrarOs()" />
@@ -27,7 +27,7 @@
   <app-barra-filtros-bandeja
     [cantidadActivos]="filtrosActivos()"
     [(busqueda)]="busqueda"
-    placeholder="Buscar por N° OS/OM, N° Propuesta, Cliente o RUC..."
+    placeholder="Buscar por N° OS, N° Propuesta, Cliente o RUC..."
     [conDescarga]="true"
     (limpiar)="limpiarFiltros()"
     (aplicar)="aplicarFiltros()"
@@ -97,7 +97,7 @@
     (paginar)="irPagina($event)">
     <thead>
       <tr>
-        <th>N.° OS/OM</th>
+        <th>N.° OS</th>
         <th>FECHA EMISIÓN</th>
         <th>CLIENTE / RUC</th>
         <th>RESPONSABLE DE LA ORDEN</th>
@@ -207,7 +207,7 @@
   />
 }
 
-<!-- ═══ Modal Detalle OS/OM (HU-42) ═══ -->
+<!-- ═══ Modal Detalle OS (HU-42) ═══ -->
 @if (idOsDetalle(); as id) {
   <app-modal-detalle-orden-servicio
     [idOs]="id"

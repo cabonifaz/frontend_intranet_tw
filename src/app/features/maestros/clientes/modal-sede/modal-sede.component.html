@@ -42,6 +42,23 @@
         <span class="ubigeo__nota">Datos requeridos para logística técnica</span>
       </div>
 
+      <p class="ubigeo__desc">
+        Marca el punto en el mapa para auto-rellenar departamento, provincia y distrito, o complétalos manualmente.
+        @if (resolviendoUbigeo()) {
+          <span class="ubigeo__badge">
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Determinando ubigeo…
+          </span>
+        }
+      </p>
+
+      <app-mapa-selector-ubicacion
+        [lat]="lat()"
+        [lng]="lng()"
+        [aproximado]="ubicacionAproximada()"
+        [alto]="280"
+        (ubicacion)="ubicacionCambiada($event)" />
+
       <div class="grid-3">
         <app-campo
           label="Departamento *"
@@ -83,14 +100,15 @@
 
     <!-- Fila 3: Urbanización + Dirección Exacta -->
     <div class="grid-2">
-      <app-campo label="Urbanización / Zona Industrial">
-        <input type="text" placeholder="Parque Industrial Challhuahuacho" formControlName="urbanizacion" />
-      </app-campo>
       <app-campo
         label="Dirección Exacta *"
+        [hint]="lat() != null ? 'Se precarga desde el mapa — edítala si no es precisa' : ''"
         [error]="formulario.get('direccionExacta')?.invalid && formulario.get('direccionExacta')?.touched ? 'La dirección exacta es obligatoria.' : ''"
       >
         <input type="text" placeholder="Zona Industrial Sector Sulfuros Mz. B Lote 4" formControlName="direccionExacta" />
+      </app-campo>
+      <app-campo label="Referencia" hint="Pistas para llegar (opcional)">
+        <input type="text" placeholder="Frente al grifo Primax, portón negro" formControlName="urbanizacion" />
       </app-campo>
     </div>
 

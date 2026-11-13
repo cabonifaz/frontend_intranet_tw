@@ -15,6 +15,16 @@ export interface UbigeoItem {
   nombre: string;
 }
 
+/** Respuesta del endpoint `reverse`: departamento/provincia/distrito a partir de lat/lng. */
+export interface UbigeoReverseResultado {
+  departamento: UbigeoItem;
+  provincia:    UbigeoItem;
+  distrito:     UbigeoItem;
+  ubigeo:       string;
+  /** true si el punto no cayó dentro de ningún distrito y se tomó el más cercano (< 1 km). */
+  aproximado:   boolean;
+}
+
 /** Entidades soportadas por `GET /api/maestros/siguiente-codigo/{entidad}`. */
 export type EntidadSiguienteCodigo = 'requerimiento' | 'propuesta' | 'suministro' | 'equipo_cliente';
 
@@ -63,6 +73,20 @@ export class UbigeoService {
     );
     if (!r.datos) throw new Error(r.mensaje);
     this.cacheProvincias.set(key, r.datos);
+    return r.datos;
+  }
+
+  /** GET /api/maestros/ubigeo/reverse — reverse geocoding por coordenadas (HU sedes con mapa). */
+  async reverseUbigeo(lat: number, lng: number): Promise<UbigeoReverseResultado> {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new Error('Coordenadas inválidas.');
+    }
+    const r = await firstValueFrom(
+      this.http.get<RespuestaApi<UbigeoReverseResultado>>(`${this.base}/reverse`, {
+        params: { lat: String(lat), lng: String(lng) },
+      })
+    );
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo determinar el ubigeo.');
     return r.datos;
   }
 
