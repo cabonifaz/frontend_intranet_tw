@@ -51,7 +51,7 @@
   }
 }
 
-// ─── Celda apilada N° OS/OM + RQ + Propuesta (reusa .tabla__codigo global) ──
+// ─── Celda apilada N° OS + RQ + Propuesta (reusa .tabla__codigo global) ──
 // Nota: `.tabla__codigo`, `.tabla__cliente-*` viven en styles.scss global —
 // no las piso localmente para no romper la homologación de estilos.
 .os-codigo-cell {

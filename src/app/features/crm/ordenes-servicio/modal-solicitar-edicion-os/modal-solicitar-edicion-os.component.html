@@ -16,7 +16,7 @@
     <div class="aviso-amarillo">
       <span class="material-symbols-outlined">info</span>
       <div>
-        Esta OS/OM está <strong>EMITIDA</strong> y bloqueada para edición.
+        Esta OS está <strong>EMITIDA</strong> y bloqueada para edición.
         Para modificarla, debés solicitar permiso al Jefe Comercial
         <strong>{{ jefe()?.nombre }}</strong>.
         <br />
@@ -50,7 +50,7 @@
                 [ngModel]="comentario()"
                 (ngModelChange)="comentario.set($event)"
                 [maxlength]="maxComentario"
-                placeholder="Explicá brevemente por qué necesitás modificar esta OS/OM. El Jefe Comercial revisará tu solicitud."></textarea>
+                placeholder="Explicá brevemente por qué necesitás modificar esta OS. El Jefe Comercial revisará tu solicitud."></textarea>
       <small class="mse-contador">{{ comentario().length }} / {{ maxComentario }} caracteres</small>
     </div>
 

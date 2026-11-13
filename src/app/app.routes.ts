@@ -272,6 +272,28 @@ export const routes: Routes = [
             m => m.FichaOrdenServicioComponent
           ),
       },
+      // ─── Módulo 13 — Órdenes de Metrología (Sprint 6, réplica de M9) ──────
+      {
+        path: 'crm/ordenes-metrologia',
+        loadComponent: () =>
+          import('./features/crm/ordenes-metrologia/lista-ordenes-metrologia/lista-ordenes-metrologia.component').then(
+            m => m.ListaOrdenesMetrologiaComponent
+          ),
+      },
+      {
+        path: 'crm/ordenes-metrologia/nueva/:idPropuesta',
+        loadComponent: () =>
+          import('./features/crm/ordenes-metrologia/ficha-orden-metrologia/ficha-orden-metrologia.component').then(
+            m => m.FichaOrdenMetrologiaComponent
+          ),
+      },
+      {
+        path: 'crm/ordenes-metrologia/:idOm/editar',
+        loadComponent: () =>
+          import('./features/crm/ordenes-metrologia/ficha-orden-metrologia/ficha-orden-metrologia.component').then(
+            m => m.FichaOrdenMetrologiaComponent
+          ),
+      },
       // ─── Módulo 8 — Programación Operativa (Sprint 5) ─────────────────────
       {
         path: 'operaciones/programacion',

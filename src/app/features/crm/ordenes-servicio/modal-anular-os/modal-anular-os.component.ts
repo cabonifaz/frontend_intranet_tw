@@ -9,7 +9,7 @@ import { ImpactoAnulacionOs, MotivoAnulacionOs } from '../../../../core/models/o
 
 /**
  * HU-40 Fase C — Modal "Anular Orden de Servicio / Metrología".
- * Si la OS/OM ya está PROGRAMADA, muestra el impacto (técnico, fecha, viáticos liberados).
+ * Si la OS ya está PROGRAMADA, muestra el impacto (técnico, fecha, viáticos liberados).
  * El flujo real por rol/estado se maneja en la ficha; este modal recoge la justificación.
  */
 @Component({
@@ -73,7 +73,7 @@ export class ModalAnularOsComponent implements OnInit {
       this.toast.exito(`${this.numeroOs()} anulada correctamente.`);
       this.anulada.emit();
     } catch (e: any) {
-      this.toast.error(e?.message ?? 'No se pudo anular la OS/OM.');
+      this.toast.error(e?.message ?? 'No se pudo anular la OS.');
     } finally {
       this.anulando.set(false);
     }

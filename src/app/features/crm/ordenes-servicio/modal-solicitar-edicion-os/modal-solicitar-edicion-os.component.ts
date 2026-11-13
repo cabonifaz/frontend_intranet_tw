@@ -9,7 +9,7 @@ import { JefeComercialOs, MotivoEdicionOs } from '../../../../core/models/ordene
 
 /**
  * HU-40 Fase C — Modal "Solicitar Edición al Jefe Comercial".
- * Se abre cuando una OS/OM está EMITIDA y el comercial responsable quiere editarla.
+ * Se abre cuando una OS está EMITIDA y el comercial responsable quiere editarla.
  */
 @Component({
   selector: 'app-modal-solicitar-edicion-os',

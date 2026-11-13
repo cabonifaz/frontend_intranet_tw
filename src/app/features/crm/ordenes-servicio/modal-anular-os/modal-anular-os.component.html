@@ -20,7 +20,7 @@
           <strong>Impacto de la anulación</strong>
         </div>
         <small>
-          Esta OS/OM ya tiene programación asignada en el Módulo 8. Al anularla, se liberarán
+          Esta OS ya tiene programación asignada en el Módulo 8. Al anularla, se liberarán
           automáticamente los siguientes recursos:
         </small>
 
@@ -95,7 +95,7 @@
                 [ngModel]="justificacion()"
                 (ngModelChange)="justificacion.set($event)"
                 [maxlength]="maxJustificacion"
-                placeholder="Explicá con detalle por qué se anula esta OS/OM. Esta justificación quedará registrada en la auditoría del expediente."></textarea>
+                placeholder="Explicá con detalle por qué se anula esta OS. Esta justificación quedará registrada en la auditoría del expediente."></textarea>
       <small class="mao-contador">{{ justificacion().length }} / {{ maxJustificacion }} caracteres</small>
     </div>
   }

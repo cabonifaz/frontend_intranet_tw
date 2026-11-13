@@ -28,15 +28,15 @@ import { ModalResolverSolicitudOsComponent } from '../modal-resolver-solicitud-o
 import { SolicitudEdicionOs } from '../../../../core/models/ordenes-servicio.model';
 
 /**
- * HU-41 — Bandeja consolidada de Órdenes de Servicio / Metrología.
+ * HU-41 — Bandeja consolidada de Órdenes de Servicio.
  *
  * Columnas (según refinamiento con cliente — se quitó RQ, OC, Tipo Servicio y SLA):
- *   N° OS/OM · Fecha Emisión · Cliente/RUC · Responsable de la Orden ·
+ *   N° OS · Fecha Emisión · Cliente/RUC · Responsable de la Orden ·
  *   N° Equipos · N° Conceptos · Estado · Acciones
  *
  * Acciones por fila (vienen como flags del back, calculados según estado + rol).
  *
- * No hay botón "Nueva OS/OM": nacen únicamente desde Propuestas aceptadas (HU-40).
+ * No hay botón "Nueva OS": nacen únicamente desde Propuestas aceptadas (HU-40).
  */
 const ESTADOS: { codigo: EstadoGrupoOrdenServicio | ''; label: string }[] = [
   { codigo: '',             label: 'Todos' },
@@ -259,7 +259,7 @@ export class ListaOrdenesServicioComponent implements OnInit {
     try {
       const detalle = await this.svc.obtenerDetalle(item.idOs);
       if (!detalle.solicitudPendiente) {
-        this.toast.info('Esta OS/OM ya no tiene solicitud pendiente.');
+        this.toast.info('Esta OS ya no tiene solicitud pendiente.');
         return;
       }
       this.resolverSolicitudCtx.set({

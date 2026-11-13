@@ -1,0 +1,229 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 32px;
+  min-height: 100%;
+  background: #F8FAFC;
+}
+
+// ─── Secciones dentro del slot de filtros ────────────────────────────────
+.filtros-seccion {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 0 2px;
+}
+
+.col-full  { grid-column: 1 / -1; }
+.col-mitad { grid-column: span 1; }
+
+// Label + input genérico dentro del panel de filtros
+.col-full, .col-mitad {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  select, input {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #0F172A;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: #1D4ED8;
+      box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
+    }
+  }
+}
+
+// ─── Celda apilada N° OM + RQ + Propuesta (reusa .tabla__codigo global) ──
+// Nota: `.tabla__codigo`, `.tabla__cliente-*` viven en styles.scss global —
+// no las piso localmente para no romper la homologación de estilos.
+.os-codigo-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &__sub {
+    font-size: 11px;
+    color: #94A3B8;
+    font-weight: 500;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #2563EB;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 11px;
+    width: fit-content;
+
+    &:hover { text-decoration: underline; }
+
+    .material-symbols-outlined {
+      font-size: 12px;
+      color: #94A3B8;
+    }
+  }
+}
+
+.os-link-propuesta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #1D4ED8;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+
+  &:hover { text-decoration: underline; }
+
+  .material-symbols-outlined {
+    font-size: 12px;
+    color: #94A3B8;
+  }
+}
+
+.os-responsable {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  &__avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1D4ED8;
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  &__nombre { font-size: 12px; color: #0F172A; font-weight: 500; }
+}
+
+.chip-conteo {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+
+  &--equipos   { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+  &--conceptos { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+}
+
+// Wrapper del badge + chip (chip al lado, no superpuesto)
+.estado-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// Chip advertencia "!" al lado del badge estado — paleta ámbar del sistema
+// (bg #FEF3C7, color #D97706 — misma que modal__icono-wrap--ambar).
+// Tooltip tipo card blanca con borde (estilo del sistema).
+.chip-solicitud {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+  cursor: help;
+
+  .material-symbols-outlined {
+    font-size: 11px;
+    font-weight: 700;
+    font-variation-settings: 'FILL' 1, 'wght' 700;
+  }
+
+  // Tooltip: card blanca con borde slate (estilo del sistema)
+  &::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    padding: 8px 12px;
+    background: #FFFFFF;
+    color: #0F172A;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.1px;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    white-space: nowrap;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 10;
+  }
+
+  // Flecha del tooltip (triángulo blanco con borde slate)
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 10px;
+    height: 10px;
+    background: #FFFFFF;
+    border-right: 1px solid #E2E8F0;
+    border-bottom: 1px solid #E2E8F0;
+    rotate: 45deg;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 11;
+  }
+
+  &:hover::after,
+  &:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  &:hover::before { rotate: 45deg; }
+}
+
+// Centrado específico para columnas con chip
+.tabla__th--centro, .tabla__td--centro { text-align: center; }
+
+// Acciones por fila
+.tabla__acciones {
+  display: inline-flex;
+  gap: 2px;
+  justify-content: center;
+}
