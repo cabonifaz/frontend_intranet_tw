@@ -485,13 +485,25 @@
                 Dentro del radio de proximidad del cliente ({{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }})
               </div>
             } @else if (d.gps.ultimaUbicacion.distanciaAlCliente !== null) {
-              <div class="gps-card__estado-chip gps-card__estado-chip--gris">
-                <span class="material-symbols-outlined">near_me</span>
-                A {{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }} del cliente
+              <div class="gps-destino">
+                <div class="gps-destino__item">
+                  <span class="material-symbols-outlined">near_me</span>
+                  <div>
+                    <small>Distancia al cliente</small>
+                    <strong>{{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }}</strong>
+                  </div>
+                </div>
+                <div class="gps-destino__item gps-destino__item--eta">
+                  <span class="material-symbols-outlined">schedule</span>
+                  <div>
+                    <small>Llegada estimada</small>
+                    <strong>{{ textoLlegada(d.gps.ultimaUbicacion) }}</strong>
+                  </div>
+                </div>
               </div>
             }
 
-            <!-- Métricas del último punto (la latencia puede venir nula: se muestra "—"). La llegada estimada se calcula desde la distancia a la planta -->
+            <!-- Métricas del último punto (la latencia puede venir nula: se muestra "—"). La llegada estimada (junto a la distancia) se calcula desde la distancia a la planta -->
             <div class="gps-card__info gps-card__info--grid-3">
               <div class="info-item">
                 <small>VELOCIDAD</small>
@@ -506,14 +518,10 @@
                 <strong>{{ d.gps.estadoSenal.precisionMetros !== null ? '± ' + dato(d.gps.estadoSenal.precisionMetros, ' m') : '—' }}</strong>
               </div>
               <div class="info-item">
-                <small>LLEGADA ESTIMADA</small>
-                <strong class="azul">{{ textoLlegada(d.gps.ultimaUbicacion) }}</strong>
-              </div>
-              <div class="info-item">
                 <small>LATENCIA</small>
                 <strong>{{ dato(d.gps.estadoSenal.latenciaMs, ' ms') }}</strong>
               </div>
-              <div class="info-item">
+              <div class="info-item info-item--ancho">
                 <small>TIEMPO EN PUNTO</small>
                 <strong class="azul">{{ d.gps.ultimaUbicacion.tiempoEnPunto ?? '—' }}</strong>
               </div>

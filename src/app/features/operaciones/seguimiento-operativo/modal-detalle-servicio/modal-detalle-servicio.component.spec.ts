@@ -150,7 +150,7 @@ describe('ModalDetalleServicioComponent', () => {
     const valor = (etiqueta: string) => Array.from(host().querySelectorAll('.gps-card .info-item'))
       .find(i => i.querySelector('small')?.textContent?.trim() === etiqueta)?.querySelector('strong')?.textContent?.trim();
     expect(valor('SATÉLITES')).toBeUndefined();
-    expect(valor('LLEGADA ESTIMADA')).toBe('En planta');
+    expect(valor('LLEGADA ESTIMADA')).toBeUndefined();   // dentro del radio solo se muestra el aviso verde (no las fichas de distancia y llegada)
     expect(valor('LATENCIA')).toBe('—');
     expect(valor('PRECISIÓN')).toBe('± 4 m');
     expect(valor('VELOCIDAD')).toBe('0 km/h');
