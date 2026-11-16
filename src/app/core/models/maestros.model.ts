@@ -112,7 +112,8 @@ export interface SedeListaItem {
   region: string | null;
   provincia: string | null;
   distrito: string | null;
-  urbanizacion: string | null;
+  /** Pistas de llegada ("frente al grifo", "portón negro"). Antes era `urbanizacion`. */
+  referencia: string | null;
   direccionExacta: string | null;
   estado: string;
   /** Coordenadas opcionales de la planta en el mapa (reverse geocoding INEI). */
@@ -128,7 +129,7 @@ export interface GuardarSedeRequest {
   region: string | null;
   provincia: string | null;
   distrito: string | null;
-  urbanizacion: string | null;
+  referencia: string | null;
   direccionExacta: string;
   /** Ambas se envían juntas o ninguna. Si vienen en null al editar, se conservan las actuales. */
   latitud?: number | null;

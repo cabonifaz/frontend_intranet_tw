@@ -425,7 +425,7 @@ export class FichaClienteComponent implements OnInit {
             region:          s.region,
             provincia:       s.provincia,
             distrito:        s.distrito,
-            urbanizacion:    s.urbanizacion,
+            referencia:      s.referencia,
             direccionExacta: s.direccionExacta ?? '',
           }))
         );
@@ -525,7 +525,7 @@ export class FichaClienteComponent implements OnInit {
       region:          dto.region,
       provincia:       dto.provincia,
       distrito:        dto.distrito,
-      urbanizacion:    dto.urbanizacion,
+      referencia:      dto.referencia,
       direccionExacta: dto.direccionExacta,
       estado:          ESTADO.ACTIVO,
       latitud:         dto.latitud ?? null,
