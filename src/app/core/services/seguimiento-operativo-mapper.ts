@@ -229,7 +229,7 @@ export function iniciales(nombre: string | null | undefined): string {
 function normalizarTipoAlerta(t: string | null | undefined): TipoAlertaCampo {
   const v = (t ?? '').trim().toLowerCase();
   const validos: readonly TipoAlertaCampo[] = [
-    'perdida_contacto', 'sin_movimiento', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
+    'perdida_contacto', 'sin_movimiento', 'autorizacion_salida', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
   ];
   return (validos as readonly string[]).includes(v) ? (v as TipoAlertaCampo) : 'otra';
 }
