@@ -146,10 +146,11 @@ describe('ModalDetalleServicioComponent', () => {
     ['En ejecución', 'Pedro Salazar · Salida 08:00 · Pre-llegada 08:08 · Llegada 08:12', '● GPS activo', 'hace 15 seg', 'Planta Concentradora Ventanilla',
       'Dentro del radio de proximidad del cliente (40 m)', 'Señal GPS activa', '2h 02min', '08:00 · Salida registrada', '08:12 · Llegada confirmada',
       '08:05 · Demora en ruta', '08:20 · Demora en ingreso a planta', 'Radio 300 m proximidad'].forEach(x => expect(t).toContain(x));
-    // satélites y latencia no vienen: se muestra "—"
+    // latencia no viene: se muestra "—"; la llegada estimada sale de la distancia (dentro del radio: ya está en planta)
     const valor = (etiqueta: string) => Array.from(host().querySelectorAll('.gps-card .info-item'))
       .find(i => i.querySelector('small')?.textContent?.trim() === etiqueta)?.querySelector('strong')?.textContent?.trim();
-    expect(valor('SATÉLITES')).toBe('—');
+    expect(valor('SATÉLITES')).toBeUndefined();
+    expect(valor('LLEGADA ESTIMADA')).toBe('En planta');
     expect(valor('LATENCIA')).toBe('—');
     expect(valor('PRECISIÓN')).toBe('± 4 m');
     expect(valor('VELOCIDAD')).toBe('0 km/h');

@@ -491,7 +491,7 @@
               </div>
             }
 
-            <!-- Métricas del último punto (satélites y latencia pueden venir nulos: se muestra "—") -->
+            <!-- Métricas del último punto (la latencia puede venir nula: se muestra "—"). La llegada estimada se calcula desde la distancia a la planta -->
             <div class="gps-card__info gps-card__info--grid-3">
               <div class="info-item">
                 <small>VELOCIDAD</small>
@@ -506,8 +506,8 @@
                 <strong>{{ d.gps.estadoSenal.precisionMetros !== null ? '± ' + dato(d.gps.estadoSenal.precisionMetros, ' m') : '—' }}</strong>
               </div>
               <div class="info-item">
-                <small>SATÉLITES</small>
-                <strong>{{ dato(d.gps.estadoSenal.satelites) }}</strong>
+                <small>LLEGADA ESTIMADA</small>
+                <strong class="azul">{{ textoLlegada(d.gps.ultimaUbicacion) }}</strong>
               </div>
               <div class="info-item">
                 <small>LATENCIA</small>

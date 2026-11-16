@@ -325,6 +325,9 @@ export interface PanelGpsApi {
   altitudM:            number | null;
   satelites:           number | null;
   latenciaMs:          number | null;
+  /** Estimación de llegada que calcula el backend cuando el técnico está en ruta (minutos y hora de Lima). */
+  etaMinutos?:         number | null;
+  etaHora?:            string | null;
 }
 
 export interface PuntoRutaApi { latitud: number; longitud: number; hora: string; }  // hora 'HH:mm:ss', orden cronológico

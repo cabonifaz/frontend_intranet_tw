@@ -667,6 +667,14 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     return formatearDistancia(m);
   }
 
+  /** Tiempo estimado de llegada a la planta: "≈ 18 min · 16:35"; "En planta" si ya llegó; "—" sin distancia o sin coordenadas de la planta. */
+  textoLlegada(u: { dentroDelRadio: boolean; etaMinutos?: number | null; etaHora?: string | null }): string {
+    if (u.dentroDelRadio) return 'En planta';
+    if (u.etaMinutos === null || u.etaMinutos === undefined) return '—';
+    if (u.etaMinutos <= 0) return 'En planta';
+    return `≈ ${formatearDuracionMin(u.etaMinutos)}${u.etaHora ? ' · ' + u.etaHora : ''}`;
+  }
+
   /** Duración en minutos como "45 min" / "2h 02min" (o "—"). */
   duracion(min: number | null): string {
     return formatearDuracionMin(min);

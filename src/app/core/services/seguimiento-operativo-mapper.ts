@@ -193,6 +193,25 @@ export function adaptarPin(p: PinMapaApi): PuntoMapa {
   };
 }
 
+/** Velocidad promedio de la estimación de llegada: la misma del backend (SEG_VELOCIDAD_PROMEDIO_KMH, 30 por defecto). */
+const VELOCIDAD_PROMEDIO_KMH = 30;
+
+/**
+ * Tiempo estimado de llegada a la planta. Si el backend ya lo calculó (técnico en ruta) se respeta; si no, se estima desde la distancia en línea recta
+ * × 1,3 (calles) a la velocidad promedio, al menos 1 minuto. Dentro del radio de la planta no hay estimación (ya está).
+ */
+export function estimarLlegada(
+  distanciaM: number | null, dentroDelRadio: boolean, etaServidorMin: number | null, etaServidorHora: string | null,
+): { minutos: number | null; hora: string | null } {
+  if (dentroDelRadio) return { minutos: null, hora: null };
+  if (etaServidorMin !== null) return { minutos: etaServidorMin, hora: etaServidorHora };
+  if (distanciaM === null || !(distanciaM > 0)) return { minutos: null, hora: null };
+  const minutos = Math.max(1, Math.ceil((distanciaM * 1.3) / 1000 / VELOCIDAD_PROMEDIO_KMH * 60));
+  const hora = new Date(Date.now() + minutos * 60_000)
+    .toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Lima' });
+  return { minutos, hora };
+}
+
 /** Color hexadecimal #RRGGBB válido o null (el pin cae al color de su estado). */
 function colorONulo(c: string | null | undefined): string | null {
   const v = (c ?? '').trim();
@@ -707,6 +726,7 @@ export function adaptarMapa(api: MapaServicioApi): MapaGpsServicio {
 
   const distancia = p.distanciaM ?? null;
   const radio = planta?.radioM ?? (p.radioProximidadM > 0 ? p.radioProximidadM : 300);
+  const eta = estimarLlegada(distancia, distancia !== null && distancia <= radio, p.etaMinutos ?? null, p.etaHora ?? null);
 
   const tecnico = texto(p.tecnico, 'El técnico');
   const partes = cronograma.filter(h => h.hora).map(h =>
@@ -737,6 +757,8 @@ export function adaptarMapa(api: MapaServicioApi): MapaGpsServicio {
       altitudMsnm:        numeroONulo(p.altitudM),
       tiempoEnPunto:      p.minutosEnPunto > 0 ? formatearDuracionMin(p.minutosEnPunto) : null,
       lat, lng,
+      etaMinutos:         eta.minutos,
+      etaHora:            eta.hora,
     },
     planta,
     ruta,

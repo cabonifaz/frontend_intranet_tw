@@ -384,6 +384,9 @@ export interface UltimaUbicacion {
   tiempoEnPunto:    string | null;    // "2h 02min"
   lat:              number | null;
   lng:              number | null;
+  /** Tiempo estimado de llegada a la planta (minutos) y su hora de Lima; calculado desde la distancia (null si no hay distancia o ya está en planta). */
+  etaMinutos?:      number | null;
+  etaHora?:         string | null;
 }
 
 export interface PlantaGps {
