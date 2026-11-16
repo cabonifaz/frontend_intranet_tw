@@ -735,74 +735,66 @@
           </div>
         </div>
 
-        <app-tabla-paginada
-          [cargando]="cargando()"
-          [vacio]="!cargando() && d.demoras.length === 0"
-          [total]="d.demoras.length"
-          [pagina]="1"
-          [porPagina]="d.demoras.length || 10"
-          textoItems="eventos"
-          textoVacio="No se registraron demoras ni incidencias en el día.">
-          <thead>
-            <tr>
-              <th>HORA</th>
-              <th class="col-tipo">TIPO</th>
-              <th>MOMENTO</th>
-              <th class="col-desc">DESCRIPCIÓN</th>
-              <th>IMPACTO</th>
-              <th class="num">DURACIÓN</th>
-              <th>GPS</th>
-              <th class="centro">ORIGEN</th>
-              <th class="centro">EVIDENCIA</th>
-            </tr>
-          </thead>
-          <tbody>
+        @if (d.demoras.length === 0) {
+          <div class="dem-vacio">
+            <span class="material-symbols-outlined">inbox</span>
+            <p>No se registraron demoras ni incidencias en el día.</p>
+          </div>
+        } @else {
+          <ol class="dem-lista">
             @for (ev of d.demoras; track ev.idDemora) {
-              <tr class="fila-clic" (click)="abrirIncidenciaModal(ev)">
-                <td><strong>{{ ev.hora }}</strong></td>
-                <td class="col-tipo">{{ ev.tipo }}</td>
-                <td>
-                  @if (ev.momento) {
-                    <span [class]="chipMomento(ev.fase)">{{ ev.momento }}</span>
-                  } @else { <span class="muted">—</span> }
-                </td>
-                <td class="col-desc">
-                  <strong>{{ ev.motivo }}</strong>
-                  @if (ev.detalle) { <small class="sub">Registró: {{ ev.detalle }}</small> }
-                </td>
-                <td>
-                  <span [class]="chipImpacto(ev)">{{ labelImpacto(ev) }}</span>
-                </td>
-                <td class="num">{{ ev.duracionMin !== null ? ev.duracionMin + ' min' : '—' }}</td>
-                <td>
-                  @if (ev.lat !== null && ev.lng !== null) {
-                    <button type="button" class="gps-enlace" (click)="verEnMapa()"
-                            title="Ver el punto en el Mapa GPS">
-                      <span class="material-symbols-outlined">location_on</span>
-                      {{ ev.lat | number:'1.4-4' }}, {{ ev.lng | number:'1.4-4' }}
-                    </button>
-                  } @else { <span class="muted">—</span> }
-                </td>
-                <td class="centro">
-                  <span [class]="'ic-origen ic-origen--' + ev.origen"
-                        [title]="labelOrigen(ev.origen)">
+              <li class="dem-card" [attr.data-impacto]="ev.detiene ? 'detiene' : 'retrasa'"
+                  tabindex="0" (click)="abrirIncidenciaModal(ev)" (keydown.enter)="abrirIncidenciaModal(ev)">
+                <div class="dem-card__hora">
+                  <strong>{{ ev.hora }}</strong>
+                  <span [class]="'ic-origen ic-origen--' + ev.origen" [title]="labelOrigen(ev.origen)">
                     <span class="material-symbols-outlined">{{ iconoOrigenCompacto(ev.origen) }}</span>
                   </span>
-                </td>
-                <td class="centro">
-                  @if (ev.nFotos && ev.nFotos > 0) {
-                    <span class="chip chip--gris">
+                </div>
+
+                <div class="dem-card__cuerpo">
+                  <div class="dem-card__chips">
+                    <strong class="dem-card__tipo">{{ ev.tipo }}</strong>
+                    @if (ev.momento) { <span [class]="chipMomento(ev.fase)">{{ ev.momento }}</span> }
+                    <span [class]="chipImpacto(ev)">{{ labelImpacto(ev) }}</span>
+                  </div>
+                  <p class="dem-card__motivo">{{ ev.motivo }}</p>
+                  <div class="dem-card__meta">
+                    <span><span class="material-symbols-outlined">timer</span>{{ ev.duracionMin !== null ? ev.duracionMin + ' min' : '—' }}</span>
+                    @if (ev.detalle) {
+                      <span><span class="material-symbols-outlined">person</span>Registró: {{ ev.detalle }}</span>
+                    }
+                    @if (ev.lat !== null && ev.lng !== null) {
+                      <button type="button" class="gps-enlace" (click)="$event.stopPropagation(); verEnMapa()"
+                              title="Ver el punto en el Mapa GPS">
+                        <span class="material-symbols-outlined">location_on</span>
+                        {{ ev.lat | number:'1.4-4' }}, {{ ev.lng | number:'1.4-4' }}
+                      </button>
+                    } @else {
+                      <span class="muted"><span class="material-symbols-outlined">location_off</span>Sin GPS</span>
+                    }
+                  </div>
+                </div>
+
+                @if (ev.nFotos && ev.nFotos > 0) {
+                  <div class="dem-card__foto">
+                    @if (fotosDemora()[ev.idDemora]; as foto) {
+                      <a [href]="foto" target="_blank" rel="noopener" (click)="$event.stopPropagation()" title="Ver la foto completa">
+                        <img [src]="foto" alt="Foto de evidencia de la demora" loading="lazy" />
+                      </a>
+                    } @else {
+                      <div class="dem-card__foto-carga"><span class="material-symbols-outlined spin">progress_activity</span></div>
+                    }
+                    <span class="chip chip--gris chip--foto">
                       <span class="material-symbols-outlined">photo_camera</span>
                       Con foto
                     </span>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </td>
-              </tr>
+                  </div>
+                }
+              </li>
             }
-          </tbody>
-        </app-tabla-paginada>
+          </ol>
+        }
 
         <p class="nota-pie">
           <span class="material-symbols-outlined">info</span>

@@ -203,10 +203,9 @@ describe('ModalDetalleServicioComponent', () => {
     obtenerDetalleServicio.mockResolvedValue(detalle());
     await montar();
     abrirTab('Demoras / Incidencias');
-    const cab = Array.from(host().querySelectorAll('th')).map(th => th.textContent?.trim());
-    expect(cab).toEqual(expect.arrayContaining(['MOMENTO', 'GPS', 'IMPACTO', 'DURACIÓN']));
-    expect(host().querySelector('tbody .chip--morado')?.textContent).toContain('Ingreso a planta');
-    expect(host().querySelector('tbody .chip--azul')?.textContent).toContain('En ruta (llegar a planta)');
+    expect(host().querySelectorAll('.dem-card').length).toBeGreaterThan(0);
+    expect(host().querySelector('.dem-card .chip--morado')?.textContent).toContain('Ingreso a planta');
+    expect(host().querySelector('.dem-card .chip--azul')?.textContent).toContain('En ruta (llegar a planta)');
     const t = texto();
     ['Revisión en portería', 'DETIENE', 'RETRASA', '25 min', '-11.8800, -77.1200', 'Registró: Pedro Salazar', 'Con foto'].forEach(x => expect(t).toContain(x));
 

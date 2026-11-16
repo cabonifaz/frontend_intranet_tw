@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
@@ -64,6 +64,12 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly verIncidencia = output<{ evento: DemoraIncidenciaServicio; numeroOs: string }>();
 
   readonly tab      = signal<TabDetalle>('resumen');
+  /** Fotos de las demoras/incidencias (clave del registro → URL temporal de la imagen), cargadas al abrir la pestaña Demoras / Incidencias. */
+  readonly fotosDemora = signal<Record<string, string>>({});
+  private readonly pidiendoFotos = new Set<string>();
+  private readonly cargarFotosAlAbrir = effect(() => {
+    if (this.tab() === 'demoras' && this.detalle()) untracked(() => void this.cargarFotosDemoras());
+  });
   readonly cargando = signal(true);
   readonly detalle  = signal<DetalleServicioSeguimiento | null>(null);
   /** Error de la primera carga (el modal no tiene datos que mostrar): se pinta dentro del modal. */
@@ -278,6 +284,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destruido = true;
+    Object.values(this.fotosDemora()).forEach((u) => URL.revokeObjectURL(u));
     this.limpiarTemporizador();
     const previo = this.evidenciaPreview();
     if (previo) URL.revokeObjectURL(previo);
@@ -602,6 +609,23 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   estaExpandido(idEquipo: number): boolean {
     return this.equiposExpandidos().has(idEquipo);
+  }
+
+  /** Pide la foto de cada demora/incidencia que la tiene (una vez por registro); si una falla se queda sin miniatura y se abre desde el detalle. */
+  private async cargarFotosDemoras(): Promise<void> {
+    for (const ev of this.detalle()?.demoras ?? []) {
+      if (!ev.nFotos || this.fotosDemora()[ev.idDemora] || this.pidiendoFotos.has(ev.idDemora)) continue;
+      this.pidiendoFotos.add(ev.idDemora);
+      try {
+        const blob = await this.svc.obtenerEvidenciaIncidencia(this.idServicio(), ev.idDemora);
+        if (this.destruido) return;
+        this.fotosDemora.update((m) => ({ ...m, [ev.idDemora]: URL.createObjectURL(blob) }));
+      } catch {
+        // sin miniatura: la foto se ve igual al abrir el detalle del registro
+      } finally {
+        this.pidiendoFotos.delete(ev.idDemora);
+      }
+    }
   }
 
   cambiarTab(t: TabDetalle): void {
