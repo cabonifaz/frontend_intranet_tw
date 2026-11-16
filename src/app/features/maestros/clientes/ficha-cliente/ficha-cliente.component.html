@@ -313,7 +313,7 @@
                     <tr class="sedes-tabla__fila">
                       <td>
                         <div class="sede-nombre">{{ s.nombre }}</div>
-                        @if (s.urbanizacion) { <div class="sede-detalle">{{ s.urbanizacion }}</div> }
+                        @if (s.referencia) { <div class="sede-detalle">{{ s.referencia }}</div> }
                       </td>
                       <td>
                         @if (s.tipoInstalacion) {
@@ -362,8 +362,8 @@
                   <tr class="sedes-tabla__fila">
                     <td>
                       <div class="sede-nombre">{{ s.nombre }}</div>
-                      @if (s.urbanizacion) {
-                        <div class="sede-detalle">{{ s.urbanizacion }}</div>
+                      @if (s.referencia) {
+                        <div class="sede-detalle">{{ s.referencia }}</div>
                       }
                     </td>
                     <td>

@@ -4,7 +4,6 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { debounceTime } from 'rxjs';
 import { MaestrosService } from '../../../../core/services/maestros.service';
 import { UbigeoService, UbigeoItem } from '../../../../core/services/ubigeo.service';
-import { NominatimService } from '../../../../core/services/nominatim.service';
 import { BorradorService, BorradorInfo } from '../../../../core/services/borrador.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import { CatalogoItem, GuardarSedeRequest, SedeListaItem } from '../../../../core/models/maestros.model';
@@ -24,7 +23,6 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
   private readonly fb          = inject(FormBuilder);
   private readonly maestrosSvc = inject(MaestrosService);
   private readonly ubigeoSvc   = inject(UbigeoService);
-  private readonly nominatim   = inject(NominatimService);
   private readonly borradorSvc = inject(BorradorService);
   private readonly toastSvc    = inject(ToastService);
   private readonly destroyRef  = inject(DestroyRef);
@@ -70,7 +68,7 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
     region:          ['', Validators.required],
     provincia:       ['', Validators.required],
     distrito:        ['', Validators.required],
-    urbanizacion:    [''],
+    referencia:      [''],
     direccionExacta: ['', Validators.required],
   });
 
@@ -140,7 +138,7 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
         region:          depCanonico ?? sede.region ?? '',
         provincia:       this.matchearCanonico(provsSede, sede.provincia) ?? sede.provincia ?? '',
         distrito:        this.matchearCanonico(distsSede, sede.distrito)   ?? sede.distrito   ?? '',
-        urbanizacion:    sede.urbanizacion    ?? '',
+        referencia:      sede.referencia      ?? '',
         direccionExacta: sede.direccionExacta ?? '',
       }, { emitEvent: false });
       // Hidratar coordenadas si la sede ya tenía ubicación guardada.
@@ -232,36 +230,24 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
 
   private async resolverUbigeoDesdeCoords(lat: number, lng: number): Promise<void> {
     this.resolviendoUbigeo.set(true);
-    // Lanzamos las dos lookups en paralelo: ubigeo oficial (back TW) + dirección legible
-    // (OpenStreetMap). El ubigeo es canónico y lo necesitamos sí o sí; Nominatim puede
-    // fallar silenciosamente, en cuyo caso el user escribe la dirección a mano.
-    const [ubigeoPromesa, nominatimPromesa] = [
-      this.ubigeoSvc.reverseUbigeo(lat, lng),
-      this.nominatim.reverse(lat, lng),
-    ];
     try {
-      const r = await ubigeoPromesa;
+      // El endpoint del back devuelve ubigeo (polígonos INEI) + dirección legible
+      // (OpenStreetMap vía Nominatim, consultada desde el server con cache y timeout).
+      // `direccion` puede venir null si Nominatim falla; en ese caso el user escribe.
+      const r = await this.ubigeoSvc.reverseUbigeo(lat, lng);
       this.ubicacionAproximada.set(r.aproximado);
-      // La cascada de ubigeo ya está suscrita a los cambios: al patchear region/provincia,
-      // los efectos cargan provincias y distritos. Esperamos cada carga antes del siguiente patch.
       this.autoguardadoActivo = false;
       this.formulario.patchValue({ region: r.departamento.nombre }, { emitEvent: true });
       this.provincias.set(await this.ubigeoSvc.obtenerProvincias(r.departamento.nombre));
       this.formulario.patchValue({ provincia: r.provincia.nombre }, { emitEvent: true });
       this.distritos.set(await this.ubigeoSvc.obtenerDistritos(r.departamento.nombre, r.provincia.nombre));
       this.formulario.patchValue({ distrito: r.distrito.nombre }, { emitEvent: false });
+      if (r.direccion) {
+        this.formulario.patchValue({ direccionExacta: r.direccion }, { emitEvent: true });
+      }
       this.autoguardadoActivo = true;
       if (r.aproximado) {
         this.toastSvc.info('Ubicación aproximada: verifica el distrito antes de guardar.');
-      }
-
-      // Dirección exacta desde Nominatim: sobrescribe siempre que haya una mejor opción
-      // que lo que ya hay escrito. El user puede editarlo después si está impreciso.
-      const nomi = await nominatimPromesa;
-      if (nomi.direccionCorta) {
-        this.autoguardadoActivo = false;
-        this.formulario.patchValue({ direccionExacta: nomi.direccionCorta }, { emitEvent: true });
-        this.autoguardadoActivo = true;
       }
     } catch (e: unknown) {
       this.ubicacionAproximada.set(false);
@@ -283,7 +269,7 @@ export class ModalSedeComponent implements OnInit, OnDestroy {
       region:          v.region          || null,
       provincia:       v.provincia       || null,
       distrito:        v.distrito        || null,
-      urbanizacion:    v.urbanizacion    || null,
+      referencia:      v.referencia      || null,
       direccionExacta: v.direccionExacta,
       latitud:         this.lat(),
       longitud:        this.lng(),

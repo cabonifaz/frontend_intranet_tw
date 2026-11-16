@@ -23,6 +23,8 @@ export interface UbigeoReverseResultado {
   ubigeo:       string;
   /** true si el punto no cayó dentro de ningún distrito y se tomó el más cercano (< 1 km). */
   aproximado:   boolean;
+  /** Calle y número (o barrio/caserío) según OpenStreetMap. null si no se pudo resolver. */
+  direccion:    string | null;
 }
 
 /** Entidades soportadas por `GET /api/maestros/siguiente-codigo/{entidad}`. */
