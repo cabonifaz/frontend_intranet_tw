@@ -862,10 +862,10 @@
         } @else {
           <div class="apb-lista">
             @for (a of aprobacionesFiltradas(); track a.tipo + ':' + a.id) {
-              <article class="apb-card" [class.apb-card--urgente]="a.urgente">
+              <article class="apb-card" [class.apb-card--urgente]="a.urgente" [attr.data-estado]="a.estado" [attr.data-tipo]="a.tipo">
                 <header class="apb-card__head">
                   <div class="apb-card__tipo">
-                    <span class="material-symbols-outlined">{{ iconoTipoAprobacion(a.tipo) }}</span>
+                    <span class="apb-card__icono"><span class="material-symbols-outlined">{{ iconoTipoAprobacion(a.tipo) }}</span></span>
                     <strong>{{ labelTipoAprobacion(a.tipo) }}</strong>
                     @if (a.urgente) { <span class="chip chip--rojo">Urgente</span> }
                   </div>
@@ -873,19 +873,26 @@
                 </header>
                 <div class="apb-card__body">
                   @if (a.titulo) { <h5>{{ a.titulo }}</h5> }
-                  <small class="muted">
-                    @if (a.solicitante) { Solicitó: <strong>{{ a.solicitante }}</strong> · }
-                    @if (a.solicitadoEn) { {{ a.solicitadoEn | date:'dd/MM/yyyy HH:mm' }} }
-                  </small>
-                  @if (a.motivo)  { <p><strong>Motivo:</strong> {{ a.motivo }}</p> }
-                  @if (a.detalle) { <p>{{ a.detalle }}</p> }
+                  <div class="apb-card__meta">
+                    @if (a.solicitante) {
+                      <span><span class="material-symbols-outlined">person</span>Solicitó: <strong>{{ a.solicitante }}</strong></span>
+                    }
+                    @if (a.solicitadoEn) {
+                      <span><span class="material-symbols-outlined">schedule</span>{{ a.solicitadoEn | date:'dd/MM/yyyy HH:mm' }}</span>
+                    }
+                  </div>
+                  @if (a.motivo)  { <p class="apb-card__nota"><strong>Motivo:</strong> {{ a.motivo }}</p> }
+                  @if (a.detalle) { <p class="apb-card__detalle">{{ a.detalle }}</p> }
                   @if (a.resueltoPor) {
                     <div class="apb-card__decision">
-                      <small><strong>{{ a.resueltoPor }}</strong>
-                      @if (a.cargo)      { · {{ a.cargo }} }
-                      @if (a.resueltoEn) { · {{ a.resueltoEn | date:'dd/MM/yyyy HH:mm' }} }
-                      </small>
-                      @if (a.comentario) { <p class="apb-card__coment">"{{ a.comentario }}"</p> }
+                      <span class="material-symbols-outlined">{{ a.estado === 'aprobada' ? 'check_circle' : 'cancel' }}</span>
+                      <div>
+                        <small><strong>{{ a.resueltoPor }}</strong>
+                        @if (a.cargo)      { · {{ a.cargo }} }
+                        @if (a.resueltoEn) { · {{ a.resueltoEn | date:'dd/MM/yyyy HH:mm' }} }
+                        </small>
+                        @if (a.comentario) { <p class="apb-card__coment">"{{ a.comentario }}"</p> }
+                      </div>
                     </div>
                   }
                 </div>
