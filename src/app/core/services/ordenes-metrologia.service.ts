@@ -62,16 +62,10 @@ import {
 } from './ordenes-metrologia-mapper';
 
 /**
- * Módulo 9 — Órdenes de Metrología (OM). Sprint 4.
- * Alineado al controller `OrdenesMetrologiaController` del back.
- *
- * Integración en fases con el back:
- *   Fase 1 — HU-41 Bandeja (GET /, GET /exportar) ← ✅ integrado
- *   Fase 2 — HU-42 Detalle (GET /{id} + 6 tabs lazy) ← ✅ integrado
- *   Fase 3 — HU-40 Crear/editar (POST / PUT / preparar / preparar-edicion / propuestas-disponibles) ← ✅ integrado
- *   Fase 4 — HU-40 Fase C (solicitar edición, anular, aprobar/rechazar) ← mock
- *   Fase 5 — HU-43 Catálogos (equipos cliente, conceptos) ← mock
- *   Fase 6 — HU-44 Importación Excel OM ← mock
+ * Módulo 13 — Órdenes de Metrología (OM). HU-61 a HU-65.
+ * Alineado al controller `OrdenesMetrologiaController` del back
+ * (`/api/crm/ordenes-metrologia/...`, correlativo independiente OM-NNNNNN).
+ * Mismo contrato que OS; separado por requerimiento de auditoría del cliente.
  */
 @Injectable({ providedIn: 'root' })
 export class OrdenesMetrologiaService {
@@ -83,20 +77,11 @@ export class OrdenesMetrologiaService {
     const r = await firstValueFrom(
       this.http.get<RespuestaApi<BandejaOrdenesMetrologia>>(this.base, { params }),
     );
-    if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar la bandeja de órdenes de servicio.');
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar la bandeja de órdenes de metrología.');
     return r.datos;
   }
 
-  /**
-   * HU-42 — Detalle de la OM para el modal.
-   *
-   * ⚠️ MOCK: el endpoint `GET /api/crm/ordenes-metrologia/{id}` todavía no existe en el back.
-   * Cuando Bryan lo implemente, reemplazar el cuerpo por:
-   *   const r = await firstValueFrom(this.http.get<RespuestaApi<DetalleOrdenMetrologia>>(`${this.base}/${idOs}`));
-   *   if (!r.datos) throw new Error(r.mensaje || 'No se pudo cargar el detalle.');
-   *   return r.datos;
-   */
-  /** HU-40 — Propuestas aceptadas disponibles para generar una OM. */
+  /** HU-63 — Propuestas aceptadas disponibles para generar una OM. */
   async obtenerPropuestasDisponibles(busqueda?: string, tipo?: TipoOrden | ''): Promise<PropuestaDisponibleOs[]> {
     let p = new HttpParams().set('pagina', '1').set('porPagina', '100');
     if (busqueda) p = p.set('busqueda', busqueda);
@@ -135,7 +120,7 @@ export class OrdenesMetrologiaService {
         ? this.http.put<RespuestaApi<OrdenMetrologiaGuardadaApi>>(`${this.base}/${req.idOs}`, body)
         : this.http.post<RespuestaApi<OrdenMetrologiaGuardadaApi>>(this.base, body),
     );
-    if (!r.datos) throw new Error(r.mensaje || 'No se pudo guardar la orden de servicio.');
+    if (!r.datos) throw new Error(r.mensaje || 'No se pudo guardar la orden de metrología.');
     return {
       idOs:    r.datos.idOs,
       numero:  r.datos.numero,
