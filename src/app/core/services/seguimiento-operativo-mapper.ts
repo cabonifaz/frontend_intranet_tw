@@ -188,7 +188,15 @@ export function adaptarPin(p: PinMapaApi): PuntoMapa {
     hace:       formatearHaceMinutos(p.minutosUbicacion, 'Sin posición GPS hoy'),
     lat:        conGps ? lat : null,
     lng:        conGps ? lng : null,
+    actividad:      textoONulo(p.actividad),
+    actividadColor: colorONulo(p.actividadColor),
   };
+}
+
+/** Color hexadecimal #RRGGBB válido o null (el pin cae al color de su estado). */
+function colorONulo(c: string | null | undefined): string | null {
+  const v = (c ?? '').trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(v) ? v : null;
 }
 
 export function iniciales(nombre: string | null | undefined): string {
@@ -202,7 +210,7 @@ export function iniciales(nombre: string | null | undefined): string {
 function normalizarTipoAlerta(t: string | null | undefined): TipoAlertaCampo {
   const v = (t ?? '').trim().toLowerCase();
   const validos: readonly TipoAlertaCampo[] = [
-    'perdida_contacto', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
+    'perdida_contacto', 'sin_movimiento', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
   ];
   return (validos as readonly string[]).includes(v) ? (v as TipoAlertaCampo) : 'otra';
 }

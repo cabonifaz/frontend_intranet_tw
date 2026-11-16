@@ -20,6 +20,7 @@ export type EstadoTecnicoCampo =
 
 export type TipoAlertaCampo =
   | 'perdida_contacto'
+  | 'sin_movimiento'
   | 'gps_parado'
   | 'sin_ingreso_post_llegada'
   | 'proximidad'
@@ -62,6 +63,9 @@ export interface PuntoMapa {
   hace:           string;          // "hace 5 min" / "Sin posición GPS hoy"
   lat:            number | null;
   lng:            number | null;
+  /** Lo que hace el técnico (Reloj marcador) y el color de su pin: verde activo · azul en ruta · amarillo ejecutando · naranja refrigerio. */
+  actividad?:      string | null;
+  actividadColor?: string | null;
 }
 
 // ─── Alerta crítica del panel lateral ───────────────────────────────────────

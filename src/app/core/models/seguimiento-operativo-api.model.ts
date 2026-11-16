@@ -42,6 +42,11 @@ export interface PinMapaApi {
   idOs:             number | null;
   numeroOs:         string | null;
   cliente:          string | null;
+  /** HU-20: estado del Reloj marcador y lo que hace el técnico; tono y color (activo · ruta · trabajo · refrigerio…). */
+  jornada?:         string | null;
+  actividad?:       string | null;
+  actividadTono?:   string | null;
+  actividadColor?:  string | null;
 }
 
 export interface AlertaSeguimientoApi {
