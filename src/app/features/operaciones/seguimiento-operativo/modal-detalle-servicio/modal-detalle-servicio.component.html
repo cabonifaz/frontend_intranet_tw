@@ -856,11 +856,6 @@
             <span class="material-symbols-outlined">login</span> Llegada
             @if (conteoPorTipo().llegada) { <span class="count">{{ conteoPorTipo().llegada }}</span> }
           </button>
-          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'evidencia'"
-                  (click)="cambiarFiltroAprobacion('evidencia')">
-            <span class="material-symbols-outlined">photo_camera</span> Evidencias
-            @if (conteoPorTipo().evidencia) { <span class="count">{{ conteoPorTipo().evidencia }}</span> }
-          </button>
           <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'ensayo'"
                   (click)="cambiarFiltroAprobacion('ensayo')">
             <span class="material-symbols-outlined">science</span> Ensayos
