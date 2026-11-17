@@ -7,7 +7,7 @@ import { ToastService } from '../../../../core/services/toast.service';
 import {
   CabeceraInformeApi, CategoriaHistorial, DetalleInformeApi, EnsayoInformeApi, EventoHistorialApi,
   FotoInformeApi, HistorialInformeApi, MomentoFoto, NivelObservacion, ObservacionInformeApi,
-  PasoInformeApi, PrioridadRecomendacion, RecomendacionInformeApi,
+  ObservacionSeguimientoApi, PasoInformeApi, PrioridadRecomendacion, RecomendacionInformeApi,
 } from '../../../../core/models/revision-informes-api.model';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
@@ -83,6 +83,8 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
 
   // ─── Viáticos (tab, HU-57 cierre) ──────────────────────────────────────
   readonly viaticos         = signal<ViaticosOs | null>(null);
+  /** Observaciones que se registraron durante el servicio en el Seguimiento Operativo. */
+  readonly obsSeguimiento   = signal<ObservacionSeguimientoApi[]>([]);
 
   /** Revisar un gasto (aprobar / observar / rechazar) desde la pestaña Viáticos y Gastos. */
   readonly gastoRevisar        = signal<{ idGasto: number; concepto: string } | null>(null);
@@ -169,6 +171,7 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
       // Dispara en background la carga de viáticos para que el chip del Resumen
       // de Validaciones (y el tab Viáticos) estén listos sin esperar al click.
       void this.cargarViaticos();
+      void this.cargarObsSeguimiento();
     } catch (e: unknown) {
       const m = e instanceof Error && e.message ? e.message : 'No se pudo cargar el detalle del informe.';
       this.error.set(m);
@@ -198,6 +201,23 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
       this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el historial.');
     } finally {
       this.cargandoHistorial.set(false);
+    }
+  }
+
+  /** Observaciones del Seguimiento Operativo: se piden en segundo plano; si fallan, la pestaña muestra solo las del informe. */
+  async cargarObsSeguimiento(): Promise<void> {
+    try {
+      this.obsSeguimiento.set(await this.svc.obtenerObservacionesSeguimientoInforme(this.idInforme()));
+    } catch {
+      this.obsSeguimiento.set([]);
+    }
+  }
+
+  iconoObsSeguimiento(origen: string): string {
+    switch (origen) {
+      case 'asistente': return 'support_agent';
+      case 'equipo':    return 'precision_manufacturing';
+      default:          return 'build';
     }
   }
 

@@ -279,6 +279,18 @@ export interface FotoInformeApi {
   forzadaEn?:       string | null;
 }
 
+/** Observación registrada durante el servicio en el Seguimiento Operativo. */
+export interface ObservacionSeguimientoApi {
+  clave:       string;
+  /** asistente (nota del Asistente) · equipo (observación del equipo) · ejecucion (observación de ejecución). */
+  origen:      string;
+  registrador: string | null;
+  /** Cómo se enteró el Asistente (llamada telefónica, WhatsApp, contacto en planta, observación directa). */
+  fuente:      string | null;
+  texto:       string;
+  fecha:       string | null;
+}
+
 export type PrioridadItemPrecot = 'alta' | 'media' | 'opcional';
 
 export interface ItemPrecotizacionApi {

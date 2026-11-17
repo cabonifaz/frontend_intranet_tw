@@ -43,7 +43,7 @@
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'descripcion'"   (click)="cambiarTab('descripcion')">Descripción Complementaria</button>
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'observaciones'" (click)="cambiarTab('observaciones')">
         Observaciones
-        @if (observaciones().length) { <span class="mdi__tab-badge">{{ observaciones().length }}</span> }
+        @if (observaciones().length + obsSeguimiento().length) { <span class="mdi__tab-badge">{{ observaciones().length + obsSeguimiento().length }}</span> }
       </button>
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'recomendaciones'" (click)="cambiarTab('recomendaciones')">
         Recomendaciones
@@ -327,12 +327,16 @@
 
         <!-- ── TAB 4: OBSERVACIONES ──────────────────────────────────── -->
         @if (tab() === 'observaciones') {
-          @if (observaciones().length === 0) {
+          @if (observaciones().length === 0 && obsSeguimiento().length === 0) {
             <p class="vacio vacio--grande">
               <span class="material-symbols-outlined">task_alt</span>
               Este servicio se cerró sin observaciones.
             </p>
-          } @else {
+          }
+          @if (observaciones().length > 0) {
+            @if (obsSeguimiento().length > 0) {
+              <h4 class="obs-seccion"><span class="material-symbols-outlined">report</span>Observaciones del informe técnico</h4>
+            }
             <div class="obs-lista">
               @for (o of observaciones(); track o.idObservacion) {
                 <article class="obs">
@@ -353,6 +357,26 @@
                       <img [src]="o.urlFoto" [alt]="o.titulo ?? ''">
                     </a>
                   }
+                </article>
+              }
+            </div>
+          }
+          @if (obsSeguimiento().length > 0) {
+            <h4 class="obs-seccion">
+              <span class="material-symbols-outlined">forum</span>Observaciones del Seguimiento Operativo
+              <span class="mdi__tab-badge">{{ obsSeguimiento().length }}</span>
+            </h4>
+            <p class="obs-seccion__sub">Lo que se registró durante el servicio desde el Seguimiento Operativo (notas del Asistente y observaciones del equipo).</p>
+            <div class="obs-lista">
+              @for (s of obsSeguimiento(); track s.clave) {
+                <article class="obs obs--seg">
+                  <header class="obs__head">
+                    <span class="obs__codigo obs__codigo--seg"><span class="material-symbols-outlined">{{ iconoObsSeguimiento(s.origen) }}</span></span>
+                    <strong class="obs__titulo">{{ s.registrador ?? 'Seguimiento Operativo' }}</strong>
+                    @if (s.fuente) { <span class="chip chip--azul">{{ s.fuente }}</span> }
+                    @if (s.fecha) { <small class="obs__hora">{{ s.fecha | date:'dd/MM/yyyy HH:mm' }}</small> }
+                  </header>
+                  <p class="obs__desc">{{ s.texto }}</p>
                 </article>
               }
             </div>

@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   BandejaInformesApi, CategoriaHistorial, DetalleInformeApi, FiltrosBandejaInformesQs,
   GuardarInformePayload, GuardarPrecotizacionPayload, HistorialInformeApi, InformeGuardadoApi,
-  InformeRevisadoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
+  InformeRevisadoApi, ObservacionSeguimientoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
   RespuestaRevisionApi,
 } from '../models/revision-informes-api.model';
 import { ViaticosOs } from '../models/aprobaciones-viaticos-servicio.model';
@@ -160,6 +160,16 @@ export class RevisionInformesService {
       return await this.get<ViaticosOs>(`${this.base}/${idInforme}/viaticos`);
     } catch (e) {
       throw this.comoError(e, 'No se pudieron cargar los viáticos del informe.');
+    }
+  }
+
+  /** Observaciones que se registraron durante el servicio en el Seguimiento Operativo (notas del Asistente, observaciones del equipo). */
+  async obtenerObservacionesSeguimientoInforme(idInforme: number): Promise<ObservacionSeguimientoApi[]> {
+    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+    try {
+      return await this.get<ObservacionSeguimientoApi[]>(`${this.base}/${idInforme}/observaciones-seguimiento`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar las observaciones del seguimiento.');
     }
   }
 
