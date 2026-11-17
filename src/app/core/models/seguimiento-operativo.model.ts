@@ -21,6 +21,7 @@ export type EstadoTecnicoCampo =
 export type TipoAlertaCampo =
   | 'perdida_contacto'
   | 'sin_movimiento'
+  | 'ensayo_critico'
   | 'autorizacion_salida'
   | 'gps_parado'
   | 'sin_ingreso_post_llegada'
