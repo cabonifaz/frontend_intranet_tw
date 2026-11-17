@@ -271,6 +271,12 @@ export interface FotoInformeApi {
   validacionIa:     string | null;
   idObservacion:    number | null;
   codigoObservacion:string | null;
+  /** Evidencia forzada (HU-12): la IA la rechazó y el técnico la aceptó con un motivo. */
+  forzada?:         boolean;
+  motivoForzado?:   string | null;
+  motivoRechazoIa?: string | null;
+  forzadaPor?:      string | null;
+  forzadaEn?:       string | null;
 }
 
 export type PrioridadItemPrecot = 'alta' | 'media' | 'opcional';

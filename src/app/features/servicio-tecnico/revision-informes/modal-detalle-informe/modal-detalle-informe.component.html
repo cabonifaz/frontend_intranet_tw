@@ -484,12 +484,27 @@
                     </div>
                     <div class="foto__pie">
                       <span class="foto__momento chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
-                      @if (f.georreferenciada) {
-                        <span class="material-symbols-outlined foto__gps" title="Georreferenciada">location_on</span>
-                      }
+                      @if (f.forzada) { <span class="chip chip--ambar">Forzada</span> }
                       @if (f.codigoObservacion) {
                         <span class="chip chip--rojo">{{ f.codigoObservacion }}</span>
                       }
+                    </div>
+                    <div class="foto__detalle">
+                      @if (f.fechaCaptura) {
+                        <span class="foto__dato"><span class="material-symbols-outlined">schedule</span>{{ f.fechaCaptura | date:'dd/MM/yyyy HH:mm' }}</span>
+                      }
+                      @if (f.georreferenciada) {
+                        <span class="foto__dato foto__dato--gps" title="Ubicación donde se tomó">
+                          <span class="material-symbols-outlined">location_on</span>{{ f.latitud | number:'1.4-4' }}, {{ f.longitud | number:'1.4-4' }}
+                        </span>
+                      }
+                      @if (f.forzada && f.motivoForzado) {
+                        <span class="foto__texto"><strong>Motivo:</strong> {{ f.motivoForzado }}</span>
+                      }
+                      @if (f.validacionIa) {
+                        <span class="foto__texto foto__texto--ia"><span class="material-symbols-outlined">smart_toy</span>{{ f.validacionIa }}</span>
+                      }
+                      @if (f.descripcion) { <span class="foto__texto">{{ f.descripcion }}</span> }
                     </div>
                   </button>
                 }
@@ -670,13 +685,31 @@
       <div class="lightbox__pie">
         <strong>{{ foto.momentoLabel ?? foto.momento }}</strong>
         @if (foto.descripcion) { <span>— {{ foto.descripcion }}</span> }
-        @if (foto.georreferenciada) {
-          <span class="material-symbols-outlined lightbox__gps" title="Georreferenciada">location_on</span>
-        }
+        @if (foto.forzada) { <span class="chip chip--ambar">Forzada por el técnico</span> }
         @if (foto.codigoObservacion) {
           <span class="chip chip--rojo">{{ foto.codigoObservacion }}</span>
         }
       </div>
+      <dl class="lightbox__detalle">
+        @if (foto.fechaCaptura) {
+          <div><dt>Tomada</dt><dd>{{ foto.fechaCaptura | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+        }
+        @if (foto.georreferenciada) {
+          <div><dt>Ubicación</dt><dd>{{ foto.latitud | number:'1.5-5' }}, {{ foto.longitud | number:'1.5-5' }}</dd></div>
+        }
+        @if (foto.validacionIa) {
+          <div class="lightbox__fila--ancha"><dt>Validación de la IA</dt><dd>{{ foto.validacionIa }}</dd></div>
+        }
+        @if (foto.motivoRechazoIa) {
+          <div class="lightbox__fila--ancha"><dt>La IA la rechazó</dt><dd>{{ foto.motivoRechazoIa }}</dd></div>
+        }
+        @if (foto.forzada) {
+          <div class="lightbox__fila--ancha">
+            <dt>Motivo del técnico</dt>
+            <dd>{{ foto.motivoForzado ?? 'Sin motivo' }}@if (foto.forzadaPor || foto.forzadaEn) { <small> · {{ foto.forzadaPor }}{{ foto.forzadaPor && foto.forzadaEn ? ' · ' : '' }}{{ foto.forzadaEn | date:'dd/MM/yyyy HH:mm' }}</small> }</dd>
+          </div>
+        }
+      </dl>
     </div>
   </div>
 }
