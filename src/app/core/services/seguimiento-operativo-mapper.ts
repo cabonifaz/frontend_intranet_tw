@@ -45,7 +45,6 @@ export const COLOR_DEMORA_INGRESO = '#7C3AED';
 const ESTADOS_CAMPO: readonly EstadoTecnicoCampo[] =
   ['sin_salir', 'en_ruta', 'en_planta', 'en_ejecucion', 'con_demora', 'con_incidente', 'finalizado'];
 
-const ETAPAS: readonly NombreEtapaEquipo[] = ['LIMPIEZA', 'DESMONTAJE', 'PRUEBAS', 'MONTAJE', 'CIERRE'];
 
 /** Si el hito GPS no tiene una posición de la ruta a menos de estos minutos, no se dibuja en el mapa. */
 const TOLERANCIA_HITO_MIN = 10;
@@ -549,13 +548,13 @@ export function adaptarResumenServicio(d: DetalleServicioApi): ResumenServicio {
 // ─── Avance por equipos ─────────────────────────────────────────────────────
 
 function normalizarEtapa(e: string | null | undefined): NombreEtapaEquipo | null {
-  const v = (e ?? '').trim().toUpperCase() as NombreEtapaEquipo;
-  return ETAPAS.includes(v) ? v : null;
+  const v = (e ?? '').trim();
+  return v === '' ? null : v;
 }
 
 function normalizarEstadoEtapa(e: string | null | undefined): EstadoEtapaEquipo {
   const v = (e ?? '').trim().toLowerCase();
-  return v === 'completada' || v === 'en_curso' ? v : 'pendiente';
+  return v === 'completada' || v === 'en_curso' || v === 'observada' || v === 'bloqueada' ? v : 'pendiente';
 }
 
 export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
@@ -570,6 +569,7 @@ export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
       estado:       estadoEtapa,
       hora:         estadoEtapa === 'completada' ? textoONulo(et.hora) : null,
       enCursoDesde: estadoEtapa === 'en_curso' ? textoONulo(et.hora) : null,
+      detalle:      textoONulo(et.detalle),
     });
   }
   const enCurso = etapas.find(x => x.estado === 'en_curso');
@@ -593,7 +593,7 @@ export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
     estado,
     horaInicio:     textoONulo(e.iniciado),
     horaFin:        textoONulo(e.finalizado),
-    etapaActual:    enCurso?.nombre ?? null,
+    etapaActual:    (enCurso ?? etapas.find(x => x.estado === 'pendiente' || x.estado === 'observada'))?.nombre ?? null,
     tiempoResumen,
     progresoPct,
     etapas,

@@ -271,10 +271,11 @@ export interface DetalleServicioApi {
 
 // ─── /avance ────────────────────────────────────────────────────────────────
 export interface EtapaEquipoApi {
-  etapa:  string;                   // limpieza | desmontaje | pruebas | montaje | cierre
+  etapa:  string;                   // las 5 etapas del trabajo en el equipo de la app (Variables ambientales … Correlativo y certificado)
   orden:  number;
-  estado: string;                   // pendiente | en_curso | completada
+  estado: string;                   // pendiente | en_curso | completada | observada | bloqueada
   hora:   string | null;
+  detalle?: string | null;          // lo que lleva la etapa («0 de 9 · incluye foto del informe a mano», «T° 22 °C · h 55 %…»)
 }
 
 export interface EquipoAvanceApi {
@@ -468,6 +469,8 @@ export interface ElementoEquipoApi {
   url:             string | null;
   resultado:       string | null;
   ultimaHaceMin:   number | null;
+  /** Evidencia fotográfica asociada (foto del registro o de una falla): sirve para pedir la imagen. */
+  idEvidencia?:    number | null;
 }
 
 export interface SeccionEquipoApi {

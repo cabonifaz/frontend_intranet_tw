@@ -349,10 +349,10 @@ describe('detalle del servicio (HU-52)', () => {
   it('adaptarEquipoAvance: estado, etapas, progreso y tiempos', () => {
     const e = adaptarEquipoAvance(equipoAvanceApi());
     expect(e).toMatchObject({
-      estado: 'en_ejecucion', activo: true, etapaActual: 'PRUEBAS', progresoPct: 40, tiempoResumen: '17 min transcurridos',
+      estado: 'en_ejecucion', activo: true, etapaActual: 'pruebas', progresoPct: 40, tiempoResumen: '17 min transcurridos',
       codigoTw: 'EQ-TW-2026-0010', marca: '', nDocumentos: 0, nFotos: 4, horaInicio: '10:35',
     });
-    expect(e.etapas.map(x => x.nombre)).toEqual(['LIMPIEZA', 'DESMONTAJE', 'PRUEBAS', 'MONTAJE', 'CIERRE']);
+    expect(e.etapas.map(x => x.nombre)).toEqual(['limpieza', 'desmontaje', 'pruebas', 'montaje', 'cierre']);   // el nombre llega del servidor
     expect(e.etapas[0]).toMatchObject({ estado: 'completada', hora: '10:42', enCursoDesde: null });
     expect(e.etapas[2]).toMatchObject({ estado: 'en_curso', hora: null, enCursoDesde: '10:48' });
 
@@ -362,6 +362,22 @@ describe('detalle del servicio (HU-52)', () => {
     expect(adaptarEquipoAvance(equipoAvanceApi({ estado: 'pendiente', etapas: [], minutos: null, iniciado: null }))).toMatchObject({
       estado: 'pendiente', activo: false, tiempoResumen: null, progresoPct: 0,
     });
+  });
+
+  it('adaptarEquipoAvance: etapas reales de la app con su detalle, observadas y bloqueadas', () => {
+    const e = adaptarEquipoAvance(equipoAvanceApi({
+      etapas: [
+        { etapa: 'Variables ambientales', orden: 1, estado: 'completada', hora: null, detalle: 'T° 22 °C · h 55 % · Procedencia N.I' },
+        { etapa: 'Registro fotográfico', orden: 2, estado: 'en_curso', hora: null, detalle: '4 de 9 · incluye foto del informe a mano' },
+        { etapa: 'Ensayos y Calibración', orden: 3, estado: 'observada', hora: null, detalle: 'Pesaje guardado con error crítico' },
+        { etapa: 'Cabecera del informe', orden: 4, estado: 'pendiente', hora: null, detalle: 'Datos · Detalle Serv. · Observación y pruebas' },
+        { etapa: 'Correlativo y certificado', orden: 5, estado: 'bloqueada', hora: null, detalle: 'Se habilita al finalizar los ensayos' },
+      ],
+    }));
+    expect(e.etapas.map(x => x.estado)).toEqual(['completada', 'en_curso', 'observada', 'pendiente', 'bloqueada']);
+    expect(e.etapas[1]).toMatchObject({ nombre: 'Registro fotográfico', detalle: '4 de 9 · incluye foto del informe a mano' });
+    expect(e.etapaActual).toBe('Registro fotográfico');
+    expect(e.progresoPct).toBe(20);
   });
 
   it('adaptarTimeline: categorías, autor y títulos de las demoras', () => {

@@ -289,25 +289,26 @@
                 <div class="etapa"
                      [class.etapa--completada]="et.estado === 'completada'"
                      [class.etapa--en-curso]="et.estado === 'en_curso'"
+                     [class.etapa--observada]="et.estado === 'observada'"
+                     [class.etapa--bloqueada]="et.estado === 'bloqueada'"
                      [class.etapa--ultima]="last">
                   <span class="etapa__nodo">
                     @if (et.estado === 'completada') {
                       <span class="material-symbols-outlined">check</span>
                     } @else if (et.estado === 'en_curso') {
                       <span class="material-symbols-outlined">radio_button_checked</span>
+                    } @else if (et.estado === 'observada') {
+                      <span class="material-symbols-outlined">priority_high</span>
+                    } @else if (et.estado === 'bloqueada') {
+                      <span class="material-symbols-outlined">lock</span>
                     } @else {
                       <span class="material-symbols-outlined">radio_button_unchecked</span>
                     }
                   </span>
                   <div class="etapa__texto">
-                    <strong>{{ idx + 1 }}. {{ et.nombre | titlecase }}</strong>
-                    @if (et.estado === 'en_curso') {
-                      <small class="etapa__sub">En curso desde {{ et.enCursoDesde }}</small>
-                    } @else if (et.hora) {
-                      <small>{{ et.hora }}</small>
-                    } @else {
-                      <small class="muted">Pendiente</small>
-                    }
+                    <strong>{{ idx + 1 }}. {{ et.nombre }}</strong>
+                    <small class="etapa__estado">{{ etiquetaEtapa(et.estado) }}</small>
+                    @if (et.detalle) { <small class="etapa__detalle" [title]="et.detalle">{{ et.detalle }}</small> }
                   </div>
                 </div>
               }
@@ -362,15 +363,23 @@
                   @if (activo === 'fotos') {
                     <div class="subtab-fotos">
                       @for (el of seccion.elementos; track el.id) {
-                        <a class="subtab-foto" [href]="el.url" target="_blank" rel="noopener"
-                           [title]="el.titulo + (el.detalle ? ' · ' + el.detalle : '')">
-                          @if (el.url) {
-                            <img [src]="el.url" [alt]="el.titulo" loading="lazy" />
+                        @let foto = fotoEquipo(eq.idEquipo, el.id);
+                        <figure class="subtab-foto">
+                          @if (esVideo(el.url)) {
+                            <div class="subtab-foto__img subtab-foto__img--vacia"><span class="material-symbols-outlined">videocam</span></div>
+                          } @else if (foto) {
+                            <a class="subtab-foto__img" [href]="foto" target="_blank" rel="noopener" title="Ver la foto completa">
+                              <img [src]="foto" [alt]="el.titulo" loading="lazy" />
+                            </a>
                           } @else {
-                            <span class="material-symbols-outlined">image</span>
+                            <div class="subtab-foto__img subtab-foto__img--vacia"><span class="material-symbols-outlined spin">progress_activity</span></div>
                           }
-                          <small>{{ el.fecha ?? '—' }}</small>
-                        </a>
+                          <figcaption>
+                            <strong>{{ el.titulo }}</strong>
+                            @if (el.detalle) { <small>{{ el.detalle }}</small> }
+                            <small class="subtab-foto__hora">{{ el.fecha ?? '—' }}@if (el.ultimaHaceMin !== null) { · hace {{ el.ultimaHaceMin }} min }</small>
+                          </figcaption>
+                        </figure>
                       }
                     </div>
                   } @else {
@@ -378,10 +387,18 @@
                     <ul class="subtab-lista">
                       @for (el of seccion.elementos; track el.id) {
                         <li>
+                          @if (el.idEvidencia) {
+                            @let fotoFalla = fotoEquipo(eq.idEquipo, el.idEvidencia);
+                            @if (fotoFalla) {
+                              <a class="subtab-lista__foto" [href]="fotoFalla" target="_blank" rel="noopener" title="Ver la foto completa">
+                                <img [src]="fotoFalla" alt="Foto de la falla" loading="lazy" />
+                              </a>
+                            }
+                          }
                           <div class="subtab-lista__texto">
                             <strong>{{ el.titulo }}</strong>
                             @if (el.detalle) { <small>{{ el.detalle }}</small> }
-                            @if (el.resultado) { <small class="subtab-lista__res">{{ el.resultado }}</small> }
+                            @if (el.resultado) { <small class="subtab-lista__res" [class.subtab-lista__res--mal]="el.resultado === 'no_cumple'">{{ etiquetaResultado(el.resultado) }}</small> }
                           </div>
                           <div class="subtab-lista__meta">
                             @if (el.fecha) { <small>{{ el.fecha }}</small> }

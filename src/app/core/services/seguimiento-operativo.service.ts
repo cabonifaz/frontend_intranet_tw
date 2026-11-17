@@ -275,6 +275,19 @@ export class SeguimientoOperativoService {
     }
   }
 
+  /** Foto de evidencia de un equipo (registro fotográfico o foto de una falla) como blob: el <img src> directo no envía el token. */
+  async obtenerFotoEquipo(idOs: number, idEquipo: number, idEvidencia: number): Promise<Blob> {
+    this.validarIdOs(idOs);
+    if (!Number.isInteger(idEquipo) || idEquipo <= 0 || !Number.isInteger(idEvidencia) || idEvidencia <= 0) throw new Error('La foto indicada no es válida.');
+    try {
+      return await firstValueFrom(
+        this.http.get(`${this.base}/servicios/${idOs}/avance/${idEquipo}/fotos/${idEvidencia}/archivo`, { responseType: 'blob' }),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar la foto.');
+    }
+  }
+
   // ─── HU-52 — Aprobaciones del servicio ──────────────────────────────────
 
   /** GET bandeja unificada de aprobaciones (salida | llegada | evidencia | ensayo) de la OS. */

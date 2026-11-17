@@ -302,14 +302,16 @@ export interface ResumenServicio {
 }
 
 // ─── Tab 2: Avance por Equipos ────────────────────────────────────────────
-export type NombreEtapaEquipo = 'LIMPIEZA' | 'DESMONTAJE' | 'PRUEBAS' | 'MONTAJE' | 'CIERRE';
-export type EstadoEtapaEquipo = 'pendiente' | 'en_curso' | 'completada';
+/** Las 5 etapas del trabajo en el equipo de la app (el nombre llega del servidor). */
+export type NombreEtapaEquipo = string;
+export type EstadoEtapaEquipo = 'pendiente' | 'en_curso' | 'completada' | 'observada' | 'bloqueada';
 
 export interface EtapaEquipo {
   nombre:      NombreEtapaEquipo;
   estado:      EstadoEtapaEquipo;
   hora?:       string | null;      // hora en la que ocurrió (si aplicable)
   enCursoDesde?: string | null;    // '10:48'
+  detalle?:    string | null;      // lo que lleva la etapa, en vivo
 }
 
 export interface EquipoAvance {
