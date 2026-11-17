@@ -125,3 +125,14 @@
   &--azul  { background: #DBEAFE; color: #1E40AF; }
   &--gris  { background: #F1F5F9; color: #64748B; }
 }
+
+// Conclusión provisional de la rendición abierta
+.rv__bloque--conclusion {
+  border-color: #FDE68A; background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 70%);
+}
+.rv__conclusion-texto {
+  display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 10px 12px;
+  border-radius: 8px; background: #ECFDF5; border: 1px solid #D1FAE5; color: #047857; font-size: 13px; font-weight: 500;
+  .material-symbols-outlined { font-size: 20px; }
+  &--pend { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+}

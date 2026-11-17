@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RevisionInformesService } from '../../../../core/services/revision-informes.service';
 import { ToastService } from '../../../../core/services/toast.service';
@@ -11,7 +12,8 @@ import {
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
 import { EnViewportDirective } from '../../../../shared/directives/en-viewport.directive';
-import { ResumenViaticosComponent } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.component';
+import { AccionRevisionGasto, ResumenViaticosComponent } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.component';
+import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { viaticosOsAVm } from '../../../../shared/ui/resumen-viaticos/resumen-viaticos.vm';
 import { ViaticosOs } from '../../../../core/models/aprobaciones-viaticos-servicio.model';
 
@@ -37,7 +39,7 @@ type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendac
  */
 @Component({
   selector: 'app-modal-detalle-informe',
-  imports: [CommonModule, ButtonComponent, InicialesPipe, EnViewportDirective, ResumenViaticosComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent, InicialesPipe, EnViewportDirective, ResumenViaticosComponent],
   templateUrl: './modal-detalle-informe.component.html',
   styleUrl: './modal-detalle-informe.component.scss',
 })
@@ -81,6 +83,19 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
 
   // ─── Viáticos (tab, HU-57 cierre) ──────────────────────────────────────
   readonly viaticos         = signal<ViaticosOs | null>(null);
+
+  /** Revisar un gasto (aprobar / observar / rechazar) desde la pestaña Viáticos y Gastos. */
+  readonly gastoRevisar        = signal<{ idGasto: number; concepto: string } | null>(null);
+  readonly accionRevisarGasto  = signal<AccionRevisionGasto | null>(null);
+  readonly comentarioRevisar   = signal('');
+  readonly revisandoGasto      = signal(false);
+
+  /** Visor del comprobante del gasto (imagen, dentro de la intranet). */
+  readonly comprobanteAbierto  = signal<{ idGasto: number; n: number; nFotos: number } | null>(null);
+  readonly comprobanteCargando = signal(false);
+  readonly comprobanteError    = signal<string | null>(null);
+  readonly comprobanteSafeUrl  = signal<SafeUrl | null>(null);
+  private comprobanteUrl: string | null = null;
   readonly cargandoViaticos = signal(false);
   readonly errorViaticos    = signal<string | null>(null);
   readonly viaticosVm       = computed(() => {
@@ -184,6 +199,87 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     } finally {
       this.cargandoHistorial.set(false);
     }
+  }
+
+  abrirRevisarGasto(ev: { idGasto: number; accion: AccionRevisionGasto }): void {
+    const g = this.viaticos()?.gastos.find((x) => x.idGasto === ev.idGasto);
+    if (!g) return;
+    this.gastoRevisar.set({ idGasto: g.idGasto, concepto: g.concepto });
+    this.accionRevisarGasto.set(ev.accion);
+    this.comentarioRevisar.set('');
+  }
+
+  cerrarRevisarGasto(): void {
+    if (this.revisandoGasto()) return;
+    this.gastoRevisar.set(null);
+    this.accionRevisarGasto.set(null);
+    this.comentarioRevisar.set('');
+  }
+
+  async confirmarRevisarGasto(): Promise<void> {
+    const g = this.gastoRevisar();
+    const accion = this.accionRevisarGasto();
+    if (!g || !accion) return;
+    const com = this.comentarioRevisar().trim();
+    if ((accion === 'observar' || accion === 'rechazar') && com.length < 1) {
+      this.toast.error('El comentario es obligatorio al observar o rechazar.');
+      return;
+    }
+    if (com.length > 500) {
+      this.toast.error('El comentario no puede superar 500 caracteres.');
+      return;
+    }
+    this.revisandoGasto.set(true);
+    try {
+      await this.svc.revisarGastoInforme(this.idInforme(), g.idGasto, { accion, comentario: com || null });
+      this.toast.exito('Gasto actualizado.');
+      this.cerrarRevisarGasto();
+      await this.cargarViaticos();
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo revisar el gasto.');
+    } finally {
+      this.revisandoGasto.set(false);
+    }
+  }
+
+  async abrirComprobante(ev: { idGasto: number; n: number }): Promise<void> {
+    const g = this.viaticos()?.gastos.find((x) => x.idGasto === ev.idGasto);
+    if (!g) return;
+    this.cerrarComprobante();
+    this.comprobanteAbierto.set({ idGasto: g.idGasto, n: ev.n, nFotos: g.nFotos });
+    await this.cargarComprobante(g.idGasto, ev.n);
+  }
+
+  async cambiarFotoComprobante(delta: number): Promise<void> {
+    const c = this.comprobanteAbierto();
+    if (!c) return;
+    const n = ((c.n - 1 + delta + c.nFotos) % c.nFotos) + 1;
+    this.comprobanteAbierto.set({ ...c, n });
+    await this.cargarComprobante(c.idGasto, n);
+  }
+
+  private async cargarComprobante(idGasto: number, n: number): Promise<void> {
+    if (this.comprobanteUrl) { URL.revokeObjectURL(this.comprobanteUrl); this.comprobanteUrl = null; }
+    this.comprobanteSafeUrl.set(null);
+    this.comprobanteError.set(null);
+    this.comprobanteCargando.set(true);
+    try {
+      const blob = await this.svc.obtenerComprobanteGastoInforme(this.idInforme(), idGasto, n);
+      this.comprobanteUrl = URL.createObjectURL(blob);
+      this.comprobanteSafeUrl.set(this.sanitizer.bypassSecurityTrustUrl(this.comprobanteUrl));
+    } catch (e: unknown) {
+      this.comprobanteError.set(e instanceof Error ? e.message : 'No se pudo cargar el comprobante.');
+    } finally {
+      this.comprobanteCargando.set(false);
+    }
+  }
+
+  cerrarComprobante(): void {
+    if (this.comprobanteUrl) { URL.revokeObjectURL(this.comprobanteUrl); this.comprobanteUrl = null; }
+    this.comprobanteSafeUrl.set(null);
+    this.comprobanteError.set(null);
+    this.comprobanteCargando.set(false);
+    this.comprobanteAbierto.set(null);
   }
 
   async cargarViaticos(): Promise<void> {

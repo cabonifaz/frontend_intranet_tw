@@ -516,11 +516,11 @@
                 <span class="material-symbols-outlined">pending_actions</span>
                 <div>
                   <strong>Rendición pendiente de cierre por el Jefe de Operaciones</strong>
-                  <small>Los montos y el saldo final pueden cambiar cuando se cierre la rendición.</small>
+                  <small>Los montos y el saldo final pueden cambiar cuando se cierre la rendición. Los gastos por revisar se aprueban, observan o rechazan aquí mismo.</small>
                 </div>
               </div>
             }
-            <app-resumen-viaticos modo="cierre" [vm]="vm" />
+            <app-resumen-viaticos modo="cierre" [vm]="vm" (revisarGasto)="abrirRevisarGasto($event)" (verComprobante)="abrirComprobante($event)" />
           } @else {
             <div class="vacio">Este informe no tiene una rendición asociada.</div>
           }
@@ -677,6 +677,74 @@
           <span class="chip chip--rojo">{{ foto.codigoObservacion }}</span>
         }
       </div>
+    </div>
+  </div>
+}
+
+
+<!-- ══════════ Diálogo: revisar un gasto (aprobar / observar / rechazar) ══════════ -->
+@if (gastoRevisar(); as g) {
+  <app-modal
+    [titulo]="(accionRevisarGasto() === 'aprobar' ? 'Aprobar gasto' : accionRevisarGasto() === 'observar' ? 'Observar gasto' : 'Rechazar gasto')"
+    [subtitulo]="g.concepto"
+    [icono]="accionRevisarGasto() === 'aprobar' ? 'check_circle' : accionRevisarGasto() === 'observar' ? 'flag' : 'cancel'"
+    [iconoColor]="accionRevisarGasto() === 'rechazar' ? 'rojo' : 'azul'"
+    ancho="md"
+    [cerrable]="!revisandoGasto()"
+    (cerrar)="cerrarRevisarGasto()">
+
+    <div class="dlg-body">
+      <label class="dlg-body__campo">
+        <span class="dlg-body__label">
+          Comentario
+          @if (accionRevisarGasto() === 'observar' || accionRevisarGasto() === 'rechazar') { <span class="req">*</span> }
+          <small class="muted">{{ comentarioRevisar().length }}/500</small>
+        </span>
+        <textarea maxlength="500" rows="4"
+                  [ngModel]="comentarioRevisar()"
+                  (ngModelChange)="comentarioRevisar.set($event)"
+                  [placeholder]="accionRevisarGasto() === 'aprobar' ? 'Comentario opcional' : 'Explica el motivo (obligatorio)'"></textarea>
+      </label>
+    </div>
+
+    <div modalFooter class="dlg-footer">
+      <app-button variant="secondary" tamano="md" [disabled]="revisandoGasto()" (clic)="cerrarRevisarGasto()">Cancelar</app-button>
+      <app-button [variant]="accionRevisarGasto() === 'rechazar' ? 'danger' : 'primary'" tamano="md"
+                  [icono]="accionRevisarGasto() === 'aprobar' ? 'check' : accionRevisarGasto() === 'observar' ? 'flag' : 'block'"
+                  [disabled]="revisandoGasto()" (clic)="confirmarRevisarGasto()">
+        Confirmar
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ══════════ Visor del comprobante del gasto (dentro de la intranet) ══════════ -->
+@if (comprobanteAbierto(); as c) {
+  <div class="comp-lightbox" (click)="cerrarComprobante()">
+    <button type="button" class="comp-lightbox__cerrar" (click)="cerrarComprobante()" aria-label="Cerrar visor">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="comp-lightbox__contenido" (click)="$event.stopPropagation()">
+      @if (comprobanteCargando()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          <p>Cargando comprobante…</p>
+        </div>
+      } @else if (comprobanteError()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined">broken_image</span>
+          <p>{{ comprobanteError() }}</p>
+        </div>
+      } @else if (comprobanteSafeUrl(); as url) {
+        <img class="comp-lightbox__img" [src]="url" alt="Comprobante del gasto">
+      }
+      @if (c.nFotos > 1) {
+        <div class="comp-lightbox__nav">
+          <button type="button" (click)="cambiarFotoComprobante(-1)" aria-label="Anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+          <span>{{ c.n }} / {{ c.nFotos }}</span>
+          <button type="button" (click)="cambiarFotoComprobante(1)" aria-label="Siguiente"><span class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+      }
     </div>
   </div>
 }
