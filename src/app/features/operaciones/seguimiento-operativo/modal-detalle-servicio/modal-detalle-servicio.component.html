@@ -363,17 +363,21 @@
                   @if (activo === 'fotos') {
                     <div class="subtab-fotos">
                       @for (el of seccion.elementos; track el.id) {
-                        @let foto = fotoEquipo(eq.idEquipo, el.id);
+                        @let miniatura = miniaturaEquipo(eq.idEquipo, el);
+                        @let esVid = el.esVideo || esVideo(el.url);
                         <figure class="subtab-foto">
-                          @if (esVideo(el.url)) {
-                            <div class="subtab-foto__img subtab-foto__img--vacia"><span class="material-symbols-outlined">videocam</span></div>
-                          } @else if (foto) {
-                            <a class="subtab-foto__img" [href]="foto" target="_blank" rel="noopener" title="Ver la foto completa">
-                              <img [src]="foto" [alt]="el.titulo" loading="lazy" />
-                            </a>
-                          } @else {
-                            <div class="subtab-foto__img subtab-foto__img--vacia"><span class="material-symbols-outlined spin">progress_activity</span></div>
-                          }
+                          <button type="button" class="subtab-foto__img" [class.subtab-foto__img--vacia]="!miniatura"
+                                  [title]="esVid ? 'Reproducir el video' : 'Ver la foto'"
+                                  (click)="abrirVisor(eq.idEquipo, el.id, el.titulo, el.detalle, el.fecha, !!esVid)">
+                            @if (miniatura) {
+                              <img [src]="miniatura" [alt]="el.titulo" loading="lazy" />
+                            } @else if (esVid) {
+                              <span class="material-symbols-outlined">videocam</span>
+                            } @else {
+                              <span class="material-symbols-outlined spin">progress_activity</span>
+                            }
+                            @if (esVid) { <span class="subtab-foto__play"><span class="material-symbols-outlined">play_arrow</span></span> }
+                          </button>
                           <figcaption>
                             <strong>{{ el.titulo }}</strong>
                             @if (el.detalle) { <small>{{ el.detalle }}</small> }
@@ -390,9 +394,10 @@
                           @if (el.idEvidencia) {
                             @let fotoFalla = fotoEquipo(eq.idEquipo, el.idEvidencia);
                             @if (fotoFalla) {
-                              <a class="subtab-lista__foto" [href]="fotoFalla" target="_blank" rel="noopener" title="Ver la foto completa">
+                              <button type="button" class="subtab-lista__foto" title="Ver la foto"
+                                      (click)="abrirVisor(eq.idEquipo, el.idEvidencia, el.titulo, el.detalle, el.fecha, false)">
                                 <img [src]="fotoFalla" alt="Foto de la falla" loading="lazy" />
-                              </a>
+                              </button>
                             }
                           }
                           <div class="subtab-lista__texto">
@@ -1584,6 +1589,33 @@
           </button>
         </div>
       }
+    </div>
+  </div>
+}
+
+
+<!-- ══════════ Visor de fotos y videos de evidencia (dentro de la intranet) ══════════ -->
+@if (visor(); as v) {
+  <div class="visor" role="dialog" aria-modal="true" [attr.aria-label]="v.titulo" (click)="cerrarVisor()">
+    <div class="visor__caja" (click)="$event.stopPropagation()">
+      <header class="visor__cab">
+        <div class="visor__titulo">
+          <strong>{{ v.titulo }}</strong>
+          @if (v.detalle || v.hora) { <small>{{ v.detalle }}{{ v.detalle && v.hora ? ' · ' : '' }}{{ v.hora }}</small> }
+        </div>
+        <button type="button" class="visor__cerrar" (click)="cerrarVisor()" aria-label="Cerrar el visor">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+      <div class="visor__cuerpo">
+        @if (!v.src) {
+          <div class="visor__cargando"><span class="material-symbols-outlined spin">progress_activity</span> Cargando…</div>
+        } @else if (v.tipo === 'video') {
+          <video [src]="v.src" controls autoplay playsinline></video>
+        } @else {
+          <img [src]="v.src" [alt]="v.titulo" />
+        }
+      </div>
     </div>
   </div>
 }

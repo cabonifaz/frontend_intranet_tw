@@ -471,6 +471,9 @@ export interface ElementoEquipoApi {
   ultimaHaceMin:   number | null;
   /** Evidencia fotográfica asociada (foto del registro o de una falla): sirve para pedir la imagen. */
   idEvidencia?:    number | null;
+  /** Miniatura del video de evidencia. */
+  urlCuadro?:      string | null;
+  esVideo?:        boolean;
 }
 
 export interface SeccionEquipoApi {

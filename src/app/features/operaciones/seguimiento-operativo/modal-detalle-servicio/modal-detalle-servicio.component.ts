@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
@@ -93,6 +93,9 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   /** Fotos de los equipos (clave «idEquipo:idEvidencia» → URL temporal de la imagen), pedidas con la sesión al abrir Fotos u Observaciones. */
   readonly fotosEquipo = signal<Record<string, string>>({});
   private readonly pidiendoFotosEquipo = new Set<string>();
+  /** Visor de fotos y videos dentro de la intranet (sin abrir otra pestaña). */
+  readonly visor = signal<{ tipo: 'foto' | 'video'; src: string | null; titulo: string; detalle: string | null; hora: string | null } | null>(null);
+  private urlVisorVideo: string | null = null;
   readonly cargandoSeccionEquipo  = signal<Set<string>>(new Set());
 
   // ─── Timeline del Día (tab 4) ─────────────────────────────────────────
@@ -289,6 +292,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     this.destruido = true;
     Object.values(this.fotosDemora()).forEach((u) => URL.revokeObjectURL(u));
     Object.values(this.fotosEquipo()).forEach((u) => URL.revokeObjectURL(u));
+    this.cerrarVisor();
     this.limpiarTemporizador();
     const previo = this.evidenciaPreview();
     if (previo) URL.revokeObjectURL(previo);
@@ -604,17 +608,19 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Pide las imágenes de Fotos (cada foto) y de Observaciones (la foto de la falla, si la tiene); los videos no llevan miniatura. */
+  /** Pide las imágenes de Fotos (cada foto o la miniatura de cada video) y de Observaciones (la foto de la falla, si la tiene). */
   private async cargarFotosDeSeccion(idEquipo: number, seccion: SeccionEquipo, r: SeccionEquipoApi): Promise<void> {
     if (seccion !== 'fotos' && seccion !== 'observaciones') return;
     for (const el of r.elementos) {
       const idEvidencia = seccion === 'fotos' ? el.id : el.idEvidencia;
-      if (!idEvidencia || (seccion === 'fotos' && this.esVideo(el.url))) continue;
-      const key = `${idEquipo}:${idEvidencia}`;
+      if (!idEvidencia) continue;
+      const video = seccion === 'fotos' && (el.esVideo || this.esVideo(el.url));
+      if (video && !el.urlCuadro) continue;
+      const key = video ? `${idEquipo}:${idEvidencia}:c` : `${idEquipo}:${idEvidencia}`;
       if (this.fotosEquipo()[key] || this.pidiendoFotosEquipo.has(key)) continue;
       this.pidiendoFotosEquipo.add(key);
       try {
-        const blob = await this.svc.obtenerFotoEquipo(this.idServicio(), idEquipo, idEvidencia);
+        const blob = await this.svc.obtenerFotoEquipo(this.idServicio(), idEquipo, idEvidencia, video);
         if (this.destruido) return;
         this.fotosEquipo.update((f) => ({ ...f, [key]: URL.createObjectURL(blob) }));
       } catch {
@@ -623,6 +629,38 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
         this.pidiendoFotosEquipo.delete(key);
       }
     }
+  }
+
+  /** Miniatura de un elemento de Fotos: la foto, o el cuadro del video. */
+  miniaturaEquipo(idEquipo: number, el: { id: number; esVideo?: boolean; url: string | null }): string | null {
+    return this.fotosEquipo()[`${idEquipo}:${el.id}${el.esVideo || this.esVideo(el.url) ? ':c' : ''}`] ?? null;
+  }
+
+  /** Abre la foto (o reproduce el video) en un visor dentro de la intranet. */
+  async abrirVisor(idEquipo: number, idEvidencia: number, titulo: string, detalle: string | null, hora: string | null, video: boolean): Promise<void> {
+    const base = { titulo, detalle, hora };
+    const yaCargada = video ? null : this.fotoEquipo(idEquipo, idEvidencia);
+    this.cerrarVisor();
+    this.visor.set({ tipo: video ? 'video' : 'foto', src: yaCargada, ...base });
+    if (yaCargada) return;
+    try {
+      const blob = await this.svc.obtenerFotoEquipo(this.idServicio(), idEquipo, idEvidencia);
+      if (this.destruido || !this.visor()) return;
+      const url = URL.createObjectURL(blob);
+      if (video) this.urlVisorVideo = url;
+      else this.fotosEquipo.update((f) => ({ ...f, [`${idEquipo}:${idEvidencia}`]: url }));
+      this.visor.update((v) => (v ? { ...v, src: url } : v));
+    } catch (e: unknown) {
+      this.visor.set(null);
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el archivo.');
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarVisor(): void {
+    if (this.urlVisorVideo) URL.revokeObjectURL(this.urlVisorVideo);
+    this.urlVisorVideo = null;
+    this.visor.set(null);
   }
 
   /** URL temporal de la foto ya cargada (o null mientras llega). */
