@@ -47,6 +47,22 @@ export class ResumenViaticosComponent {
   readonly gastos  = computed(() => this.vm().gastos);
   readonly cierre  = computed(() => this.vm().cierre);
 
+  /** Hay gastos que el usuario puede aprobar, observar o rechazar: aparece la columna de acciones también en el modo cierre. */
+  readonly hayRevisables = computed(() => this.gastos().some((g) => g.puedeAprobar || g.puedeObservar || g.puedeRechazar));
+
+  /**
+   * Conclusión provisional de la rendición abierta: lo asignado, lo rendido, lo ya aprobado y lo que falta revisar, con el saldo que resultaría hoy
+   * (reembolso al técnico o devolución) y qué falta para cerrarla.
+   */
+  readonly conclusion = computed(() => {
+    const t = this.totales();
+    const n = t.nPorRevisar;
+    const texto = n > 0
+      ? `Quedan ${n} ${n === 1 ? 'gasto' : 'gastos'} por revisar (${this.moneda()} ${t.porRevisar.toFixed(2)}): el saldo puede cambiar con cada decisión.`
+      : 'Todos los gastos están revisados. Falta que el Jefe de Operaciones cierre la rendición.';
+    return { tipo: t.tipoSaldo, saldo: t.saldo, pendientes: n, texto };
+  });
+
   // ─── Helpers de UI ────────────────────────────────────────────────────
 
   chipDeposito(l: LineaVM): { clase: string; texto: string } {

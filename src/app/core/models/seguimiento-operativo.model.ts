@@ -20,6 +20,9 @@ export type EstadoTecnicoCampo =
 
 export type TipoAlertaCampo =
   | 'perdida_contacto'
+  | 'sin_movimiento'
+  | 'ensayo_critico'
+  | 'autorizacion_salida'
   | 'gps_parado'
   | 'sin_ingreso_post_llegada'
   | 'proximidad'
@@ -62,6 +65,9 @@ export interface PuntoMapa {
   hace:           string;          // "hace 5 min" / "Sin posición GPS hoy"
   lat:            number | null;
   lng:            number | null;
+  /** Lo que hace el técnico (Reloj marcador) y el color de su pin: verde activo · azul en ruta · amarillo ejecutando · naranja refrigerio. */
+  actividad?:      string | null;
+  actividadColor?: string | null;
 }
 
 // ─── Alerta crítica del panel lateral ───────────────────────────────────────
@@ -297,14 +303,16 @@ export interface ResumenServicio {
 }
 
 // ─── Tab 2: Avance por Equipos ────────────────────────────────────────────
-export type NombreEtapaEquipo = 'LIMPIEZA' | 'DESMONTAJE' | 'PRUEBAS' | 'MONTAJE' | 'CIERRE';
-export type EstadoEtapaEquipo = 'pendiente' | 'en_curso' | 'completada';
+/** Las 5 etapas del trabajo en el equipo de la app (el nombre llega del servidor). */
+export type NombreEtapaEquipo = string;
+export type EstadoEtapaEquipo = 'pendiente' | 'en_curso' | 'completada' | 'observada' | 'bloqueada';
 
 export interface EtapaEquipo {
   nombre:      NombreEtapaEquipo;
   estado:      EstadoEtapaEquipo;
   hora?:       string | null;      // hora en la que ocurrió (si aplicable)
   enCursoDesde?: string | null;    // '10:48'
+  detalle?:    string | null;      // lo que lleva la etapa, en vivo
 }
 
 export interface EquipoAvance {
@@ -380,6 +388,9 @@ export interface UltimaUbicacion {
   tiempoEnPunto:    string | null;    // "2h 02min"
   lat:              number | null;
   lng:              number | null;
+  /** Tiempo estimado de llegada a la planta (minutos) y su hora de Lima; calculado desde la distancia (null si no hay distancia o ya está en planta). */
+  etaMinutos?:      number | null;
+  etaHora?:         string | null;
 }
 
 export interface PlantaGps {

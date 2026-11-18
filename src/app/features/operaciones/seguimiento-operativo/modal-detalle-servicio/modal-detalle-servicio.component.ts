@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
@@ -64,6 +64,12 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly verIncidencia = output<{ evento: DemoraIncidenciaServicio; numeroOs: string }>();
 
   readonly tab      = signal<TabDetalle>('resumen');
+  /** Fotos de las demoras/incidencias (clave del registro → URL temporal de la imagen), cargadas al abrir la pestaña Demoras / Incidencias. */
+  readonly fotosDemora = signal<Record<string, string>>({});
+  private readonly pidiendoFotos = new Set<string>();
+  private readonly cargarFotosAlAbrir = effect(() => {
+    if (this.tab() === 'demoras' && this.detalle()) untracked(() => void this.cargarFotosDemoras());
+  });
   readonly cargando = signal(true);
   readonly detalle  = signal<DetalleServicioSeguimiento | null>(null);
   /** Error de la primera carga (el modal no tiene datos que mostrar): se pinta dentro del modal. */
@@ -84,6 +90,12 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   readonly subtabActivoPorEquipo = signal<Map<number, SeccionEquipo>>(new Map());
   /** Contenido cargado por (idEquipo, sección). Key = `${idEquipo}:${seccion}`. */
   readonly contenidoSeccionEquipo = signal<Map<string, SeccionEquipoApi>>(new Map());
+  /** Fotos de los equipos (clave «idEquipo:idEvidencia» → URL temporal de la imagen), pedidas con la sesión al abrir Fotos u Observaciones. */
+  readonly fotosEquipo = signal<Record<string, string>>({});
+  private readonly pidiendoFotosEquipo = new Set<string>();
+  /** Visor de fotos y videos dentro de la intranet (sin abrir otra pestaña). */
+  readonly visor = signal<{ tipo: 'foto' | 'video'; src: string | null; titulo: string; detalle: string | null; hora: string | null } | null>(null);
+  private urlVisorVideo: string | null = null;
   readonly cargandoSeccionEquipo  = signal<Set<string>>(new Set());
 
   // ─── Timeline del Día (tab 4) ─────────────────────────────────────────
@@ -278,6 +290,9 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destruido = true;
+    Object.values(this.fotosDemora()).forEach((u) => URL.revokeObjectURL(u));
+    Object.values(this.fotosEquipo()).forEach((u) => URL.revokeObjectURL(u));
+    this.cerrarVisor();
     this.limpiarTemporizador();
     const previo = this.evidenciaPreview();
     if (previo) URL.revokeObjectURL(previo);
@@ -491,6 +506,9 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
       if (!silencioso) {
         const activo = d.equipos.find(eq => eq.activo);
         if (activo) this.equiposExpandidos.set(new Set([activo.idEquipo]));
+      } else {
+        // Tiempo real: lo que se ve abierto (fotos, ensayos, observaciones…) también se actualiza con cada refresco
+        void this.refrescarSeccionesAbiertas();
       }
     } catch (e: unknown) {
       const mensaje = e instanceof Error && e.message ? e.message : 'No se pudo cargar el detalle.';
@@ -554,24 +572,120 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     const m = new Map(this.subtabActivoPorEquipo());
     m.set(idEquipo, seccion);
     this.subtabActivoPorEquipo.set(m);
-    await this.cargarSeccionEquipo(idEquipo, seccion);
+    // Si ya se había abierto, se muestra lo guardado y se actualiza en segundo plano
+    await this.cargarSeccionEquipo(idEquipo, seccion, this.contenidoSeccionEquipo().has(`${idEquipo}:${seccion}`));
   }
 
-  private async cargarSeccionEquipo(idEquipo: number, seccion: SeccionEquipo): Promise<void> {
+  /** Con `silencioso` vuelve a pedir la sección sin mostrar «Cargando…» (actualización en vivo). */
+  private async cargarSeccionEquipo(idEquipo: number, seccion: SeccionEquipo, silencioso = false): Promise<void> {
     const key = `${idEquipo}:${seccion}`;
-    if (this.contenidoSeccionEquipo().has(key) || this.cargandoSeccionEquipo().has(key)) return;
-    const cargando = new Set(this.cargandoSeccionEquipo()); cargando.add(key);
-    this.cargandoSeccionEquipo.set(cargando);
+    if (this.cargandoSeccionEquipo().has(key)) return;
+    if (!silencioso && this.contenidoSeccionEquipo().has(key)) return;
+    if (!silencioso) {
+      const cargando = new Set(this.cargandoSeccionEquipo()); cargando.add(key);
+      this.cargandoSeccionEquipo.set(cargando);
+    }
     try {
       const r = await this.svc.obtenerSeccionEquipo(this.idServicio(), idEquipo, seccion);
+      if (this.destruido) return;
       const m = new Map(this.contenidoSeccionEquipo()); m.set(key, r);
       this.contenidoSeccionEquipo.set(m);
+      void this.cargarFotosDeSeccion(idEquipo, seccion, r);
     } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la sección del equipo.');
+      if (!silencioso) this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar la sección del equipo.');
     } finally {
-      const c = new Set(this.cargandoSeccionEquipo()); c.delete(key);
-      this.cargandoSeccionEquipo.set(c);
+      if (!silencioso) {
+        const c = new Set(this.cargandoSeccionEquipo()); c.delete(key);
+        this.cargandoSeccionEquipo.set(c);
+      }
     }
+  }
+
+  /** Vuelve a pedir la sección abierta de cada equipo expandido (se llama en cada refresco automático del modal). */
+  private async refrescarSeccionesAbiertas(): Promise<void> {
+    for (const idEquipo of this.equiposExpandidos()) {
+      await this.cargarSeccionEquipo(idEquipo, this.subtabEquipo(idEquipo), true);
+    }
+  }
+
+  /** Pide las imágenes de Fotos (cada foto o la miniatura de cada video) y de Observaciones (la foto de la falla, si la tiene). */
+  private async cargarFotosDeSeccion(idEquipo: number, seccion: SeccionEquipo, r: SeccionEquipoApi): Promise<void> {
+    if (seccion !== 'fotos' && seccion !== 'observaciones') return;
+    for (const el of r.elementos) {
+      const idEvidencia = seccion === 'fotos' ? el.id : el.idEvidencia;
+      if (!idEvidencia) continue;
+      const video = seccion === 'fotos' && (el.esVideo || this.esVideo(el.url));
+      if (video && !el.urlCuadro) continue;
+      const key = video ? `${idEquipo}:${idEvidencia}:c` : `${idEquipo}:${idEvidencia}`;
+      if (this.fotosEquipo()[key] || this.pidiendoFotosEquipo.has(key)) continue;
+      this.pidiendoFotosEquipo.add(key);
+      try {
+        const blob = await this.svc.obtenerFotoEquipo(this.idServicio(), idEquipo, idEvidencia, video);
+        if (this.destruido) return;
+        this.fotosEquipo.update((f) => ({ ...f, [key]: URL.createObjectURL(blob) }));
+      } catch {
+        // sin miniatura: el resto del detalle se ve igual
+      } finally {
+        this.pidiendoFotosEquipo.delete(key);
+      }
+    }
+  }
+
+  /** Miniatura de un elemento de Fotos: la foto, o el cuadro del video. */
+  miniaturaEquipo(idEquipo: number, el: { id: number; esVideo?: boolean; url: string | null }): string | null {
+    return this.fotosEquipo()[`${idEquipo}:${el.id}${el.esVideo || this.esVideo(el.url) ? ':c' : ''}`] ?? null;
+  }
+
+  /** Abre la foto (o reproduce el video) en un visor dentro de la intranet. */
+  async abrirVisor(idEquipo: number, idEvidencia: number, titulo: string, detalle: string | null, hora: string | null, video: boolean): Promise<void> {
+    const base = { titulo, detalle, hora };
+    const yaCargada = video ? null : this.fotoEquipo(idEquipo, idEvidencia);
+    this.cerrarVisor();
+    this.visor.set({ tipo: video ? 'video' : 'foto', src: yaCargada, ...base });
+    if (yaCargada) return;
+    try {
+      const blob = await this.svc.obtenerFotoEquipo(this.idServicio(), idEquipo, idEvidencia);
+      if (this.destruido || !this.visor()) return;
+      const url = URL.createObjectURL(blob);
+      if (video) this.urlVisorVideo = url;
+      else this.fotosEquipo.update((f) => ({ ...f, [`${idEquipo}:${idEvidencia}`]: url }));
+      this.visor.update((v) => (v ? { ...v, src: url } : v));
+    } catch (e: unknown) {
+      this.visor.set(null);
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo cargar el archivo.');
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  cerrarVisor(): void {
+    if (this.urlVisorVideo) URL.revokeObjectURL(this.urlVisorVideo);
+    this.urlVisorVideo = null;
+    this.visor.set(null);
+  }
+
+  /** URL temporal de la foto ya cargada (o null mientras llega). */
+  fotoEquipo(idEquipo: number, idEvidencia: number | null | undefined): string | null {
+    return idEvidencia ? this.fotosEquipo()[`${idEquipo}:${idEvidencia}`] ?? null : null;
+  }
+
+  esVideo(url: string | null | undefined): boolean {
+    return /\.(mp4|mov|m4v|webm)$/i.test((url ?? '').split('?')[0]);
+  }
+
+  /** Texto del estado de una etapa del trabajo en el equipo. */
+  etiquetaEtapa(estado: string): string {
+    switch (estado) {
+      case 'completada': return 'Conforme';
+      case 'en_curso':   return 'En curso';
+      case 'observada':  return 'Observada';
+      case 'bloqueada':  return 'Bloqueada';
+      default:           return 'Pendiente';
+    }
+  }
+
+  /** Resultado de un ensayo o lectura en lenguaje de la pantalla; otros valores (versión, nivel…) se muestran tal cual. */
+  etiquetaResultado(r: string): string {
+    return r === 'cumple' ? 'Conforme' : r === 'no_cumple' ? 'Fuera del EMP' : r;
   }
 
   /** Toggle del panel de auditoría del cierre. Carga la info la primera vez. */
@@ -602,6 +716,23 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   estaExpandido(idEquipo: number): boolean {
     return this.equiposExpandidos().has(idEquipo);
+  }
+
+  /** Pide la foto de cada demora/incidencia que la tiene (una vez por registro); si una falla se queda sin miniatura y se abre desde el detalle. */
+  private async cargarFotosDemoras(): Promise<void> {
+    for (const ev of this.detalle()?.demoras ?? []) {
+      if (!ev.nFotos || this.fotosDemora()[ev.idDemora] || this.pidiendoFotos.has(ev.idDemora)) continue;
+      this.pidiendoFotos.add(ev.idDemora);
+      try {
+        const blob = await this.svc.obtenerEvidenciaIncidencia(this.idServicio(), ev.idDemora);
+        if (this.destruido) return;
+        this.fotosDemora.update((m) => ({ ...m, [ev.idDemora]: URL.createObjectURL(blob) }));
+      } catch {
+        // sin miniatura: la foto se ve igual al abrir el detalle del registro
+      } finally {
+        this.pidiendoFotos.delete(ev.idDemora);
+      }
+    }
   }
 
   cambiarTab(t: TabDetalle): void {
@@ -665,6 +796,14 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   distancia(m: number | null): string {
     return formatearDistancia(m);
+  }
+
+  /** Tiempo estimado de llegada a la planta: "≈ 18 min · 16:35"; "En planta" si ya llegó; "—" sin distancia o sin coordenadas de la planta. */
+  textoLlegada(u: { dentroDelRadio: boolean; etaMinutos?: number | null; etaHora?: string | null }): string {
+    if (u.dentroDelRadio) return 'En planta';
+    if (u.etaMinutos === null || u.etaMinutos === undefined) return '—';
+    if (u.etaMinutos <= 0) return 'En planta';
+    return `≈ ${formatearDuracionMin(u.etaMinutos)}${u.etaHora ? ' · ' + u.etaHora : ''}`;
   }
 
   /** Duración en minutos como "45 min" / "2h 02min" (o "—"). */

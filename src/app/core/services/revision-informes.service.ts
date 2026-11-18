@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   BandejaInformesApi, CategoriaHistorial, DetalleInformeApi, FiltrosBandejaInformesQs,
   GuardarInformePayload, GuardarPrecotizacionPayload, HistorialInformeApi, InformeGuardadoApi,
-  InformeRevisadoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
+  InformeRevisadoApi, ObservacionSeguimientoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
   RespuestaRevisionApi,
 } from '../models/revision-informes-api.model';
 import { ViaticosOs } from '../models/aprobaciones-viaticos-servicio.model';
@@ -160,6 +160,46 @@ export class RevisionInformesService {
       return await this.get<ViaticosOs>(`${this.base}/${idInforme}/viaticos`);
     } catch (e) {
       throw this.comoError(e, 'No se pudieron cargar los viáticos del informe.');
+    }
+  }
+
+  /** Observaciones que se registraron durante el servicio en el Seguimiento Operativo (notas del Asistente, observaciones del equipo). */
+  async obtenerObservacionesSeguimientoInforme(idInforme: number): Promise<ObservacionSeguimientoApi[]> {
+    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+    try {
+      return await this.get<ObservacionSeguimientoApi[]>(`${this.base}/${idInforme}/observaciones-seguimiento`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudieron cargar las observaciones del seguimiento.');
+    }
+  }
+
+  /** Aprueba, observa o rechaza un gasto rendido de la OS del informe (solo el Jefe de Operaciones; el servidor lo comprueba). */
+  async revisarGastoInforme(idInforme: number, idGasto: number, body: { accion: string; comentario: string | null }): Promise<unknown> {
+    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+    if (!Number.isInteger(idGasto) || idGasto <= 0) throw new Error('El gasto indicado no es válido.');
+    try {
+      const r = await firstValueFrom(
+        this.http.post<{ idTipoMensaje: number; mensaje: string; datos?: unknown }>(
+          `${this.base}/${idInforme}/viaticos/gastos/${idGasto}/revision`,
+          { accion: body.accion, comentario: body.comentario },
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo revisar el gasto.');
+      return r.datos ?? null;
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo revisar el gasto.');
+    }
+  }
+
+  /** Comprobante n (1 a 5) de un gasto de la OS del informe, como blob (el <img src> directo no envía el token). */
+  async obtenerComprobanteGastoInforme(idInforme: number, idGasto: number, n: number): Promise<Blob> {
+    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+    if (!Number.isInteger(idGasto) || idGasto <= 0) throw new Error('El gasto indicado no es válido.');
+    if (!Number.isInteger(n) || n < 1 || n > 5) throw new Error('El número de foto debe estar entre 1 y 5.');
+    try {
+      return await firstValueFrom(this.http.get(`${this.base}/${idInforme}/viaticos/gastos/${idGasto}/comprobante/${n}`, { responseType: 'blob' }));
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el comprobante.');
     }
   }
 

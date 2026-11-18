@@ -146,10 +146,11 @@ describe('ModalDetalleServicioComponent', () => {
     ['En ejecución', 'Pedro Salazar · Salida 08:00 · Pre-llegada 08:08 · Llegada 08:12', '● GPS activo', 'hace 15 seg', 'Planta Concentradora Ventanilla',
       'Dentro del radio de proximidad del cliente (40 m)', 'Señal GPS activa', '2h 02min', '08:00 · Salida registrada', '08:12 · Llegada confirmada',
       '08:05 · Demora en ruta', '08:20 · Demora en ingreso a planta', 'Radio 300 m proximidad'].forEach(x => expect(t).toContain(x));
-    // satélites y latencia no vienen: se muestra "—"
+    // latencia no viene: se muestra "—"; la llegada estimada sale de la distancia (dentro del radio: ya está en planta)
     const valor = (etiqueta: string) => Array.from(host().querySelectorAll('.gps-card .info-item'))
       .find(i => i.querySelector('small')?.textContent?.trim() === etiqueta)?.querySelector('strong')?.textContent?.trim();
-    expect(valor('SATÉLITES')).toBe('—');
+    expect(valor('SATÉLITES')).toBeUndefined();
+    expect(valor('LLEGADA ESTIMADA')).toBeUndefined();   // dentro del radio solo se muestra el aviso verde (no las fichas de distancia y llegada)
     expect(valor('LATENCIA')).toBe('—');
     expect(valor('PRECISIÓN')).toBe('± 4 m');
     expect(valor('VELOCIDAD')).toBe('0 km/h');
@@ -202,10 +203,9 @@ describe('ModalDetalleServicioComponent', () => {
     obtenerDetalleServicio.mockResolvedValue(detalle());
     await montar();
     abrirTab('Demoras / Incidencias');
-    const cab = Array.from(host().querySelectorAll('th')).map(th => th.textContent?.trim());
-    expect(cab).toEqual(expect.arrayContaining(['MOMENTO', 'GPS', 'IMPACTO', 'DURACIÓN']));
-    expect(host().querySelector('tbody .chip--morado')?.textContent).toContain('Ingreso a planta');
-    expect(host().querySelector('tbody .chip--azul')?.textContent).toContain('En ruta (llegar a planta)');
+    expect(host().querySelectorAll('.dem-card').length).toBeGreaterThan(0);
+    expect(host().querySelector('.dem-card .chip--morado')?.textContent).toContain('Ingreso a planta');
+    expect(host().querySelector('.dem-card .chip--azul')?.textContent).toContain('En ruta (llegar a planta)');
     const t = texto();
     ['Revisión en portería', 'DETIENE', 'RETRASA', '25 min', '-11.8800, -77.1200', 'Registró: Pedro Salazar', 'Con foto'].forEach(x => expect(t).toContain(x));
 

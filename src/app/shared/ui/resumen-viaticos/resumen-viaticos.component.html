@@ -231,9 +231,31 @@
           }
         </div>
       </section>
+    } @else {
+      @let k = conclusion();
+      <section class="rv__bloque rv__bloque--conclusion">
+        <header class="rv__head">
+          <span class="material-symbols-outlined">balance</span>
+          <h4>Conclusión de viáticos y gastos</h4>
+          <span class="chip chip--ambar">Provisional · rendición abierta</span>
+          <span [class]="chipSaldo(k.tipo)">{{ etiquetaSaldo(k.tipo, k.saldo, moneda()) }}</span>
+        </header>
+        <div class="rv__cierre-info">
+          <div><small>Asignado</small><strong>{{ moneda() }} {{ totales().asignado | number:'1.2-2' }}</strong></div>
+          <div><small>Rendido</small><strong>{{ moneda() }} {{ totales().rendido | number:'1.2-2' }}</strong></div>
+          <div><small>Aprobado</small><strong>{{ moneda() }} {{ totales().aprobado | number:'1.2-2' }}</strong></div>
+          <div><small>Por revisar</small><strong>{{ moneda() }} {{ totales().porRevisar | number:'1.2-2' }}</strong></div>
+          <div><small>Rechazado</small><strong>{{ moneda() }} {{ totales().rechazado | number:'1.2-2' }}</strong></div>
+          <div><small>Saldo provisional</small><strong>{{ moneda() }} {{ totales().saldo | number:'1.2-2' }}</strong></div>
+        </div>
+        <p class="rv__conclusion-texto" [class.rv__conclusion-texto--pend]="k.pendientes > 0">
+          <span class="material-symbols-outlined">{{ k.pendientes > 0 ? 'pending_actions' : 'task_alt' }}</span>
+          {{ k.texto }}
+        </p>
+      </section>
     }
 
-    <app-kpi-grid [columnas]="4">
+    <app-kpi-grid [columnas]="totales().nPorRevisar > 0 ? 5 : 4">
       <app-kpi-card icono="account_balance_wallet" etiqueta="Asignado"
                     variante="azul"
                     [valor]="moneda() + ' ' + (totales().asignado | number:'1.2-2')" />
@@ -246,6 +268,12 @@
       <app-kpi-card icono="block" etiqueta="Rechazado"
                     variante="rojo"
                     [valor]="moneda() + ' ' + (totales().rechazado | number:'1.2-2')" />
+      @if (totales().nPorRevisar > 0) {
+        <app-kpi-card icono="pending_actions" etiqueta="Por revisar"
+                      variante="ambar"
+                      [valor]="totales().nPorRevisar"
+                      [subtitulo]="moneda() + ' ' + (totales().porRevisar | number:'1.2-2')" />
+      }
     </app-kpi-grid>
 
     <section class="rv__bloque">
@@ -264,6 +292,7 @@
               <th class="derecha">Monto</th>
               <th class="centro">Comprobante</th>
               <th>Estado final</th>
+              @if (hayRevisables()) { <th class="derecha">Acciones</th> }
             </tr>
           </thead>
           <tbody>
@@ -295,7 +324,29 @@
                   @if (g.comentarioRevision) {
                     <small class="rv__desc" [title]="g.comentarioRevision">{{ g.comentarioRevision }}</small>
                   }
+                  @if (g.revisadoPor) {
+                    <small class="rv__desc">{{ g.revisadoPor }}</small>
+                  }
                 </td>
+                @if (hayRevisables()) {
+                  <td class="rv__acciones derecha">
+                    @if (g.puedeAprobar) {
+                      <button type="button" class="rv__btn rv__btn--verde" (click)="onRevisar(g, 'aprobar')">
+                        <span class="material-symbols-outlined">check</span> Aprobar
+                      </button>
+                    }
+                    @if (g.puedeObservar) {
+                      <button type="button" class="rv__btn rv__btn--ambar" (click)="onRevisar(g, 'observar')">
+                        <span class="material-symbols-outlined">flag</span> Observar
+                      </button>
+                    }
+                    @if (g.puedeRechazar) {
+                      <button type="button" class="rv__btn rv__btn--rojo" (click)="onRevisar(g, 'rechazar')">
+                        <span class="material-symbols-outlined">block</span> Rechazar
+                      </button>
+                    }
+                  </td>
+                }
               </tr>
             }
           </tbody>

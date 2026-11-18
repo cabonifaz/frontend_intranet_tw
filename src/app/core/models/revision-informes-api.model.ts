@@ -271,6 +271,24 @@ export interface FotoInformeApi {
   validacionIa:     string | null;
   idObservacion:    number | null;
   codigoObservacion:string | null;
+  /** Evidencia forzada (HU-12): la IA la rechazó y el técnico la aceptó con un motivo. */
+  forzada?:         boolean;
+  motivoForzado?:   string | null;
+  motivoRechazoIa?: string | null;
+  forzadaPor?:      string | null;
+  forzadaEn?:       string | null;
+}
+
+/** Observación registrada durante el servicio en el Seguimiento Operativo. */
+export interface ObservacionSeguimientoApi {
+  clave:       string;
+  /** asistente (nota del Asistente) · equipo (observación del equipo) · ejecucion (observación de ejecución). */
+  origen:      string;
+  registrador: string | null;
+  /** Cómo se enteró el Asistente (llamada telefónica, WhatsApp, contacto en planta, observación directa). */
+  fuente:      string | null;
+  texto:       string;
+  fecha:       string | null;
 }
 
 export type PrioridadItemPrecot = 'alta' | 'media' | 'opcional';

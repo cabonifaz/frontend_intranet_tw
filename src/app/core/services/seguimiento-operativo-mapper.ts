@@ -45,7 +45,6 @@ export const COLOR_DEMORA_INGRESO = '#7C3AED';
 const ESTADOS_CAMPO: readonly EstadoTecnicoCampo[] =
   ['sin_salir', 'en_ruta', 'en_planta', 'en_ejecucion', 'con_demora', 'con_incidente', 'finalizado'];
 
-const ETAPAS: readonly NombreEtapaEquipo[] = ['LIMPIEZA', 'DESMONTAJE', 'PRUEBAS', 'MONTAJE', 'CIERRE'];
 
 /** Si el hito GPS no tiene una posición de la ruta a menos de estos minutos, no se dibuja en el mapa. */
 const TOLERANCIA_HITO_MIN = 10;
@@ -188,7 +187,34 @@ export function adaptarPin(p: PinMapaApi): PuntoMapa {
     hace:       formatearHaceMinutos(p.minutosUbicacion, 'Sin posición GPS hoy'),
     lat:        conGps ? lat : null,
     lng:        conGps ? lng : null,
+    actividad:      textoONulo(p.actividad),
+    actividadColor: colorONulo(p.actividadColor),
   };
+}
+
+/** Velocidad promedio de la estimación de llegada: la misma del backend (SEG_VELOCIDAD_PROMEDIO_KMH, 30 por defecto). */
+const VELOCIDAD_PROMEDIO_KMH = 30;
+
+/**
+ * Tiempo estimado de llegada a la planta. Si el backend ya lo calculó (técnico en ruta) se respeta; si no, se estima desde la distancia en línea recta
+ * × 1,3 (calles) a la velocidad promedio, al menos 1 minuto. Dentro del radio de la planta no hay estimación (ya está).
+ */
+export function estimarLlegada(
+  distanciaM: number | null, dentroDelRadio: boolean, etaServidorMin: number | null, etaServidorHora: string | null,
+): { minutos: number | null; hora: string | null } {
+  if (dentroDelRadio) return { minutos: null, hora: null };
+  if (etaServidorMin !== null) return { minutos: etaServidorMin, hora: etaServidorHora };
+  if (distanciaM === null || !(distanciaM > 0)) return { minutos: null, hora: null };
+  const minutos = Math.max(1, Math.ceil((distanciaM * 1.3) / 1000 / VELOCIDAD_PROMEDIO_KMH * 60));
+  const hora = new Date(Date.now() + minutos * 60_000)
+    .toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Lima' });
+  return { minutos, hora };
+}
+
+/** Color hexadecimal #RRGGBB válido o null (el pin cae al color de su estado). */
+function colorONulo(c: string | null | undefined): string | null {
+  const v = (c ?? '').trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(v) ? v : null;
 }
 
 export function iniciales(nombre: string | null | undefined): string {
@@ -202,7 +228,7 @@ export function iniciales(nombre: string | null | undefined): string {
 function normalizarTipoAlerta(t: string | null | undefined): TipoAlertaCampo {
   const v = (t ?? '').trim().toLowerCase();
   const validos: readonly TipoAlertaCampo[] = [
-    'perdida_contacto', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
+    'perdida_contacto', 'sin_movimiento', 'ensayo_critico', 'autorizacion_salida', 'gps_parado', 'sin_ingreso_post_llegada', 'proximidad', 'sin_iniciar_servicio', 'incidente',
   ];
   return (validos as readonly string[]).includes(v) ? (v as TipoAlertaCampo) : 'otra';
 }
@@ -522,13 +548,13 @@ export function adaptarResumenServicio(d: DetalleServicioApi): ResumenServicio {
 // ─── Avance por equipos ─────────────────────────────────────────────────────
 
 function normalizarEtapa(e: string | null | undefined): NombreEtapaEquipo | null {
-  const v = (e ?? '').trim().toUpperCase() as NombreEtapaEquipo;
-  return ETAPAS.includes(v) ? v : null;
+  const v = (e ?? '').trim();
+  return v === '' ? null : v;
 }
 
 function normalizarEstadoEtapa(e: string | null | undefined): EstadoEtapaEquipo {
   const v = (e ?? '').trim().toLowerCase();
-  return v === 'completada' || v === 'en_curso' ? v : 'pendiente';
+  return v === 'completada' || v === 'en_curso' || v === 'observada' || v === 'bloqueada' ? v : 'pendiente';
 }
 
 export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
@@ -543,6 +569,7 @@ export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
       estado:       estadoEtapa,
       hora:         estadoEtapa === 'completada' ? textoONulo(et.hora) : null,
       enCursoDesde: estadoEtapa === 'en_curso' ? textoONulo(et.hora) : null,
+      detalle:      textoONulo(et.detalle),
     });
   }
   const enCurso = etapas.find(x => x.estado === 'en_curso');
@@ -566,7 +593,7 @@ export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
     estado,
     horaInicio:     textoONulo(e.iniciado),
     horaFin:        textoONulo(e.finalizado),
-    etapaActual:    enCurso?.nombre ?? null,
+    etapaActual:    (enCurso ?? etapas.find(x => x.estado === 'pendiente' || x.estado === 'observada'))?.nombre ?? null,
     tiempoResumen,
     progresoPct,
     etapas,
@@ -699,6 +726,7 @@ export function adaptarMapa(api: MapaServicioApi): MapaGpsServicio {
 
   const distancia = p.distanciaM ?? null;
   const radio = planta?.radioM ?? (p.radioProximidadM > 0 ? p.radioProximidadM : 300);
+  const eta = estimarLlegada(distancia, distancia !== null && distancia <= radio, p.etaMinutos ?? null, p.etaHora ?? null);
 
   const tecnico = texto(p.tecnico, 'El técnico');
   const partes = cronograma.filter(h => h.hora).map(h =>
@@ -729,6 +757,8 @@ export function adaptarMapa(api: MapaServicioApi): MapaGpsServicio {
       altitudMsnm:        numeroONulo(p.altitudM),
       tiempoEnPunto:      p.minutosEnPunto > 0 ? formatearDuracionMin(p.minutosEnPunto) : null,
       lat, lng,
+      etaMinutos:         eta.minutos,
+      etaHora:            eta.hora,
     },
     planta,
     ruta,

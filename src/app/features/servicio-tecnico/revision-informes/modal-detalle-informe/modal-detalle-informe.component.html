@@ -43,7 +43,7 @@
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'descripcion'"   (click)="cambiarTab('descripcion')">Descripción Complementaria</button>
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'observaciones'" (click)="cambiarTab('observaciones')">
         Observaciones
-        @if (observaciones().length) { <span class="mdi__tab-badge">{{ observaciones().length }}</span> }
+        @if (observaciones().length + obsSeguimiento().length) { <span class="mdi__tab-badge">{{ observaciones().length + obsSeguimiento().length }}</span> }
       </button>
       <button class="mdi__tab" [class.mdi__tab--activa]="tab() === 'recomendaciones'" (click)="cambiarTab('recomendaciones')">
         Recomendaciones
@@ -327,12 +327,16 @@
 
         <!-- ── TAB 4: OBSERVACIONES ──────────────────────────────────── -->
         @if (tab() === 'observaciones') {
-          @if (observaciones().length === 0) {
+          @if (observaciones().length === 0 && obsSeguimiento().length === 0) {
             <p class="vacio vacio--grande">
               <span class="material-symbols-outlined">task_alt</span>
               Este servicio se cerró sin observaciones.
             </p>
-          } @else {
+          }
+          @if (observaciones().length > 0) {
+            @if (obsSeguimiento().length > 0) {
+              <h4 class="obs-seccion"><span class="material-symbols-outlined">report</span>Observaciones del informe técnico</h4>
+            }
             <div class="obs-lista">
               @for (o of observaciones(); track o.idObservacion) {
                 <article class="obs">
@@ -353,6 +357,26 @@
                       <img [src]="o.urlFoto" [alt]="o.titulo ?? ''">
                     </a>
                   }
+                </article>
+              }
+            </div>
+          }
+          @if (obsSeguimiento().length > 0) {
+            <h4 class="obs-seccion">
+              <span class="material-symbols-outlined">forum</span>Observaciones del Seguimiento Operativo
+              <span class="mdi__tab-badge">{{ obsSeguimiento().length }}</span>
+            </h4>
+            <p class="obs-seccion__sub">Lo que se registró durante el servicio desde el Seguimiento Operativo (notas del Asistente y observaciones del equipo).</p>
+            <div class="obs-lista">
+              @for (s of obsSeguimiento(); track s.clave) {
+                <article class="obs obs--seg">
+                  <header class="obs__head">
+                    <span class="obs__codigo obs__codigo--seg"><span class="material-symbols-outlined">{{ iconoObsSeguimiento(s.origen) }}</span></span>
+                    <strong class="obs__titulo">{{ s.registrador ?? 'Seguimiento Operativo' }}</strong>
+                    @if (s.fuente) { <span class="chip chip--azul">{{ s.fuente }}</span> }
+                    @if (s.fecha) { <small class="obs__hora">{{ s.fecha | date:'dd/MM/yyyy HH:mm' }}</small> }
+                  </header>
+                  <p class="obs__desc">{{ s.texto }}</p>
                 </article>
               }
             </div>
@@ -484,12 +508,27 @@
                     </div>
                     <div class="foto__pie">
                       <span class="foto__momento chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
-                      @if (f.georreferenciada) {
-                        <span class="material-symbols-outlined foto__gps" title="Georreferenciada">location_on</span>
-                      }
+                      @if (f.forzada) { <span class="chip chip--ambar">Forzada</span> }
                       @if (f.codigoObservacion) {
                         <span class="chip chip--rojo">{{ f.codigoObservacion }}</span>
                       }
+                    </div>
+                    <div class="foto__detalle">
+                      @if (f.fechaCaptura) {
+                        <span class="foto__dato"><span class="material-symbols-outlined">schedule</span>{{ f.fechaCaptura | date:'dd/MM/yyyy HH:mm' }}</span>
+                      }
+                      @if (f.georreferenciada) {
+                        <span class="foto__dato foto__dato--gps" title="Ubicación donde se tomó">
+                          <span class="material-symbols-outlined">location_on</span>{{ f.latitud | number:'1.4-4' }}, {{ f.longitud | number:'1.4-4' }}
+                        </span>
+                      }
+                      @if (f.forzada && f.motivoForzado) {
+                        <span class="foto__texto"><strong>Motivo:</strong> {{ f.motivoForzado }}</span>
+                      }
+                      @if (f.validacionIa) {
+                        <span class="foto__texto foto__texto--ia"><span class="material-symbols-outlined">smart_toy</span>{{ f.validacionIa }}</span>
+                      }
+                      @if (f.descripcion) { <span class="foto__texto">{{ f.descripcion }}</span> }
                     </div>
                   </button>
                 }
@@ -516,11 +555,11 @@
                 <span class="material-symbols-outlined">pending_actions</span>
                 <div>
                   <strong>Rendición pendiente de cierre por el Jefe de Operaciones</strong>
-                  <small>Los montos y el saldo final pueden cambiar cuando se cierre la rendición.</small>
+                  <small>Los montos y el saldo final pueden cambiar cuando se cierre la rendición. Los gastos por revisar se aprueban, observan o rechazan aquí mismo.</small>
                 </div>
               </div>
             }
-            <app-resumen-viaticos modo="cierre" [vm]="vm" />
+            <app-resumen-viaticos modo="cierre" [vm]="vm" (revisarGasto)="abrirRevisarGasto($event)" (verComprobante)="abrirComprobante($event)" />
           } @else {
             <div class="vacio">Este informe no tiene una rendición asociada.</div>
           }
@@ -670,13 +709,99 @@
       <div class="lightbox__pie">
         <strong>{{ foto.momentoLabel ?? foto.momento }}</strong>
         @if (foto.descripcion) { <span>— {{ foto.descripcion }}</span> }
-        @if (foto.georreferenciada) {
-          <span class="material-symbols-outlined lightbox__gps" title="Georreferenciada">location_on</span>
-        }
+        @if (foto.forzada) { <span class="chip chip--ambar">Forzada por el técnico</span> }
         @if (foto.codigoObservacion) {
           <span class="chip chip--rojo">{{ foto.codigoObservacion }}</span>
         }
       </div>
+      <dl class="lightbox__detalle">
+        @if (foto.fechaCaptura) {
+          <div><dt>Tomada</dt><dd>{{ foto.fechaCaptura | date:'dd/MM/yyyy HH:mm' }}</dd></div>
+        }
+        @if (foto.georreferenciada) {
+          <div><dt>Ubicación</dt><dd>{{ foto.latitud | number:'1.5-5' }}, {{ foto.longitud | number:'1.5-5' }}</dd></div>
+        }
+        @if (foto.validacionIa) {
+          <div class="lightbox__fila--ancha"><dt>Validación de la IA</dt><dd>{{ foto.validacionIa }}</dd></div>
+        }
+        @if (foto.motivoRechazoIa) {
+          <div class="lightbox__fila--ancha"><dt>La IA la rechazó</dt><dd>{{ foto.motivoRechazoIa }}</dd></div>
+        }
+        @if (foto.forzada) {
+          <div class="lightbox__fila--ancha">
+            <dt>Motivo del técnico</dt>
+            <dd>{{ foto.motivoForzado ?? 'Sin motivo' }}@if (foto.forzadaPor || foto.forzadaEn) { <small> · {{ foto.forzadaPor }}{{ foto.forzadaPor && foto.forzadaEn ? ' · ' : '' }}{{ foto.forzadaEn | date:'dd/MM/yyyy HH:mm' }}</small> }</dd>
+          </div>
+        }
+      </dl>
+    </div>
+  </div>
+}
+
+
+<!-- ══════════ Diálogo: revisar un gasto (aprobar / observar / rechazar) ══════════ -->
+@if (gastoRevisar(); as g) {
+  <app-modal
+    [titulo]="(accionRevisarGasto() === 'aprobar' ? 'Aprobar gasto' : accionRevisarGasto() === 'observar' ? 'Observar gasto' : 'Rechazar gasto')"
+    [subtitulo]="g.concepto"
+    [icono]="accionRevisarGasto() === 'aprobar' ? 'check_circle' : accionRevisarGasto() === 'observar' ? 'flag' : 'cancel'"
+    [iconoColor]="accionRevisarGasto() === 'rechazar' ? 'rojo' : 'azul'"
+    ancho="md"
+    [cerrable]="!revisandoGasto()"
+    (cerrar)="cerrarRevisarGasto()">
+
+    <div class="dlg-body">
+      <label class="dlg-body__campo">
+        <span class="dlg-body__label">
+          Comentario
+          @if (accionRevisarGasto() === 'observar' || accionRevisarGasto() === 'rechazar') { <span class="req">*</span> }
+          <small class="muted">{{ comentarioRevisar().length }}/500</small>
+        </span>
+        <textarea maxlength="500" rows="4"
+                  [ngModel]="comentarioRevisar()"
+                  (ngModelChange)="comentarioRevisar.set($event)"
+                  [placeholder]="accionRevisarGasto() === 'aprobar' ? 'Comentario opcional' : 'Explica el motivo (obligatorio)'"></textarea>
+      </label>
+    </div>
+
+    <div modalFooter class="dlg-footer">
+      <app-button variant="secondary" tamano="md" [disabled]="revisandoGasto()" (clic)="cerrarRevisarGasto()">Cancelar</app-button>
+      <app-button [variant]="accionRevisarGasto() === 'rechazar' ? 'danger' : 'primary'" tamano="md"
+                  [icono]="accionRevisarGasto() === 'aprobar' ? 'check' : accionRevisarGasto() === 'observar' ? 'flag' : 'block'"
+                  [disabled]="revisandoGasto()" (clic)="confirmarRevisarGasto()">
+        Confirmar
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ══════════ Visor del comprobante del gasto (dentro de la intranet) ══════════ -->
+@if (comprobanteAbierto(); as c) {
+  <div class="comp-lightbox" (click)="cerrarComprobante()">
+    <button type="button" class="comp-lightbox__cerrar" (click)="cerrarComprobante()" aria-label="Cerrar visor">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <div class="comp-lightbox__contenido" (click)="$event.stopPropagation()">
+      @if (comprobanteCargando()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          <p>Cargando comprobante…</p>
+        </div>
+      } @else if (comprobanteError()) {
+        <div class="comp-lightbox__estado">
+          <span class="material-symbols-outlined">broken_image</span>
+          <p>{{ comprobanteError() }}</p>
+        </div>
+      } @else if (comprobanteSafeUrl(); as url) {
+        <img class="comp-lightbox__img" [src]="url" alt="Comprobante del gasto">
+      }
+      @if (c.nFotos > 1) {
+        <div class="comp-lightbox__nav">
+          <button type="button" (click)="cambiarFotoComprobante(-1)" aria-label="Anterior"><span class="material-symbols-outlined">chevron_left</span></button>
+          <span>{{ c.n }} / {{ c.nFotos }}</span>
+          <button type="button" (click)="cambiarFotoComprobante(1)" aria-label="Siguiente"><span class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+      }
     </div>
   </div>
 }

@@ -289,25 +289,26 @@
                 <div class="etapa"
                      [class.etapa--completada]="et.estado === 'completada'"
                      [class.etapa--en-curso]="et.estado === 'en_curso'"
+                     [class.etapa--observada]="et.estado === 'observada'"
+                     [class.etapa--bloqueada]="et.estado === 'bloqueada'"
                      [class.etapa--ultima]="last">
                   <span class="etapa__nodo">
                     @if (et.estado === 'completada') {
                       <span class="material-symbols-outlined">check</span>
                     } @else if (et.estado === 'en_curso') {
                       <span class="material-symbols-outlined">radio_button_checked</span>
+                    } @else if (et.estado === 'observada') {
+                      <span class="material-symbols-outlined">priority_high</span>
+                    } @else if (et.estado === 'bloqueada') {
+                      <span class="material-symbols-outlined">lock</span>
                     } @else {
                       <span class="material-symbols-outlined">radio_button_unchecked</span>
                     }
                   </span>
                   <div class="etapa__texto">
-                    <strong>{{ idx + 1 }}. {{ et.nombre | titlecase }}</strong>
-                    @if (et.estado === 'en_curso') {
-                      <small class="etapa__sub">En curso desde {{ et.enCursoDesde }}</small>
-                    } @else if (et.hora) {
-                      <small>{{ et.hora }}</small>
-                    } @else {
-                      <small class="muted">Pendiente</small>
-                    }
+                    <strong>{{ idx + 1 }}. {{ et.nombre }}</strong>
+                    <small class="etapa__estado">{{ etiquetaEtapa(et.estado) }}</small>
+                    @if (et.detalle) { <small class="etapa__detalle" [title]="et.detalle">{{ et.detalle }}</small> }
                   </div>
                 </div>
               }
@@ -362,15 +363,27 @@
                   @if (activo === 'fotos') {
                     <div class="subtab-fotos">
                       @for (el of seccion.elementos; track el.id) {
-                        <a class="subtab-foto" [href]="el.url" target="_blank" rel="noopener"
-                           [title]="el.titulo + (el.detalle ? ' · ' + el.detalle : '')">
-                          @if (el.url) {
-                            <img [src]="el.url" [alt]="el.titulo" loading="lazy" />
-                          } @else {
-                            <span class="material-symbols-outlined">image</span>
-                          }
-                          <small>{{ el.fecha ?? '—' }}</small>
-                        </a>
+                        @let miniatura = miniaturaEquipo(eq.idEquipo, el);
+                        @let esVid = el.esVideo || esVideo(el.url);
+                        <figure class="subtab-foto">
+                          <button type="button" class="subtab-foto__img" [class.subtab-foto__img--vacia]="!miniatura"
+                                  [title]="esVid ? 'Reproducir el video' : 'Ver la foto'"
+                                  (click)="abrirVisor(eq.idEquipo, el.id, el.titulo, el.detalle, el.fecha, !!esVid)">
+                            @if (miniatura) {
+                              <img [src]="miniatura" [alt]="el.titulo" loading="lazy" />
+                            } @else if (esVid) {
+                              <span class="material-symbols-outlined">videocam</span>
+                            } @else {
+                              <span class="material-symbols-outlined spin">progress_activity</span>
+                            }
+                            @if (esVid) { <span class="subtab-foto__play"><span class="material-symbols-outlined">play_arrow</span></span> }
+                          </button>
+                          <figcaption>
+                            <strong>{{ el.titulo }}</strong>
+                            @if (el.detalle) { <small>{{ el.detalle }}</small> }
+                            <small class="subtab-foto__hora">{{ el.fecha ?? '—' }}@if (el.ultimaHaceMin !== null) { · hace {{ el.ultimaHaceMin }} min }</small>
+                          </figcaption>
+                        </figure>
                       }
                     </div>
                   } @else {
@@ -378,10 +391,19 @@
                     <ul class="subtab-lista">
                       @for (el of seccion.elementos; track el.id) {
                         <li>
+                          @if (el.idEvidencia) {
+                            @let fotoFalla = fotoEquipo(eq.idEquipo, el.idEvidencia);
+                            @if (fotoFalla) {
+                              <button type="button" class="subtab-lista__foto" title="Ver la foto"
+                                      (click)="abrirVisor(eq.idEquipo, el.idEvidencia, el.titulo, el.detalle, el.fecha, false)">
+                                <img [src]="fotoFalla" alt="Foto de la falla" loading="lazy" />
+                              </button>
+                            }
+                          }
                           <div class="subtab-lista__texto">
                             <strong>{{ el.titulo }}</strong>
                             @if (el.detalle) { <small>{{ el.detalle }}</small> }
-                            @if (el.resultado) { <small class="subtab-lista__res">{{ el.resultado }}</small> }
+                            @if (el.resultado) { <small class="subtab-lista__res" [class.subtab-lista__res--mal]="el.resultado === 'no_cumple'">{{ etiquetaResultado(el.resultado) }}</small> }
                           </div>
                           <div class="subtab-lista__meta">
                             @if (el.fecha) { <small>{{ el.fecha }}</small> }
@@ -485,13 +507,25 @@
                 Dentro del radio de proximidad del cliente ({{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }})
               </div>
             } @else if (d.gps.ultimaUbicacion.distanciaAlCliente !== null) {
-              <div class="gps-card__estado-chip gps-card__estado-chip--gris">
-                <span class="material-symbols-outlined">near_me</span>
-                A {{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }} del cliente
+              <div class="gps-destino">
+                <div class="gps-destino__item">
+                  <span class="material-symbols-outlined">near_me</span>
+                  <div>
+                    <small>Distancia al cliente</small>
+                    <strong>{{ distancia(d.gps.ultimaUbicacion.distanciaAlCliente) }}</strong>
+                  </div>
+                </div>
+                <div class="gps-destino__item gps-destino__item--eta">
+                  <span class="material-symbols-outlined">schedule</span>
+                  <div>
+                    <small>Llegada estimada</small>
+                    <strong>{{ textoLlegada(d.gps.ultimaUbicacion) }}</strong>
+                  </div>
+                </div>
               </div>
             }
 
-            <!-- Métricas del último punto (satélites y latencia pueden venir nulos: se muestra "—") -->
+            <!-- Métricas del último punto (la latencia puede venir nula: se muestra "—"). La llegada estimada (junto a la distancia) se calcula desde la distancia a la planta -->
             <div class="gps-card__info gps-card__info--grid-3">
               <div class="info-item">
                 <small>VELOCIDAD</small>
@@ -506,14 +540,10 @@
                 <strong>{{ d.gps.estadoSenal.precisionMetros !== null ? '± ' + dato(d.gps.estadoSenal.precisionMetros, ' m') : '—' }}</strong>
               </div>
               <div class="info-item">
-                <small>SATÉLITES</small>
-                <strong>{{ dato(d.gps.estadoSenal.satelites) }}</strong>
-              </div>
-              <div class="info-item">
                 <small>LATENCIA</small>
                 <strong>{{ dato(d.gps.estadoSenal.latenciaMs, ' ms') }}</strong>
               </div>
-              <div class="info-item">
+              <div class="info-item info-item--ancho">
                 <small>TIEMPO EN PUNTO</small>
                 <strong class="azul">{{ d.gps.ultimaUbicacion.tiempoEnPunto ?? '—' }}</strong>
               </div>
@@ -727,74 +757,66 @@
           </div>
         </div>
 
-        <app-tabla-paginada
-          [cargando]="cargando()"
-          [vacio]="!cargando() && d.demoras.length === 0"
-          [total]="d.demoras.length"
-          [pagina]="1"
-          [porPagina]="d.demoras.length || 10"
-          textoItems="eventos"
-          textoVacio="No se registraron demoras ni incidencias en el día.">
-          <thead>
-            <tr>
-              <th>HORA</th>
-              <th class="col-tipo">TIPO</th>
-              <th>MOMENTO</th>
-              <th class="col-desc">DESCRIPCIÓN</th>
-              <th>IMPACTO</th>
-              <th class="num">DURACIÓN</th>
-              <th>GPS</th>
-              <th class="centro">ORIGEN</th>
-              <th class="centro">EVIDENCIA</th>
-            </tr>
-          </thead>
-          <tbody>
+        @if (d.demoras.length === 0) {
+          <div class="dem-vacio">
+            <span class="material-symbols-outlined">inbox</span>
+            <p>No se registraron demoras ni incidencias en el día.</p>
+          </div>
+        } @else {
+          <ol class="dem-lista">
             @for (ev of d.demoras; track ev.idDemora) {
-              <tr class="fila-clic" (click)="abrirIncidenciaModal(ev)">
-                <td><strong>{{ ev.hora }}</strong></td>
-                <td class="col-tipo">{{ ev.tipo }}</td>
-                <td>
-                  @if (ev.momento) {
-                    <span [class]="chipMomento(ev.fase)">{{ ev.momento }}</span>
-                  } @else { <span class="muted">—</span> }
-                </td>
-                <td class="col-desc">
-                  <strong>{{ ev.motivo }}</strong>
-                  @if (ev.detalle) { <small class="sub">Registró: {{ ev.detalle }}</small> }
-                </td>
-                <td>
-                  <span [class]="chipImpacto(ev)">{{ labelImpacto(ev) }}</span>
-                </td>
-                <td class="num">{{ ev.duracionMin !== null ? ev.duracionMin + ' min' : '—' }}</td>
-                <td>
-                  @if (ev.lat !== null && ev.lng !== null) {
-                    <button type="button" class="gps-enlace" (click)="verEnMapa()"
-                            title="Ver el punto en el Mapa GPS">
-                      <span class="material-symbols-outlined">location_on</span>
-                      {{ ev.lat | number:'1.4-4' }}, {{ ev.lng | number:'1.4-4' }}
-                    </button>
-                  } @else { <span class="muted">—</span> }
-                </td>
-                <td class="centro">
-                  <span [class]="'ic-origen ic-origen--' + ev.origen"
-                        [title]="labelOrigen(ev.origen)">
+              <li class="dem-card" [attr.data-impacto]="ev.detiene ? 'detiene' : 'retrasa'"
+                  tabindex="0" (click)="abrirIncidenciaModal(ev)" (keydown.enter)="abrirIncidenciaModal(ev)">
+                <div class="dem-card__hora">
+                  <strong>{{ ev.hora }}</strong>
+                  <span [class]="'ic-origen ic-origen--' + ev.origen" [title]="labelOrigen(ev.origen)">
                     <span class="material-symbols-outlined">{{ iconoOrigenCompacto(ev.origen) }}</span>
                   </span>
-                </td>
-                <td class="centro">
-                  @if (ev.nFotos && ev.nFotos > 0) {
-                    <span class="chip chip--gris">
+                </div>
+
+                <div class="dem-card__cuerpo">
+                  <div class="dem-card__chips">
+                    <strong class="dem-card__tipo">{{ ev.tipo }}</strong>
+                    @if (ev.momento) { <span [class]="chipMomento(ev.fase)">{{ ev.momento }}</span> }
+                    <span [class]="chipImpacto(ev)">{{ labelImpacto(ev) }}</span>
+                  </div>
+                  <p class="dem-card__motivo">{{ ev.motivo }}</p>
+                  <div class="dem-card__meta">
+                    <span><span class="material-symbols-outlined">timer</span>{{ ev.duracionMin !== null ? ev.duracionMin + ' min' : '—' }}</span>
+                    @if (ev.detalle) {
+                      <span><span class="material-symbols-outlined">person</span>Registró: {{ ev.detalle }}</span>
+                    }
+                    @if (ev.lat !== null && ev.lng !== null) {
+                      <button type="button" class="gps-enlace" (click)="$event.stopPropagation(); verEnMapa()"
+                              title="Ver el punto en el Mapa GPS">
+                        <span class="material-symbols-outlined">location_on</span>
+                        {{ ev.lat | number:'1.4-4' }}, {{ ev.lng | number:'1.4-4' }}
+                      </button>
+                    } @else {
+                      <span class="muted"><span class="material-symbols-outlined">location_off</span>Sin GPS</span>
+                    }
+                  </div>
+                </div>
+
+                @if (ev.nFotos && ev.nFotos > 0) {
+                  <div class="dem-card__foto">
+                    @if (fotosDemora()[ev.idDemora]; as foto) {
+                      <a [href]="foto" target="_blank" rel="noopener" (click)="$event.stopPropagation()" title="Ver la foto completa">
+                        <img [src]="foto" alt="Foto de evidencia de la demora" loading="lazy" />
+                      </a>
+                    } @else {
+                      <div class="dem-card__foto-carga"><span class="material-symbols-outlined spin">progress_activity</span></div>
+                    }
+                    <span class="chip chip--gris chip--foto">
                       <span class="material-symbols-outlined">photo_camera</span>
                       Con foto
                     </span>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </td>
-              </tr>
+                  </div>
+                }
+              </li>
             }
-          </tbody>
-        </app-tabla-paginada>
+          </ol>
+        }
 
         <p class="nota-pie">
           <span class="material-symbols-outlined">info</span>
@@ -834,11 +856,6 @@
             <span class="material-symbols-outlined">login</span> Llegada
             @if (conteoPorTipo().llegada) { <span class="count">{{ conteoPorTipo().llegada }}</span> }
           </button>
-          <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'evidencia'"
-                  (click)="cambiarFiltroAprobacion('evidencia')">
-            <span class="material-symbols-outlined">photo_camera</span> Evidencias
-            @if (conteoPorTipo().evidencia) { <span class="count">{{ conteoPorTipo().evidencia }}</span> }
-          </button>
           <button class="chip-filtro" [class.chip-filtro--activo]="filtroAprobacion() === 'ensayo'"
                   (click)="cambiarFiltroAprobacion('ensayo')">
             <span class="material-symbols-outlined">science</span> Ensayos
@@ -854,10 +871,10 @@
         } @else {
           <div class="apb-lista">
             @for (a of aprobacionesFiltradas(); track a.tipo + ':' + a.id) {
-              <article class="apb-card" [class.apb-card--urgente]="a.urgente">
+              <article class="apb-card" [class.apb-card--urgente]="a.urgente" [attr.data-estado]="a.estado" [attr.data-tipo]="a.tipo">
                 <header class="apb-card__head">
                   <div class="apb-card__tipo">
-                    <span class="material-symbols-outlined">{{ iconoTipoAprobacion(a.tipo) }}</span>
+                    <span class="apb-card__icono"><span class="material-symbols-outlined">{{ iconoTipoAprobacion(a.tipo) }}</span></span>
                     <strong>{{ labelTipoAprobacion(a.tipo) }}</strong>
                     @if (a.urgente) { <span class="chip chip--rojo">Urgente</span> }
                   </div>
@@ -865,19 +882,26 @@
                 </header>
                 <div class="apb-card__body">
                   @if (a.titulo) { <h5>{{ a.titulo }}</h5> }
-                  <small class="muted">
-                    @if (a.solicitante) { Solicitó: <strong>{{ a.solicitante }}</strong> · }
-                    @if (a.solicitadoEn) { {{ a.solicitadoEn | date:'dd/MM/yyyy HH:mm' }} }
-                  </small>
-                  @if (a.motivo)  { <p><strong>Motivo:</strong> {{ a.motivo }}</p> }
-                  @if (a.detalle) { <p>{{ a.detalle }}</p> }
+                  <div class="apb-card__meta">
+                    @if (a.solicitante) {
+                      <span><span class="material-symbols-outlined">person</span>Solicitó: <strong>{{ a.solicitante }}</strong></span>
+                    }
+                    @if (a.solicitadoEn) {
+                      <span><span class="material-symbols-outlined">schedule</span>{{ a.solicitadoEn | date:'dd/MM/yyyy HH:mm' }}</span>
+                    }
+                  </div>
+                  @if (a.motivo)  { <p class="apb-card__nota"><strong>Motivo:</strong> {{ a.motivo }}</p> }
+                  @if (a.detalle) { <p class="apb-card__detalle">{{ a.detalle }}</p> }
                   @if (a.resueltoPor) {
                     <div class="apb-card__decision">
-                      <small><strong>{{ a.resueltoPor }}</strong>
-                      @if (a.cargo)      { · {{ a.cargo }} }
-                      @if (a.resueltoEn) { · {{ a.resueltoEn | date:'dd/MM/yyyy HH:mm' }} }
-                      </small>
-                      @if (a.comentario) { <p class="apb-card__coment">"{{ a.comentario }}"</p> }
+                      <span class="material-symbols-outlined">{{ a.estado === 'aprobada' ? 'check_circle' : 'cancel' }}</span>
+                      <div>
+                        <small><strong>{{ a.resueltoPor }}</strong>
+                        @if (a.cargo)      { · {{ a.cargo }} }
+                        @if (a.resueltoEn) { · {{ a.resueltoEn | date:'dd/MM/yyyy HH:mm' }} }
+                        </small>
+                        @if (a.comentario) { <p class="apb-card__coment">"{{ a.comentario }}"</p> }
+                      </div>
                     </div>
                   }
                 </div>
@@ -1560,6 +1584,33 @@
           </button>
         </div>
       }
+    </div>
+  </div>
+}
+
+
+<!-- ══════════ Visor de fotos y videos de evidencia (dentro de la intranet) ══════════ -->
+@if (visor(); as v) {
+  <div class="visor" role="dialog" aria-modal="true" [attr.aria-label]="v.titulo" (click)="cerrarVisor()">
+    <div class="visor__caja" (click)="$event.stopPropagation()">
+      <header class="visor__cab">
+        <div class="visor__titulo">
+          <strong>{{ v.titulo }}</strong>
+          @if (v.detalle || v.hora) { <small>{{ v.detalle }}{{ v.detalle && v.hora ? ' · ' : '' }}{{ v.hora }}</small> }
+        </div>
+        <button type="button" class="visor__cerrar" (click)="cerrarVisor()" aria-label="Cerrar el visor">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+      <div class="visor__cuerpo">
+        @if (!v.src) {
+          <div class="visor__cargando"><span class="material-symbols-outlined spin">progress_activity</span> Cargando…</div>
+        } @else if (v.tipo === 'video') {
+          <video [src]="v.src" controls autoplay playsinline></video>
+        } @else {
+          <img [src]="v.src" [alt]="v.titulo" />
+        }
+      </div>
     </div>
   </div>
 }

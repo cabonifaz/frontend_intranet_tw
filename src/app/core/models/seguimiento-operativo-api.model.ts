@@ -42,6 +42,11 @@ export interface PinMapaApi {
   idOs:             number | null;
   numeroOs:         string | null;
   cliente:          string | null;
+  /** HU-20: estado del Reloj marcador y lo que hace el técnico; tono y color (activo · ruta · trabajo · refrigerio…). */
+  jornada?:         string | null;
+  actividad?:       string | null;
+  actividadTono?:   string | null;
+  actividadColor?:  string | null;
 }
 
 export interface AlertaSeguimientoApi {
@@ -266,10 +271,11 @@ export interface DetalleServicioApi {
 
 // ─── /avance ────────────────────────────────────────────────────────────────
 export interface EtapaEquipoApi {
-  etapa:  string;                   // limpieza | desmontaje | pruebas | montaje | cierre
+  etapa:  string;                   // las 5 etapas del trabajo en el equipo de la app (Variables ambientales … Correlativo y certificado)
   orden:  number;
-  estado: string;                   // pendiente | en_curso | completada
+  estado: string;                   // pendiente | en_curso | completada | observada | bloqueada
   hora:   string | null;
+  detalle?: string | null;          // lo que lleva la etapa («0 de 9 · incluye foto del informe a mano», «T° 22 °C · h 55 %…»)
 }
 
 export interface EquipoAvanceApi {
@@ -320,6 +326,9 @@ export interface PanelGpsApi {
   altitudM:            number | null;
   satelites:           number | null;
   latenciaMs:          number | null;
+  /** Estimación de llegada que calcula el backend cuando el técnico está en ruta (minutos y hora de Lima). */
+  etaMinutos?:         number | null;
+  etaHora?:            string | null;
 }
 
 export interface PuntoRutaApi { latitud: number; longitud: number; hora: string; }  // hora 'HH:mm:ss', orden cronológico
@@ -460,6 +469,11 @@ export interface ElementoEquipoApi {
   url:             string | null;
   resultado:       string | null;
   ultimaHaceMin:   number | null;
+  /** Evidencia fotográfica asociada (foto del registro o de una falla): sirve para pedir la imagen. */
+  idEvidencia?:    number | null;
+  /** Miniatura del video de evidencia. */
+  urlCuadro?:      string | null;
+  esVideo?:        boolean;
 }
 
 export interface SeccionEquipoApi {
