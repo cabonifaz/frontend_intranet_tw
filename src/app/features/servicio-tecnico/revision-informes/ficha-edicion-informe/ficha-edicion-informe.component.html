@@ -139,6 +139,43 @@
 
         <!-- ═══ PASO 2: ENSAYOS ═════════════════════════════════════════ -->
         @if (paso() === 2) {
+          @if (resultadoDraft.resultadoGlobal || resultadoDraft.errorMaximo != null) {
+            <section class="stats-ensayos">
+              <article class="stat-ensayo"
+                       [class.stat-ensayo--verde]="resultadoDraft.resultadoGlobal === 'dentro'"
+                       [class.stat-ensayo--rojo]="resultadoDraft.resultadoGlobal === 'fuera'"
+                       [class.stat-ensayo--gris]="!resultadoDraft.resultadoGlobal">
+                <span class="stat-ensayo__icono material-symbols-outlined">
+                  {{ resultadoDraft.resultadoGlobal === 'dentro' ? 'check_circle'
+                     : resultadoDraft.resultadoGlobal === 'fuera' ? 'error' : 'help' }}
+                </span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Resultado global</span>
+                  <strong class="stat-ensayo__valor">
+                    {{ resultadoDraft.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia'
+                       : resultadoDraft.resultadoGlobal === 'fuera' ? 'Fuera de tolerancia'
+                       : 'Sin definir' }}
+                  </strong>
+                </div>
+              </article>
+
+              <article class="stat-ensayo stat-ensayo--neutro">
+                <span class="stat-ensayo__icono material-symbols-outlined">straighten</span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Error máximo</span>
+                  <strong class="stat-ensayo__valor stat-ensayo__valor--num">
+                    {{ resultadoDraft.errorMaximo ?? '—' }}@if (resultadoDraft.errorMaximoDetalle) { <span class="stat-ensayo__unidad">{{ resultadoDraft.errorMaximoDetalle }}</span> }
+                  </strong>
+                </div>
+              </article>
+
+              <small class="stats-ensayos__nota">
+                <span class="material-symbols-outlined">info</span>
+                Generado por el técnico desde la app móvil · no editable
+              </small>
+            </section>
+          }
+
           <app-seccion
             icono="monitor_weight"
             titulo="1. Ensayos Registrados"
