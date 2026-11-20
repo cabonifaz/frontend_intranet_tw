@@ -284,30 +284,6 @@
             }
           </section>
 
-          @if (c.normativa || c.patronEnsayo || c.resultadoGlobal) {
-            <section class="card">
-              <header class="card__head">
-                <span class="material-symbols-outlined">analytics</span>
-                <h3>Resultado global de los ensayos</h3>
-                @if (c.resultadoGlobal) {
-                  <span class="chip" [class.chip--verde]="c.resultadoGlobal === 'dentro'" [class.chip--rojo]="c.resultadoGlobal === 'fuera'">
-                    {{ c.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia' : 'Fuera de tolerancia' }}
-                  </span>
-                }
-              </header>
-              <div class="info-grid">
-                <div class="info-item"><small>NORMATIVA</small><strong>{{ c.normativa ?? '—' }}</strong></div>
-                <div class="info-item"><small>PATRÓN DE ENSAYO</small><strong>{{ c.patronEnsayo ?? '—' }}</strong></div>
-                <div class="info-item"><small>TOLERANCIA EXCENTRICIDAD</small><strong>{{ c.toleranciaExcentricidad ?? '—' }}</strong></div>
-                <div class="info-item"><small>ERROR MÁXIMO</small><strong>{{ c.errorMaximo ?? '—' }} <span class="muted">{{ c.errorMaximoDetalle }}</span></strong></div>
-                <div class="info-item"><small>INCERTIDUMBRE</small><strong>{{ c.incertidumbre ?? '—' }}</strong></div>
-                <div class="info-item"><small>FACTOR K</small><strong>{{ c.factorK ?? '—' }}</strong></div>
-                @if (c.decisionTecnica) {
-                  <div class="info-item info-item--wide"><small>DECISIÓN TÉCNICA</small><strong>{{ c.decisionTecnica }}</strong></div>
-                }
-              </div>
-            </section>
-          }
         }
 
         <!-- ── TAB 3: DESCRIPCIÓN COMPLEMENTARIA ───────────────────────── -->

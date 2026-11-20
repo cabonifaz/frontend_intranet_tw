@@ -140,48 +140,8 @@
         <!-- ═══ PASO 2: ENSAYOS ═════════════════════════════════════════ -->
         @if (paso() === 2) {
           <app-seccion
-            icono="science"
-            titulo="1. Resultado Global de los Ensayos"
-            subtitulo="Parámetros de referencia y conclusión técnica">
-            <div class="grid-cols-3">
-              <app-campo label="Normativa">
-                <input type="text" [(ngModel)]="resultadoDraft.normativa" placeholder="OIML R-76 / INACAL">
-              </app-campo>
-              <app-campo label="Patrón de ensayo">
-                <input type="text" [(ngModel)]="resultadoDraft.patronEnsayo" placeholder="M1 #LOT-2024">
-              </app-campo>
-              <app-campo label="Tolerancia excentricidad">
-                <input type="number" step="0.01" [(ngModel)]="resultadoDraft.toleranciaExcentricidad">
-              </app-campo>
-              <app-campo label="Resultado global">
-                <select [(ngModel)]="resultadoDraft.resultadoGlobal">
-                  <option [ngValue]="null">Sin definir</option>
-                  <option [ngValue]="'dentro'">Dentro de tolerancia</option>
-                  <option [ngValue]="'fuera'">Fuera de tolerancia</option>
-                </select>
-              </app-campo>
-              <app-campo label="Error máximo">
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.errorMaximo">
-              </app-campo>
-              <app-campo label="Detalle del error máx.">
-                <input type="text" [(ngModel)]="resultadoDraft.errorMaximoDetalle" placeholder="%, kg, g...">
-              </app-campo>
-              <app-campo label="Incertidumbre">
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.incertidumbre">
-              </app-campo>
-              <app-campo label="Factor K">
-                <input type="number" step="0.1" [(ngModel)]="resultadoDraft.factorK">
-              </app-campo>
-            </div>
-            <app-campo label="Decisión técnica">
-              <textarea rows="2" [(ngModel)]="resultadoDraft.decisionTecnica"
-                        placeholder="Ej. Equipo apto para seguir en operación."></textarea>
-            </app-campo>
-          </app-seccion>
-
-          <app-seccion
             icono="monitor_weight"
-            titulo="2. Ensayos Registrados"
+            titulo="1. Ensayos Registrados"
             [subtitulo]="'Pesaje y excentricidad. ' + ensayosNoConformes() + ' no conformes.'">
             <div headerActions class="card__botones">
               <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('pesaje')">
