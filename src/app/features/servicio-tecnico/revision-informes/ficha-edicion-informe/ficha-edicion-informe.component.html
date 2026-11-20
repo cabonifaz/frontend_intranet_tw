@@ -211,13 +211,36 @@
             } @else {
               <div class="galeria">
                 @for (f of fotos(); track f.idEvidencia) {
-                  <a class="foto" [href]="f.urlArchivo" target="_blank">
-                    <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''">
+                  <div class="foto"
+                       appEnViewport (entra)="solicitarFoto(f.idEvidencia)">
+                    <div class="foto__thumb">
+                      @switch (estadoDe(f.idEvidencia).estado) {
+                        @case ('listo') {
+                          <img [src]="safeUrlFoto(f.idEvidencia)" [alt]="f.descripcion ?? ''">
+                          @if (f.esVideo) {
+                            <span class="foto__play" aria-label="Video">
+                              <span class="material-symbols-outlined">play_circle</span>
+                            </span>
+                          }
+                        }
+                        @case ('error') {
+                          <div class="foto__fallback">
+                            <span class="material-symbols-outlined">{{ f.esVideo ? 'videocam_off' : 'broken_image' }}</span>
+                            <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
+                          </div>
+                        }
+                        @default {
+                          <div class="foto__skeleton" aria-label="Cargando foto">
+                            <span class="material-symbols-outlined">{{ f.esVideo ? 'movie' : 'image' }}</span>
+                          </div>
+                        }
+                      }
+                    </div>
                     <div class="foto__pie">
                       <span class="chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
                       @if (f.codigoObservacion) { <span class="chip chip--rojo">{{ f.codigoObservacion }}</span> }
                     </div>
-                  </a>
+                  </div>
                 }
               </div>
             }

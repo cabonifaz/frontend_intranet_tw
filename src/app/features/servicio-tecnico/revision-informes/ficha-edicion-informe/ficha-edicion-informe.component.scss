@@ -265,9 +265,43 @@
 .foto {
   background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
   overflow: hidden; text-decoration: none; color: inherit;
-  img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  &__thumb {
+    position: relative; background: #F8FAFC;
+    aspect-ratio: 4/3; overflow: hidden;
+  }
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  &__fallback {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: #94A3B8; padding: 12px; text-align: center;
+    .material-symbols-outlined { font-size: 36px; }
+    small { font-size: 11px; color: #64748B; line-height: 1.3; }
+  }
+  &__skeleton {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+    background-size: 200% 100%;
+    animation: fotoShimmer 1.4s ease-in-out infinite;
+    .material-symbols-outlined { color: #CBD5E1; font-size: 36px; }
+  }
+  &__play {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%);
+    .material-symbols-outlined {
+      font-size: 56px; color: #FFFFFF;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+      font-variation-settings: 'FILL' 1;
+    }
+  }
   &__pie { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; }
   &:hover { border-color: #93C5FD; }
+}
+@keyframes fotoShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 // ── Sidebar cards (patrón wizard propuesta) ─────────────────────────────
