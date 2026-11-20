@@ -31,10 +31,11 @@ export class ModalRegistrarRespuestaClienteComponent {
   readonly cerrar      = output<void>();
   readonly registrado  = output<RespuestaClienteRegistrada>();
 
-  readonly canal       = signal<Canal | null>(null);
-  readonly resultado   = signal<Resultado | null>(null);
-  readonly comentario  = signal('');
-  readonly guardando   = signal(false);
+  readonly canal         = signal<Canal | null>(null);
+  readonly resultado     = signal<Resultado | null>(null);
+  readonly informeFisico = signal<boolean | null>(null);
+  readonly comentario    = signal('');
+  readonly guardando     = signal(false);
 
   readonly CANALES: { codigo: Canal; label: string; icono: string }[] = [
     { codigo: 'correo',     label: 'Correo',     icono: 'mail' },
@@ -51,16 +52,24 @@ export class ModalRegistrarRespuestaClienteComponent {
 
   readonly puedeGuardar = computed(() =>
     this.canal() != null && this.resultado() != null && !this.guardando()
+    && (this.resultado() !== 'acepto' || this.informeFisico() != null)
   );
+
+  /** Si el resultado deja de ser 'acepto', limpiamos el flag para no enviarlo. */
+  seleccionarResultado(r: Resultado): void {
+    this.resultado.set(r);
+    if (r !== 'acepto') this.informeFisico.set(null);
+  }
 
   async guardar(): Promise<void> {
     if (!this.puedeGuardar()) return;
     this.guardando.set(true);
     try {
       const dto: RegistrarRespuestaClienteRequest = {
-        canal:      this.canal()!,
-        resultado:  this.resultado()!,
-        comentario: this.comentario() || null,
+        canal:         this.canal()!,
+        resultado:     this.resultado()!,
+        comentario:    this.comentario() || null,
+        informeFisico: this.resultado() === 'acepto' ? this.informeFisico() : null,
       };
       const r = await this.svc.registrarRespuestaCliente(this.idProgramacion(), dto);
       this.toast.exito('Respuesta del cliente registrada.');

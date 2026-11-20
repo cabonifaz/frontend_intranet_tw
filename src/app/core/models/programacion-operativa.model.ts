@@ -477,6 +477,7 @@ export interface RespuestaClienteProgramacion {
   comentario?:    string | null;
   fechaRegistro?: string | null;
   registradoPor?: string | null;
+  informeFisico:  boolean | null;
 }
 
 export interface DetalleProgramacion {
@@ -491,9 +492,10 @@ export interface DetalleProgramacion {
 }
 
 export interface RegistrarRespuestaClienteRequest {
-  canal:      'correo' | 'whatsapp' | 'llamada' | 'presencial';
-  resultado:  'acepto' | 'pidio_reprogramar' | 'cancelo';
-  comentario?: string | null;
+  canal:          'correo' | 'whatsapp' | 'llamada' | 'presencial';
+  resultado:      'acepto' | 'pidio_reprogramar' | 'cancelo';
+  comentario?:    string | null;
+  informeFisico?: boolean | null;
 }
 
 // ─── HU-38 Reprogramación + Cancelación ────────────────────────────────────
@@ -678,4 +680,5 @@ export interface RespuestaClienteRegistrada {
   requiereSolicitud:         boolean;
   requiereMotivoCancelacion: boolean;
   advertencias:              string[];
+  informeFisico?:            boolean | null;
 }

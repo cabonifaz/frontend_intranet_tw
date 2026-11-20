@@ -39,13 +39,38 @@
         @for (r of RESULTADOS; track r.codigo) {
           <button type="button" class="resultado-card resultado-card--{{ r.variante }}"
                   [class.resultado-card--sel]="resultado() === r.codigo"
-                  (click)="resultado.set(r.codigo)">
+                  (click)="seleccionarResultado(r.codigo)">
             <div class="resultado-card__titulo">{{ r.label }}</div>
             <div class="resultado-card__desc">{{ r.descripcion }}</div>
           </button>
         }
       </div>
     </div>
+
+    <!-- Informe físico (solo si Aceptó) -->
+    @if (resultado() === 'acepto') {
+      <div class="campo">
+        <label>¿El servicio tendrá informe físico? <span class="req">*</span></label>
+        <div class="opciones-grid opciones-grid--2">
+          <button type="button" class="opcion-card"
+                  [class.opcion-card--sel]="informeFisico() === true"
+                  (click)="informeFisico.set(true)">
+            <span class="material-symbols-outlined">check_circle</span>
+            <span>Sí</span>
+          </button>
+          <button type="button" class="opcion-card"
+                  [class.opcion-card--sel]="informeFisico() === false"
+                  (click)="informeFisico.set(false)">
+            <span class="material-symbols-outlined">cancel</span>
+            <span>No</span>
+          </button>
+        </div>
+        <small class="ayuda">
+          <strong>Sí:</strong> el técnico deberá fotografiar el informe físico en la app.
+          <strong>No:</strong> la app no pedirá esa foto.
+        </small>
+      </div>
+    }
 
     <!-- Comentario opcional -->
     <div class="campo">

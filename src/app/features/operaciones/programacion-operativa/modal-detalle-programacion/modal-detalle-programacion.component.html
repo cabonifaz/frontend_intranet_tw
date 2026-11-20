@@ -243,6 +243,9 @@
                       @if (r.registradoPor) { · por {{ r.registradoPor }} }
                       @if (r.fechaRegistro) { · {{ r.fechaRegistro }} }
                     </small>
+                    @if (r.informeFisico !== null && r.informeFisico !== undefined) {
+                      <small>Informe físico: <strong>{{ r.informeFisico ? 'Sí' : 'No' }}</strong></small>
+                    }
                     @if (r.comentario) { <p class="comentario">"{{ r.comentario }}"</p> }
                   </div>
                 </li>

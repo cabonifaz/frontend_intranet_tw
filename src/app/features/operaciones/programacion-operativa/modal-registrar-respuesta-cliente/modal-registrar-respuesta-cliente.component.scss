@@ -43,7 +43,16 @@
 .opciones-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
 
+  &--2 { grid-template-columns: repeat(2, 1fr); }
+
   @media (max-width: 500px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+// ── Texto de ayuda bajo el campo ─────────────────────────────────────────
+.campo .ayuda {
+  font-size: 11.5px; color: #64748B; line-height: 1.5;
+  margin-top: 2px;
+  strong { color: #0F172A; font-weight: 600; }
 }
 
 .opcion-card {
