@@ -284,28 +284,34 @@
             }
           </section>
 
-          @if (c.normativa || c.patronEnsayo || c.resultadoGlobal) {
-            <section class="card">
-              <header class="card__head">
-                <span class="material-symbols-outlined">analytics</span>
-                <h3>Resultado global de los ensayos</h3>
-                @if (c.resultadoGlobal) {
-                  <span class="chip" [class.chip--verde]="c.resultadoGlobal === 'dentro'" [class.chip--rojo]="c.resultadoGlobal === 'fuera'">
-                    {{ c.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia' : 'Fuera de tolerancia' }}
-                  </span>
-                }
-              </header>
-              <div class="info-grid">
-                <div class="info-item"><small>NORMATIVA</small><strong>{{ c.normativa ?? '—' }}</strong></div>
-                <div class="info-item"><small>PATRÓN DE ENSAYO</small><strong>{{ c.patronEnsayo ?? '—' }}</strong></div>
-                <div class="info-item"><small>TOLERANCIA EXCENTRICIDAD</small><strong>{{ c.toleranciaExcentricidad ?? '—' }}</strong></div>
-                <div class="info-item"><small>ERROR MÁXIMO</small><strong>{{ c.errorMaximo ?? '—' }} <span class="muted">{{ c.errorMaximoDetalle }}</span></strong></div>
-                <div class="info-item"><small>INCERTIDUMBRE</small><strong>{{ c.incertidumbre ?? '—' }}</strong></div>
-                <div class="info-item"><small>FACTOR K</small><strong>{{ c.factorK ?? '—' }}</strong></div>
-                @if (c.decisionTecnica) {
-                  <div class="info-item info-item--wide"><small>DECISIÓN TÉCNICA</small><strong>{{ c.decisionTecnica }}</strong></div>
-                }
-              </div>
+          @if (c.resultadoGlobal || c.errorMaximo != null) {
+            <section class="stats-ensayos">
+              <article class="stat-ensayo"
+                       [class.stat-ensayo--verde]="c.resultadoGlobal === 'dentro'"
+                       [class.stat-ensayo--rojo]="c.resultadoGlobal === 'fuera'"
+                       [class.stat-ensayo--gris]="!c.resultadoGlobal">
+                <span class="stat-ensayo__icono material-symbols-outlined">
+                  {{ c.resultadoGlobal === 'dentro' ? 'check_circle' : c.resultadoGlobal === 'fuera' ? 'error' : 'help' }}
+                </span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Resultado global</span>
+                  <strong class="stat-ensayo__valor">
+                    {{ c.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia'
+                       : c.resultadoGlobal === 'fuera' ? 'Fuera de tolerancia'
+                       : 'Sin definir' }}
+                  </strong>
+                </div>
+              </article>
+
+              <article class="stat-ensayo stat-ensayo--neutro">
+                <span class="stat-ensayo__icono material-symbols-outlined">straighten</span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Error máximo</span>
+                  <strong class="stat-ensayo__valor stat-ensayo__valor--num">
+                    {{ c.errorMaximo ?? '—' }}@if (c.errorMaximoDetalle) { <span class="stat-ensayo__unidad">{{ c.errorMaximoDetalle }}</span> }
+                  </strong>
+                </div>
+              </article>
             </section>
           }
         }

@@ -265,9 +265,43 @@
 .foto {
   background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 10px;
   overflow: hidden; text-decoration: none; color: inherit;
-  img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  &__thumb {
+    position: relative; background: #F8FAFC;
+    aspect-ratio: 4/3; overflow: hidden;
+  }
+  img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  &__fallback {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: #94A3B8; padding: 12px; text-align: center;
+    .material-symbols-outlined { font-size: 36px; }
+    small { font-size: 11px; color: #64748B; line-height: 1.3; }
+  }
+  &__skeleton {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(90deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
+    background-size: 200% 100%;
+    animation: fotoShimmer 1.4s ease-in-out infinite;
+    .material-symbols-outlined { color: #CBD5E1; font-size: 36px; }
+  }
+  &__play {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.35) 100%);
+    .material-symbols-outlined {
+      font-size: 56px; color: #FFFFFF;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+      font-variation-settings: 'FILL' 1;
+    }
+  }
   &__pie { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; }
   &:hover { border-color: #93C5FD; }
+}
+@keyframes fotoShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 // ── Sidebar cards (patrón wizard propuesta) ─────────────────────────────
@@ -371,4 +405,64 @@
   &--gris       { background: #F1F5F9; color: #475569; }
   &--gris-oscuro{ background: #E2E8F0; color: #334155; }
   &--mini       { padding: 1px 7px; font-size: 10.5px; }
+}
+
+// ── Stat cards de ensayos (read-only: resultado global + error máximo del móvil) ──
+.stats-ensayos {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 12px;
+  margin-bottom: 14px;
+
+  &__nota {
+    grid-column: 1 / -1;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #94A3B8; font-size: 11.5px; font-style: italic;
+    .material-symbols-outlined { font-size: 15px; }
+  }
+}
+.stat-ensayo {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border-radius: 12px;
+  border: 1px solid transparent;
+
+  &__icono {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px; font-size: 26px;
+    background: rgba(15, 23, 42, 0.06); color: #334155;
+  }
+  &__cuerpo {
+    display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  }
+  &__label {
+    color: #64748B; font-size: 11.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  &__valor {
+    color: #0F172A; font-size: 17px; font-weight: 700; line-height: 1.2;
+    &--num { font-variant-numeric: tabular-nums; }
+  }
+  &__unidad {
+    color: #64748B; font-size: 13px; font-weight: 500; margin-left: 6px;
+  }
+
+  &--verde {
+    background: #F0FDF4; border-color: #BBF7D0;
+    .stat-ensayo__icono { background: #DCFCE7; color: #16A34A; }
+    .stat-ensayo__valor { color: #166534; }
+  }
+  &--rojo {
+    background: #FEF2F2; border-color: #FECACA;
+    .stat-ensayo__icono { background: #FEE2E2; color: #DC2626; }
+    .stat-ensayo__valor { color: #B91C1C; }
+  }
+  &--gris {
+    background: #F8FAFC; border-color: #E2E8F0;
+  }
+  &--neutro {
+    background: #F8FAFC; border-color: #E2E8F0;
+    .stat-ensayo__icono { background: #E0E7FF; color: #4338CA; }
+  }
+}
+@media (max-width: 720px) {
+  .stats-ensayos { grid-template-columns: 1fr; }
 }

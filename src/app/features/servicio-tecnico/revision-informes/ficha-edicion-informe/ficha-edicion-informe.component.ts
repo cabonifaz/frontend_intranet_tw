@@ -1,7 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RevisionInformesService } from '../../../../core/services/revision-informes.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
@@ -15,8 +16,16 @@ import { SeccionComponent } from '../../../../shared/ui/seccion/seccion.componen
 import { CampoComponent } from '../../../../shared/ui/campo/campo.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
 import { InicialesPipe } from '../../../../shared/pipes/iniciales.pipe';
+import { EnViewportDirective } from '../../../../shared/directives/en-viewport.directive';
 
 type Paso = 1 | 2 | 3 | 4;
+
+/** Estado de descarga lazy del blob de cada foto (mismo patrón que modal-detalle-informe). */
+type EstadoFoto =
+  | { estado: 'pendiente' }
+  | { estado: 'cargando' }
+  | { estado: 'listo'; url: string; safeUrl: SafeUrl }
+  | { estado: 'error' };
 
 /**
  * HU-58 — Edición del Informe de Servicio Técnico (Módulo 12).
@@ -31,15 +40,23 @@ type Paso = 1 | 2 | 3 | 4;
  */
 @Component({
   selector: 'app-ficha-edicion-informe',
-  imports: [CommonModule, FormsModule, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, CampoComponent, ButtonComponent, InicialesPipe],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent, HeroHeaderComponent, SeccionComponent, CampoComponent, ButtonComponent, InicialesPipe, EnViewportDirective],
   templateUrl: './ficha-edicion-informe.component.html',
   styleUrl: './ficha-edicion-informe.component.scss',
 })
-export class FichaEdicionInformeComponent implements OnInit {
-  private readonly svc    = inject(RevisionInformesService);
-  private readonly toast  = inject(ToastService);
-  private readonly route  = inject(ActivatedRoute);
-  readonly router         = inject(Router);
+export class FichaEdicionInformeComponent implements OnInit, OnDestroy {
+  private readonly svc       = inject(RevisionInformesService);
+  private readonly toast     = inject(ToastService);
+  private readonly route     = inject(ActivatedRoute);
+  private readonly sanitizer = inject(DomSanitizer);
+  readonly router            = inject(Router);
+
+  // ─── Estado de descarga de fotos (mismo patrón que modal-detalle-informe) ─
+  // Las URLs blob viven solo en memoria del componente; se revocan en ngOnDestroy.
+  readonly estadoFotos = signal<Record<number, EstadoFoto>>({});
+  private readonly MAX_CONCURRENTES = 4;
+  private activas = 0;
+  private cola: Array<{ idEvidencia: number }> = [];
 
   readonly idInforme = signal(0);
   readonly cargando  = signal(true);
@@ -131,6 +148,56 @@ export class FichaEdicionInformeComponent implements OnInit {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  ngOnDestroy(): void {
+    for (const e of Object.values(this.estadoFotos())) {
+      if (e.estado === 'listo') URL.revokeObjectURL(e.url);
+    }
+    this.estadoFotos.set({});
+    this.cola = [];
+  }
+
+  // ─── Carga diferida de fotos (JWT via blob) ─────────────────────────────
+  // El endpoint /informes/{id}/fotos/{idEvidencia}/archivo requiere Authorization,
+  // así que un <img src=...> directo da 401. Se descarga como blob y se pinta
+  // con URL.createObjectURL. Lazy via appEnViewport cuando la tarjeta aparece.
+
+  estadoDe(idEvidencia: number): EstadoFoto {
+    return this.estadoFotos()[idEvidencia] ?? { estado: 'pendiente' };
+  }
+
+  safeUrlFoto(idEvidencia: number): SafeUrl | null {
+    const e = this.estadoDe(idEvidencia);
+    return e.estado === 'listo' ? e.safeUrl : null;
+  }
+
+  solicitarFoto(idEvidencia: number): void {
+    if (this.estadoDe(idEvidencia).estado !== 'pendiente') return;
+    this.establecerEstado(idEvidencia, { estado: 'cargando' });
+    if (this.activas < this.MAX_CONCURRENTES) this.ejecutarDescarga(idEvidencia);
+    else                                      this.cola.push({ idEvidencia });
+  }
+
+  private async ejecutarDescarga(idEvidencia: number): Promise<void> {
+    this.activas++;
+    try {
+      const blob = await this.svc.obtenerArchivoFoto(this.idInforme(), idEvidencia, true);
+      if (!(idEvidencia in this.estadoFotos())) return;  // componente destruido entremedio
+      const url = URL.createObjectURL(blob);
+      const safeUrl = this.sanitizer.bypassSecurityTrustUrl(url);
+      this.establecerEstado(idEvidencia, { estado: 'listo', url, safeUrl });
+    } catch {
+      this.establecerEstado(idEvidencia, { estado: 'error' });
+    } finally {
+      this.activas--;
+      const sig = this.cola.shift();
+      if (sig) void this.ejecutarDescarga(sig.idEvidencia);
+    }
+  }
+
+  private establecerEstado(idEvidencia: number, nuevo: EstadoFoto): void {
+    this.estadoFotos.update(mapa => ({ ...mapa, [idEvidencia]: nuevo }));
   }
 
   /** Precarga los drafts a partir del detalle traído del back. */

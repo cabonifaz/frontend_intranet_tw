@@ -139,49 +139,46 @@
 
         <!-- ═══ PASO 2: ENSAYOS ═════════════════════════════════════════ -->
         @if (paso() === 2) {
-          <app-seccion
-            icono="science"
-            titulo="1. Resultado Global de los Ensayos"
-            subtitulo="Parámetros de referencia y conclusión técnica">
-            <div class="grid-cols-3">
-              <app-campo label="Normativa">
-                <input type="text" [(ngModel)]="resultadoDraft.normativa" placeholder="OIML R-76 / INACAL">
-              </app-campo>
-              <app-campo label="Patrón de ensayo">
-                <input type="text" [(ngModel)]="resultadoDraft.patronEnsayo" placeholder="M1 #LOT-2024">
-              </app-campo>
-              <app-campo label="Tolerancia excentricidad">
-                <input type="number" step="0.01" [(ngModel)]="resultadoDraft.toleranciaExcentricidad">
-              </app-campo>
-              <app-campo label="Resultado global">
-                <select [(ngModel)]="resultadoDraft.resultadoGlobal">
-                  <option [ngValue]="null">Sin definir</option>
-                  <option [ngValue]="'dentro'">Dentro de tolerancia</option>
-                  <option [ngValue]="'fuera'">Fuera de tolerancia</option>
-                </select>
-              </app-campo>
-              <app-campo label="Error máximo">
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.errorMaximo">
-              </app-campo>
-              <app-campo label="Detalle del error máx.">
-                <input type="text" [(ngModel)]="resultadoDraft.errorMaximoDetalle" placeholder="%, kg, g...">
-              </app-campo>
-              <app-campo label="Incertidumbre">
-                <input type="number" step="0.001" [(ngModel)]="resultadoDraft.incertidumbre">
-              </app-campo>
-              <app-campo label="Factor K">
-                <input type="number" step="0.1" [(ngModel)]="resultadoDraft.factorK">
-              </app-campo>
-            </div>
-            <app-campo label="Decisión técnica">
-              <textarea rows="2" [(ngModel)]="resultadoDraft.decisionTecnica"
-                        placeholder="Ej. Equipo apto para seguir en operación."></textarea>
-            </app-campo>
-          </app-seccion>
+          @if (resultadoDraft.resultadoGlobal || resultadoDraft.errorMaximo != null) {
+            <section class="stats-ensayos">
+              <article class="stat-ensayo"
+                       [class.stat-ensayo--verde]="resultadoDraft.resultadoGlobal === 'dentro'"
+                       [class.stat-ensayo--rojo]="resultadoDraft.resultadoGlobal === 'fuera'"
+                       [class.stat-ensayo--gris]="!resultadoDraft.resultadoGlobal">
+                <span class="stat-ensayo__icono material-symbols-outlined">
+                  {{ resultadoDraft.resultadoGlobal === 'dentro' ? 'check_circle'
+                     : resultadoDraft.resultadoGlobal === 'fuera' ? 'error' : 'help' }}
+                </span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Resultado global</span>
+                  <strong class="stat-ensayo__valor">
+                    {{ resultadoDraft.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia'
+                       : resultadoDraft.resultadoGlobal === 'fuera' ? 'Fuera de tolerancia'
+                       : 'Sin definir' }}
+                  </strong>
+                </div>
+              </article>
+
+              <article class="stat-ensayo stat-ensayo--neutro">
+                <span class="stat-ensayo__icono material-symbols-outlined">straighten</span>
+                <div class="stat-ensayo__cuerpo">
+                  <span class="stat-ensayo__label">Error máximo</span>
+                  <strong class="stat-ensayo__valor stat-ensayo__valor--num">
+                    {{ resultadoDraft.errorMaximo ?? '—' }}@if (resultadoDraft.errorMaximoDetalle) { <span class="stat-ensayo__unidad">{{ resultadoDraft.errorMaximoDetalle }}</span> }
+                  </strong>
+                </div>
+              </article>
+
+              <small class="stats-ensayos__nota">
+                <span class="material-symbols-outlined">info</span>
+                Generado por el técnico desde la app móvil · no editable
+              </small>
+            </section>
+          }
 
           <app-seccion
             icono="monitor_weight"
-            titulo="2. Ensayos Registrados"
+            titulo="1. Ensayos Registrados"
             [subtitulo]="'Pesaje y excentricidad. ' + ensayosNoConformes() + ' no conformes.'">
             <div headerActions class="card__botones">
               <app-button variant="secondary" tamano="sm" icono="add" (clic)="agregarEnsayo('pesaje')">
@@ -251,13 +248,36 @@
             } @else {
               <div class="galeria">
                 @for (f of fotos(); track f.idEvidencia) {
-                  <a class="foto" [href]="f.urlArchivo" target="_blank">
-                    <img [src]="f.urlArchivo" [alt]="f.descripcion ?? ''">
+                  <div class="foto"
+                       appEnViewport (entra)="solicitarFoto(f.idEvidencia)">
+                    <div class="foto__thumb">
+                      @switch (estadoDe(f.idEvidencia).estado) {
+                        @case ('listo') {
+                          <img [src]="safeUrlFoto(f.idEvidencia)" [alt]="f.descripcion ?? ''">
+                          @if (f.esVideo) {
+                            <span class="foto__play" aria-label="Video">
+                              <span class="material-symbols-outlined">play_circle</span>
+                            </span>
+                          }
+                        }
+                        @case ('error') {
+                          <div class="foto__fallback">
+                            <span class="material-symbols-outlined">{{ f.esVideo ? 'videocam_off' : 'broken_image' }}</span>
+                            <small>{{ f.descripcion ?? 'Sin vista previa' }}</small>
+                          </div>
+                        }
+                        @default {
+                          <div class="foto__skeleton" aria-label="Cargando foto">
+                            <span class="material-symbols-outlined">{{ f.esVideo ? 'movie' : 'image' }}</span>
+                          </div>
+                        }
+                      }
+                    </div>
                     <div class="foto__pie">
                       <span class="chip chip--azul">{{ f.momentoLabel ?? f.momento }}</span>
                       @if (f.codigoObservacion) { <span class="chip chip--rojo">{{ f.codigoObservacion }}</span> }
                     </div>
-                  </a>
+                  </div>
                 }
               </div>
             }

@@ -149,7 +149,7 @@ export interface EquipoOsApi {
 }
 
 export interface FichaOrdenServicioApi {
-  modo:                   'nueva' | 'borrador' | 'edicion_aprobada';
+  modo:                   'nueva' | 'borrador' | 'edicion_aprobada' | 'edicion_directa';
   idOs:                   number | null;
   numero:                 string;
   tipo:                   string;      // "OS" | "OM"
@@ -402,7 +402,7 @@ export function mapFichaApiToPreparacionEdicion(dto: FichaOrdenServicioApi): Pre
     idResponsable:          dto.idResponsable ?? 0,
     puedeSolicitarEdicion:  false,
     puedeResolverSolicitud: false,
-    puedeEditar:            dto.modo === 'edicion_aprobada',
+    puedeEditar:            dto.modo === 'edicion_aprobada' || dto.modo === 'edicion_directa',
     puedeAnular:            false,
     solicitudPendiente:     null,
     datosGenerales: {
