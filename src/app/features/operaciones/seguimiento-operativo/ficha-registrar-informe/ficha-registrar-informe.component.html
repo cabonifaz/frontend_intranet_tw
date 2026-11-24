@@ -1,0 +1,205 @@
+<div class="fri">
+
+  <!-- Breadcrumb + Header -->
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  <app-hero-header
+    icono="edit_note"
+    [titulo]="'Registrar Informe Técnico'"
+    [descripcion]="subtitulo()"
+    [codigoFicha]="contextoMock().equipo.codigoTw"
+    badgeTexto="BORRADOR"
+    badgeVariant="ambar-dot"
+    [mostrarBack]="false" />
+
+  <!-- Chip trazabilidad -->
+  <div class="banner-trazabilidad">
+    <span class="material-symbols-outlined">assignment_ind</span>
+    <div>
+      <strong>Registrando desde Intranet por {{ contextoMock().asistenteActual }}</strong>
+      <small>En representación de <strong>{{ contextoMock().tecnicoAsignado.nombre }}</strong>. El informe queda a nombre del técnico; se guarda la trazabilidad de quién lo registró.</small>
+    </div>
+  </div>
+
+  <!-- Stepper visual (clickeable) -->
+  <div class="stepper">
+    @for (e of ETAPAS; track e.n) {
+      <button type="button" class="stepper__paso"
+              [class.stepper__paso--activo]="paso() === e.n"
+              [class.stepper__paso--hecho]="paso() > e.n"
+              (click)="irAPaso(e.n)">
+        <span class="stepper__nodo">
+          @if (paso() > e.n) {
+            <span class="material-symbols-outlined">check</span>
+          } @else {
+            {{ e.n }}
+          }
+        </span>
+        <div class="stepper__texto">
+          <strong>{{ e.titulo }}</strong>
+          <small>{{ e.subtitulo }}</small>
+        </div>
+      </button>
+    }
+  </div>
+
+  <!-- Layout 2 columnas: contenido + panel lateral -->
+  <div class="layout">
+
+    <!-- ── Contenido del paso ──────────────────────────────────────────── -->
+    <section class="contenido">
+
+      @switch (paso()) {
+        @case (1) {
+          <article class="paso-card">
+            <header class="paso-card__head">
+              <span class="material-symbols-outlined">thermostat</span>
+              <div>
+                <h3>Paso 1 · Variables ambientales</h3>
+                <p>Temperatura, humedad y procedencia de los valores (desde el técnico por teléfono o lectura directa).</p>
+              </div>
+            </header>
+            <div class="paso-card__placeholder">
+              <span class="material-symbols-outlined">construction</span>
+              Formulario en construcción. Campos: temperatura (°C), humedad (%), procedencia (combo).
+            </div>
+          </article>
+        }
+
+        @case (2) {
+          <article class="paso-card">
+            <header class="paso-card__head">
+              <span class="material-symbols-outlined">photo_camera</span>
+              <div>
+                <h3>Paso 2 · Registro fotográfico</h3>
+                <p>Subí las evidencias que el técnico envía por WhatsApp. {{ contextoMock().informeFisico ? '9 slots (incluye foto del informe físico)' : '8 slots' }}. La IA valida cada foto automáticamente.</p>
+              </div>
+            </header>
+            <div class="paso-card__placeholder">
+              <span class="material-symbols-outlined">construction</span>
+              Grid de 8/9 slots obligatorios + sección de fotos adicionales (hasta 20). Cada slot con selector de archivo + badge de estado de la IA.
+            </div>
+          </article>
+        }
+
+        @case (3) {
+          <article class="paso-card">
+            <header class="paso-card__head">
+              <span class="material-symbols-outlined">science</span>
+              <div>
+                <h3>Paso 3 · Ensayos y calibración</h3>
+                <p>Pesaje y excentricidad. Tabla de puntos: la Asistente digita carga (L) e indicación (I); el back calcula error, EMP y resultado.</p>
+              </div>
+            </header>
+            <div class="paso-card__placeholder">
+              <span class="material-symbols-outlined">construction</span>
+              Subtabs "Pesaje" y "Excentricidad" + tabla editable + botón "Finalizar ensayos" con confirmación si hay error crítico.
+            </div>
+          </article>
+        }
+
+        @case (4) {
+          <article class="paso-card">
+            <header class="paso-card__head">
+              <span class="material-symbols-outlined">description</span>
+              <div>
+                <h3>Paso 4 · Cabecera del informe</h3>
+                <p>Datos del responsable, detalle del servicio, observaciones, recomendaciones, fallas y diagnóstico final.</p>
+              </div>
+            </header>
+            <div class="paso-card__placeholder">
+              <span class="material-symbols-outlined">construction</span>
+              Subsecciones: 4.1 Datos · 4.2 Detalle Serv. · 4.3 Recomendaciones · 4.4 Fallas (con fotos y pruebas) · 4.5 Diagnóstico final · 4.6 Comentario de pruebas.
+            </div>
+          </article>
+        }
+
+        @case (5) {
+          <article class="paso-card">
+            <header class="paso-card__head">
+              <span class="material-symbols-outlined">verified</span>
+              <div>
+                <h3>Paso 5 · Correlativo y certificado</h3>
+                <p>Verificación final de las 5 etapas (hard-stop). Si todo está completo, se genera el N° de informe NNNN-AAAA.</p>
+              </div>
+            </header>
+            <div class="paso-card__placeholder">
+              <span class="material-symbols-outlined">construction</span>
+              Checklist de las 5 etapas + botón "Generar informe" que llama a POST /informe.
+            </div>
+            <div class="paso-card__footer-accion">
+              <app-button variant="primary" icono="check_circle" (clic)="generarInforme()">
+                Generar informe
+              </app-button>
+            </div>
+          </article>
+        }
+      }
+
+    </section>
+
+    <!-- ── Panel lateral — Resumen ─────────────────────────────────────── -->
+    <aside class="panel">
+      <div class="panel__card">
+        <h4>Resumen del equipo</h4>
+        <dl class="panel__datos">
+          <dt>N° OS</dt><dd>{{ contextoMock().numeroOs }}</dd>
+          <dt>Cliente</dt><dd>{{ contextoMock().razonSocial }}</dd>
+          <dt>Planta</dt><dd>{{ contextoMock().planta }}</dd>
+          <dt>Equipo</dt><dd>{{ contextoMock().equipo.modelo }} <small>(TW {{ contextoMock().equipo.codigoTw }})</small></dd>
+          <dt>Serie</dt><dd>{{ contextoMock().equipo.numeroSerie }}</dd>
+          <dt>Técnico</dt><dd>{{ contextoMock().tecnicoAsignado.nombre }}</dd>
+          <dt>Informe físico</dt><dd>{{ contextoMock().informeFisico ? 'Sí' : 'No' }}</dd>
+        </dl>
+      </div>
+
+      <div class="panel__card">
+        <h4>Progreso de las etapas</h4>
+        <ul class="panel__etapas">
+          <li>
+            <span>1. Variables ambientales</span>
+            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.variables)">{{ labelEtapa(contextoMock().estadoEtapas.variables) }}</span>
+          </li>
+          <li>
+            <span>2. Registro fotográfico</span>
+            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.fotos)">{{ labelEtapa(contextoMock().estadoEtapas.fotos) }}</span>
+          </li>
+          <li>
+            <span>3. Ensayos y calibración</span>
+            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.ensayos)">{{ labelEtapa(contextoMock().estadoEtapas.ensayos) }}</span>
+          </li>
+          <li>
+            <span>4. Cabecera del informe</span>
+            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.cabecera)">{{ labelEtapa(contextoMock().estadoEtapas.cabecera) }}</span>
+          </li>
+          <li>
+            <span>5. Correlativo y certificado</span>
+            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.correlativo)">{{ labelEtapa(contextoMock().estadoEtapas.correlativo) }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel__card panel__card--info">
+        <span class="material-symbols-outlined">info</span>
+        <small>El guardado es parcial. Podés cerrar la pantalla y volver más tarde: el borrador se mantiene.</small>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Footer sticky -->
+  <div class="footer">
+    <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+    <div class="footer__der">
+      @if (paso() > 1) {
+        <app-button variant="secondary" icono="chevron_left" (clic)="retroceder()">Atrás</app-button>
+      }
+      @if (paso() < 5) {
+        <app-button variant="primary" icono="save" (clic)="guardarYContinuar()" [cargando]="guardando()">
+          Guardar y continuar
+        </app-button>
+      }
+    </div>
+  </div>
+
+</div>

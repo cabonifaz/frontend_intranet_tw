@@ -280,6 +280,13 @@
                 } @else {
                   <span class="chip chip--gris equipo-card__status">PENDIENTE</span>
                 }
+                @if (eq.estado !== 'finalizado') {
+                  <!-- HU-55: Asistente / Jefe de Operaciones registra informe desde Intranet por el técnico. -->
+                  <app-button variant="secondary" tamano="sm" icono="edit_note"
+                              (clic)="abrirRegistrarInforme(eq.idEquipo)">
+                    Registrar informe
+                  </app-button>
+                }
               </div>
             </header>
 
