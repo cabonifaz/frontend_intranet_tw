@@ -1,0 +1,202 @@
+<article class="paso-card">
+  <header class="paso-card__head">
+    <span class="material-symbols-outlined">verified</span>
+    <div>
+      <h3>Paso 5 · Correlativo y certificado</h3>
+      <p>Hard Stop final: si las 5 etapas están en conforme, se genera el N° de informe NNNN-AAAA.</p>
+    </div>
+    @if (cierre(); as c) {
+      <span class="paso-card__meta" [class.paso-card__meta--ok]="c.yaGenerado || c.puedeGenerar">
+        <span class="material-symbols-outlined">{{ c.yaGenerado ? 'check_circle' : (c.puedeGenerar ? 'lock_open' : 'lock') }}</span>
+        {{ c.conformes }} / {{ c.total }} etapas conformes
+      </span>
+    }
+  </header>
+
+  @if (cargando() && !cierre()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Verificando etapas…
+    </div>
+  } @else if (cierre(); as c) {
+
+    <!-- Checklist del Hard Stop -->
+    <section class="hard-stop">
+      <h4>Verificación del Hard Stop</h4>
+      <ul>
+        @for (e of c.etapas; track e.codigo) {
+          <li [class.conforme]="e.estado === 'conforme'">
+            <div class="hs-fila">
+              <span class="hs-orden">{{ e.orden }}</span>
+              <div class="hs-texto">
+                <strong>{{ e.nombre }}</strong>
+                @if (e.detalle) { <small>{{ e.detalle }}</small> }
+              </div>
+              <span [class]="claseEtapa(e.estado)">{{ labelEtapa(e.estado) }}</span>
+            </div>
+            @if (e.pendientes?.length) {
+              <ul class="pendientes">
+                @for (p of e.pendientes; track p) {
+                  <li><span class="material-symbols-outlined">warning</span>{{ p }}</li>
+                }
+              </ul>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+
+    <!-- Correlativo del certificado -->
+    @if (cabCorrelativo(); as cc) {
+      <section class="correlativo">
+        <h4>Correlativo del certificado</h4>
+        <dl>
+          <dt>Tipo de orden</dt><dd>{{ cc.tipoOrden }}</dd>
+          <dt>N° OS</dt><dd>{{ cc.numeroOs }}</dd>
+          <dt>Equipo</dt><dd>{{ cc.equipo }}</dd>
+          <dt>N° de certificado</dt>
+          <dd>
+            @if (cc.numeroCertificado) {
+              <strong>{{ cc.numeroCertificado }}</strong>
+              @if (correlativo()?.asignado; as a) { <small> · asignado por {{ a.asignadoPor ?? '—' }}</small> }
+            } @else {
+              <em>— no asignado —</em>
+            }
+          </dd>
+        </dl>
+
+        @if (correlativo()?.reservaLibre?.length) {
+          <div class="reserva">
+            <small>Correlativos libres sugeridos:</small>
+            <div class="chips">
+              @for (n of correlativo()?.reservaLibre; track n) {
+                <span class="chip chip--azul">{{ n }}</span>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="acciones">
+          @if (esOm() && cc.puedeSolicitar && !cc.numeroCertificado) {
+            <button type="button" class="btn btn-secondary" (click)="abrirSolicitar()">
+              <span class="material-symbols-outlined">forward_to_inbox</span>
+              Solicitar a Metrología
+            </button>
+          }
+          @if (cc.motivoBloqueo && !cc.numeroCertificado) {
+            <small class="motivo-bloqueo">
+              <span class="material-symbols-outlined">lock</span>
+              {{ cc.motivoBloqueo }}
+            </small>
+          }
+          <button type="button" class="btn btn-secondary" (click)="abrirGuardarNumero()">
+            <span class="material-symbols-outlined">edit</span>
+            {{ cc.numeroCertificado ? 'Editar número' : 'Guardar manual' }}
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- Generar informe -->
+    <section class="generar">
+      @if (c.yaGenerado) {
+        <div class="aviso aviso--verde">
+          <span class="material-symbols-outlined">check_circle</span>
+          <div>
+            <strong>Informe generado</strong>
+            <small>N° <strong>{{ c.numeroInforme }}</strong>. El equipo quedó cerrado.</small>
+          </div>
+        </div>
+      } @else if (c.puedeGenerar) {
+        <div class="aviso aviso--azul">
+          <span class="material-symbols-outlined">task_alt</span>
+          <div>
+            <strong>Todo listo para generar</strong>
+            <small>Las 5 etapas están conformes. Al generar se crea el N° de informe y el equipo queda cerrado.</small>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary btn--lg"
+                [disabled]="generando()"
+                (click)="generarInforme()">
+          @if (generando()) {
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Generando…
+          } @else {
+            <span class="material-symbols-outlined">verified</span>
+            Generar informe
+          }
+        </button>
+      } @else {
+        <div class="aviso aviso--ambar">
+          <span class="material-symbols-outlined">warning</span>
+          <div>
+            <strong>Aún no se puede generar</strong>
+            <small>Hay etapas en estado distinto a conforme. Resolvé los pendientes de arriba antes de generar.</small>
+          </div>
+        </div>
+      }
+    </section>
+
+  }
+</article>
+
+<!-- ─── Modal: solicitar correlativo ─────────────────────────────────── -->
+@if (mostrarModalSolicitar()) {
+  <div class="overlay" (click)="cerrarSolicitar()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Solicitar correlativo a Metrología</strong>
+        <small>Se envía un ticket para que el área asigne el N° de certificado.</small>
+      </header>
+      <label>
+        <span>Tipo de certificado</span>
+        <select [ngModel]="idTipoCertificado()" (ngModelChange)="idTipoCertificado.set($event)"
+                [disabled]="solicitando()">
+          @for (t of correlativo()?.tipos ?? []; track t.idTipo) {
+            <option [ngValue]="t.idTipo">{{ t.nombre }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Observación (opcional)</span>
+        <textarea rows="3" maxlength="300"
+                  [ngModel]="observacionSolicitud()" (ngModelChange)="observacionSolicitud.set($event)"
+                  [disabled]="solicitando()"
+                  placeholder="Contexto que ayude a Metrología a asignar el correlativo."></textarea>
+      </label>
+      <footer>
+        <button type="button" class="btn btn-ghost" (click)="cerrarSolicitar()" [disabled]="solicitando()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarSolicitar()" [disabled]="solicitando()">
+          <span class="material-symbols-outlined">send</span>
+          Enviar solicitud
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ─── Modal: guardar número manual ─────────────────────────────────── -->
+@if (mostrarModalNumero()) {
+  <div class="overlay" (click)="cerrarGuardarNumero()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Número de certificado</strong>
+        <small>Formato CC-NNNN-AAAA.</small>
+      </header>
+      <label>
+        <span>Número</span>
+        <input type="text"
+               [ngModel]="numeroCertificado()" (ngModelChange)="numeroCertificado.set($event)"
+               [disabled]="guardandoNumero()"
+               placeholder="CC-0000-2026" />
+      </label>
+      <footer>
+        <button type="button" class="btn btn-ghost" (click)="cerrarGuardarNumero()" [disabled]="guardandoNumero()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="confirmarGuardarNumero()" [disabled]="guardandoNumero()">
+          <span class="material-symbols-outlined">save</span>
+          Guardar
+        </button>
+      </footer>
+    </div>
+  </div>
+}

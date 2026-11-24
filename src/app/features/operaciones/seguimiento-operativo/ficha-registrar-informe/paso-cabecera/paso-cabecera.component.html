@@ -1,0 +1,406 @@
+<article class="paso-card">
+  <header class="paso-card__head">
+    <span class="material-symbols-outlined">description</span>
+    <div>
+      <h3>Paso 4 · Cabecera del informe</h3>
+      <p>Responsable, detalle del servicio, recomendaciones, fallas y diagnóstico final.</p>
+    </div>
+    @if (data()?.datos?.guardadaEn; as g) {
+      <span class="paso-card__meta paso-card__meta--ok">
+        <span class="material-symbols-outlined">check_circle</span>
+        Guardada · {{ g }}
+      </span>
+    }
+  </header>
+
+  @if (cargando() && !data()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Cargando cabecera…
+    </div>
+  } @else if (data(); as d) {
+
+    <!-- Navegación entre subsecciones -->
+    <nav class="subsecciones">
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'datos'"
+              (click)="subseccion.set('datos')">4.1 Datos</button>
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'detalle'"
+              (click)="subseccion.set('detalle')">4.2 Detalle</button>
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'recoms'"
+              (click)="subseccion.set('recoms')">4.3 Recomend. ({{ recomendaciones().length }})</button>
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'fallas'"
+              (click)="subseccion.set('fallas')">4.4 Fallas ({{ fallas().length }})</button>
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'diagnostico'"
+              (click)="subseccion.set('diagnostico')">4.5 Diagnóstico</button>
+      <button type="button" class="subs" [class.subs--activo]="subseccion() === 'pruebas'"
+              (click)="subseccion.set('pruebas')">4.6 Pruebas</button>
+    </nav>
+
+    <!-- ── 4.1 DATOS DEL RESPONSABLE ────────────────────────────────── -->
+    @if (subseccion() === 'datos') {
+      <section class="seccion">
+        <h4>Responsable del cliente</h4>
+        <div class="form-grid">
+          <label>
+            <span>Nombre completo</span>
+            <input type="text"
+                   [ngModel]="respNombre()" (ngModelChange)="respNombre.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+          <label>
+            <span>Cargo</span>
+            <input type="text"
+                   [ngModel]="respCargo()" (ngModelChange)="respCargo.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+          <label>
+            <span>Teléfono</span>
+            <input type="text"
+                   [ngModel]="respTelefono()" (ngModelChange)="respTelefono.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+        </div>
+
+        <h4 class="mt-18">Datos del servicio (readonly)</h4>
+        <dl class="info-dl">
+          <dt>Empresa</dt><dd>{{ d.datos.empresa ?? '—' }}</dd>
+          <dt>RUC</dt><dd>{{ d.datos.ruc ?? '—' }}</dd>
+          <dt>Equipo</dt><dd>{{ d.datos.marca }} {{ d.datos.modelo }}</dd>
+          <dt>Serie</dt><dd>{{ d.datos.numSerie ?? '—' }}</dd>
+          <dt>Propuesta</dt><dd>{{ d.datos.propuesta ?? '—' }}</dd>
+          <dt>Técnico</dt><dd>{{ d.datos.tecnico ?? '—' }}</dd>
+        </dl>
+      </section>
+    }
+
+    <!-- ── 4.2 DETALLE DEL SERVICIO ─────────────────────────────────── -->
+    @if (subseccion() === 'detalle') {
+      <section class="seccion">
+        <h4>Características del equipo</h4>
+        <div class="form-grid">
+          <label>
+            <span>Tipo de equipo</span>
+            <select [ngModel]="tipoEquipo()" (ngModelChange)="tipoEquipo.set($event)"
+                    [disabled]="!puedeEditar() || guardando()">
+              <option value="">— seleccionar —</option>
+              @for (op of d.opciones.tiposEquipo; track op.codigo) {
+                <option [value]="op.codigo">{{ op.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>Sumatoria hasta</span>
+            <input type="number" step="0.001"
+                   [ngModel]="sumatoriaHasta()" (ngModelChange)="sumatoriaHasta.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+          <label>
+            <span>Comparación hasta</span>
+            <input type="number" step="0.001"
+                   [ngModel]="comparacionHasta()" (ngModelChange)="comparacionHasta.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+          <label>
+            <span>Anillos de fijación</span>
+            <select [ngModel]="anillosFijacion()" (ngModelChange)="anillosFijacion.set($event)"
+                    [disabled]="!puedeEditar() || guardando()">
+              <option [ngValue]="null">— no aplica —</option>
+              <option [ngValue]="true">Sí</option>
+              <option [ngValue]="false">No</option>
+            </select>
+          </label>
+        </div>
+
+        <h4 class="mt-18">Celdas de carga (capacidad c/u)</h4>
+        <div class="celdas">
+          @for (c of celdas(); track $index) {
+            <div class="celda">
+              <span>#{{ $index + 1 }}</span>
+              <input type="number" step="0.001"
+                     [ngModel]="c" (ngModelChange)="updateCelda($index, $event)"
+                     [disabled]="!puedeEditar() || guardando()" />
+              <button type="button" class="btn-icono-rojo"
+                      [disabled]="!puedeEditar() || guardando()"
+                      (click)="rmCelda($index)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          }
+          <button type="button" class="btn btn-secondary btn--sm"
+                  [disabled]="!puedeEditar() || guardando()"
+                  (click)="addCelda()">
+            <span class="material-symbols-outlined">add</span>
+            Agregar celda
+          </button>
+        </div>
+
+        @if (d.detalle.checklist.length) {
+          <h4 class="mt-18">Checklist del servicio</h4>
+          <ul class="checklist">
+            @for (c of d.detalle.checklist; track c.codigo) {
+              <li>
+                <label>
+                  <input type="checkbox"
+                         [checked]="estaMarcado(c.codigo)"
+                         [disabled]="!puedeEditar() || guardando()"
+                         (change)="toggleCheck(c.codigo)" />
+                  <span>{{ c.titulo }}</span>
+                </label>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+
+    <!-- ── 4.3 RECOMENDACIONES ──────────────────────────────────────── -->
+    @if (subseccion() === 'recoms') {
+      <section class="seccion">
+        <header class="sec-head">
+          <h4>Recomendaciones</h4>
+          <label class="check-inline">
+            <input type="checkbox" [checked]="sinRecomendaciones()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="sinRecomendaciones.set($any($event.target).checked)" />
+            <span>Sin recomendaciones</span>
+          </label>
+        </header>
+
+        @if (!sinRecomendaciones()) {
+          @for (r of recomendaciones(); track $index) {
+            <div class="item">
+              <div class="form-grid">
+                <label>
+                  <span>Título</span>
+                  <input type="text" [ngModel]="r.titulo"
+                         (ngModelChange)="updateRecom($index, 'titulo', $event)"
+                         [disabled]="!puedeEditar() || guardando()" />
+                </label>
+                <label>
+                  <span>Prioridad</span>
+                  <select [ngModel]="r.prioridad"
+                          (ngModelChange)="updateRecom($index, 'prioridad', $event)"
+                          [disabled]="!puedeEditar() || guardando()">
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                <span>Descripción</span>
+                <textarea rows="2" [ngModel]="r.descripcion"
+                          (ngModelChange)="updateRecom($index, 'descripcion', $event)"
+                          [disabled]="!puedeEditar() || guardando()"></textarea>
+              </label>
+              <button type="button" class="btn btn-ghost btn--sm quitar"
+                      [disabled]="!puedeEditar() || guardando()"
+                      (click)="rmRecom($index)">
+                <span class="material-symbols-outlined">delete</span>
+                Quitar
+              </button>
+            </div>
+          }
+          <button type="button" class="btn btn-secondary"
+                  [disabled]="!puedeEditar() || guardando()"
+                  (click)="addRecom()">
+            <span class="material-symbols-outlined">add</span>
+            Agregar recomendación
+          </button>
+        }
+      </section>
+    }
+
+    <!-- ── 4.4 FALLAS ───────────────────────────────────────────────── -->
+    @if (subseccion() === 'fallas') {
+      <section class="seccion">
+        <header class="sec-head">
+          <h4>Fallas detectadas</h4>
+          <label class="check-inline">
+            <input type="checkbox" [checked]="sinFallas()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="sinFallas.set($any($event.target).checked)" />
+            <span>Sin fallas</span>
+          </label>
+        </header>
+
+        @if (!sinFallas()) {
+          @for (f of fallas(); track $index) {
+            <div class="item">
+              <div class="form-grid">
+                <label>
+                  <span>Clasificación</span>
+                  <select [ngModel]="f.clasificacion"
+                          (ngModelChange)="updateFalla($index, 'clasificacion', $event)"
+                          [disabled]="!puedeEditar() || guardando()">
+                    <option value="">— seleccionar —</option>
+                    @for (op of d.opciones.clasificaciones; track op.codigo) {
+                      <option [value]="op.codigo">{{ op.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>Componente</span>
+                  <select [ngModel]="f.componente"
+                          (ngModelChange)="updateFalla($index, 'componente', $event)"
+                          [disabled]="!puedeEditar() || guardando()">
+                    <option value="">— seleccionar —</option>
+                    @for (op of d.opciones.componentes; track op.codigo) {
+                      <option [value]="op.codigo">{{ op.nombre }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>Severidad</span>
+                  <select [ngModel]="f.severidad"
+                          (ngModelChange)="updateFalla($index, 'severidad', $event)"
+                          [disabled]="!puedeEditar() || guardando()">
+                    <option value="critica">Crítica</option>
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                <span>Descripción</span>
+                <textarea rows="2" [ngModel]="f.descripcion"
+                          (ngModelChange)="updateFalla($index, 'descripcion', $event)"
+                          [disabled]="!puedeEditar() || guardando()"></textarea>
+              </label>
+              <div class="fotos-falla">
+                <small>Fotos vinculadas: {{ f.fotos.length }}</small>
+                <div class="fotos-ids">
+                  @for (id of f.fotos; track id) {
+                    <span class="chip-id">
+                      #{{ id }}
+                      <button type="button" (click)="rmFotoFalla($index, id)"
+                              [disabled]="!puedeEditar() || guardando()">×</button>
+                    </span>
+                  }
+                </div>
+                <label class="btn btn-secondary btn--sm">
+                  <span class="material-symbols-outlined">add_photo_alternate</span>
+                  Subir foto
+                  <input type="file" hidden accept="image/*"
+                         [disabled]="!puedeEditar() || guardando()"
+                         (change)="subirFotoFalla($index, $event)" />
+                </label>
+              </div>
+              <button type="button" class="btn btn-ghost btn--sm quitar"
+                      [disabled]="!puedeEditar() || guardando()"
+                      (click)="rmFalla($index)">
+                <span class="material-symbols-outlined">delete</span>
+                Quitar falla
+              </button>
+            </div>
+          }
+          <button type="button" class="btn btn-secondary"
+                  [disabled]="!puedeEditar() || guardando()"
+                  (click)="addFalla()">
+            <span class="material-symbols-outlined">add</span>
+            Agregar falla
+          </button>
+        }
+      </section>
+    }
+
+    <!-- ── 4.5 DIAGNÓSTICO ──────────────────────────────────────────── -->
+    @if (subseccion() === 'diagnostico') {
+      <section class="seccion">
+        <h4>Diagnóstico final</h4>
+        <div class="form-grid">
+          <label>
+            <span>Severidad general</span>
+            <select [ngModel]="severidadGeneral()" (ngModelChange)="severidadGeneral.set($event)"
+                    [disabled]="!puedeEditar() || guardando()">
+              <option value="ninguna">Ninguna</option>
+              <option value="baja">Baja</option>
+              <option value="media">Media</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
+            </select>
+          </label>
+          <label>
+            <span>Estado del equipo</span>
+            <input type="text" [ngModel]="estadoEquipo()" (ngModelChange)="estadoEquipo.set($event)"
+                   [disabled]="!puedeEditar() || guardando()" />
+          </label>
+        </div>
+
+        <div class="flags">
+          <label class="check-inline">
+            <input type="checkbox" [checked]="revisionJefatura()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="revisionJefatura.set($any($event.target).checked)" />
+            <span>Requiere revisión de jefatura</span>
+          </label>
+          <label class="check-inline">
+            <input type="checkbox" [checked]="precotizacion()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="precotizacion.set($any($event.target).checked)" />
+            <span>Genera precotización</span>
+          </label>
+          <label class="check-inline">
+            <input type="checkbox" [checked]="segundaVisita()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="segundaVisita.set($any($event.target).checked)" />
+            <span>Requiere segunda visita</span>
+          </label>
+          <label class="check-inline">
+            <input type="checkbox" [checked]="aplicaGarantia()"
+                   [disabled]="!puedeEditar() || guardando()"
+                   (change)="aplicaGarantia.set($any($event.target).checked)" />
+            <span>Aplica garantía</span>
+          </label>
+        </div>
+      </section>
+    }
+
+    <!-- ── 4.6 PRUEBAS ──────────────────────────────────────────────── -->
+    @if (subseccion() === 'pruebas') {
+      <section class="seccion">
+        <h4>Comentario sobre las pruebas</h4>
+        <label>
+          <span>Comentario general (ensayos)</span>
+          <textarea rows="4" maxlength="1000"
+                    [ngModel]="comentarioPruebas()" (ngModelChange)="comentarioPruebas.set($event)"
+                    [disabled]="!puedeEditar() || guardando()"
+                    placeholder="Observaciones generales sobre el desarrollo de los ensayos."></textarea>
+        </label>
+
+        @if (d.pruebasGenerales.errorCritico) {
+          <div class="aviso aviso--rojo">
+            <span class="material-symbols-outlined">error</span>
+            <div>
+              <strong>Error crítico en ensayos</strong>
+              <small>{{ d.pruebasGenerales.errorCritico }}</small>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- Footer -->
+    @if (puedeEditar()) {
+      <div class="pv-footer">
+        <button type="button" class="btn btn-secondary" [disabled]="guardando()" (click)="guardar(false)">
+          <span class="material-symbols-outlined">save</span>
+          Guardar
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardar(true)">
+          <span class="material-symbols-outlined">arrow_forward</span>
+          Guardar y continuar
+        </button>
+      </div>
+    } @else {
+      <div class="pv-footer">
+        <button type="button" class="btn btn-primary" (click)="completado.emit()">
+          <span class="material-symbols-outlined">arrow_forward</span>
+          Continuar a correlativo
+        </button>
+      </div>
+    }
+
+  }
+</article>

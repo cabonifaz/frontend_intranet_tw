@@ -7,199 +7,320 @@
     icono="edit_note"
     [titulo]="'Registrar Informe Técnico'"
     [descripcion]="subtitulo()"
-    [codigoFicha]="contextoMock().equipo.codigoTw"
-    badgeTexto="BORRADOR"
-    badgeVariant="ambar-dot"
+    [codigoFicha]="codigoFicha()"
+    [badgeTexto]="informeYaGenerado() ? 'GENERADO' : (sesionActiva() ? 'EN REGISTRO' : 'BORRADOR')"
+    [badgeVariant]="informeYaGenerado() ? 'verde-dot' : (sesionActiva() ? 'azul' : 'ambar-dot')"
     [mostrarBack]="false" />
 
-  <!-- Chip trazabilidad -->
-  <div class="banner-trazabilidad">
-    <span class="material-symbols-outlined">assignment_ind</span>
-    <div>
-      <strong>Registrando desde Intranet por {{ contextoMock().asistenteActual }}</strong>
-      <small>En representación de <strong>{{ contextoMock().tecnicoAsignado.nombre }}</strong>. El informe queda a nombre del técnico; se guarda la trazabilidad de quién lo registró.</small>
+  <!-- ── Estado: cargando ─────────────────────────────────────────────── -->
+  @if (cargando()) {
+    <div class="estado-card estado-card--info">
+      <span class="material-symbols-outlined">progress_activity</span>
+      <div>
+        <strong>Cargando contexto del equipo…</strong>
+        <small>Un momento, estamos obteniendo los datos para arrancar el registro.</small>
+      </div>
     </div>
-  </div>
+  }
 
-  <!-- Stepper visual (clickeable) -->
-  <div class="stepper">
-    @for (e of ETAPAS; track e.n) {
-      <button type="button" class="stepper__paso"
-              [class.stepper__paso--activo]="paso() === e.n"
-              [class.stepper__paso--hecho]="paso() > e.n"
-              (click)="irAPaso(e.n)">
-        <span class="stepper__nodo">
-          @if (paso() > e.n) {
-            <span class="material-symbols-outlined">check</span>
-          } @else {
-            {{ e.n }}
-          }
-        </span>
-        <div class="stepper__texto">
-          <strong>{{ e.titulo }}</strong>
-          <small>{{ e.subtitulo }}</small>
+  <!-- ── Estado: error de carga ──────────────────────────────────────── -->
+  @else if (errorCarga()) {
+    <div class="estado-card estado-card--rojo">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudo cargar el contexto</strong>
+        <small>{{ errorCarga() }}</small>
+      </div>
+      <app-button variant="secondary" icono="refresh" (clic)="cargarContexto()">Reintentar</app-button>
+    </div>
+  }
+
+  <!-- ── Contexto cargado ────────────────────────────────────────────── -->
+  @else if (fila(); as f) {
+
+    <!-- Chip trazabilidad -->
+    <div class="banner-trazabilidad">
+      <span class="material-symbols-outlined">assignment_ind</span>
+      <div>
+        <strong>Registrando desde Intranet en representación de {{ f.tecnico || 'técnico asignado' }}</strong>
+        <small>El informe queda a nombre del técnico; se guarda la trazabilidad de quién lo registró. Sin GPS.</small>
+      </div>
+    </div>
+
+    <!-- ── Bloqueado: no puede iniciar (ni propio, ni posible) ──────── -->
+    @if (bloqueado() && !sesionActiva() && !informeYaGenerado()) {
+      <div class="estado-card estado-card--rojo">
+        <span class="material-symbols-outlined">lock</span>
+        <div>
+          <strong>No se puede iniciar el registro</strong>
+          <small>
+            {{ f.motivoNoPuede || 'El equipo no está en un estado válido para registrar el informe.' }}
+            @if (f.registroActivo && f.registradorNombre && !f.registroPropio) {
+              <br>Actualmente lo está registrando <strong>{{ f.registradorNombre }}</strong>.
+            }
+          </small>
         </div>
-      </button>
+      </div>
     }
-  </div>
 
-  <!-- Layout 2 columnas: contenido + panel lateral -->
-  <div class="layout">
+    <!-- ── Hay otro equipo abierto: pedir pausa ─────────────────────── -->
+    @else if (debePausarOtro() && !sesionActiva() && !informeYaGenerado()) {
+      <div class="estado-card estado-card--ambar">
+        <span class="material-symbols-outlined">pause_circle</span>
+        <div>
+          <strong>El técnico tiene otro equipo abierto</strong>
+          <small>
+            <strong>{{ f.otroEquipoAbierto }}</strong> está en ejecución. Para registrar este equipo, primero pausamos el otro.
+          </small>
+        </div>
+        <app-button variant="secondary" icono="pause" (clic)="abrirModalPausar()">Pausar el otro equipo</app-button>
+      </div>
+    }
 
-    <!-- ── Contenido del paso ──────────────────────────────────────────── -->
-    <section class="contenido">
+    <!-- ── Puede iniciar: botón comenzar ────────────────────────────── -->
+    @else if (!sesionActiva() && !informeYaGenerado()) {
+      <div class="estado-card estado-card--azul">
+        <span class="material-symbols-outlined">play_circle</span>
+        <div>
+          <strong>Listo para comenzar</strong>
+          <small>
+            Al comenzar se toma el bloqueo del equipo por 30 minutos (se renueva al guardar).
+            Indicás la hora de inicio y fin del trabajo en campo y el motivo por el que registrás vos.
+          </small>
+        </div>
+        <app-button variant="primary" icono="play_arrow" (clic)="abrirModalIniciar()">Comenzar registro</app-button>
+      </div>
+    }
 
-      @switch (paso()) {
-        @case (1) {
-          <article class="paso-card">
-            <header class="paso-card__head">
-              <span class="material-symbols-outlined">thermostat</span>
-              <div>
-                <h3>Paso 1 · Variables ambientales</h3>
-                <p>Temperatura, humedad y procedencia de los valores (desde el técnico por teléfono o lectura directa).</p>
-              </div>
-            </header>
-            <div class="paso-card__placeholder">
-              <span class="material-symbols-outlined">construction</span>
-              Formulario en construcción. Campos: temperatura (°C), humedad (%), procedencia (combo).
-            </div>
-          </article>
-        }
+    <!-- ── Informe ya generado ──────────────────────────────────────── -->
+    @else if (informeYaGenerado()) {
+      <div class="estado-card estado-card--verde">
+        <span class="material-symbols-outlined">verified</span>
+        <div>
+          <strong>Informe generado</strong>
+          <small>Este equipo ya tiene informe N° <strong>{{ f.numeroInforme || '—' }}</strong>.</small>
+        </div>
+      </div>
+    }
 
-        @case (2) {
-          <article class="paso-card">
-            <header class="paso-card__head">
-              <span class="material-symbols-outlined">photo_camera</span>
-              <div>
-                <h3>Paso 2 · Registro fotográfico</h3>
-                <p>Subí las evidencias que el técnico envía por WhatsApp. {{ contextoMock().informeFisico ? '9 slots (incluye foto del informe físico)' : '8 slots' }}. La IA valida cada foto automáticamente.</p>
-              </div>
-            </header>
-            <div class="paso-card__placeholder">
-              <span class="material-symbols-outlined">construction</span>
-              Grid de 8/9 slots obligatorios + sección de fotos adicionales (hasta 20). Cada slot con selector de archivo + badge de estado de la IA.
-            </div>
-          </article>
-        }
-
-        @case (3) {
-          <article class="paso-card">
-            <header class="paso-card__head">
-              <span class="material-symbols-outlined">science</span>
-              <div>
-                <h3>Paso 3 · Ensayos y calibración</h3>
-                <p>Pesaje y excentricidad. Tabla de puntos: la Asistente digita carga (L) e indicación (I); el back calcula error, EMP y resultado.</p>
-              </div>
-            </header>
-            <div class="paso-card__placeholder">
-              <span class="material-symbols-outlined">construction</span>
-              Subtabs "Pesaje" y "Excentricidad" + tabla editable + botón "Finalizar ensayos" con confirmación si hay error crítico.
-            </div>
-          </article>
-        }
-
-        @case (4) {
-          <article class="paso-card">
-            <header class="paso-card__head">
-              <span class="material-symbols-outlined">description</span>
-              <div>
-                <h3>Paso 4 · Cabecera del informe</h3>
-                <p>Datos del responsable, detalle del servicio, observaciones, recomendaciones, fallas y diagnóstico final.</p>
-              </div>
-            </header>
-            <div class="paso-card__placeholder">
-              <span class="material-symbols-outlined">construction</span>
-              Subsecciones: 4.1 Datos · 4.2 Detalle Serv. · 4.3 Recomendaciones · 4.4 Fallas (con fotos y pruebas) · 4.5 Diagnóstico final · 4.6 Comentario de pruebas.
-            </div>
-          </article>
-        }
-
-        @case (5) {
-          <article class="paso-card">
-            <header class="paso-card__head">
-              <span class="material-symbols-outlined">verified</span>
-              <div>
-                <h3>Paso 5 · Correlativo y certificado</h3>
-                <p>Verificación final de las 5 etapas (hard-stop). Si todo está completo, se genera el N° de informe NNNN-AAAA.</p>
-              </div>
-            </header>
-            <div class="paso-card__placeholder">
-              <span class="material-symbols-outlined">construction</span>
-              Checklist de las 5 etapas + botón "Generar informe" que llama a POST /informe.
-            </div>
-            <div class="paso-card__footer-accion">
-              <app-button variant="primary" icono="check_circle" (clic)="generarInforme()">
-                Generar informe
-              </app-button>
-            </div>
-          </article>
-        }
+    <!-- Stepper visual (clickeable solo si hay sesión activa) -->
+    <div class="stepper" [class.stepper--disabled]="!sesionActiva()">
+      @for (e of ETAPAS; track e.n) {
+        <button type="button" class="stepper__paso"
+                [class.stepper__paso--activo]="paso() === e.n"
+                [class.stepper__paso--hecho]="paso() > e.n"
+                [disabled]="!sesionActiva()"
+                (click)="irAPaso(e.n)">
+          <span class="stepper__nodo">
+            @if (paso() > e.n) {
+              <span class="material-symbols-outlined">check</span>
+            } @else {
+              {{ e.n }}
+            }
+          </span>
+          <div class="stepper__texto">
+            <strong>{{ e.titulo }}</strong>
+            <small>{{ e.subtitulo }}</small>
+          </div>
+        </button>
       }
+    </div>
 
-    </section>
+    <!-- Layout 2 columnas: contenido + panel lateral -->
+    <div class="layout">
 
-    <!-- ── Panel lateral — Resumen ─────────────────────────────────────── -->
-    <aside class="panel">
-      <div class="panel__card">
-        <h4>Resumen del equipo</h4>
-        <dl class="panel__datos">
-          <dt>N° OS</dt><dd>{{ contextoMock().numeroOs }}</dd>
-          <dt>Cliente</dt><dd>{{ contextoMock().razonSocial }}</dd>
-          <dt>Planta</dt><dd>{{ contextoMock().planta }}</dd>
-          <dt>Equipo</dt><dd>{{ contextoMock().equipo.modelo }} <small>(TW {{ contextoMock().equipo.codigoTw }})</small></dd>
-          <dt>Serie</dt><dd>{{ contextoMock().equipo.numeroSerie }}</dd>
-          <dt>Técnico</dt><dd>{{ contextoMock().tecnicoAsignado.nombre }}</dd>
-          <dt>Informe físico</dt><dd>{{ contextoMock().informeFisico ? 'Sí' : 'No' }}</dd>
-        </dl>
-      </div>
+      <!-- ── Contenido del paso ────────────────────────────────────── -->
+      <section class="contenido">
 
-      <div class="panel__card">
-        <h4>Progreso de las etapas</h4>
-        <ul class="panel__etapas">
-          <li>
-            <span>1. Variables ambientales</span>
-            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.variables)">{{ labelEtapa(contextoMock().estadoEtapas.variables) }}</span>
-          </li>
-          <li>
-            <span>2. Registro fotográfico</span>
-            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.fotos)">{{ labelEtapa(contextoMock().estadoEtapas.fotos) }}</span>
-          </li>
-          <li>
-            <span>3. Ensayos y calibración</span>
-            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.ensayos)">{{ labelEtapa(contextoMock().estadoEtapas.ensayos) }}</span>
-          </li>
-          <li>
-            <span>4. Cabecera del informe</span>
-            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.cabecera)">{{ labelEtapa(contextoMock().estadoEtapas.cabecera) }}</span>
-          </li>
-          <li>
-            <span>5. Correlativo y certificado</span>
-            <span [class]="claseChipEtapa(contextoMock().estadoEtapas.correlativo)">{{ labelEtapa(contextoMock().estadoEtapas.correlativo) }}</span>
-          </li>
-        </ul>
-      </div>
+        @if (!sesionActiva()) {
+          <article class="paso-card paso-card--vacio">
+            <span class="material-symbols-outlined">lock_clock</span>
+            <h3>Las etapas se habilitan al comenzar el registro.</h3>
+            <p>Usá el botón "Comenzar registro" (o pausá el otro equipo si corresponde) para arrancar.</p>
+          </article>
+        } @else {
+          @switch (paso()) {
+            @case (1) {
+              <app-paso-variables
+                [idOs]="idOs()!"
+                [idOsEquipo]="idOsEquipo()!"
+                [procedencias]="procedenciasDisponibles()"
+                (guardado)="onPasoGuardado()" />
+            }
 
-      <div class="panel__card panel__card--info">
-        <span class="material-symbols-outlined">info</span>
-        <small>El guardado es parcial. Podés cerrar la pantalla y volver más tarde: el borrador se mantiene.</small>
-      </div>
-    </aside>
+            @case (2) {
+              <app-paso-evidencias
+                [idOs]="idOs()!"
+                [idOsEquipo]="idOsEquipo()!"
+                (completado)="onPasoGuardado()" />
+            }
 
-  </div>
+            @case (3) {
+              <app-paso-ensayos
+                [idOs]="idOs()!"
+                [idOsEquipo]="idOsEquipo()!"
+                (completado)="onPasoGuardado()" />
+            }
+
+            @case (4) {
+              <app-paso-cabecera
+                [idOs]="idOs()!"
+                [idOsEquipo]="idOsEquipo()!"
+                (completado)="onPasoGuardado()" />
+            }
+
+            @case (5) {
+              <app-paso-correlativo
+                [idOs]="idOs()!"
+                [idOsEquipo]="idOsEquipo()!"
+                (generado)="onInformeGenerado($event)" />
+            }
+          }
+        }
+
+      </section>
+
+      <!-- ── Panel lateral — Resumen ─────────────────────────────────── -->
+      <aside class="panel">
+        <div class="panel__card">
+          <h4>Resumen del equipo</h4>
+          <dl class="panel__datos">
+            <dt>N° OS</dt><dd>{{ f.numeroOs || '—' }}</dd>
+            <dt>Cliente</dt><dd>{{ f.cliente || '—' }}</dd>
+            <dt>Planta</dt><dd>{{ f.planta || '—' }}</dd>
+            <dt>Equipo</dt><dd>{{ f.modelo || f.equipoNombre || '—' }} @if (f.codigoTw) { <small>(TW {{ f.codigoTw }})</small> }</dd>
+            <dt>Serie</dt><dd>{{ f.numeroSerie || '—' }}</dd>
+            <dt>Técnico</dt><dd>{{ f.tecnico || '—' }}</dd>
+            <dt>Informe físico</dt><dd>{{ f.informeFisico ? 'Sí' : 'No' }}</dd>
+          </dl>
+        </div>
+
+        <div class="panel__card">
+          <h4>Progreso de las etapas</h4>
+          <ul class="panel__etapas">
+            @for (e of ETAPAS; track e.codigo) {
+              <li>
+                <span>{{ e.n }}. {{ e.titulo }}</span>
+                <span [class]="claseChipEtapa(e.codigo)">{{ labelEtapa(e.codigo) }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="panel__card panel__card--info">
+          <span class="material-symbols-outlined">info</span>
+          <small>El guardado es parcial. Podés cerrar la pantalla y volver más tarde: el borrador se mantiene. El bloqueo se libera a los 30 min de inactividad.</small>
+        </div>
+      </aside>
+
+    </div>
+
+  }
 
   <!-- Footer sticky -->
   <div class="footer">
-    <app-button variant="ghost" (clic)="cancelar()">Cancelar</app-button>
+    <app-button variant="ghost" (clic)="cancelar()">Cerrar</app-button>
     <div class="footer__der">
-      @if (paso() > 1) {
+      @if (sesionActiva() && paso() > 1) {
         <app-button variant="secondary" icono="chevron_left" (clic)="retroceder()">Atrás</app-button>
-      }
-      @if (paso() < 5) {
-        <app-button variant="primary" icono="save" (clic)="guardarYContinuar()" [cargando]="guardando()">
-          Guardar y continuar
-        </app-button>
       }
     </div>
   </div>
 
 </div>
+
+<!-- ─── Modal: Comenzar registro ───────────────────────────────────────── -->
+@if (mostrarModalIniciar()) {
+  <app-modal
+    titulo="Comenzar registro"
+    subtitulo="Indicá la ventana del trabajo en campo y por qué registrás vos."
+    icono="play_arrow"
+    iconoColor="azul"
+    ancho="md"
+    [cerrable]="!iniciando()"
+    (cerrar)="cerrarModalIniciar()">
+
+    <div class="modal-form">
+      <div class="modal-form__row">
+        <label>
+          <span>Inicio en campo</span>
+          <input type="datetime-local"
+                 [ngModel]="inicioIniciar()"
+                 (ngModelChange)="inicioIniciar.set($event)"
+                 [disabled]="iniciando()" />
+        </label>
+        <label>
+          <span>Fin en campo</span>
+          <input type="datetime-local"
+                 [ngModel]="finIniciar()"
+                 (ngModelChange)="finIniciar.set($event)"
+                 [disabled]="iniciando()" />
+        </label>
+      </div>
+
+      <label class="modal-form__full">
+        <span>Motivo</span>
+        <select [ngModel]="motivoIniciar()"
+                (ngModelChange)="motivoIniciar.set($event)"
+                [disabled]="iniciando()">
+          @for (m of motivosDisponibles(); track m.codigo) {
+            <option [value]="m.codigo">{{ m.nombre }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="modal-form__full">
+        <span>Comentario (opcional)</span>
+        <textarea rows="3"
+                  maxlength="300"
+                  [ngModel]="comentarioIniciar()"
+                  (ngModelChange)="comentarioIniciar.set($event)"
+                  [disabled]="iniciando()"
+                  placeholder="Contexto adicional del por qué del registro desde intranet."></textarea>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <app-button variant="ghost"   (clic)="cerrarModalIniciar()" [disabled]="iniciando()">Cancelar</app-button>
+      <app-button variant="primary" icono="play_arrow" (clic)="confirmarIniciar()" [cargando]="iniciando()">
+        Comenzar
+      </app-button>
+    </div>
+  </app-modal>
+}
+
+<!-- ─── Modal: Pausar otro equipo abierto ──────────────────────────────── -->
+@if (mostrarModalPausar()) {
+  <app-modal
+    titulo="Pausar el otro equipo abierto"
+    [subtitulo]="'El técnico dejó ' + (fila()?.otroEquipoAbierto || 'otro equipo') + ' en ejecución.'"
+    icono="pause"
+    iconoColor="ambar"
+    ancho="md"
+    [cerrable]="!pausando()"
+    (cerrar)="cerrarModalPausar()">
+
+    <div class="modal-form">
+      <p class="modal-form__nota">
+        Al pausar el otro equipo, el estado queda en <strong>Pausado</strong> y vos podés iniciar
+        el registro de este equipo. Si el técnico reabre el equipo pausado luego, retoma desde donde lo dejó.
+      </p>
+      <label class="modal-form__full">
+        <span>Motivo (opcional)</span>
+        <textarea rows="3"
+                  maxlength="300"
+                  [ngModel]="motivoPausar()"
+                  (ngModelChange)="motivoPausar.set($event)"
+                  [disabled]="pausando()"
+                  placeholder="Por qué se pausa el otro equipo."></textarea>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <app-button variant="ghost"   (clic)="cerrarModalPausar()" [disabled]="pausando()">Cancelar</app-button>
+      <app-button variant="primary" icono="pause" (clic)="confirmarPausar()" [cargando]="pausando()">
+        Pausar
+      </app-button>
+    </div>
+  </app-modal>
+}

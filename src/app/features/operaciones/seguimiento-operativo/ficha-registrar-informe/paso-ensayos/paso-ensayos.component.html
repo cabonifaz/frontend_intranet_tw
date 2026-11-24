@@ -1,0 +1,215 @@
+<article class="paso-card">
+  <header class="paso-card__head">
+    <span class="material-symbols-outlined">science</span>
+    <div>
+      <h3>Paso 3 · Ensayos y calibración</h3>
+      <p>Pesaje y excentricidad. Vos digitás carga (L) e indicación (I); el back calcula error, EMP y resultado.</p>
+    </div>
+    @if (cab(); as c) {
+      <span class="paso-card__meta" [class.paso-card__meta--ok]="c.finalizado">
+        <span class="material-symbols-outlined">{{ c.finalizado ? 'check_circle' : 'pending' }}</span>
+        {{ c.finalizado ? 'Finalizados' : 'En curso' }}
+      </span>
+    }
+  </header>
+
+  @if (cargando() && !ensayos()) {
+    <div class="cargando">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Cargando ensayos…
+    </div>
+  } @else if (cab(); as c) {
+
+    <!-- Encabezado con metadata del equipo -->
+    <section class="meta-equipo">
+      <dl>
+        <dt>Capacidad máx.</dt><dd>{{ c.capMaxima ?? '—' }} {{ c.unidad }}</dd>
+        <dt>d</dt><dd>{{ c.d ?? '—' }}</dd>
+        <dt>e</dt><dd>{{ c.e ?? '—' }}</dd>
+        <dt>Clase</dt><dd>{{ c.clase ?? '—' }}</dd>
+      </dl>
+      @if (c.motivoErrorCritico) {
+        <div class="aviso aviso--ambar">
+          <span class="material-symbols-outlined">warning</span>
+          <div>
+            <strong>Finalizado con error crítico</strong>
+            <small>{{ c.motivoErrorCritico }}</small>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Subtabs -->
+    <nav class="subtabs">
+      <button type="button" class="subtab" [class.subtab--activo]="subtab() === 'pesaje'"
+              (click)="subtab.set('pesaje')">Pesaje</button>
+      <button type="button" class="subtab" [class.subtab--activo]="subtab() === 'excentricidad'"
+              (click)="subtab.set('excentricidad')">Excentricidad</button>
+      <button type="button" class="subtab" [class.subtab--activo]="subtab() === 'encargado'"
+              (click)="subtab.set('encargado')">Encargado</button>
+    </nav>
+
+    <!-- ── PESAJE ─────────────────────────────────────────────────────── -->
+    @if (subtab() === 'pesaje') {
+      <section class="tabla-ensayos">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Carga L ({{ c.unidad }})</th>
+              <th>Indicación I ({{ c.unidad }})</th>
+              <th>Error</th>
+              <th>EMP</th>
+              <th>Resultado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of pesajeOrdenado(); track p.orden) {
+              <tr [class.critico]="p.critico">
+                <td>{{ p.orden }}</td>
+                <td>
+                  <input type="number" step="0.001"
+                         [disabled]="finalizado() || guardando()"
+                         [ngModel]="pesajeEdit()[p.orden]?.carga ?? ''"
+                         (ngModelChange)="setPesaje(p.orden, 'carga', $event)" />
+                </td>
+                <td>
+                  <input type="number" step="0.001"
+                         [disabled]="finalizado() || guardando()"
+                         [ngModel]="pesajeEdit()[p.orden]?.indicacion ?? ''"
+                         (ngModelChange)="setPesaje(p.orden, 'indicacion', $event)" />
+                </td>
+                <td class="readonly">{{ p.error ?? '—' }}</td>
+                <td class="readonly">{{ p.emp ?? '—' }}</td>
+                <td><span [class]="claseResultado(p.resultado)">{{ labelResultado(p.resultado) }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    <!-- ── EXCENTRICIDAD ─────────────────────────────────────────────── -->
+    @if (subtab() === 'excentricidad') {
+      <section class="forma-plato">
+        <label>
+          <span>Forma del plato</span>
+          <select [ngModel]="formaPlato()"
+                  (ngModelChange)="formaPlato.set($event)"
+                  [disabled]="finalizado() || guardando()">
+            <option value="rectangular">Rectangular</option>
+            <option value="circular">Circular</option>
+            <option value="triangular">Triangular</option>
+          </select>
+        </label>
+      </section>
+
+      @for (g of gruposExc(); track g.grupo) {
+        <section class="tabla-ensayos tabla-ensayos--exc">
+          <header class="grupo-head">
+            <strong>Grupo {{ g.grupo }}</strong>
+            <label>
+              <small>Carga ({{ c.unidad }})</small>
+              <input type="number" step="0.001"
+                     [disabled]="finalizado() || guardando()"
+                     [ngModel]="excEdit()[g.grupo]?.carga ?? ''"
+                     (ngModelChange)="setExcCarga(g.grupo, $event)" />
+            </label>
+          </header>
+          <table>
+            <thead>
+              <tr>
+                <th>Posición</th>
+                <th>Indicación I</th>
+                <th>Error</th>
+                <th>EMP</th>
+                <th>Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of g.lecturas; track l.posicion) {
+                <tr [class.critico]="l.critico">
+                  <td>{{ l.posicion === 0 ? 'Centro' : l.posicion }}</td>
+                  <td>
+                    <input type="number" step="0.001"
+                           [disabled]="finalizado() || guardando()"
+                           [ngModel]="excEdit()[g.grupo]?.lecturas?.[l.posicion] ?? ''"
+                           (ngModelChange)="setExcLectura(g.grupo, l.posicion, $event)" />
+                  </td>
+                  <td class="readonly">{{ l.error ?? '—' }}</td>
+                  <td class="readonly">{{ l.emp ?? '—' }}</td>
+                  <td><span [class]="claseResultado(l.resultado)">{{ labelResultado(l.resultado) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+      }
+    }
+
+    <!-- ── ENCARGADO ─────────────────────────────────────────────────── -->
+    @if (subtab() === 'encargado') {
+      <section class="encargado">
+        @if (ensayos()?.encargado; as en) {
+          <dl>
+            <dt>Nombre</dt><dd>{{ en.nombre }}</dd>
+            <dt>Cargo</dt><dd>{{ en.cargo ?? '—' }}</dd>
+            <dt>Área</dt><dd>{{ en.area ?? c.areaEncargado ?? '—' }}</dd>
+            <dt>Teléfono</dt><dd>{{ en.telefono ?? '—' }}</dd>
+          </dl>
+        } @else {
+          <p class="sin-datos">No hay encargado registrado.</p>
+        }
+      </section>
+    }
+
+    <!-- Footer de acciones -->
+    @if (!finalizado()) {
+      <div class="pv-footer">
+        <button type="button" class="btn btn-secondary" [disabled]="guardando()" (click)="guardar(false)">
+          <span class="material-symbols-outlined">save</span>
+          Guardar parcial
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="guardando()" (click)="guardar(true)">
+          <span class="material-symbols-outlined">task_alt</span>
+          Finalizar ensayos
+        </button>
+      </div>
+    } @else {
+      <div class="pv-footer">
+        <button type="button" class="btn btn-primary" (click)="completado.emit()">
+          <span class="material-symbols-outlined">arrow_forward</span>
+          Continuar a cabecera
+        </button>
+      </div>
+    }
+
+  }
+</article>
+
+@if (mostrarModalCritico()) {
+  <div class="forzar-overlay" (click)="cerrarModalCritico()">
+    <div class="forzar-dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Finalizar con error crítico</strong>
+        <small>Hay ensayos con error fuera de rango.</small>
+      </header>
+      <p class="forzar-dialog__nota">
+        Para finalizar los ensayos con un error crítico presente, indicá el motivo
+        (mínimo 10 caracteres). Queda registrado en el informe.
+      </p>
+      <textarea rows="3" maxlength="300"
+                [ngModel]="motivoCritico()"
+                (ngModelChange)="motivoCritico.set($event)"
+                [disabled]="guardando()"
+                placeholder="Ej. El cliente acepta el error para esta campaña y pide cronograma de reparación."></textarea>
+      <footer>
+        <button type="button" class="btn btn-ghost" (click)="cerrarModalCritico()" [disabled]="guardando()">Cancelar</button>
+        <button type="button" class="btn btn-ambar" (click)="confirmarFinalizarCritico()" [disabled]="guardando()">
+          <span class="material-symbols-outlined">task_alt</span>
+          Finalizar
+        </button>
+      </footer>
+    </div>
+  </div>
+}

@@ -1,0 +1,175 @@
+<article class="paso-card">
+  <header class="paso-card__head">
+    <span class="material-symbols-outlined">photo_camera</span>
+    <div>
+      <h3>Paso 2 · Registro fotográfico</h3>
+      <p>Subí las evidencias que te mande el técnico. La IA valida cada foto. Si algo se rechaza por error, podés forzarlo con un motivo.</p>
+    </div>
+    @if (resumenCabecera(); as c) {
+      <span class="paso-card__meta" [class.paso-card__meta--ok]="c.puedeGuardar">
+        <span class="material-symbols-outlined">{{ c.puedeGuardar ? 'check_circle' : 'pending' }}</span>
+        {{ c.completas }} / {{ c.total }} completas
+      </span>
+    }
+  </header>
+
+  @if (cargando() && !panel()) {
+    <div class="pv-cargando">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Cargando evidencias…
+    </div>
+  } @else if (panel(); as p) {
+    <!-- Grid de slots -->
+    <section class="ev-grid">
+      @for (e of p.evidencias; track e.codigo) {
+        <article class="ev-slot" [class.ev-slot--aprobada]="e.estado === 'aprobada' || e.estado === 'forzada'"
+                                 [class.ev-slot--rechazada]="e.estado === 'rechazada'"
+                                 [class.ev-slot--pendiente]="e.estado === 'pendiente'">
+          <header class="ev-slot__head">
+            <span class="ev-slot__orden">{{ e.orden }}</span>
+            <div class="ev-slot__titulo">
+              <strong>{{ e.nombre }} @if (e.obligatoria) { <sup>*</sup> }</strong>
+              <small>{{ e.descripcion }}</small>
+            </div>
+            <span [class]="claseChipEstado(e.estado)">{{ labelEstado(e.estado) }}</span>
+          </header>
+
+          <div class="ev-slot__preview">
+            @if (e.idEvidencia && previewPorId()[e.idEvidencia]) {
+              <img [src]="previewPorId()[e.idEvidencia]" alt="Evidencia" />
+            } @else if (e.idEvidencia) {
+              <div class="ev-slot__placeholder">
+                <span class="material-symbols-outlined">{{ e.esVideo ? 'movie' : 'image' }}</span>
+                <small>{{ e.esVideo ? 'Video' : 'Archivo cargado' }}</small>
+              </div>
+            } @else {
+              <div class="ev-slot__placeholder ev-slot__placeholder--vacio">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <small>Sin archivo</small>
+              </div>
+            }
+          </div>
+
+          @if (e.estado === 'rechazada' && e.motivoRechazoIa) {
+            <div class="ev-slot__aviso ev-slot__aviso--rojo">
+              <span class="material-symbols-outlined">error</span>
+              <span>IA: {{ e.motivoRechazoIa }}</span>
+            </div>
+          }
+          @if (e.estado === 'forzada' && e.motivoForzado) {
+            <div class="ev-slot__aviso ev-slot__aviso--azul">
+              <span class="material-symbols-outlined">info</span>
+              <span>Forzada: {{ e.motivoForzado }}</span>
+            </div>
+          }
+
+          <footer class="ev-slot__footer">
+            <label class="btn btn-secondary btn--sm">
+              <span class="material-symbols-outlined">upload</span>
+              {{ e.idEvidencia ? 'Reemplazar' : 'Subir' }}
+              <input type="file"
+                     hidden
+                     [accept]="acepta(e)"
+                     [disabled]="subiendoCodigo() !== null"
+                     (change)="seleccionarArchivo($event, e)" />
+            </label>
+            @if (e.estado === 'rechazada' && e.idEvidencia) {
+              <button type="button" class="btn btn-ambar btn--sm" (click)="abrirForzar(e)">
+                <span class="material-symbols-outlined">done_all</span>
+                Forzar
+              </button>
+            }
+          </footer>
+        </article>
+      }
+    </section>
+
+    <!-- Adicionales -->
+    <section class="ev-adicionales">
+      <header class="ev-adicionales__head">
+        <div>
+          <strong>Fotos adicionales</strong>
+          <small>Opcionales. Hasta 20 por equipo. No pasan por IA.</small>
+        </div>
+        <span class="ev-adicionales__count">{{ p.adicionales.length }} / 20</span>
+      </header>
+
+      @if (p.adicionales.length > 0) {
+        <div class="ev-adicionales__grid">
+          @for (a of p.adicionales; track a.idEvidencia) {
+            <div class="ev-adicional">
+              @if (previewPorId()[a.idEvidencia]) {
+                <img [src]="previewPorId()[a.idEvidencia]" alt="Adicional {{ a.numero }}" />
+              } @else {
+                <div class="ev-slot__placeholder">
+                  <span class="material-symbols-outlined">image</span>
+                </div>
+              }
+              <div class="ev-adicional__barra">
+                <span>#{{ a.numero }}</span>
+                <button type="button" class="btn-icono"
+                        (click)="quitarAdicional(a.idEvidencia)"
+                        title="Quitar">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      @if (p.adicionales.length < 20) {
+        <label class="btn btn-secondary btn--block">
+          <span class="material-symbols-outlined">add_photo_alternate</span>
+          Agregar foto adicional
+          <input type="file" hidden
+                 accept="image/*"
+                 [disabled]="subiendoCodigo() !== null"
+                 (change)="subirAdicional($event)" />
+        </label>
+      }
+    </section>
+
+    <div class="pv-footer">
+      <button type="button"
+              class="btn btn-primary"
+              [disabled]="!puedeGuardar() || subiendoCodigo() !== null"
+              (click)="continuar()">
+        <span class="material-symbols-outlined">arrow_forward</span>
+        Continuar a ensayos
+      </button>
+    </div>
+  }
+</article>
+
+@if (mostrarForzar() && evidenciaForzar(); as ev) {
+  <div class="forzar-overlay" (click)="cerrarForzar()">
+    <div class="forzar-dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Forzar evidencia</strong>
+        <small>{{ ev.nombre }}</small>
+      </header>
+      <p class="forzar-dialog__nota">
+        La IA rechazó esta foto. Si estás seguro de que es correcta, escribí un motivo
+        (mínimo 10 caracteres). Queda registrado quién la forzó y por qué.
+      </p>
+      <textarea rows="3" maxlength="300"
+                [ngModel]="motivoForzar()"
+                (ngModelChange)="motivoForzar.set($event)"
+                [disabled]="forzando()"
+                placeholder="Ej. La foto es correcta; la IA no detectó la placa por el ángulo."></textarea>
+      <footer>
+        <button type="button" class="btn btn-ghost" (click)="cerrarForzar()" [disabled]="forzando()">Cancelar</button>
+        <button type="button" class="btn btn-ambar" (click)="confirmarForzar()" [disabled]="forzando()">
+          @if (forzando()) {
+            <span class="material-symbols-outlined spin">progress_activity</span>
+            Forzando…
+          } @else {
+            <span class="material-symbols-outlined">done_all</span>
+            Forzar
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}

@@ -1,0 +1,74 @@
+<article class="paso-card">
+  <header class="paso-card__head">
+    <span class="material-symbols-outlined">thermostat</span>
+    <div>
+      <h3>Paso 1 · Variables ambientales</h3>
+      <p>Temperatura, humedad y procedencia (lectura del termohigrómetro o reporte del técnico por teléfono).</p>
+    </div>
+    @if (registradoEn()) {
+      <span class="paso-card__meta">
+        <span class="material-symbols-outlined">check_circle</span>
+        Guardado · {{ registradoEn() }}
+      </span>
+    }
+  </header>
+
+  @if (cargando()) {
+    <div class="pv-cargando">
+      <span class="material-symbols-outlined">progress_activity</span>
+      Cargando datos previos…
+    </div>
+  } @else {
+    <div class="pv-form">
+      <label class="pv-form__campo">
+        <span>Temperatura (°C)</span>
+        <input type="number"
+               step="0.1" min="-40" max="80"
+               [ngModel]="temperatura()"
+               (ngModelChange)="temperatura.set($event)"
+               [disabled]="guardando()"
+               placeholder="Ej. 22.5" />
+        <small class="pv-form__hint">Rango: -40 a 80 °C</small>
+      </label>
+
+      <label class="pv-form__campo">
+        <span>Humedad relativa (%)</span>
+        <input type="number"
+               step="1" min="0" max="100"
+               [ngModel]="humedad()"
+               (ngModelChange)="humedad.set($event)"
+               [disabled]="guardando()"
+               placeholder="Ej. 55" />
+        <small class="pv-form__hint">Rango: 0 a 100 %</small>
+      </label>
+
+      <label class="pv-form__campo pv-form__campo--full">
+        <span>Procedencia del valor</span>
+        <select [ngModel]="procedencia()"
+                (ngModelChange)="procedencia.set($event)"
+                [disabled]="guardando()">
+          <option value="" disabled>— seleccionar —</option>
+          @for (p of procedencias(); track p.codigo) {
+            <option [value]="p.codigo">{{ p.nombre }}</option>
+          }
+        </select>
+        <small class="pv-form__hint">De dónde salen los valores que ingresás.</small>
+      </label>
+    </div>
+
+    <div class="pv-footer">
+      <button type="button"
+              class="btn btn-primary"
+              [disabled]="!puedeGuardar()"
+              (click)="guardar()">
+        @if (guardando()) {
+          <span class="material-symbols-outlined spin">progress_activity</span>
+          Guardando…
+        } @else {
+          <span class="material-symbols-outlined">save</span>
+          Guardar variables
+        }
+      </button>
+    </div>
+  }
+</article>
