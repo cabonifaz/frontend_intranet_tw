@@ -1,0 +1,583 @@
+<div class="ficha-comp">
+
+  @if (cargando()) {
+    <div class="estado estado--cargando">
+      <span class="material-symbols-outlined spin">progress_activity</span>
+      Cargando informe complementario…
+    </div>
+  } @else if (error(); as err) {
+    <div class="estado estado--error">
+      <span class="material-symbols-outlined">error</span>
+      <div>
+        <strong>No se pudo cargar el informe complementario</strong>
+        <p>{{ err }}</p>
+      </div>
+      <app-button variant="ghost" (clic)="cancelar()">Volver</app-button>
+    </div>
+  } @else if (detalle(); as d) {
+
+    <!-- ─── Breadcrumb + Header ─────────────────────────────────────────── -->
+    <app-breadcrumb [items]="breadcrumb()" />
+
+    <app-hero-header
+      icono="description"
+      [titulo]="'Informe Complementario'"
+      [descripcion]="subtitulo()"
+      [codigoFicha]="d.cabecera.numeroComplementario ?? '—'"
+      [badgeTexto]="d.cabecera.estado === 'borrador' ? 'BORRADOR' : 'COMPLEMENTARIO'"
+      [badgeVariant]="d.cabecera.estado === 'borrador' ? 'ambar-dot' : 'verde'"
+      [mostrarBack]="false" />
+
+    <!-- Aviso de inmutabilidad del original + botón descargar PDF del técnico -->
+    <div class="banner-info">
+      <span class="material-symbols-outlined">info</span>
+      <div class="banner-info__texto">
+        <strong>El informe original es inmutable.</strong>
+        El supervisor solo edita observaciones, recomendaciones, precotización y fotos del complementario. Los datos del técnico quedan como referencia solo lectura.
+      </div>
+      <app-button variant="ghost" icono="picture_as_pdf" (clic)="descargarPdfTecnico()">
+        Descargar Informe del Técnico (PDF)
+      </app-button>
+    </div>
+
+    <!-- ─── TABS (5) ────────────────────────────────────────────────────── -->
+    <nav class="tabs-nav" role="tablist">
+      @for (t of TABS; track t.id) {
+        <button type="button" class="tabs-nav__item"
+                [class.tabs-nav__item--activo]="tab() === t.id"
+                [class.tabs-nav__item--editable]="t.editable"
+                role="tab" [attr.aria-selected]="tab() === t.id"
+                (click)="tab.set(t.id)">
+          <span class="material-symbols-outlined">{{ t.icono }}</span>
+          <span>{{ t.label }}</span>
+          @if (t.editable) {
+            <span class="tabs-nav__chip">editable</span>
+          }
+        </button>
+      }
+    </nav>
+
+    <!-- ─── CONTENIDO POR TAB ───────────────────────────────────────────── -->
+
+    <!-- TAB 1: Datos del Servicio (readonly) -->
+    @if (tab() === 'datos') {
+      <section class="tab-panel">
+        <!-- Datos generales del servicio -->
+        <app-seccion icono="apartment" numero="1" titulo="Datos generales del servicio">
+          <div class="original-grid">
+            <div class="original-item">
+              <span class="original-item__label">OS</span>
+              <span class="original-item__valor">{{ d.cabecera.numeroOs ?? '—' }}</span>
+            </div>
+            <div class="original-item">
+              <span class="original-item__label">Cliente</span>
+              <span class="original-item__valor">{{ d.cabecera.razonSocial ?? '—' }}</span>
+            </div>
+            <div class="original-item">
+              <span class="original-item__label">Equipo</span>
+              <span class="original-item__valor">{{ d.cabecera.equipo ?? '—' }}</span>
+            </div>
+            <div class="original-item">
+              <span class="original-item__label">Técnico</span>
+              <span class="original-item__valor">{{ d.cabecera.tecnico ?? '—' }}</span>
+            </div>
+            <div class="original-item">
+              <span class="original-item__label">Fecha de ejecución</span>
+              <span class="original-item__valor">{{ d.cabecera.fechaEjecucion | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="original-item">
+              <span class="original-item__label">N° Informe del técnico</span>
+              <span class="original-item__valor">{{ d.cabecera.numeroInformeTecnico ?? '—' }}</span>
+            </div>
+          </div>
+        </app-seccion>
+
+        <!-- Responsable del cliente -->
+        <app-seccion icono="person" numero="2" titulo="Responsable del cliente">
+          @if (d.responsableCliente; as r) {
+            <div class="original-grid">
+              <div class="original-item">
+                <span class="original-item__label">Nombre</span>
+                <span class="original-item__valor">{{ r.nombre ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Cargo</span>
+                <span class="original-item__valor">{{ r.cargo ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Teléfono</span>
+                <span class="original-item__valor">{{ r.telefono ?? '—' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="vacio">El técnico no registró datos del responsable.</div>
+          }
+        </app-seccion>
+
+        <!-- Diagnóstico final -->
+        <app-seccion icono="medical_services" numero="3" titulo="Diagnóstico final del técnico">
+          @if (d.diagnosticoFinal; as dx) {
+            <div class="original-grid">
+              <div class="original-item">
+                <span class="original-item__label">Severidad general</span>
+                <span class="original-item__valor">{{ dx.severidadGeneral ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Estado del equipo</span>
+                <span class="original-item__valor">{{ dx.estadoEquipo ?? '—' }}</span>
+              </div>
+            </div>
+            <div class="flags-grid">
+              <span class="flag" [class.flag--on]="dx.revisionJefatura">
+                <span class="material-symbols-outlined">{{ dx.revisionJefatura ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                Revisión por jefatura
+              </span>
+              <span class="flag" [class.flag--on]="dx.precotizacion">
+                <span class="material-symbols-outlined">{{ dx.precotizacion ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                Requiere precotización
+              </span>
+              <span class="flag" [class.flag--on]="dx.segundaVisita">
+                <span class="material-symbols-outlined">{{ dx.segundaVisita ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                Requiere segunda visita
+              </span>
+              <span class="flag" [class.flag--on]="dx.aplicaGarantia">
+                <span class="material-symbols-outlined">{{ dx.aplicaGarantia ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                Aplica garantía
+              </span>
+            </div>
+          } @else {
+            <div class="vacio">El técnico no registró diagnóstico final.</div>
+          }
+        </app-seccion>
+
+        <!-- Comentario de pruebas -->
+        @if (d.comentarioPruebas) {
+          <app-seccion icono="speaker_notes" numero="4" titulo="Comentario de pruebas">
+            <p class="texto-readonly">{{ d.comentarioPruebas }}</p>
+          </app-seccion>
+        }
+      </section>
+    }
+
+    <!-- TAB 2: Detalle y Procedimiento (readonly) -->
+    @if (tab() === 'detalle') {
+      <section class="tab-panel">
+        <!-- Detalle del servicio del técnico -->
+        <app-seccion icono="settings" numero="1" titulo="Detalle del servicio">
+          @if (d.detalleServicio; as ds) {
+            <div class="original-grid">
+              <div class="original-item">
+                <span class="original-item__label">Tipo de equipo</span>
+                <span class="original-item__valor">{{ ds.tipoEquipo ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Sumatoria hasta</span>
+                <span class="original-item__valor">{{ ds.sumatoriaHasta ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Comparación hasta</span>
+                <span class="original-item__valor">{{ ds.comparacionHasta ?? '—' }}</span>
+              </div>
+              <div class="original-item">
+                <span class="original-item__label">Anillos de fijación</span>
+                <span class="original-item__valor">{{ ds.anillosFijacion === true ? 'Sí' : ds.anillosFijacion === false ? 'No' : '—' }}</span>
+              </div>
+            </div>
+
+            <!-- Celdas (hasta 12 mV) -->
+            @if (ds.celdas?.length) {
+              <div class="celdas-grid">
+                <h4 class="subtitulo">Celdas (mV)</h4>
+                <div class="celdas-chips">
+                  @for (mv of ds.celdas; track $index; let i = $index) {
+                    <div class="celda-chip">
+                      <small>#{{ i + 1 }}</small>
+                      <strong>{{ mv ?? '—' }}</strong>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="vacio">El técnico no registró detalle del servicio.</div>
+          }
+        </app-seccion>
+
+        <!-- Checklist del procedimiento -->
+        <app-seccion icono="checklist" numero="2" titulo="Checklist del procedimiento">
+          @if (d.procedimiento?.length) {
+            <ul class="procedimiento-lista">
+              @for (p of d.procedimiento; track p.idPaso) {
+                <li class="procedimiento-item" [class.procedimiento-item--ok]="p.realizado">
+                  <span class="material-symbols-outlined">
+                    {{ p.realizado ? 'check_circle' : 'radio_button_unchecked' }}
+                  </span>
+                  <div class="procedimiento-item__texto">
+                    <strong>{{ p.orden }}. {{ p.titulo ?? '—' }}</strong>
+                    @if (p.detalle) { <small>{{ p.detalle }}</small> }
+                    @if (p.nota) { <small class="procedimiento-item__nota">📝 {{ p.nota }}</small> }
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="vacio">El técnico no registró el checklist del procedimiento.</div>
+          }
+        </app-seccion>
+      </section>
+    }
+
+    <!-- TAB 3: Ensayos (readonly) -->
+    @if (tab() === 'ensayos') {
+      <section class="tab-panel">
+        <!-- Stat-cards: Resultado Global + Error Máximo -->
+        @if (d.resultadoOriginal; as r) {
+          <div class="stats-ensayos">
+            <article class="stat-ensayo"
+                     [class.stat-ensayo--verde]="r.resultadoGlobal === 'dentro'"
+                     [class.stat-ensayo--rojo]="r.resultadoGlobal === 'fuera'"
+                     [class.stat-ensayo--gris]="!r.resultadoGlobal">
+              <div class="stat-ensayo__icono">
+                <span class="material-symbols-outlined">
+                  {{ r.resultadoGlobal === 'dentro' ? 'check_circle'
+                     : r.resultadoGlobal === 'fuera' ? 'error' : 'help' }}
+                </span>
+              </div>
+              <div class="stat-ensayo__texto">
+                <small class="stat-ensayo__label">RESULTADO GLOBAL</small>
+                <strong class="stat-ensayo__valor">
+                  {{ r.resultadoGlobal === 'dentro' ? 'Dentro de tolerancia'
+                     : r.resultadoGlobal === 'fuera' ? 'Fuera de tolerancia' : 'Sin registrar' }}
+                </strong>
+              </div>
+            </article>
+            <article class="stat-ensayo stat-ensayo--neutro">
+              <div class="stat-ensayo__icono">
+                <span class="material-symbols-outlined">straighten</span>
+              </div>
+              <div class="stat-ensayo__texto">
+                <small class="stat-ensayo__label">ERROR MÁXIMO</small>
+                <strong class="stat-ensayo__valor">
+                  {{ r.errorMaximo != null ? r.errorMaximo : '—' }}
+                </strong>
+              </div>
+            </article>
+            @if (r.decisionTecnica) {
+              <article class="stat-ensayo stat-ensayo--neutro stat-ensayo--full">
+                <div class="stat-ensayo__icono">
+                  <span class="material-symbols-outlined">verified</span>
+                </div>
+                <div class="stat-ensayo__texto">
+                  <small class="stat-ensayo__label">DECISIÓN TÉCNICA</small>
+                  <strong class="stat-ensayo__valor">{{ r.decisionTecnica }}</strong>
+                </div>
+              </article>
+            }
+          </div>
+
+          @if (r.errorCritico) {
+            <div class="alerta-critico">
+              <span class="material-symbols-outlined">warning</span>
+              <strong>Hay un error crítico registrado por el técnico.</strong> Revisá la tabla de ensayos abajo.
+            </div>
+          }
+        }
+
+        <!-- Tabla de ensayos -->
+        <app-seccion icono="science" numero="1" titulo="Ensayos registrados"
+                     subtitulo="Pesaje y excentricidad. Los valores son solo lectura (los calcula el servidor).">
+          @if (d.ensayos?.length) {
+            <div class="ensayos-tabla-wrap">
+              <table class="ensayos-tabla">
+                <thead>
+                  <tr>
+                    <th>TIPO</th>
+                    <th>PUNTO</th>
+                    <th>NOTA</th>
+                    <th class="num">CARGA</th>
+                    <th class="num">LECTURA</th>
+                    <th class="num">ERROR</th>
+                    <th class="num">TOL.</th>
+                    <th>RESULTADO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (en of d.ensayos; track en.idEnsayo) {
+                    <tr [class.ensayos-tabla__nc]="en.resultado === 'no_conforme'">
+                      <td>
+                        <span class="chip-tipo chip-tipo--{{ en.tipo }}">
+                          {{ en.tipo === 'pesaje' ? 'Pesaje' : en.tipo === 'excentricidad' ? 'Excent.' : '—' }}
+                        </span>
+                      </td>
+                      <td>{{ en.punto ?? '—' }}</td>
+                      <td>{{ en.notaPunto ?? '—' }}</td>
+                      <td class="num">{{ en.carga ?? '—' }}</td>
+                      <td class="num">{{ en.lectura ?? '—' }}</td>
+                      <td class="num">{{ en.error ?? '—' }}</td>
+                      <td class="num">{{ en.tolerancia ?? '—' }}</td>
+                      <td>
+                        <span class="chip-res" [class.chip-res--ok]="en.resultado === 'conforme'" [class.chip-res--nc]="en.resultado === 'no_conforme'">
+                          {{ en.resultadoLabel ?? (en.resultado === 'conforme' ? 'Conforme' : en.resultado === 'no_conforme' ? 'No conforme' : '—') }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="vacio">El técnico no registró ensayos.</div>
+          }
+        </app-seccion>
+      </section>
+    }
+
+    <!-- TAB 4: Fotos (editable) -->
+    @if (tab() === 'fotos') {
+      <section class="tab-panel">
+        <app-seccion icono="photo_library" titulo="Fotos del complementario"
+                     subtitulo="Fotos del técnico (chip Técnico) + las que agregue el supervisor (chip Supervisor). Se pueden subir y quitar.">
+          <div headerActions>
+            <label class="btn-adjuntar">
+              <span class="material-symbols-outlined">add_photo_alternate</span>
+              Adjuntar foto o video
+              <input type="file" accept="image/*,video/mp4" multiple (change)="onSeleccionarArchivo($event)" hidden>
+            </label>
+          </div>
+
+          @if (fotos().length === 0) {
+            <div class="vacio">Aún no hay fotos ni videos en el complementario.</div>
+          } @else {
+            <div class="galeria">
+              @for (f of fotos(); track f.idEvidencia) {
+                <figure class="galeria__item" appEnViewport (enViewport)="solicitarFoto(f.idEvidencia)">
+                  @switch (estadoFotoDe(f.idEvidencia).estado) {
+                    @case ('listo') {
+                      @if (f.esVideo) {
+                        <video class="galeria__media" muted [src]="estadoFotoDe(f.idEvidencia).safeUrl"></video>
+                      } @else {
+                        <img class="galeria__media" [src]="estadoFotoDe(f.idEvidencia).safeUrl" alt="">
+                      }
+                    }
+                    @case ('error') {
+                      <div class="galeria__skeleton galeria__skeleton--error">
+                        <span class="material-symbols-outlined">broken_image</span>
+                      </div>
+                    }
+                    @default {
+                      <div class="galeria__skeleton">
+                        <span class="material-symbols-outlined spin">progress_activity</span>
+                      </div>
+                    }
+                  }
+                  <figcaption>
+                    <span class="chip-origen" [class.chip-origen--sup]="f.origen === 'supervisor'">
+                      {{ f.origen === 'supervisor' ? 'Supervisor' : 'Técnico' }}
+                    </span>
+                    @if (f.esVideo) { <span class="chip-video">VIDEO</span> }
+                    <button type="button" class="btn-quitar" title="Quitar" (click)="eliminarFoto(f.idEvidencia)">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </figcaption>
+                </figure>
+              }
+            </div>
+          }
+        </app-seccion>
+      </section>
+    }
+
+    <!-- TAB 5: Hallazgos y Precotización (editable) -->
+    @if (tab() === 'hallazgos') {
+      <section class="tab-panel">
+        <!-- Observaciones generales (texto libre) -->
+        <app-seccion icono="description" titulo="Observaciones generales"
+                     subtitulo="Texto libre (hasta 500 caracteres) para el complementario completo. Opcional.">
+          <label class="textarea-wrap">
+            <textarea rows="3" maxlength="500"
+                      [ngModel]="observacionesGenerales()"
+                      (ngModelChange)="observacionesGenerales.set($event)"
+                      placeholder="Contexto general del complementario, hallazgos macro, nota al comercial…"></textarea>
+            <small class="contador">{{ observacionesGenerales().length }} / 500</small>
+          </label>
+        </app-seccion>
+
+        <!-- Observaciones -->
+        <app-seccion icono="feedback" titulo="Observaciones"
+                     subtitulo="Precargadas del técnico (podés editarlas o eliminarlas) + nuevas del supervisor.">
+          <div headerActions>
+            <app-button variant="ghost" icono="add" (clic)="agregarObservacion()">Agregar observación</app-button>
+          </div>
+
+          @if (observaciones().length === 0) {
+            <div class="vacio">Sin observaciones registradas.</div>
+          } @else {
+            <div class="lista-obs">
+              @for (o of observaciones(); track $index; let i = $index) {
+                <div class="obs">
+                  <div class="obs__head">
+                    <strong>Obs. {{ i + 1 }}</strong>
+                    @if (o.origen === 'tecnico') { <span class="chip-origen">Técnico</span> }
+                    <button type="button" class="btn-quitar" (click)="eliminarObservacion(i)" title="Eliminar">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                  <div class="obs__grid">
+                    <label>
+                      <span>Título</span>
+                      <input type="text" [ngModel]="o.titulo" (ngModelChange)="actualizarObservacion(i, 'titulo', $event)" maxlength="150">
+                    </label>
+                    <label>
+                      <span>Nivel</span>
+                      <select [ngModel]="o.nivelAfectacion" (ngModelChange)="actualizarObservacion(i, 'nivelAfectacion', $event)">
+                        @for (n of NIVELES; track n.v) { <option [ngValue]="n.v">{{ n.label }}</option> }
+                      </select>
+                    </label>
+                    <label class="full">
+                      <span>Descripción</span>
+                      <textarea rows="2" [ngModel]="o.descripcion" (ngModelChange)="actualizarObservacion(i, 'descripcion', $event)" maxlength="1000"></textarea>
+                    </label>
+                    <label class="full">
+                      <span>Ubicación (opcional)</span>
+                      <input type="text" [ngModel]="o.ubicacion" (ngModelChange)="actualizarObservacion(i, 'ubicacion', $event)" maxlength="200">
+                    </label>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </app-seccion>
+
+        <!-- Recomendaciones -->
+        <app-seccion icono="lightbulb" titulo="Recomendaciones"
+                     subtitulo="Precargadas del técnico (editables) + nuevas del supervisor.">
+          <div headerActions>
+            <app-button variant="ghost" icono="add" (clic)="agregarRecomendacion()">Agregar recomendación</app-button>
+          </div>
+
+          @if (recomendaciones().length === 0) {
+            <div class="vacio">Sin recomendaciones registradas.</div>
+          } @else {
+            <div class="lista-obs">
+              @for (r of recomendaciones(); track $index; let i = $index) {
+                <div class="obs">
+                  <div class="obs__head">
+                    <strong>Rec. {{ i + 1 }}</strong>
+                    @if (r.origen === 'tecnico') { <span class="chip-origen">Técnico</span> }
+                    <button type="button" class="btn-quitar" (click)="eliminarRecomendacion(i)" title="Eliminar">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </div>
+                  <div class="obs__grid">
+                    <label>
+                      <span>Título</span>
+                      <input type="text" [ngModel]="r.titulo" (ngModelChange)="actualizarRecomendacion(i, 'titulo', $event)" maxlength="150">
+                    </label>
+                    <label>
+                      <span>Prioridad</span>
+                      <select [ngModel]="r.prioridad" (ngModelChange)="actualizarRecomendacion(i, 'prioridad', $event)">
+                        @for (p of PRIORIDADES; track p.v) { <option [ngValue]="p.v">{{ p.label }}</option> }
+                      </select>
+                    </label>
+                    <label class="full">
+                      <span>Descripción</span>
+                      <textarea rows="2" [ngModel]="r.descripcion" (ngModelChange)="actualizarRecomendacion(i, 'descripcion', $event)" maxlength="1000"></textarea>
+                    </label>
+                    <label>
+                      <span>Plazo (opcional)</span>
+                      <input type="text" [ngModel]="r.plazo" (ngModelChange)="actualizarRecomendacion(i, 'plazo', $event)" maxlength="80" placeholder="ej. 30 días">
+                    </label>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </app-seccion>
+
+        <!-- Precotización -->
+        <app-seccion icono="receipt_long" titulo="Precotización"
+                     subtitulo="Ítems sugeridos para generar la propuesta. Si no corresponde, dejar vacío.">
+          <div headerActions>
+            <app-button variant="ghost" icono="add" (clic)="agregarItemPrecot()">Agregar ítem</app-button>
+          </div>
+
+          @if (precotizacion().length === 0) {
+            <div class="vacio">Sin ítems de precotización.</div>
+          } @else {
+            <div class="precot-tabla-wrap">
+              <table class="precot-tabla">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Concepto</th>
+                    <th>Descripción técnica</th>
+                    <th>Cant.</th>
+                    <th>Unidad</th>
+                    <th>Prioridad</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (it of precotizacion(); track $index; let i = $index) {
+                    <tr>
+                      <td>{{ i + 1 }}</td>
+                      <td>
+                        <input type="text" [ngModel]="it.concepto" (ngModelChange)="actualizarItemPrecot(i, 'concepto', $event)" maxlength="150">
+                      </td>
+                      <td>
+                        <input type="text" [ngModel]="it.descripcionTecnica" (ngModelChange)="actualizarItemPrecot(i, 'descripcionTecnica', $event)" maxlength="300">
+                      </td>
+                      <td>
+                        <input type="number" step="0.01" min="0" [ngModel]="it.cantidad" (ngModelChange)="actualizarItemPrecot(i, 'cantidad', $event)" class="num">
+                      </td>
+                      <td>
+                        <input type="text" [ngModel]="it.unidad" (ngModelChange)="actualizarItemPrecot(i, 'unidad', $event)" maxlength="20" placeholder="und">
+                      </td>
+                      <td>
+                        <select [ngModel]="it.prioridad" (ngModelChange)="actualizarItemPrecot(i, 'prioridad', $event)">
+                          <option value="alta">Alta</option>
+                          <option value="media">Media</option>
+                          <option value="opcional">Opcional</option>
+                        </select>
+                      </td>
+                      <td>
+                        <button type="button" class="btn-quitar" (click)="eliminarItemPrecot(i)">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <label class="nota-precot">
+            <span>Nota de la precotización (opcional)</span>
+            <textarea rows="2" [ngModel]="notaPrecot()" (ngModelChange)="notaPrecot.set($event)" maxlength="500"
+                      placeholder="Contexto adicional para el área comercial…"></textarea>
+          </label>
+        </app-seccion>
+      </section>
+    }
+
+    <!-- ─── Footer estándar ─────────────────────────────────────────────── -->
+    @if (!puedeGuardar() && !guardando()) {
+      <div class="aviso-vacio">
+        <span class="material-symbols-outlined">info</span>
+        El complementario no puede quedar vacío. Agregá al menos observaciones, recomendaciones, fotos o ítems de precotización para poder guardar.
+      </div>
+    }
+    <app-form-footer cancelarTexto="Cancelar" (cancelar)="cancelar()">
+      @if (d.cabecera.estado === 'borrador') {
+        <app-button variant="danger" icono="delete" (clic)="descartarBorrador()">
+          Descartar borrador
+        </app-button>
+      }
+      <app-button variant="primary" icono="save" [disabled]="!puedeGuardar()" [cargando]="guardando()" (clic)="guardar()">
+        {{ guardando() ? 'Guardando…' : 'Guardar complementario' }}
+      </app-button>
+    </app-form-footer>
+
+  }
+</div>

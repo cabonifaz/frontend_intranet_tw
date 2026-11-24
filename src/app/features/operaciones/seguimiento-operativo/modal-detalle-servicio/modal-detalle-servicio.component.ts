@@ -1,6 +1,7 @@
 import { Component, HostListener, OnDestroy, OnInit, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SeguimientoOperativoService } from '../../../../core/services/seguimiento-operativo.service';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
@@ -53,8 +54,9 @@ type FiltroTipoAprobacion = TipoAprobacion | 'todas';
   styleUrl: './modal-detalle-servicio.component.scss',
 })
 export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
-  private readonly svc   = inject(SeguimientoOperativoService);
-  private readonly toast = inject(ToastService);
+  private readonly svc    = inject(SeguimientoOperativoService);
+  private readonly toast  = inject(ToastService);
+  private readonly router = inject(Router);
 
   readonly idServicio = input.required<number>();
 
@@ -773,6 +775,17 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
   }
 
   onCerrar(): void { this.cerrar.emit(); }
+
+  /**
+   * HU-55 — Abre la pantalla de "Registrar informe" por la Asistente o el Jefe
+   * de Operaciones cuando el técnico no puede hacerlo desde la app móvil.
+   * Cierra el modal antes de navegar (es una ruta nueva, pantalla completa).
+   */
+  abrirRegistrarInforme(idEquipo: number): void {
+    const idOs = this.idServicio();
+    this.cerrar.emit();
+    this.router.navigate(['/operaciones/seguimiento-operativo', idOs, 'equipos', idEquipo, 'registrar-informe']);
+  }
 
   /** Llama al técnico con el teléfono que trae la cabecera (TelefonoTecnico). */
   llamarTecnico(): void {

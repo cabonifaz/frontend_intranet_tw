@@ -3,10 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  BandejaInformesApi, CategoriaHistorial, DetalleInformeApi, FiltrosBandejaInformesQs,
-  GuardarInformePayload, GuardarPrecotizacionPayload, HistorialInformeApi, InformeGuardadoApi,
-  InformeRevisadoApi, ObservacionSeguimientoApi, PrecotizacionGuardadaApi, PreparacionRevisionApi, RegistrarRevisionPayload,
-  RespuestaRevisionApi,
+  BandejaInformesApi, CategoriaHistorial, ComplementarioGuardadoApi, CrearComplementarioRespuestaApi,
+  DetalleComplementarioApi, DetalleInformeApi, FiltrosBandejaInformesQs, GuardarComplementarioPayload,
+  HistorialInformeApi, InformeRevisadoApi, ObservacionSeguimientoApi, PreparacionRevisionApi,
+  RegistrarRevisionPayload, RespuestaRevisionApi,
 } from '../models/revision-informes-api.model';
 import { ViaticosOs } from '../models/aprobaciones-viaticos-servicio.model';
 
@@ -57,33 +57,122 @@ export class RevisionInformesService {
     }
   }
 
-  // ─── HU-58 Edición ───────────────────────────────────────────────────────
+  // ─── HU-58 Informe Complementario ────────────────────────────────────────
+  // El supervisor YA NO edita el informe original (inmutable). En su lugar genera
+  // un informe complementario como entidad aparte. Endpoints acordados con Bryan:
+  //  - POST   /informes/{id}/complementario           → crea (precargado del original)
+  //  - GET    /informes/complementarios/{id}          → detalle
+  //  - PUT    /informes/complementarios/{id}          → guarda cambios
+  //  - POST   /informes/complementarios/{id}/fotos    → sube foto/video
+  //  - DELETE /informes/complementarios/{id}/fotos/{idEvidencia}
+  //  - GET    /informes/complementarios/{id}/pdf      → PDF del complementario
 
-  /** Guarda cambios de los pasos 1-3 (procedimiento, ensayos, observaciones, recomendaciones, descripción, resultado). */
-  async guardarInforme(idInforme: number, datos: GuardarInformePayload): Promise<InformeGuardadoApi> {
-    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+  /** Crea el informe complementario precargándolo con los datos del original. Si ya existe uno, el back devuelve el existente en modo borrador. */
+  async crearComplementario(idInformeOriginal: number): Promise<CrearComplementarioRespuestaApi> {
+    if (!Number.isInteger(idInformeOriginal) || idInformeOriginal <= 0) throw new Error('El informe original indicado no es válido.');
     try {
       const r = await firstValueFrom(
-        this.http.put<RespuestaRevisionApi<InformeGuardadoApi>>(`${this.base}/${idInforme}`, datos),
+        this.http.post<RespuestaRevisionApi<CrearComplementarioRespuestaApi>>(
+          `${this.base}/${idInformeOriginal}/complementario`, {},
+        ),
       );
-      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo guardar.');
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo generar el informe complementario.');
       return r.datos;
     } catch (e) {
-      throw this.comoError(e, 'No se pudo guardar el informe.');
+      throw this.comoError(e, 'No se pudo generar el informe complementario.');
     }
   }
 
-  /** Guarda la precotización (paso 4). Es obligatoria cuando el informe tiene observaciones. */
-  async guardarPrecotizacion(idInforme: number, datos: GuardarPrecotizacionPayload): Promise<PrecotizacionGuardadaApi> {
-    if (!Number.isInteger(idInforme) || idInforme <= 0) throw new Error('El informe indicado no es válido.');
+  /** Detalle del complementario: datos readonly del original + secciones editables. */
+  async obtenerComplementario(idInformeComplementario: number): Promise<DetalleComplementarioApi> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    try {
+      return await this.get<DetalleComplementarioApi>(`${this.base}/complementarios/${idInformeComplementario}`);
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo cargar el informe complementario.');
+    }
+  }
+
+  /** Guarda observaciones / recomendaciones / precotización del complementario. */
+  async guardarComplementario(
+    idInformeComplementario: number,
+    datos: GuardarComplementarioPayload,
+  ): Promise<ComplementarioGuardadoApi> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
     try {
       const r = await firstValueFrom(
-        this.http.put<RespuestaRevisionApi<PrecotizacionGuardadaApi>>(`${this.base}/${idInforme}/precotizacion`, datos),
+        this.http.put<RespuestaRevisionApi<ComplementarioGuardadoApi>>(
+          `${this.base}/complementarios/${idInformeComplementario}`, datos,
+        ),
       );
-      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo registrar la precotización.');
+      if (r.idTipoMensaje !== 2 || !r.datos) throw new Error(r.mensaje || 'No se pudo guardar el complementario.');
       return r.datos;
     } catch (e) {
-      throw this.comoError(e, 'No se pudo registrar la precotización.');
+      throw this.comoError(e, 'No se pudo guardar el complementario.');
+    }
+  }
+
+  /** Sube una foto/video al complementario. El back la registra en evidencia_fotografica con el id del complementario. */
+  async subirFotoComplementario(idInformeComplementario: number, archivo: File): Promise<void> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    try {
+      const form = new FormData();
+      form.append('archivo', archivo);
+      const r = await firstValueFrom(
+        this.http.post<RespuestaRevisionApi<unknown>>(
+          `${this.base}/complementarios/${idInformeComplementario}/fotos`, form,
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo subir la foto.');
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo subir la foto.');
+    }
+  }
+
+  /** Quita una foto/video del complementario. */
+  async eliminarFotoComplementario(idInformeComplementario: number, idEvidencia: number): Promise<void> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    if (!Number.isInteger(idEvidencia) || idEvidencia <= 0) throw new Error('La evidencia indicada no es válida.');
+    try {
+      const r = await firstValueFrom(
+        this.http.delete<RespuestaRevisionApi<unknown>>(
+          `${this.base}/complementarios/${idInformeComplementario}/fotos/${idEvidencia}`,
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo eliminar la foto.');
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo eliminar la foto.');
+    }
+  }
+
+  /** Descarga el blob de una foto/video del complementario (misma estrategia Blob + JWT del original). */
+  async obtenerArchivoFotoComplementario(idInformeComplementario: number, idEvidencia: number): Promise<Blob> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    if (!Number.isInteger(idEvidencia) || idEvidencia <= 0) throw new Error('La evidencia indicada no es válida.');
+    try {
+      return await firstValueFrom(
+        this.http.get(
+          `${this.base}/complementarios/${idInformeComplementario}/fotos/${idEvidencia}/archivo`,
+          { responseType: 'blob' },
+        ),
+      );
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo descargar el archivo de la evidencia.');
+    }
+  }
+
+  /** Descarta un complementario en estado 'borrador'. Libera el bloqueo para registrar la revisión. */
+  async descartarBorradorComplementario(idInformeComplementario: number): Promise<void> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    try {
+      const r = await firstValueFrom(
+        this.http.delete<RespuestaRevisionApi<unknown>>(
+          `${this.base}/complementarios/${idInformeComplementario}`,
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo descartar el borrador.');
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo descartar el borrador.');
     }
   }
 

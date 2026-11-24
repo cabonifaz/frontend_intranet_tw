@@ -30,12 +30,14 @@ type EstadoFoto =
 type Tab = 'resumen' | 'detalle' | 'descripcion' | 'observaciones' | 'recomendaciones' | 'ensayos' | 'fotos' | 'viaticos' | 'historial';
 
 /**
- * HU-57 — Modal Detalle del Servicio Técnico (Módulo 12).
+ * HU-57 — Modal Detalle del Informe Técnico (Módulo 12).
  * 8 tabs: Resumen · Detalle del Servicio · Descripción Complementaria · Observaciones · Recomendaciones ·
- * Ensayos · Fotos · Historial. Botones primarios condicionales según `accionPrincipal` de la cabecera:
- *   - registrar_precotizacion → "Registrar Precotización" (HU-58)
- *   - registrar_revision      → "Registrar Revisión" (HU-59)
- *   - null                    → solo lectura (informe ya revisado)
+ * Ensayos · Fotos · Historial. TODO es SOLO LECTURA (el informe que llegó del móvil es inmutable).
+ *
+ * Footer según estado:
+ *   - pendiente_revision          → "Generar Informe Complementario" (opcional) + "Registrar Revisión"
+ *   - revisado                    → solo lectura, sin botones
+ *   - revisado_con_complementario → botón "Ver Informe Complementario"
  */
 @Component({
   selector: 'app-modal-detalle-informe',
@@ -50,10 +52,12 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
 
   readonly idInforme = input.required<number>();
 
-  readonly cerrar      = output<void>();
-  readonly editar      = output<number>();
-  readonly precotizar  = output<number>();
-  readonly revisar     = output<number>();
+  readonly cerrar                = output<void>();
+  /** El supervisor pulsa "Generar Informe Complementario" — pasa el id del informe original. */
+  readonly generarComplementario = output<number>();
+  /** El supervisor pulsa "Ver Informe Complementario" — pasa el idInformeComplementario. */
+  readonly verComplementario     = output<number>();
+  readonly revisar               = output<number>();
 
   readonly cargando = signal(true);
   readonly error    = signal<string | null>(null);
@@ -137,11 +141,10 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
     const c = this.cabecera();
     if (!c) return 'chip chip--gris';
     switch (c.grupoEstado) {
-      case 'pendiente_revision':      return 'chip chip--ambar';
-      case 'pendiente_precotizacion': return 'chip chip--rojo';
-      case 'revisado_con_precot':     return 'chip chip--verde';
-      case 'revisado_sin_precot':     return 'chip chip--gris-oscuro';
-      default:                        return 'chip chip--gris';
+      case 'pendiente_revision':         return 'chip chip--ambar';
+      case 'revisado_con_complementario': return 'chip chip--verde';
+      case 'revisado_sin_complementario': return 'chip chip--gris-oscuro';
+      default:                            return 'chip chip--gris';
     }
   });
 
@@ -409,15 +412,22 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
   cerrarLightbox(): void { this.lightbox.set(null); }
 
   onCerrar(): void { this.cerrar.emit(); }
-  onEditar(): void {
+
+  onGenerarComplementario(): void {
     const c = this.cabecera();
-    if (c?.puedeEditar) this.editar.emit(c.idInforme);
+    if (c?.puedeGenerarComplementario) this.generarComplementario.emit(c.idInforme);
   }
-  onAccionPrincipal(): void {
+
+  onVerComplementario(): void {
     const c = this.cabecera();
-    if (!c) return;
-    if (c.accionPrincipal === 'registrar_precotizacion') this.precotizar.emit(c.idInforme);
-    else if (c.accionPrincipal === 'registrar_revision') this.revisar.emit(c.idInforme);
+    if (c?.tieneComplementario && c.idInformeComplementario != null) {
+      this.verComplementario.emit(c.idInformeComplementario);
+    }
+  }
+
+  onRegistrarRevision(): void {
+    const c = this.cabecera();
+    if (c?.puedeRegistrarRevision) this.revisar.emit(c.idInforme);
   }
 
   descargarPdf(): void {

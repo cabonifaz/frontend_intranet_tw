@@ -11,18 +11,15 @@
   @if (bandeja(); as b) {
 
     <!-- ── KPI Cards ─────────────────────────────────────────────────── -->
-    <app-kpi-grid [columnas]="4">
-      <app-kpi-card icono="schedule"      etiqueta="PENDIENTES DE REVISIÓN"
+    <app-kpi-grid [columnas]="3">
+      <app-kpi-card icono="schedule"    etiqueta="PENDIENTES DE REVISIÓN"
                     [valor]="b.tarjetas.pendientesRevision"
                     subtitulo="Esperando mi revisión" variante="azul" />
-      <app-kpi-card icono="description"   etiqueta="PEND. DE PRECOTIZACIÓN"
-                    [valor]="b.tarjetas.pendientesPrecotizacion"
-                    subtitulo="Requieren acción" variante="ambar" />
-      <app-kpi-card icono="task_alt"      etiqueta="REVISADOS SIN PRECOT."
-                    [valor]="b.tarjetas.revisadosSinPrecot"
+      <app-kpi-card icono="task_alt"    etiqueta="REVISADOS SIN COMPLEMENTARIO"
+                    [valor]="b.tarjetas.revisadosSinComplementario"
                     subtitulo="Cerrados sin incidencias" variante="morado" />
-      <app-kpi-card icono="trending_up"   etiqueta="REVISADOS CON PRECOT."
-                    [valor]="b.tarjetas.revisadosConPrecot"
+      <app-kpi-card icono="trending_up" etiqueta="REVISADOS CON COMPLEMENTARIO"
+                    [valor]="b.tarjetas.revisadosConComplementario"
                     subtitulo="Generaron oportunidad comercial" variante="verde" />
     </app-kpi-grid>
 
@@ -38,13 +35,13 @@
               (click)="cambiarGrupo('pendientes')">
         <span class="material-symbols-outlined">pending</span>
         Pendientes
-        <span class="grupo-tab__badge">{{ b.tarjetas.pendientesRevision + b.tarjetas.pendientesPrecotizacion }}</span>
+        <span class="grupo-tab__badge">{{ b.tarjetas.pendientesRevision ?? 0 }}</span>
       </button>
       <button class="grupo-tab" [class.grupo-tab--activo]="grupo() === 'revisados'"
               (click)="cambiarGrupo('revisados')">
         <span class="material-symbols-outlined">task_alt</span>
         Revisados
-        <span class="grupo-tab__badge">{{ b.tarjetas.revisadosSinPrecot + b.tarjetas.revisadosConPrecot }}</span>
+        <span class="grupo-tab__badge">{{ (b.tarjetas.revisadosSinComplementario ?? 0) + (b.tarjetas.revisadosConComplementario ?? 0) }}</span>
       </button>
     </div>
 
@@ -175,8 +172,8 @@
     <app-modal-detalle-informe
       [idInforme]="id"
       (cerrar)="cerrarDetalle()"
-      (editar)="onEditarInforme($event)"
-      (precotizar)="onPrecotizar($event)"
+      (generarComplementario)="onGenerarComplementario($event)"
+      (verComplementario)="onVerComplementario($event)"
       (revisar)="onRegistrarRevision($event)" />
   }
 

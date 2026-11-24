@@ -159,15 +159,21 @@ export class ListaRevisionInformesComponent implements OnInit {
 
   cerrarDetalle(): void { this.idDetalleAbierto.set(null); }
 
-  onEditarInforme(idInforme: number): void {
-    this.router.navigate(['/servicio-tecnico/revision-informes', idInforme, 'editar']);
+  /** HU-58: supervisor dispara la generación del complementario. El back crea o reutiliza el borrador existente. */
+  async onGenerarComplementario(idInforme: number): Promise<void> {
+    try {
+      const r = await this.svc.crearComplementario(idInforme);
+      this.idDetalleAbierto.set(null);
+      this.router.navigate(['/servicio-tecnico/revision-informes', 'complementarios', r.idInformeComplementario]);
+    } catch (e: unknown) {
+      this.toast.error(e instanceof Error ? e.message : 'No se pudo generar el informe complementario.');
+    }
   }
 
-  onPrecotizar(idInforme: number): void {
-    // Lleva a la ficha de edición directamente en el paso 4 (Hallazgos y Precotización)
-    this.router.navigate(['/servicio-tecnico/revision-informes', idInforme, 'editar'], {
-      queryParams: { paso: 4 },
-    });
+  /** HU-57: desde el modal (estado revisado_con_complementario) → abre la ficha del complementario. */
+  onVerComplementario(idInformeComplementario: number): void {
+    this.idDetalleAbierto.set(null);
+    this.router.navigate(['/servicio-tecnico/revision-informes', 'complementarios', idInformeComplementario]);
   }
 
   onRegistrarRevision(idInforme: number): void {
@@ -186,10 +192,10 @@ export class ListaRevisionInformesComponent implements OnInit {
   // ─── Helpers de UI ──────────────────────────────────────────────────────
 
   claseEstado(grupoEstado: string | null, estado: EstadoInformeApi | null): string {
-    if (estado === 'revisado') {
-      return grupoEstado === 'revisado_con_precot' ? 'chip chip--verde' : 'chip chip--gris-oscuro';
-    }
-    return grupoEstado === 'pendiente_precotizacion' ? 'chip chip--rojo' : 'chip chip--ambar';
+    if (estado === 'revisado_con_complementario') return 'chip chip--verde';
+    if (estado === 'revisado')                    return 'chip chip--gris-oscuro';
+    // pendiente_revision (o en_revision)
+    return 'chip chip--ambar';
   }
 
   claseObservaciones(con: boolean): string {

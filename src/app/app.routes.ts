@@ -325,6 +325,16 @@ export const routes: Routes = [
             m => m.ListaSeguimientoOperativoComponent
           ),
       },
+      {
+        // HU-55 (nueva 2026-11-23): la Asistente / Jefe de Operaciones registra el informe
+        // técnico desde la Intranet cuando el técnico no puede hacerlo desde la app móvil.
+        path: 'operaciones/seguimiento-operativo/:idOs/equipos/:idEquipo/registrar-informe',
+        canActivate: [permisoRutaGuard('seg_bandeja')],
+        loadComponent: () =>
+          import('./features/operaciones/seguimiento-operativo/ficha-registrar-informe/ficha-registrar-informe.component').then(
+            m => m.FichaRegistrarInformeComponent
+          ),
+      },
       // ─── Módulo 12 — Revisión de Informes Técnicos ───────────────────────
       {
         path: 'servicio-tecnico/revision-informes',
@@ -335,11 +345,13 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'servicio-tecnico/revision-informes/:id/editar',
+        // HU-58 (reescrita 2026-11-23): el supervisor ya no edita el informe original;
+        // genera un informe complementario como entidad aparte.
+        path: 'servicio-tecnico/revision-informes/complementarios/:idComplementario',
         canActivate: [permisoRutaGuard('rt_editar')],
         loadComponent: () =>
-          import('./features/servicio-tecnico/revision-informes/ficha-edicion-informe/ficha-edicion-informe.component').then(
-            m => m.FichaEdicionInformeComponent
+          import('./features/servicio-tecnico/revision-informes/ficha-informe-complementario/ficha-informe-complementario.component').then(
+            m => m.FichaInformeComplementarioComponent
           ),
       },
       {

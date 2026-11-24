@@ -81,14 +81,6 @@
         </div>
       } @else if (cabecera(); as c) {
 
-        <!-- Aviso bloqueo (banner ámbar) -->
-        @if (c.mensajeBloqueo) {
-          <div class="aviso-banner aviso-banner--ambar">
-            <span class="material-symbols-outlined">info</span>
-            <span>{{ c.mensajeBloqueo }}</span>
-          </div>
-        }
-
         <!-- ── TAB 1: RESUMEN ───────────────────────────────────────── -->
         @if (tab() === 'resumen') {
           <!-- 5 KPI cards horizontales -->
@@ -649,16 +641,19 @@
           }
         </div>
         <div class="mdi__footer-der">
-          @if (c.puedeEditar) {
-            <app-button variant="secondary" icono="edit" (clic)="onEditar()">Editar</app-button>
-          }
-          @if (c.accionPrincipal === 'registrar_precotizacion') {
-            <app-button variant="primary" icono="receipt_long" (clic)="onAccionPrincipal()">
-              Registrar Precotización
+          @if (c.puedeGenerarComplementario) {
+            <app-button variant="secondary" icono="note_add" (clic)="onGenerarComplementario()">
+              {{ c.tieneComplementario ? 'Continuar Informe Complementario' : 'Generar Informe Complementario' }}
             </app-button>
-          } @else if (c.accionPrincipal === 'registrar_revision') {
-            <app-button variant="primary" icono="check_circle" (clic)="onAccionPrincipal()">
+          }
+          @if (c.puedeRegistrarRevision) {
+            <app-button variant="primary" icono="check_circle" (clic)="onRegistrarRevision()">
               Registrar Revisión
+            </app-button>
+          }
+          @if (c.tieneComplementario && c.idInformeComplementario) {
+            <app-button variant="primary" icono="description" (clic)="onVerComplementario()">
+              Ver Informe Complementario
             </app-button>
           }
         </div>
