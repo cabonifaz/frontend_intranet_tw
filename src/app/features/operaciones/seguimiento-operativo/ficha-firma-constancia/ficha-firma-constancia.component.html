@@ -1,0 +1,317 @@
+<div class="ffc">
+
+  <app-breadcrumb [items]="breadcrumb()" />
+
+  <app-hero-header
+    icono="draw"
+    [titulo]="'Firma de informes y Constancia'"
+    [descripcion]="subtitulo()"
+    [codigoFicha]="cabFirma()?.numeroOs || cabCons()?.numeroOs || ''"
+    [badgeTexto]="cabCons()?.cerradaEn ? 'CERRADA' : (cabCons()?.firmada ? 'FIRMADA' : 'EN FIRMAS')"
+    [badgeVariant]="cabCons()?.cerradaEn ? 'verde-dot' : (cabCons()?.firmada ? 'azul' : 'ambar-dot')"
+    [mostrarBack]="false" />
+
+  @if (cargando() && !firmas() && !constancia()) {
+    <div class="estado-card estado-card--info">
+      <span class="material-symbols-outlined">progress_activity</span>
+      <div>
+        <strong>Cargando firmas y constancia…</strong>
+      </div>
+    </div>
+  } @else {
+
+    <!-- Banner informativo -->
+    @if (cabFirma(); as f) {
+      <div class="banner" [class.banner--ambar]="!f.listo" [class.banner--verde]="f.listo">
+        <span class="material-symbols-outlined">{{ f.listo ? 'check_circle' : 'schedule' }}</span>
+        <div>
+          <strong>
+            {{ f.firmados }} / {{ f.informes }} informes firmados ·
+            {{ f.resueltos }} / {{ f.responsables }} responsables resueltos
+          </strong>
+          <small>
+            @if (f.tacitaActiva) { Conformidad tácita activa — }
+            {{ formatearHoras(f.segundosRestantes) }} (plazo {{ f.plazoHoras }} h).
+          </small>
+        </div>
+      </div>
+    }
+
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button type="button" class="tab" [class.tab--activo]="tab() === 'firma'"
+              (click)="tab.set('firma')">
+        <span class="material-symbols-outlined">draw</span>
+        Firma de informes
+      </button>
+      <button type="button" class="tab" [class.tab--activo]="tab() === 'constancia'"
+              (click)="tab.set('constancia')">
+        <span class="material-symbols-outlined">task</span>
+        Constancia de atención
+      </button>
+    </nav>
+
+    <!-- ── TAB FIRMA ──────────────────────────────────────────────────── -->
+    @if (tab() === 'firma' && firmas(); as f) {
+      <section class="bloque">
+        <h3>Informes del servicio</h3>
+        <div class="grid-informes">
+          @for (i of f.informes; track i.idOsEquipo) {
+            <article class="tarjeta-informe" [class.tarjeta-informe--ok]="i.firma === 'firmado'">
+              <header>
+                <strong>{{ i.numeroInforme || '— sin generar —' }}</strong>
+                <span [class]="claseFirma(i.firma)">{{ labelFirma(i.firma) }}</span>
+              </header>
+              <small>{{ i.equipo }} · {{ i.codigoEquipo || '—' }}</small>
+              @if (!i.completo && i.motivo) {
+                <p class="incompleto">
+                  <span class="material-symbols-outlined">warning</span>
+                  {{ i.motivo }}
+                </p>
+              }
+              @if (i.firmadoEn) { <small class="firmado-en">Firmado · {{ i.firmadoEn }}</small> }
+            </article>
+          }
+        </div>
+      </section>
+
+      <section class="bloque">
+        <h3>Responsables del cliente</h3>
+        @if (f.responsables.length === 0) {
+          <p class="sin-datos">No hay responsables registrados.</p>
+        }
+        @for (r of f.responsables; track r.clave) {
+          <article class="tarjeta-responsable">
+            <div class="tr-info">
+              <strong>{{ r.nombre }}</strong>
+              <small>{{ r.cargo || '—' }} · {{ r.telefono || 'sin tel.' }}</small>
+              <small class="tr-informes">{{ r.nInformes }} informe(s): {{ r.informes || '—' }}</small>
+            </div>
+            <div class="tr-estado">
+              <span [class]="claseFirma(r.firma)">{{ labelFirma(r.firma) }}</span>
+              @if (r.firmadoEn) { <small>{{ r.firmadoEn }} @if (r.firmante) { · {{ r.firmante }} }</small> }
+              @if (r.motivo) { <small class="motivo">{{ r.motivo }}</small> }
+            </div>
+            @if (!r.resuelto) {
+              <div class="tr-acciones">
+                <app-button variant="primary" icono="edit_note" (clic)="abrirFirmar(r)">Firmar físico</app-button>
+                <app-button variant="secondary" icono="person_off" (clic)="abrirAusente(r)">Marcar ausente</app-button>
+              </div>
+            }
+          </article>
+        }
+      </section>
+    }
+
+    <!-- ── TAB CONSTANCIA ─────────────────────────────────────────────── -->
+    @if (tab() === 'constancia' && constancia(); as c) {
+      <section class="bloque">
+        <h3>Datos del servicio</h3>
+        @if (c.cabecera; as cc) {
+          <dl class="info-dl">
+            <dt>N° OS</dt><dd>{{ cc.numeroOs }}</dd>
+            <dt>Cliente</dt><dd>{{ cc.cliente || '—' }}</dd>
+            <dt>Dirección</dt><dd>{{ cc.direccion || '—' }}</dd>
+            <dt>Contacto</dt>
+            <dd>
+              {{ cc.contactoNombre || '—' }}
+              @if (cc.contactoCargo) { · <small>{{ cc.contactoCargo }}</small> }
+              @if (cc.contactoTelefono) { · {{ cc.contactoTelefono }} }
+            </dd>
+            <dt>Correo</dt><dd>{{ cc.contactoCorreo || '—' }}</dd>
+            <dt>Fecha</dt><dd>{{ cc.fecha || '—' }}</dd>
+          </dl>
+        }
+      </section>
+
+      <section class="bloque">
+        <h3>Equipos atendidos</h3>
+        @if (c.equipos.length === 0) {
+          <p class="sin-datos">No hay equipos atendidos.</p>
+        }
+        <div class="tabla">
+          <table>
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Marca / Modelo</th>
+                <th>Serie</th>
+                <th>Certificado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (e of c.equipos; track e.codigo) {
+                <tr>
+                  <td>{{ e.equipo || '—' }}</td>
+                  <td>{{ e.marca || '—' }} {{ e.modelo || '' }}</td>
+                  <td>{{ e.serie || '—' }}</td>
+                  <td>{{ e.certificado || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      @if (c.faltan.length > 0) {
+        <section class="bloque">
+          <h3>Firmas pendientes</h3>
+          <ul class="faltantes">
+            @for (ff of c.faltan; track ff.nombre) {
+              <li>
+                <span class="material-symbols-outlined">warning</span>
+                <div>
+                  <strong>{{ ff.nombre }}</strong>
+                  <small>{{ ff.cargo || '—' }} · Informes: {{ ff.informes || '—' }}</small>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <!-- Firma y generación -->
+      <section class="bloque bloque--acciones">
+        <h3>Firma y generación de la constancia</h3>
+
+        @if (c.cabecera.firmada) {
+          <div class="banner banner--verde">
+            <span class="material-symbols-outlined">check_circle</span>
+            <div>
+              <strong>Constancia firmada por {{ c.cabecera.firmante || '—' }}</strong>
+              <small>{{ c.cabecera.firmadoEn || '—' }}</small>
+            </div>
+          </div>
+          @if (fotoConstancia(); as fc) {
+            <div class="preview-foto">
+              <img [src]="fc" alt="Firma de la constancia" />
+            </div>
+          }
+        } @else {
+          <app-button variant="primary" icono="edit_note" (clic)="abrirFirmarConstancia()">
+            Firmar constancia (físico)
+          </app-button>
+        }
+
+        <div class="acciones-finales">
+          @if (!c.cabecera.generadaEn) {
+            <app-button variant="primary" icono="task_alt"
+                        [disabled]="!c.cabecera.puedeGenerar"
+                        [cargando]="generandoConstancia()"
+                        (clic)="generarConstancia()">
+              Generar constancia
+            </app-button>
+          }
+          @if (c.cabecera.generadaEn) {
+            <app-button variant="secondary" icono="download" (clic)="descargarConstancia('pdf')">
+              Descargar PDF
+            </app-button>
+            @if (c.cabecera.tieneFoto) {
+              <app-button variant="secondary" icono="image" (clic)="descargarConstancia('foto')">
+                Descargar foto firma
+              </app-button>
+            }
+          }
+        </div>
+
+        @if (c.cabecera.envioDestino) {
+          <small class="envio">
+            Envío al cliente: <strong>{{ c.cabecera.envioEstado }}</strong> · {{ c.cabecera.envioDestino }}
+            @if (c.cabecera.envioEn) { · {{ c.cabecera.envioEn }} }
+          </small>
+        }
+      </section>
+    }
+
+  }
+
+  <!-- Footer -->
+  <div class="footer">
+    <app-button variant="ghost" (clic)="volver()">Volver</app-button>
+  </div>
+
+</div>
+
+<!-- ─── Modal firmar físico ──────────────────────────────────────────── -->
+@if (mostrarModalFirmar() && responsableActivo(); as r) {
+  <div class="overlay" (click)="cerrarFirmar()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Firmar en físico</strong>
+        <small>{{ r.nombre }} · {{ r.nInformes }} informe(s)</small>
+      </header>
+      <label>
+        <span>Nombre del firmante</span>
+        <input type="text" [ngModel]="nombreFirma()" (ngModelChange)="nombreFirma.set($event)"
+               [disabled]="firmando()" />
+      </label>
+      <label class="upload">
+        <span>Foto del papel firmado</span>
+        <input type="file" accept="image/*" (change)="onArchivoFirma($event)" [disabled]="firmando()" />
+        @if (archivoFirma(); as f) { <small>{{ f.name }} ({{ (f.size / 1024).toFixed(0) }} KB)</small> }
+      </label>
+      <footer>
+        <app-button variant="ghost" (clic)="cerrarFirmar()" [disabled]="firmando()">Cancelar</app-button>
+        <app-button variant="primary" icono="save" (clic)="confirmarFirmar()" [cargando]="firmando()">
+          Registrar firma
+        </app-button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ─── Modal cliente ausente ────────────────────────────────────────── -->
+@if (mostrarModalAusente() && responsableActivo(); as r) {
+  <div class="overlay" (click)="cerrarAusente()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Cliente ausente</strong>
+        <small>{{ r.nombre }} · {{ r.nInformes }} informe(s)</small>
+      </header>
+      <p class="nota">
+        Si el responsable no está presente para firmar, dejá el motivo (mín. 5 chars).
+        Queda registrado para la conformidad tácita.
+      </p>
+      <label>
+        <span>Motivo</span>
+        <textarea rows="3" maxlength="300"
+                  [ngModel]="motivoAusente()" (ngModelChange)="motivoAusente.set($event)"
+                  [disabled]="marcandoAusente()"></textarea>
+      </label>
+      <footer>
+        <app-button variant="ghost" (clic)="cerrarAusente()" [disabled]="marcandoAusente()">Cancelar</app-button>
+        <app-button variant="primary" icono="person_off" (clic)="confirmarAusente()" [cargando]="marcandoAusente()">
+          Marcar ausente
+        </app-button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ─── Modal firmar constancia ──────────────────────────────────────── -->
+@if (mostrarModalConstanciaFoto()) {
+  <div class="overlay" (click)="cerrarFirmarConstancia()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <header>
+        <strong>Firmar constancia (físico)</strong>
+        <small>Foto del papel firmado por el contacto principal.</small>
+      </header>
+      <label>
+        <span>Nombre del firmante</span>
+        <input type="text" [ngModel]="nombreConstancia()" (ngModelChange)="nombreConstancia.set($event)"
+               [disabled]="firmandoConstancia()" />
+      </label>
+      <label class="upload">
+        <span>Foto del papel firmado</span>
+        <input type="file" accept="image/*" (change)="onArchivoConstancia($event)" [disabled]="firmandoConstancia()" />
+        @if (archivoConstancia(); as f) { <small>{{ f.name }} ({{ (f.size / 1024).toFixed(0) }} KB)</small> }
+      </label>
+      <footer>
+        <app-button variant="ghost" (clic)="cerrarFirmarConstancia()" [disabled]="firmandoConstancia()">Cancelar</app-button>
+        <app-button variant="primary" icono="save" (clic)="confirmarFirmarConstancia()" [cargando]="firmandoConstancia()">
+          Registrar firma
+        </app-button>
+      </footer>
+    </div>
+  </div>
+}

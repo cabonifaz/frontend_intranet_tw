@@ -335,6 +335,15 @@ export const routes: Routes = [
             m => m.FichaRegistrarInformeComponent
           ),
       },
+      {
+        // HU-55 Fase 6: firma de informes + constancia de atención (nivel OS).
+        path: 'operaciones/seguimiento-operativo/:idOs/firma-constancia',
+        canActivate: [permisoRutaGuard('seg_bandeja')],
+        loadComponent: () =>
+          import('./features/operaciones/seguimiento-operativo/ficha-firma-constancia/ficha-firma-constancia.component').then(
+            m => m.FichaFirmaConstanciaComponent
+          ),
+      },
       // ─── Módulo 12 — Revisión de Informes Técnicos ───────────────────────
       {
         path: 'servicio-tecnico/revision-informes',
