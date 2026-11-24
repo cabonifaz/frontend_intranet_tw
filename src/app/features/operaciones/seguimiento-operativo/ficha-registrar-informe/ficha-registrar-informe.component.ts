@@ -84,11 +84,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
   readonly finIniciar          = signal<string>('');
   readonly comentarioIniciar   = signal<string>('');
 
-  /** Modal "Pausar otro equipo abierto". */
-  readonly mostrarModalPausar = signal(false);
-  readonly motivoPausar       = signal<string>('');
-  readonly pausando           = signal(false);
-
   readonly ETAPAS: EtapaMeta[] = [
     { n: 1, codigo: 'variables',   titulo: 'Variables ambientales',     subtitulo: 'Temperatura, humedad y procedencia',   icono: 'thermostat'   },
     { n: 2, codigo: 'fotos',       titulo: 'Registro fotográfico',       subtitulo: '8 u 9 evidencias obligatorias + extras', icono: 'photo_camera' },
@@ -141,18 +136,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
 
   readonly codigoFicha = computed(() => this.fila()?.codigoTw ?? this.fila()?.numeroOs ?? '');
 
-  /** True cuando el back dice que todavía no se puede iniciar el registro. */
-  readonly bloqueado = computed(() => {
-    const f = this.fila();
-    return !!f && !f.registroPropio && !f.puedeIniciar;
-  });
-
-  /** True cuando el informe ya está generado — nada por hacer acá. */
-  readonly informeYaGenerado = computed(() => !!this.fila()?.informeGenerado);
-
-  /** True cuando el técnico dejó OTRO equipo abierto y hay que pausarlo primero. */
-  readonly debePausarOtro = computed(() => !!this.fila()?.otroEquipoAbierto);
-
   /** True cuando la sesión está activa y es propia (ya se puede trabajar). */
   readonly sesionActiva = computed(() => !!this.fila()?.registroPropio && !!this.fila()?.iniciado);
 
@@ -192,9 +175,11 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
       const ctx = await this.svc.contextoRegistro(idOs, idEq);
       this.contexto.set(ctx);
 
-      // Si el informe ya está generado, avisamos y dejamos solo-lectura.
-      if (ctx.contexto.informeGenerado) {
-        this.toast.info(`El informe de este equipo ya fue generado (N° ${ctx.contexto.numeroInforme ?? '—'}).`);
+      // La validación de si "puede iniciar" se hace ANTES de entrar, desde el tab
+      // Avance por Equipos. Acá asumimos que la Asistente llegó autorizada. Si no
+      // hay sesión activa todavía, abrimos el modal "Comenzar registro" de una.
+      if (!ctx.contexto.informeGenerado && !ctx.contexto.iniciado) {
+        this.abrirModalIniciar();
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'No se pudo cargar el contexto del registro.';
@@ -257,35 +242,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
       }
     } finally {
       this.iniciando.set(false);
-    }
-  }
-
-  // ─── Pausar otro equipo abierto ──────────────────────────────────────
-
-  abrirModalPausar(): void {
-    this.motivoPausar.set('');
-    this.mostrarModalPausar.set(true);
-  }
-
-  cerrarModalPausar(): void {
-    if (this.pausando()) return;
-    this.mostrarModalPausar.set(false);
-  }
-
-  async confirmarPausar(): Promise<void> {
-    const idOs = this.idOs(), idEq = this.idOsEquipo();
-    if (!idOs || !idEq) return;
-    this.pausando.set(true);
-    try {
-      await this.svc.pausarEquipoAbierto(idOs, idEq, this.motivoPausar().trim() || null);
-      this.mostrarModalPausar.set(false);
-      this.toast.exito('Se pausó el otro equipo. Ahora podés iniciar el registro.');
-      await this.cargarContexto();
-    } catch (e: unknown) {
-      const err = e as Error;
-      this.toast.error(err?.message || 'No se pudo pausar el otro equipo.');
-    } finally {
-      this.pausando.set(false);
     }
   }
 

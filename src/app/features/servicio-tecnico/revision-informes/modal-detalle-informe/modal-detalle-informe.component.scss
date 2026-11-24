@@ -57,6 +57,18 @@
   strong { color: #0F172A; font-weight: 600; }
 }
 
+// HU-55: badge "Registrado desde Intranet por X en representación de Y"
+.mdi__badge-intranet {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 8px;
+  padding: 5px 10px;
+  background: #FFFBEB; color: #92400E;
+  border: 1px solid #FDE68A; border-radius: 8px;
+  font-size: 12px; line-height: 1.4;
+  strong { color: #78350F; font-weight: 700; }
+  .material-symbols-outlined { font-size: 16px; color: #D97706; flex-shrink: 0; }
+}
+
 .mdi__cerrar {
   width: 32px; height: 32px; border-radius: 8px;
   background: transparent; border: 0; cursor: pointer;

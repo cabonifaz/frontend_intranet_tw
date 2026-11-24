@@ -8,8 +8,8 @@
     [titulo]="'Registrar Informe Técnico'"
     [descripcion]="subtitulo()"
     [codigoFicha]="codigoFicha()"
-    [badgeTexto]="informeYaGenerado() ? 'GENERADO' : (sesionActiva() ? 'EN REGISTRO' : 'BORRADOR')"
-    [badgeVariant]="informeYaGenerado() ? 'verde-dot' : (sesionActiva() ? 'azul' : 'ambar-dot')"
+    [badgeTexto]="sesionActiva() ? 'EN REGISTRO' : 'BORRADOR'"
+    [badgeVariant]="sesionActiva() ? 'azul' : 'ambar-dot'"
     [mostrarBack]="false" />
 
   <!-- ── Estado: cargando ─────────────────────────────────────────────── -->
@@ -47,62 +47,6 @@
       </div>
     </div>
 
-    <!-- ── Bloqueado: no puede iniciar (ni propio, ni posible) ──────── -->
-    @if (bloqueado() && !sesionActiva() && !informeYaGenerado()) {
-      <div class="estado-card estado-card--rojo">
-        <span class="material-symbols-outlined">lock</span>
-        <div>
-          <strong>No se puede iniciar el registro</strong>
-          <small>
-            {{ f.motivoNoPuede || 'El equipo no está en un estado válido para registrar el informe.' }}
-            @if (f.registroActivo && f.registradorNombre && !f.registroPropio) {
-              <br>Actualmente lo está registrando <strong>{{ f.registradorNombre }}</strong>.
-            }
-          </small>
-        </div>
-      </div>
-    }
-
-    <!-- ── Hay otro equipo abierto: pedir pausa ─────────────────────── -->
-    @else if (debePausarOtro() && !sesionActiva() && !informeYaGenerado()) {
-      <div class="estado-card estado-card--ambar">
-        <span class="material-symbols-outlined">pause_circle</span>
-        <div>
-          <strong>El técnico tiene otro equipo abierto</strong>
-          <small>
-            <strong>{{ f.otroEquipoAbierto }}</strong> está en ejecución. Para registrar este equipo, primero pausamos el otro.
-          </small>
-        </div>
-        <app-button variant="secondary" icono="pause" (clic)="abrirModalPausar()">Pausar el otro equipo</app-button>
-      </div>
-    }
-
-    <!-- ── Puede iniciar: botón comenzar ────────────────────────────── -->
-    @else if (!sesionActiva() && !informeYaGenerado()) {
-      <div class="estado-card estado-card--azul">
-        <span class="material-symbols-outlined">play_circle</span>
-        <div>
-          <strong>Listo para comenzar</strong>
-          <small>
-            Al comenzar se toma el bloqueo del equipo por 30 minutos (se renueva al guardar).
-            Indicás la hora de inicio y fin del trabajo en campo y el motivo por el que registrás vos.
-          </small>
-        </div>
-        <app-button variant="primary" icono="play_arrow" (clic)="abrirModalIniciar()">Comenzar registro</app-button>
-      </div>
-    }
-
-    <!-- ── Informe ya generado ──────────────────────────────────────── -->
-    @else if (informeYaGenerado()) {
-      <div class="estado-card estado-card--verde">
-        <span class="material-symbols-outlined">verified</span>
-        <div>
-          <strong>Informe generado</strong>
-          <small>Este equipo ya tiene informe N° <strong>{{ f.numeroInforme || '—' }}</strong>.</small>
-        </div>
-      </div>
-    }
-
     <!-- Stepper visual (clickeable solo si hay sesión activa) -->
     <div class="stepper" [class.stepper--disabled]="!sesionActiva()">
       @for (e of ETAPAS; track e.n) {
@@ -134,9 +78,9 @@
 
         @if (!sesionActiva()) {
           <article class="paso-card paso-card--vacio">
-            <span class="material-symbols-outlined">lock_clock</span>
-            <h3>Las etapas se habilitan al comenzar el registro.</h3>
-            <p>Usá el botón "Comenzar registro" (o pausá el otro equipo si corresponde) para arrancar.</p>
+            <span class="material-symbols-outlined">progress_activity</span>
+            <h3>Preparando el registro…</h3>
+            <p>Completá la ventana del trabajo en el modal para arrancar con las etapas.</p>
           </article>
         } @else {
           @switch (paso()) {
@@ -284,42 +228,6 @@
       <app-button variant="ghost"   (clic)="cerrarModalIniciar()" [disabled]="iniciando()">Cancelar</app-button>
       <app-button variant="primary" icono="play_arrow" (clic)="confirmarIniciar()" [cargando]="iniciando()">
         Comenzar
-      </app-button>
-    </div>
-  </app-modal>
-}
-
-<!-- ─── Modal: Pausar otro equipo abierto ──────────────────────────────── -->
-@if (mostrarModalPausar()) {
-  <app-modal
-    titulo="Pausar el otro equipo abierto"
-    [subtitulo]="'El técnico dejó ' + (fila()?.otroEquipoAbierto || 'otro equipo') + ' en ejecución.'"
-    icono="pause"
-    iconoColor="ambar"
-    ancho="md"
-    [cerrable]="!pausando()"
-    (cerrar)="cerrarModalPausar()">
-
-    <div class="modal-form">
-      <p class="modal-form__nota">
-        Al pausar el otro equipo, el estado queda en <strong>Pausado</strong> y vos podés iniciar
-        el registro de este equipo. Si el técnico reabre el equipo pausado luego, retoma desde donde lo dejó.
-      </p>
-      <label class="modal-form__full">
-        <span>Motivo (opcional)</span>
-        <textarea rows="3"
-                  maxlength="300"
-                  [ngModel]="motivoPausar()"
-                  (ngModelChange)="motivoPausar.set($event)"
-                  [disabled]="pausando()"
-                  placeholder="Por qué se pausa el otro equipo."></textarea>
-      </label>
-    </div>
-
-    <div class="modal-footer">
-      <app-button variant="ghost"   (clic)="cerrarModalPausar()" [disabled]="pausando()">Cancelar</app-button>
-      <app-button variant="primary" icono="pause" (clic)="confirmarPausar()" [cargando]="pausando()">
-        Pausar
       </app-button>
     </div>
   </app-modal>

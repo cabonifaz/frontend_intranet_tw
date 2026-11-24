@@ -5,12 +5,9 @@ import { environment } from '../../../environments/environment';
 import {
   CertificadoGuardadoApi,
   CierreEquipoApi,
-  ConstanciaApi,
   ContextoRegistroApi,
   EvidenciasApi,
   EnsayosApi,
-  FirmaAusentePayload,
-  FirmasApi,
   FotoFallaSubidaApi,
   GuardarCabeceraInformeApi,
   GuardarCertificadoPayload,
@@ -34,8 +31,7 @@ import {
 /**
  * HU-55 — Registrar Informe Técnico desde Intranet.
  *
- * Cliente de /api/intranet/servicios/{idOs}/equipos/{idOsEquipo}/... y
- * /api/intranet/servicios/{idOs}/{firma-informes|constancia}/...
+ * Cliente de /api/intranet/servicios/{idOs}/equipos/{idOsEquipo}/...
  *
  * Reglas comunes:
  *  - Envelope { idTipoMensaje, mensaje, datos } — 2 = éxito.
@@ -353,99 +349,6 @@ export class RegistroInformeIntranetService {
       );
       return this.unwrap(r, 'No se pudo generar el informe.');
     } catch (e) { throw this.comoError(e, 'No se pudo generar el informe.'); }
-  }
-
-  // ─── 9. Firma de informes (nivel OS) ───────────────────────────────────
-
-  async obtenerFirmaInformes(idOs: number): Promise<FirmasApi> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    try {
-      return await this.get<FirmasApi>(`${this.base}/${idOs}/firma-informes`);
-    } catch (e) { throw this.comoError(e, 'No se pudo cargar la firma de informes.'); }
-  }
-
-  /** Firma un informe en formato físico (foto del papel + nombre). */
-  async firmarInformeFisico(
-    idOs: number, clave: string, foto: File, nombre: string,
-  ): Promise<unknown> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    if (!clave || clave.length !== 32) throw new Error('La clave del responsable no es válida.');
-    try {
-      const form = new FormData();
-      form.append('foto', foto);
-      form.append('nombre', nombre);
-      const r = await firstValueFrom(
-        this.http.post<RespuestaIntranetApi<unknown>>(
-          `${this.base}/${idOs}/firma-informes/${clave}/fisico`, form,
-        ),
-      );
-      return this.unwrap(r, 'No se pudo registrar la firma física.');
-    } catch (e) { throw this.comoError(e, 'No se pudo registrar la firma física.'); }
-  }
-
-  /** Marca un informe como "cliente ausente" (con motivo 5–300 chars). */
-  async firmarInformeAusente(
-    idOs: number, clave: string, datos: FirmaAusentePayload,
-  ): Promise<unknown> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    if (!clave || clave.length !== 32) throw new Error('La clave del responsable no es válida.');
-    try {
-      const r = await firstValueFrom(
-        this.http.post<RespuestaIntranetApi<unknown>>(
-          `${this.base}/${idOs}/firma-informes/${clave}/ausente`, datos,
-        ),
-      );
-      return this.unwrap(r, 'No se pudo registrar el cliente ausente.');
-    } catch (e) { throw this.comoError(e, 'No se pudo registrar el cliente ausente.'); }
-  }
-
-  // ─── 10. Constancia (nivel OS) ─────────────────────────────────────────
-
-  async obtenerConstancia(idOs: number): Promise<ConstanciaApi> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    try {
-      return await this.get<ConstanciaApi>(`${this.base}/${idOs}/constancia`);
-    } catch (e) { throw this.comoError(e, 'No se pudo cargar la constancia.'); }
-  }
-
-  async firmarConstanciaFisico(
-    idOs: number, foto: File, nombre: string,
-  ): Promise<unknown> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    try {
-      const form = new FormData();
-      form.append('foto', foto);
-      form.append('nombre', nombre);
-      const r = await firstValueFrom(
-        this.http.post<RespuestaIntranetApi<unknown>>(
-          `${this.base}/${idOs}/constancia/fisico`, form,
-        ),
-      );
-      return this.unwrap(r, 'No se pudo registrar la firma física de la constancia.');
-    } catch (e) { throw this.comoError(e, 'No se pudo registrar la firma física de la constancia.'); }
-  }
-
-  /** Cierra el servicio generando la constancia (requiere firma del cliente). */
-  async generarConstancia(idOs: number): Promise<unknown> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    try {
-      const r = await firstValueFrom(
-        this.http.post<RespuestaIntranetApi<unknown>>(
-          `${this.base}/${idOs}/constancia/generar`, {},
-        ),
-      );
-      return this.unwrap(r, 'No se pudo generar la constancia.');
-    } catch (e) { throw this.comoError(e, 'No se pudo generar la constancia.'); }
-  }
-
-  async obtenerArchivoConstancia(idOs: number, tipo: 'pdf' | 'foto' = 'pdf'): Promise<Blob> {
-    if (!Number.isInteger(idOs) || idOs <= 0) throw new Error('La OS no es válida.');
-    try {
-      const params = new HttpParams().set('tipo', tipo);
-      return await firstValueFrom(
-        this.http.get(`${this.base}/${idOs}/constancia/archivo`, { params, responseType: 'blob' }),
-      );
-    } catch (e) { throw this.comoError(e, 'No se pudo descargar el archivo de la constancia.'); }
   }
 
   // ─── HTTP helpers ──────────────────────────────────────────────────────

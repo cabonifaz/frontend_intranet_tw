@@ -23,6 +23,15 @@
               @if (c.horaInicio) { {{ c.horaInicio }} }
               @if (c.duracionMin) { · duración {{ (c.duracionMin / 60) | number:'1.0-0' }}h {{ c.duracionMin % 60 }}m }
             </p>
+
+            @if (c.via === 'intranet' && c.registradoPor) {
+              <div class="mdi__badge-intranet" title="Registro HU-55 (cliente no permitió el móvil en planta)">
+                <span class="material-symbols-outlined">assignment_ind</span>
+                Registrado desde Intranet por <strong>{{ c.registradoPor }}</strong>
+                en representación de <strong>{{ c.tecnico ?? 'técnico asignado' }}</strong>
+                @if (c.fechaRegistro) { · {{ c.fechaRegistro | date:'dd/MM/yyyy HH:mm' }} }
+              </div>
+            }
           }
         </div>
       </div>
