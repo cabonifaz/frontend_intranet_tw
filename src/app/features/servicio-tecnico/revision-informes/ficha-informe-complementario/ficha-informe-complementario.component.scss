@@ -1,0 +1,472 @@
+// HU-58 reescrita — Ficha del Informe Complementario
+
+:host { display: block; }
+
+.ficha-comp {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 16px 20px 32px;
+  background: #F8FAFC; min-height: 100%;
+}
+
+// Aviso cuando el complementario está vacío (antes del footer)
+.aviso-vacio {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: #FFFBEB; border: 1px solid #FCD34D;
+  border-radius: 10px;
+  color: #92400E; font-size: 12.5px; line-height: 1.5;
+
+  .material-symbols-outlined { font-size: 20px; color: #D97706; flex-shrink: 0; }
+}
+
+// ── Estados ────────────────────────────────────────────────────────────────
+.estado {
+  display: flex; align-items: center; gap: 12px;
+  padding: 24px;
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;
+  color: #475569;
+
+  .material-symbols-outlined { font-size: 28px; color: #2563EB; }
+  &--error { border-color: #FECACA; background: #FEF2F2; color: #991B1B;
+    .material-symbols-outlined { color: #DC2626; }
+    strong { display: block; font-weight: 600; }
+    p { margin: 2px 0 0; font-size: 12.5px; }
+  }
+
+  .spin { animation: spin 1s linear infinite; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Banner informativo (inmutabilidad + botón PDF) ─────────────────────────
+.banner-info {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px 16px;
+  background: #EFF6FF; border: 1px solid #BFDBFE;
+  border-radius: 10px; color: #1E40AF;
+  font-size: 12.5px; line-height: 1.5;
+
+  .material-symbols-outlined { font-size: 20px; color: #2563EB; flex-shrink: 0; }
+  strong { font-weight: 600; }
+
+  &__texto { flex: 1; }
+}
+
+// ── Navegación de tabs ─────────────────────────────────────────────────────
+.tabs-nav {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  padding: 6px;
+  background: #FFFFFF; border: 1px solid #E2E8F0;
+  border-radius: 12px;
+}
+
+.tabs-nav__item {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: #475569;
+  font-size: 12.5px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s;
+
+  .material-symbols-outlined { font-size: 18px; }
+
+  &:hover { background: #F1F5F9; color: #0F172A; }
+
+  &--activo {
+    background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8;
+    .material-symbols-outlined { color: #2563EB; }
+  }
+
+  &--editable:not(.tabs-nav__item--activo) {
+    color: #0F172A;
+  }
+}
+
+.tabs-nav__chip {
+  padding: 1px 7px;
+  background: #FEF3C7; color: #92400E;
+  border-radius: 999px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+}
+
+// ── Panel de cada tab ──────────────────────────────────────────────────────
+.tab-panel {
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+// ── Placeholder card (shell visual mientras llega el back) ────────────────
+.placeholder-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 18px;
+  background: #FFFBEB; border: 1px dashed #FCD34D;
+  border-radius: 10px; color: #92400E;
+
+  .material-symbols-outlined { font-size: 22px; color: #D97706; flex-shrink: 0; }
+  strong { display: block; font-size: 13px; color: #78350F; margin-bottom: 4px; }
+  p { margin: 0; font-size: 12px; line-height: 1.5; }
+  code { padding: 1px 6px; background: rgba(255,255,255,.7); border-radius: 4px; font-size: 11.5px; }
+
+  &--editable {
+    background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF;
+    .material-symbols-outlined { color: #2563EB; }
+    strong { color: #1E40AF; }
+  }
+}
+
+// ── 1. Resumen del informe original (readonly) ─────────────────────────────
+.original-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px; margin-bottom: 14px;
+}
+
+.original-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 12px;
+  background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px;
+
+  &__label { font-size: 10.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.3px; }
+  &__valor { font-size: 13px; color: #0F172A; }
+}
+
+// ── Stat-cards Resultado Global + Error Máximo (consistente con modal detalle)
+.stats-ensayos {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stat-ensayo {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: #FFFFFF; border: 1px solid #E2E8F0;
+
+  &__icono {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: #F1F5F9; color: #64748B;
+    .material-symbols-outlined { font-size: 24px; }
+  }
+  &__texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  &__label { font-size: 11.5px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.3px; }
+  &__valor { font-size: 17px; font-weight: 700; color: #0F172A; }
+
+  &--verde   { background: #F0FDF4; border-color: #BBF7D0;
+    .stat-ensayo__icono { background: #DCFCE7; color: #16A34A; }
+    .stat-ensayo__valor { color: #15803D; }
+  }
+  &--rojo    { background: #FEF2F2; border-color: #FECACA;
+    .stat-ensayo__icono { background: #FEE2E2; color: #DC2626; }
+    .stat-ensayo__valor { color: #B91C1C; }
+  }
+  &--gris    { background: #F8FAFC; border-color: #E2E8F0; }
+  &--neutro  { background: #F8FAFC; border-color: #E2E8F0;
+    .stat-ensayo__icono { background: #E0E7FF; color: #4338CA; }
+  }
+}
+
+@media (max-width: 720px) {
+  .stats-ensayos { grid-template-columns: 1fr; }
+}
+
+.resumen-counters {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+
+.counter-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: #F1F5F9; border: 1px solid #E2E8F0;
+  border-radius: 999px; color: #475569;
+  font-size: 12.5px;
+  .material-symbols-outlined { font-size: 16px; }
+  strong { color: #0F172A; font-weight: 700; }
+}
+
+// ── Flags del diagnóstico (Tab 1) ──────────────────────────────────────────
+.flags-grid {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+}
+
+.flag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: #F1F5F9; border: 1px solid #E2E8F0;
+  border-radius: 999px; color: #94A3B8;
+  font-size: 12px;
+  .material-symbols-outlined { font-size: 16px; color: #94A3B8; }
+
+  &--on {
+    background: #DBEAFE; border-color: #BFDBFE; color: #1D4ED8;
+    .material-symbols-outlined { color: #2563EB; }
+  }
+}
+
+.texto-readonly {
+  margin: 0; padding: 12px 14px;
+  background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
+  font-size: 13px; color: #334155; line-height: 1.6; white-space: pre-wrap;
+}
+
+// ── Celdas (Tab 2) ─────────────────────────────────────────────────────────
+.celdas-grid { margin-top: 14px; }
+.subtitulo {
+  margin: 0 0 8px; font-size: 11.5px; font-weight: 700; color: #475569;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.celdas-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.celda-chip {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 12px;
+  background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px;
+  min-width: 60px;
+  small { font-size: 10px; color: #64748B; font-weight: 600; }
+  strong { font-size: 13px; color: #0F172A; }
+}
+
+// ── Procedimiento (Tab 2) ──────────────────────────────────────────────────
+.procedimiento-lista {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.procedimiento-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px;
+  background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 8px;
+
+  .material-symbols-outlined { font-size: 22px; color: #94A3B8; flex-shrink: 0; margin-top: 1px; }
+
+  &--ok {
+    background: #F0FDF4; border-color: #BBF7D0;
+    .material-symbols-outlined { color: #16A34A; }
+  }
+
+  &__texto {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+    strong { font-size: 13px; color: #0F172A; }
+    small  { font-size: 11.5px; color: #64748B; line-height: 1.4; }
+  }
+  &__nota { font-style: italic; color: #475569; }
+}
+
+// ── Stat-cards Tab 3: ya existen arriba; agrego variante "full" ────────────
+.stat-ensayo--full { grid-column: 1 / -1; }
+
+.alerta-critico {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: #FEF2F2; border: 1px solid #FECACA; border-radius: 10px;
+  color: #991B1B; font-size: 12.5px;
+  .material-symbols-outlined { font-size: 20px; color: #DC2626; flex-shrink: 0; }
+  strong { font-weight: 600; }
+}
+
+// ── Tabla de ensayos (Tab 3) ───────────────────────────────────────────────
+.ensayos-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid #E2E8F0; border-radius: 10px;
+}
+
+.ensayos-tabla {
+  width: 100%; border-collapse: collapse; font-size: 12.5px;
+
+  thead { background: #F1F5F9;
+    th { padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 700;
+         color: #475569; text-transform: uppercase; letter-spacing: 0.3px;
+         border-bottom: 1px solid #E2E8F0; white-space: nowrap;
+         &.num { text-align: right; }
+    }
+  }
+  tbody tr {
+    border-bottom: 1px solid #F1F5F9;
+    &:last-child { border-bottom: 0; }
+    &:hover { background: #F8FAFC; }
+  }
+  td {
+    padding: 8px 12px; color: #334155;
+    &.num { text-align: right; font-variant-numeric: tabular-nums; }
+  }
+  &__nc { background: #FEF2F2;
+    &:hover { background: #FEE2E2; }
+  }
+}
+
+.chip-tipo {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  &--pesaje { background: #DBEAFE; color: #1D4ED8; }
+  &--excentricidad { background: #FDF2F8; color: #9D174D; }
+}
+
+.chip-res {
+  display: inline-block;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+  background: #F1F5F9; color: #64748B;
+  &--ok { background: #DCFCE7; color: #166534; }
+  &--nc { background: #FEE2E2; color: #991B1B; }
+}
+
+// ── Textarea Observaciones Generales (Tab 5) ───────────────────────────────
+.textarea-wrap {
+  display: flex; flex-direction: column; gap: 4px;
+
+  textarea {
+    padding: 10px 12px;
+    border: 1px solid #CBD5E1; border-radius: 8px;
+    font-size: 13px; font-family: inherit; color: #0F172A; resize: vertical;
+    &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+  }
+  .contador { align-self: flex-end; font-size: 11px; color: #94A3B8; }
+}
+
+// ── Vacío ──────────────────────────────────────────────────────────────────
+.vacio {
+  text-align: center; padding: 20px;
+  color: #94A3B8; font-size: 12.5px; font-style: italic;
+}
+
+// ── Lista de observaciones / recomendaciones ───────────────────────────────
+.lista-obs { display: flex; flex-direction: column; gap: 12px; }
+
+.obs {
+  padding: 12px 14px;
+  border: 1px solid #E2E8F0; border-radius: 10px;
+  background: #FFFFFF;
+
+  &__head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+
+    strong { font-size: 12.5px; color: #475569; font-weight: 600; }
+    .btn-quitar { margin-left: auto; }
+  }
+  &__grid {
+    display: grid; grid-template-columns: 1fr 180px;
+    gap: 10px;
+
+    label {
+      display: flex; flex-direction: column; gap: 4px;
+      font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase;
+
+      &.full { grid-column: 1 / -1; }
+      input, select, textarea {
+        padding: 7px 9px;
+        border: 1px solid #CBD5E1; border-radius: 6px;
+        font-size: 12.5px; font-family: inherit; color: #0F172A;
+        &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+      }
+    }
+  }
+}
+
+.chip-origen {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border: 1px solid #CBD5E1; border-radius: 999px;
+  background: #F1F5F9; color: #475569;
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+
+  &--sup { border-color: #BFDBFE; background: #EFF6FF; color: #1E40AF; }
+}
+
+// ── Botón quitar ───────────────────────────────────────────────────────────
+.btn-quitar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border: 1px solid #FECACA; border-radius: 6px; background: #FEF2F2;
+  color: #DC2626; cursor: pointer;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #FEE2E2; }
+}
+
+// ── Botón adjuntar (label que simula botón) ────────────────────────────────
+.btn-adjuntar {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #BFDBFE; border-radius: 8px;
+  background: #EFF6FF; color: #1E40AF;
+  font-size: 12.5px; font-weight: 500; cursor: pointer;
+  .material-symbols-outlined { font-size: 16px; }
+  &:hover { background: #DBEAFE; }
+}
+
+// ── Galería de fotos ───────────────────────────────────────────────────────
+.galeria {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.galeria__item {
+  position: relative; margin: 0;
+  border: 1px solid #E2E8F0; border-radius: 10px;
+  overflow: hidden; background: #FFFFFF;
+
+  .galeria__media {
+    width: 100%; height: 110px; object-fit: cover; display: block; background: #0F172A;
+  }
+  .galeria__skeleton {
+    width: 100%; height: 110px;
+    display: flex; align-items: center; justify-content: center;
+    background: #F1F5F9; color: #94A3B8;
+    .material-symbols-outlined { font-size: 22px; }
+    &--error { background: #FEF2F2; color: #DC2626; }
+    .spin { animation: spin 1s linear infinite; }
+  }
+
+  figcaption {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    background: #F8FAFC; border-top: 1px solid #E2E8F0;
+    font-size: 11px;
+
+    .btn-quitar { margin-left: auto; width: 24px; height: 24px; .material-symbols-outlined { font-size: 14px; } }
+  }
+}
+
+.chip-video {
+  padding: 1px 6px;
+  background: #1E293B; color: #FFFFFF;
+  border-radius: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.3px;
+}
+
+// ── Tabla precotización ────────────────────────────────────────────────────
+.precot-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid #E2E8F0; border-radius: 10px;
+}
+
+.precot-tabla {
+  width: 100%; border-collapse: collapse; font-size: 12.5px;
+
+  thead { background: #F1F5F9;
+    th { padding: 8px 10px; text-align: left; font-size: 10.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid #E2E8F0; }
+  }
+  tbody tr { border-bottom: 1px solid #F1F5F9;
+    &:last-child { border-bottom: 0; }
+  }
+  td { padding: 6px 10px; vertical-align: middle;
+    input, select {
+      width: 100%; padding: 6px 8px;
+      border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12.5px; font-family: inherit;
+      &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+    }
+    input.num { max-width: 80px; }
+  }
+}
+
+.nota-precot {
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 12px;
+  font-size: 11px; color: #64748B; font-weight: 600; text-transform: uppercase;
+
+  textarea {
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1; border-radius: 6px;
+    font-size: 12.5px; font-family: inherit; color: #0F172A; resize: vertical;
+    &:focus { outline: 0; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
+  }
+}
+

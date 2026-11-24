@@ -12,7 +12,7 @@ export interface RespuestaRevisionApi<T> {
 
 export type GrupoBandejaInformes =
   | 'todos' | 'pendientes' | 'revisados'
-  | 'pendiente_revision' | 'pendiente_precotizacion' | 'revisado_sin_precot' | 'revisado_con_precot';
+  | 'pendiente_revision' | 'revisado_sin_complementario' | 'revisado_con_complementario';
 
 export interface FiltrosBandejaInformesQs {
   grupo?:            GrupoBandejaInformes | null;
@@ -28,16 +28,16 @@ export interface FiltrosBandejaInformesQs {
 }
 
 export interface TarjetasInformesApi {
-  pendientesRevision:      number;
-  pendientesPrecotizacion: number;
-  revisadosSinPrecot:      number;
-  revisadosConPrecot:      number;
-  slaVencidos:             number;
-  slaHoras:                number;
+  pendientesRevision:          number;
+  revisadosSinComplementario:  number;
+  revisadosConComplementario:  number;
+  slaVencidos:                 number;
+  slaHoras:                    number;
 }
 
-/** Estado en BD: pendiente_revision · en_revision · revisado. */
-export type EstadoInformeApi = 'pendiente_revision' | 'en_revision' | 'revisado';
+/** Estado en BD: pendiente_revision · en_revision · revisado · revisado_con_complementario. */
+export type EstadoInformeApi =
+  | 'pendiente_revision' | 'en_revision' | 'revisado' | 'revisado_con_complementario';
 
 export interface ItemBandejaInformeApi {
   idInforme:               number;
@@ -68,12 +68,15 @@ export interface ItemBandejaInformeApi {
   numeroPrecot:            string | null;
   idPropuestaDerivada:     number | null;
   numeroPropuestaDerivada: string | null;
-  fechaEnvioRevision:      string | null;
-  horasEspera:             number | null;
-  slaHoras:                number | null;
-  slaVencido:              boolean;
-  fechaRevision:           string | null;
-  revisor:                 string | null;
+  fechaEnvioRevision:         string | null;
+  horasEspera:                number | null;
+  slaHoras:                   number | null;
+  slaVencido:                 boolean;
+  fechaRevision:              string | null;
+  revisor:                    string | null;
+  /** HU-58: id del informe complementario (si existe). */
+  idInformeComplementario:    number | null;
+  tieneComplementario:        boolean;
 }
 
 export interface OpcionInformeApi {
@@ -102,7 +105,7 @@ export type OportunidadComercial =
 
 /** Botón primario del modal según estado + acciones permitidas. */
 export type AccionPrincipalInforme =
-  | 'registrar_precotizacion' | 'registrar_revision' | null;
+  | 'registrar_revision' | 'ver_complementario' | null;
 
 export interface CabeceraInformeApi {
   idInforme:                number;
@@ -192,11 +195,20 @@ export interface CabeceraInformeApi {
   estadoPropuestaDerivada:  string | null;
 
   // Acciones
-  puedeEditar:                 boolean;
-  puedeRegistrarPrecotizacion: boolean;
+  puedeGenerarComplementario:  boolean;
   puedeRegistrarRevision:      boolean;
   mensajeBloqueo:              string | null;
   accionPrincipal:             AccionPrincipalInforme;
+
+  // Vínculo al complementario (HU-58) — "puede ver" se deriva de tieneComplementario && idInformeComplementario.
+  idInformeComplementario:     number | null;
+  numeroInformeComplementario: string | null;
+  tieneComplementario:         boolean;
+  /** Estado propio de la fila complementaria: 'borrador' · 'complementario' (confirmado tras guardar). */
+  estadoComplementario:        string | null;
+
+  // PDF del original: Bryan avisa que hoy puede venir null (no está implementado aún).
+  pdfInformeOriginalUrl:       string | null;
 }
 
 export interface PasoInformeApi {
@@ -277,6 +289,8 @@ export interface FotoInformeApi {
   motivoRechazoIa?: string | null;
   forzadaPor?:      string | null;
   forzadaEn?:       string | null;
+  /** HU-58: 'tecnico' si la subió el técnico desde la app (viene del original), 'supervisor' si la sumó el supervisor en el complementario, 'intranet' si la subió una asistente. */
+  origen?:          string | null;
 }
 
 /** Observación registrada durante el servicio en el Seguimiento Operativo. */
@@ -327,49 +341,151 @@ export interface DetalleInformeApi {
   historialReciente:  EventoRecienteApi[];
 }
 
-// ─── HU-58 Edición ──────────────────────────────────────────────────────────
+// ─── HU-58 Informe Complementario ───────────────────────────────────────────
+// Cambio arquitectónico (reunión cliente 2026-11-23): el supervisor ya NO edita
+// el informe original (que es inmutable tras llegar del móvil); si lo ve necesario,
+// genera un informe complementario como entidad aparte (fila nueva en informe_tecnico
+// con id_informe_padre = id del original) que replica datos del original y permite
+// añadir fotos/videos/obs/recoms + registrar la Precotización.
 
-/** Secciones opcionales: null = no cambia. Enviada = reemplaza la lista (con Id = actualiza, sin Id = agrega, las que faltan se eliminan). */
-export interface GuardarInformePayload {
-  descripcionComplementaria?: string | null;
-  resultado?:                  ResultadoEnsayosGuardarPayload | null;
-  procedimiento?:              PasoGuardarPayload[]  | null;
-  ensayos?:                    EnsayoGuardarPayload[]  | null;
-  observaciones?:              ObservacionGuardarPayload[]  | null;
-  recomendaciones?:            RecomendacionGuardarPayload[]  | null;
+export interface ResponsableClienteApi {
+  nombre:   string | null;
+  cargo:    string | null;
+  telefono: string | null;
 }
 
-export interface ResultadoEnsayosGuardarPayload {
-  normativa?:               string | null;
-  patronEnsayo?:            string | null;
-  toleranciaExcentricidad?: number | null;
-  resultadoGlobal?:         'dentro' | 'fuera' | null;
-  errorMaximo?:             number | null;
-  errorMaximoDetalle?:      string | null;
-  incertidumbre?:           number | null;
-  factorK?:                 number | null;
-  decisionTecnica?:         string | null;
+export interface DiagnosticoFinalApi {
+  severidadGeneral: string | null;
+  estadoEquipo:     string | null;
+  revisionJefatura: boolean;
+  precotizacion:    boolean;
+  segundaVisita:    boolean;
+  aplicaGarantia:   boolean;
 }
 
-export interface PasoGuardarPayload {
-  id?:        number | null;
-  titulo?:    string | null;
-  detalle?:   string | null;
-  realizado:  boolean;
-  nota?:      string | null;
+export interface DetalleServicioOriginalApi {
+  tipoEquipo:        string | null;
+  /** Array de lecturas de celdas en mV (hasta 12). Ej. [1, 1, 1, 1]. */
+  celdas:            number[] | null;
+  sumatoriaHasta:    number | null;
+  comparacionHasta:  number | null;
+  anillosFijacion:   boolean | null;
 }
 
-export interface EnsayoGuardarPayload {
-  id?:         number | null;
-  tipo?:       'pesaje' | 'excentricidad' | null;
-  punto?:      string | null;
-  notaPunto?:  string | null;
-  carga?:      number | null;
-  lectura?:    number | null;
-  error?:      number | null;
-  tolerancia?: number | null;
-  resultado?:  'conforme' | 'no_conforme' | null;
+export interface ResultadoOriginalApi {
+  resultadoGlobal: 'dentro' | 'fuera' | null;
+  errorMaximo:     number | null;
+  decisionTecnica: string | null;
+  errorCritico:    boolean | null;
 }
+
+export interface OpcionCatalogo {
+  id?:     number | null;
+  codigo?: string | null;
+  nombre:  string;
+  /** Para `componentesFalla`: id/codigo de la clasificación padre. */
+  padre?:  string | number | null;
+}
+
+export interface CatalogosComplementarioApi {
+  tiposEquipo?:                  OpcionCatalogo[] | null;
+  clasificacionesFalla?:         OpcionCatalogo[] | null;
+  componentesFalla?:             OpcionCatalogo[] | null;
+  severidadesObservacion?:       OpcionCatalogo[] | null;
+  prioridadesRecomendacion?:     OpcionCatalogo[] | null;
+  prioridadesItemPrecotizacion?: OpcionCatalogo[] | null;
+}
+
+export interface PrecotizacionDetalleApi {
+  idPrecotizacion: number | null;
+  numero:          string | null;
+  estado:          string | null;
+  nota:            string | null;
+  items:           ItemPrecotizacionApi[] | null;
+}
+
+export interface ObservacionComplementarioApi extends ObservacionInformeApi {
+  clasificacion?:      string | number | null;
+  clasificacionNombre?: string | null;
+  componente?:         string | number | null;
+  componenteNombre?:   string | null;
+}
+
+export interface CabeceraComplementarioApi {
+  idInformeComplementario:  number;
+  idInformeOriginal:        number;
+  /** N° del informe técnico que da origen a este complementario. */
+  numeroInformeTecnico:     string | null;
+  numeroComplementario:     string | null;
+  estado:                   string;
+  idSupervisor:             number | null;
+  supervisor:               string | null;
+  fechaGeneracion:          string | null;
+  fechaUltimaEdicion:       string | null;
+  urlPdf:                   string | null;
+
+  // Datos del servicio (SOLO LECTURA — vienen del original)
+  numeroOs:                 string | null;
+  razonSocial:              string | null;
+  equipo:                   string | null;
+  tecnico:                  string | null;
+  fechaEjecucion:           string | null;
+
+  // Nuevos campos editables en Tab 5
+  observacionesGenerales:   string | null;
+}
+
+export interface DetalleComplementarioApi {
+  cabecera:         CabeceraComplementarioApi;
+
+  // Del original (readonly) — todo al nivel raíz, al mismo nivel que detalleServicio
+  responsableCliente?:   ResponsableClienteApi      | null;
+  diagnosticoFinal?:     DiagnosticoFinalApi        | null;
+  comentarioPruebas?:    string                     | null;
+  detalleServicio?:      DetalleServicioOriginalApi | null;
+  procedimiento?:        PasoInformeApi[]           | null;
+  ensayos?:              EnsayoInformeApi[]         | null;
+  resultadoOriginal?:    ResultadoOriginalApi       | null;
+
+  // Editable (copia de lo que tiene el técnico — supervisor puede modificar)
+  observaciones?:        ObservacionComplementarioApi[] | null;
+  recomendaciones?:      RecomendacionInformeApi[]      | null;
+  fotos?:                FotoInformeApi[]               | null;
+  precotizacionDetalle?: PrecotizacionDetalleApi        | null;
+
+  // Catálogos para los dropdowns del tab 5
+  opciones?:             CatalogosComplementarioApi | null;
+}
+
+/** Para crear el complementario: no requiere body (se precarga desde el original). */
+export interface CrearComplementarioRespuestaApi {
+  idInformeComplementario: number;
+  numeroComplementario:    string | null;
+  estado:                  string;
+}
+
+/** Guardar cambios editables del complementario.
+ *  Reglas del PUT (Bryan): `null` no toca la sección, `[]` la borra, `[X, Y]` deja solo esas filas.
+ *  Para `precotizacion`, el objeto va envuelto: `null` no toca, `{ items: [] }` la quita.
+ */
+export interface GuardarComplementarioPayload {
+  observacionesGenerales?: string | null;
+  observaciones?:          ObservacionGuardarPayload[]   | null;
+  recomendaciones?:        RecomendacionGuardarPayload[] | null;
+  precotizacion?:          { nota?: string | null; items: ItemPrecotizacionGuardarPayload[] } | null;
+}
+
+export interface ComplementarioGuardadoApi {
+  idInformeComplementario: number;
+  cambiosRegistrados:      number;
+  estado:                  string;
+}
+
+// ─── Payloads del guardado del complementario ─────────────────────────────
+// HU-58 reescrita (2026-11-23): el supervisor ya no edita el informe original.
+// Estos tipos ahora alimentan el PUT del informe complementario (ver
+// GuardarComplementarioPayload arriba) — se mantienen separados para poder
+// reutilizarlos si alguna otra pantalla los necesita.
 
 export interface ObservacionGuardarPayload {
   id?:              number | null;
@@ -388,20 +504,6 @@ export interface RecomendacionGuardarPayload {
   prioridad?:         PrioridadRecomendacion | null;
   plazo?:             string | null;
   idObservacion?:     number | null;
-  /** Para vincular una observación NUEVA (no guardada aún) de este mismo payload: su posición (desde 0) en Observaciones. */
-  indiceObservacion?: number | null;
-}
-
-export interface InformeGuardadoApi {
-  idInforme:         number;
-  cambiosRegistrados: number;
-  estado:            string | null;
-}
-
-/** Paso 4: precotización (obligatoria si el servicio tiene observaciones). Items = lista completa. */
-export interface GuardarPrecotizacionPayload {
-  nota?:  string | null;
-  items:  ItemPrecotizacionGuardarPayload[];
 }
 
 export interface ItemPrecotizacionGuardarPayload {
@@ -414,13 +516,6 @@ export interface ItemPrecotizacionGuardarPayload {
   unidad?:             string | null;
   prioridad?:          PrioridadItemPrecot | null;
   idObservacion?:      number | null;
-}
-
-export interface PrecotizacionGuardadaApi {
-  idPrecotizacion: number;
-  numero:          string;
-  items:           number;
-  estado:          string;
 }
 
 // ─── HU-59 Revisión e Historial ─────────────────────────────────────────────
@@ -442,9 +537,13 @@ export interface CabeceraRevisionInformeApi {
   impactoNotificacion:  string | null;
 }
 
-/** fotos · ensayos · observaciones · precotizacion · procedimiento */
+/**
+ * fotos · ensayos · observaciones · procedimiento.
+ * HU-59 (2026-11-23): quitado 'precotizacion' — la precotización ya no es parte
+ * del ciclo de revisión del informe original (vive en el complementario).
+ */
 export type CodigoChecklistRevision =
-  | 'fotos' | 'ensayos' | 'observaciones' | 'precotizacion' | 'procedimiento';
+  | 'fotos' | 'ensayos' | 'observaciones' | 'procedimiento';
 
 export interface ItemChecklistRevisionApi {
   orden:       number;

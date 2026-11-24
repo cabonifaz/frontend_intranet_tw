@@ -69,7 +69,6 @@ export class ModalRegistrarRevisionComponent implements OnInit {
       case 'fotos':         return 'image';
       case 'ensayos':       return 'science';
       case 'observaciones': return 'warning';
-      case 'precotizacion': return 'receipt_long';
       case 'procedimiento': return 'checklist';
       default:              return 'check_circle';
     }
