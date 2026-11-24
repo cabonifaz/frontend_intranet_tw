@@ -172,6 +172,13 @@ export interface CabeceraInformeApi {
   decisionTecnica:          string | null;
   descripcionComplementaria: string | null;
 
+  // HU-55: quién registró el informe cuando el técnico no pudo usar la app móvil.
+  // Via = 'app' (lo registró el técnico) | 'intranet' (lo registró la Asistente o el Jefe en representación).
+  via:                      string | null;
+  idRegistradoPor:          number | null;
+  registradoPor:            string | null;
+  fechaRegistro:            string | null;
+
   // Trazabilidad
   fechaEnvioRevision:       string | null;
   fechaInicioRevision:      string | null;
