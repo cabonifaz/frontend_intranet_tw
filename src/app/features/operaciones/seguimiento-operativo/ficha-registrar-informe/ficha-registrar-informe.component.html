@@ -161,74 +161,25 @@
 
   }
 
-  <!-- Footer sticky -->
-  <div class="footer">
-    <app-button variant="ghost" (clic)="cancelar()">Cerrar</app-button>
-    <div class="footer__der">
-      @if (sesionActiva() && paso() > 1) {
-        <app-button variant="secondary" icono="chevron_left" (clic)="retroceder()">Atrás</app-button>
-      }
+  <!-- Footer card (patrón ficha-programar-os) -->
+  @if (sesionActiva()) {
+    <div class="footer-fijo">
+      <div class="footer-fijo__contenido">
+        <app-button variant="ghost" tamano="md" icono="close" (clic)="cancelar()">Cerrar</app-button>
+        @if (paso() > 1) {
+          <app-button variant="secondary" tamano="md" icono="chevron_left" (clic)="retroceder()">
+            Atrás
+          </app-button>
+        }
+        @if (paso() < 5) {
+          <app-button variant="primary" tamano="md" icono="chevron_right"
+                      (clic)="avanzar()"
+                      [disabled]="!puedeAvanzar()">
+            Siguiente
+          </app-button>
+        }
+      </div>
     </div>
-  </div>
+  }
 
 </div>
-
-<!-- ─── Modal: Comenzar registro ───────────────────────────────────────── -->
-@if (mostrarModalIniciar()) {
-  <app-modal
-    titulo="Comenzar registro"
-    subtitulo="Indicá la ventana del trabajo en campo y por qué registrás vos."
-    icono="play_arrow"
-    iconoColor="azul"
-    ancho="md"
-    [cerrable]="!iniciando()"
-    (cerrar)="cerrarModalIniciar()">
-
-    <div class="modal-form">
-      <div class="modal-form__row">
-        <label>
-          <span>Inicio en campo</span>
-          <input type="datetime-local"
-                 [ngModel]="inicioIniciar()"
-                 (ngModelChange)="inicioIniciar.set($event)"
-                 [disabled]="iniciando()" />
-        </label>
-        <label>
-          <span>Fin en campo</span>
-          <input type="datetime-local"
-                 [ngModel]="finIniciar()"
-                 (ngModelChange)="finIniciar.set($event)"
-                 [disabled]="iniciando()" />
-        </label>
-      </div>
-
-      <label class="modal-form__full">
-        <span>Motivo</span>
-        <select [ngModel]="motivoIniciar()"
-                (ngModelChange)="motivoIniciar.set($event)"
-                [disabled]="iniciando()">
-          @for (m of motivosDisponibles(); track m.codigo) {
-            <option [value]="m.codigo">{{ m.nombre }}</option>
-          }
-        </select>
-      </label>
-
-      <label class="modal-form__full">
-        <span>Comentario (opcional)</span>
-        <textarea rows="3"
-                  maxlength="300"
-                  [ngModel]="comentarioIniciar()"
-                  (ngModelChange)="comentarioIniciar.set($event)"
-                  [disabled]="iniciando()"
-                  placeholder="Contexto adicional del por qué del registro desde intranet."></textarea>
-      </label>
-    </div>
-
-    <div class="modal-footer">
-      <app-button variant="ghost"   (clic)="cerrarModalIniciar()" [disabled]="iniciando()">Cancelar</app-button>
-      <app-button variant="primary" icono="play_arrow" (clic)="confirmarIniciar()" [cargando]="iniciando()">
-        Comenzar
-      </app-button>
-    </div>
-  </app-modal>
-}

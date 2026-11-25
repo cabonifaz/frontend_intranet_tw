@@ -6,7 +6,6 @@ import { ToastService } from '../../../../core/services/toast.service';
 import { HeroHeaderComponent } from '../../../../shared/ui/hero-header/hero-header.component';
 import { BreadcrumbComponent, BreadcrumbItem } from '../../../../shared/ui/breadcrumb/breadcrumb.component';
 import { ButtonComponent } from '../../../../shared/ui/button/button.component';
-import { ModalComponent } from '../../../../shared/ui/modal/modal.component';
 import { RegistroInformeIntranetService } from '../../../../core/services/registro-informe-intranet.service';
 import {
   CatalogoItemRegistroApi,
@@ -51,7 +50,7 @@ interface EtapaMeta {
   selector: 'app-ficha-registrar-informe',
   imports: [
     CommonModule, FormsModule, HeroHeaderComponent, BreadcrumbComponent,
-    ButtonComponent, ModalComponent,
+    ButtonComponent,
     PasoVariablesComponent, PasoEvidenciasComponent,
     PasoEnsayosComponent, PasoCabeceraComponent, PasoCorrelativoComponent,
   ],
@@ -76,14 +75,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
   /** Mensaje de error de la carga inicial (si hubo). */
   readonly errorCarga = signal<string | null>(null);
 
-  /** Modal "Comenzar registro". */
-  readonly mostrarModalIniciar = signal(false);
-  readonly iniciando           = signal(false);
-  readonly motivoIniciar       = signal<string>('');
-  readonly inicioIniciar       = signal<string>('');   // yyyy-MM-ddTHH:mm (datetime-local)
-  readonly finIniciar          = signal<string>('');
-  readonly comentarioIniciar   = signal<string>('');
-
   readonly ETAPAS: EtapaMeta[] = [
     { n: 1, codigo: 'variables',   titulo: 'Variables ambientales',     subtitulo: 'Temperatura, humedad y procedencia',   icono: 'thermostat'   },
     { n: 2, codigo: 'fotos',       titulo: 'Registro fotográfico',       subtitulo: '8 u 9 evidencias obligatorias + extras', icono: 'photo_camera' },
@@ -95,11 +86,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
   readonly etapaActual = computed(() => this.ETAPAS[this.paso() - 1]);
 
   readonly fila = computed(() => this.contexto()?.contexto ?? null);
-
-  /** Catálogo de motivos para el combo "Comenzar registro". */
-  readonly motivosDisponibles = computed<CatalogoItemRegistroApi[]>(
-    () => this.contexto()?.catalogos?.motivo_manual ?? [],
-  );
 
   /** Catálogo de procedencias para el paso 1 (variables ambientales). */
   readonly procedenciasDisponibles = computed<CatalogoItemRegistroApi[]>(
@@ -175,11 +161,14 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
       const ctx = await this.svc.contextoRegistro(idOs, idEq);
       this.contexto.set(ctx);
 
-      // La validación de si "puede iniciar" se hace ANTES de entrar, desde el tab
-      // Avance por Equipos. Acá asumimos que la Asistente llegó autorizada. Si no
-      // hay sesión activa todavía, abrimos el modal "Comenzar registro" de una.
+      // La validación y el "Comenzar registro" ocurren ANTES de entrar, desde el
+      // Modal Detalle del Servicio → tab Avance por Equipos. Acá la ficha asume
+      // que la Asistente llegó autorizada y ya con sesión abierta. Si por alguna
+      // razón llegó sin sesión activa, la devolvemos al listado.
       if (!ctx.contexto.informeGenerado && !ctx.contexto.iniciado) {
-        this.abrirModalIniciar();
+        this.toast.info('Para registrar el informe, abrí el servicio y arrancá desde "Avance por Equipos".');
+        this.router.navigate(['/operaciones/seguimiento-operativo']);
+        return;
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'No se pudo cargar el contexto del registro.';
@@ -187,61 +176,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
       this.toast.error(msg);
     } finally {
       this.cargando.set(false);
-    }
-  }
-
-  // ─── Iniciar / liberar registro ──────────────────────────────────────
-
-  abrirModalIniciar(): void {
-    // Prefill: fin = ahora, inicio = ahora - 2h (valor razonable, editable).
-    const ahora = new Date();
-    const dosHorasAntes = new Date(ahora.getTime() - 2 * 60 * 60 * 1000);
-    this.finIniciar.set(this.aIsoLocal(ahora));
-    this.inicioIniciar.set(this.aIsoLocal(dosHorasAntes));
-
-    // Motivo por defecto: primero del catálogo si existe.
-    const def = this.motivosDisponibles()[0]?.codigo ?? '';
-    this.motivoIniciar.set(def);
-    this.comentarioIniciar.set('');
-    this.mostrarModalIniciar.set(true);
-  }
-
-  cerrarModalIniciar(): void {
-    if (this.iniciando()) return;
-    this.mostrarModalIniciar.set(false);
-  }
-
-  async confirmarIniciar(): Promise<void> {
-    const idOs = this.idOs(), idEq = this.idOsEquipo();
-    if (!idOs || !idEq) return;
-
-    const inicio = this.inicioIniciar().trim();
-    const fin    = this.finIniciar().trim();
-    const motivo = this.motivoIniciar().trim();
-    if (!inicio || !fin) { this.toast.error('Indica la hora de inicio y fin del trabajo.'); return; }
-    if (new Date(inicio) >= new Date(fin)) { this.toast.error('El inicio debe ser anterior al fin.'); return; }
-    if (!motivo) { this.toast.error('Selecciona el motivo por el que registras tú.'); return; }
-
-    this.iniciando.set(true);
-    try {
-      await this.svc.iniciarRegistro(idOs, idEq, {
-        inicio, fin, motivo,
-        comentario: this.comentarioIniciar().trim() || null,
-      });
-      this.mostrarModalIniciar.set(false);
-      this.toast.exito('Registro iniciado. Podés avanzar por las etapas.');
-      await this.cargarContexto();
-    } catch (e: unknown) {
-      const err = e as Error & { conflicto?: boolean };
-      if (err?.conflicto) {
-        this.toast.error(err.message || 'Otra persona está registrando este equipo.');
-        this.mostrarModalIniciar.set(false);
-        await this.cargarContexto();
-      } else {
-        this.toast.error(err?.message || 'No se pudo iniciar el registro.');
-      }
-    } finally {
-      this.iniciando.set(false);
     }
   }
 
@@ -260,13 +194,6 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
   retroceder(): void {
     if (!this.puedeRetroceder()) return;
     this.paso.update(p => Math.max(1, p - 1) as PasoWizard);
-  }
-
-  guardarYContinuar(): void {
-    // Cada paso tiene su propio submit interno. Este botón solo sirve
-    // para forzar avance manual (para pasos pendientes de implementar).
-    this.toast.info(`Paso ${this.paso()}: formulario pendiente (Fase 4+).`);
-    this.avanzar();
   }
 
   /** El hijo nos avisa que guardó. Recargamos contexto para actualizar chips y avanzamos. */
@@ -319,11 +246,5 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
       case 'no_conforme':  return 'No conforme';
       default:             return 'Pendiente';
     }
-  }
-
-  /** Date → "yyyy-MM-ddTHH:mm" (hora local). */
-  private aIsoLocal(d: Date): string {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 }

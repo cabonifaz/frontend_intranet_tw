@@ -1656,3 +1656,76 @@
     </div>
   </app-modal>
 }
+
+<!-- ─── HU-55: Modal "Comenzar registro" (previo a entrar a la ficha) ──────────────────── -->
+@if (mostrarModalComenzar() && equipoAComenzar(); as eq) {
+  <app-modal
+    titulo="Comenzar registro"
+    [subtitulo]="'Indicá la ventana del trabajo en campo de ' + (eq.equipoNombre || 'este equipo') + ' y el motivo por el que registrás vos.'"
+    icono="play_arrow"
+    iconoColor="azul"
+    ancho="md"
+    [cerrable]="!iniciandoComenzar()"
+    (cerrar)="cerrarModalComenzar()">
+
+    @if (cargandoContextoComenzar()) {
+      <div class="mdi__comenzar-cargando">
+        <span class="material-symbols-outlined">progress_activity</span>
+        <span>Cargando catálogos…</span>
+      </div>
+    } @else {
+      <div class="mdi__comenzar-form">
+        <div class="mdi__comenzar-form__row">
+          <label>
+            <span>Inicio en campo</span>
+            <input type="datetime-local"
+                   [ngModel]="inicioComenzar()"
+                   (ngModelChange)="inicioComenzar.set($event)"
+                   [disabled]="iniciandoComenzar()" />
+          </label>
+          <label>
+            <span>Fin en campo</span>
+            <input type="datetime-local"
+                   [ngModel]="finComenzar()"
+                   (ngModelChange)="finComenzar.set($event)"
+                   [disabled]="iniciandoComenzar()" />
+          </label>
+        </div>
+
+        <label class="mdi__comenzar-form__full">
+          <span>Motivo</span>
+          <select [ngModel]="motivoComenzar()"
+                  (ngModelChange)="motivoComenzar.set($event)"
+                  [disabled]="iniciandoComenzar()">
+            @for (m of motivosComenzar(); track m.codigo) {
+              <option [value]="m.codigo">{{ m.nombre }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="mdi__comenzar-form__full">
+          <span>Comentario (opcional)</span>
+          <textarea rows="3"
+                    maxlength="300"
+                    [ngModel]="comentarioComenzar()"
+                    (ngModelChange)="comentarioComenzar.set($event)"
+                    [disabled]="iniciandoComenzar()"
+                    placeholder="Contexto adicional del por qué del registro desde intranet."></textarea>
+        </label>
+      </div>
+    }
+
+    <div class="mdi__pausa-footer">
+      <app-button variant="ghost" (clic)="cerrarModalComenzar()" [disabled]="iniciandoComenzar()">
+        Cancelar
+      </app-button>
+      <app-button variant="primary"
+                  icono="play_arrow"
+                  (clic)="confirmarComenzar()"
+                  [cargando]="iniciandoComenzar()"
+                  [disabled]="cargandoContextoComenzar()">
+        Comenzar
+      </app-button>
+    </div>
+  </app-modal>
+}

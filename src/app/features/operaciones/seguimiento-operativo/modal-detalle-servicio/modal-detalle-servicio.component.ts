@@ -778,20 +778,31 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   onCerrar(): void { this.cerrar.emit(); }
 
-  // ─── HU-55: Modal "Pausar y continuar" ──────────────────────────────────
-  // Cuando el técnico tiene OTRO equipo en ejecución, hay que pausarlo antes
-  // de poder iniciar el registro de este. Modal secundario arriba del detalle.
+  // ─── HU-55: Modales "Pausar y continuar" + "Comenzar registro" ──────────
+  // El flujo de "Registrar informe" se decide ANTES de navegar a la ficha, desde
+  // el tab Avance por Equipos. La ficha solo se muestra cuando ya hay sesión activa.
   readonly mostrarModalPausarEquipo = signal(false);
   readonly equipoAPausarPara        = signal<EquipoAvance | null>(null);
   readonly pausandoOtroEquipo       = signal(false);
+
+  /** Modal "Comenzar registro" — se abre encima del detalle y, al confirmar, navega a la ficha. */
+  readonly mostrarModalComenzar     = signal(false);
+  readonly equipoAComenzar          = signal<EquipoAvance | null>(null);
+  readonly cargandoContextoComenzar = signal(false);
+  readonly iniciandoComenzar        = signal(false);
+  readonly motivosComenzar          = signal<{ codigo: string; nombre: string }[]>([]);
+  readonly motivoComenzar           = signal<string>('');
+  readonly inicioComenzar           = signal<string>('');
+  readonly finComenzar              = signal<string>('');
+  readonly comentarioComenzar       = signal<string>('');
 
   /**
    * HU-55 — Decide qué hacer al clickear "Registrar informe":
    *  - Si otra persona ya tiene la sesión de registro (registroActivo && !registroPropio)
    *    → toast con el nombre, no navega.
    *  - Si el técnico tiene otro equipo abierto (otroEquipoAbierto no null)
-   *    → modal "Pausar y continuar" / "Cancelar". Si pausa, navega.
-   *  - Si puede iniciar → navega directo al wizard.
+   *    → modal "Pausar y continuar" / "Cancelar". Si pausa, abre "Comenzar registro".
+   *  - Si puede iniciar → abre el modal "Comenzar registro"; al confirmar, navega.
    * Nota: usamos idOsEquipo (NO idEquipo) porque el endpoint de registro
    * espera /equipos/{idOsEquipo}/...
    */
@@ -806,7 +817,7 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
       this.mostrarModalPausarEquipo.set(true);
       return;
     }
-    this.navegarAFichaRegistro(eq.idOsEquipo);
+    void this.abrirModalComenzar(eq);
   }
 
   cerrarModalPausarEquipo(): void {
@@ -822,7 +833,8 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     try {
       await this.registroSvc.pausarEquipoAbierto(idOs, eq.idOsEquipo, null);
       this.mostrarModalPausarEquipo.set(false);
-      this.navegarAFichaRegistro(eq.idOsEquipo);
+      // Después de pausar, abrimos el modal "Comenzar registro" para este equipo.
+      await this.abrirModalComenzar(eq);
     } catch (e: unknown) {
       this.toast.error((e as Error)?.message || 'No se pudo pausar el otro equipo.');
     } finally {
@@ -830,10 +842,79 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Abre el modal "Comenzar registro" encima del detalle y precarga catálogo + horarios. */
+  async abrirModalComenzar(eq: EquipoAvance): Promise<void> {
+    const idOs = this.idServicio();
+    if (idOs == null) return;
+    this.equipoAComenzar.set(eq);
+    this.mostrarModalComenzar.set(true);
+    this.cargandoContextoComenzar.set(true);
+    try {
+      const ctx = await this.registroSvc.contextoRegistro(idOs, eq.idOsEquipo);
+      const motivos = ctx.catalogos?.motivo_manual ?? [];
+      this.motivosComenzar.set(motivos);
+      const ahora = new Date();
+      const inicio = new Date(ahora.getTime() - 2 * 60 * 60 * 1000);
+      this.finComenzar.set(this.aIsoLocalComenzar(ahora));
+      this.inicioComenzar.set(this.aIsoLocalComenzar(inicio));
+      this.motivoComenzar.set(motivos[0]?.codigo ?? '');
+      this.comentarioComenzar.set('');
+    } catch (e: unknown) {
+      this.toast.error((e as Error)?.message || 'No se pudo cargar el contexto del registro.');
+      this.mostrarModalComenzar.set(false);
+      this.equipoAComenzar.set(null);
+    } finally {
+      this.cargandoContextoComenzar.set(false);
+    }
+  }
+
+  cerrarModalComenzar(): void {
+    if (this.iniciandoComenzar()) return;
+    this.mostrarModalComenzar.set(false);
+    this.equipoAComenzar.set(null);
+  }
+
+  async confirmarComenzar(): Promise<void> {
+    const eq = this.equipoAComenzar();
+    const idOs = this.idServicio();
+    if (!eq || idOs == null) return;
+    const inicio = this.inicioComenzar().trim();
+    const fin    = this.finComenzar().trim();
+    const motivo = this.motivoComenzar().trim();
+    if (!inicio || !fin) { this.toast.error('Indica la hora de inicio y fin del trabajo.'); return; }
+    if (new Date(inicio) >= new Date(fin)) { this.toast.error('El inicio debe ser anterior al fin.'); return; }
+    if (!motivo) { this.toast.error('Selecciona el motivo por el que registras tú.'); return; }
+
+    this.iniciandoComenzar.set(true);
+    try {
+      await this.registroSvc.iniciarRegistro(idOs, eq.idOsEquipo, {
+        inicio, fin, motivo,
+        comentario: this.comentarioComenzar().trim() || null,
+      });
+      this.mostrarModalComenzar.set(false);
+      this.navegarAFichaRegistro(eq.idOsEquipo);
+    } catch (e: unknown) {
+      const err = e as Error & { conflicto?: boolean };
+      this.toast.error(err?.message || 'No se pudo iniciar el registro.');
+      if (err?.conflicto) {
+        this.mostrarModalComenzar.set(false);
+        this.equipoAComenzar.set(null);
+        await this.cargar(true);
+      }
+    } finally {
+      this.iniciandoComenzar.set(false);
+    }
+  }
+
   private navegarAFichaRegistro(idOsEquipo: number): void {
     const idOs = this.idServicio();
     this.cerrar.emit();
     this.router.navigate(['/operaciones/seguimiento-operativo', idOs, 'equipos', idOsEquipo, 'registrar-informe']);
+  }
+
+  private aIsoLocalComenzar(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   /** Llama al técnico con el teléfono que trae la cabecera (TelefonoTecnico). */
