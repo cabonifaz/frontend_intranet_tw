@@ -78,9 +78,17 @@
 
         @if (!sesionActiva()) {
           <article class="paso-card paso-card--vacio">
-            <span class="material-symbols-outlined">progress_activity</span>
-            <h3>Preparando el registro…</h3>
-            <p>Completá la ventana del trabajo en el modal para arrancar con las etapas.</p>
+            <span class="material-symbols-outlined">info</span>
+            <h3>No hay un registro activo para este equipo</h3>
+            <p>
+              Para registrar el informe desde Intranet, abrí el servicio en el Seguimiento
+              Operativo, entrá a <strong>Avance por Equipos</strong> y hacé click en
+              <strong>Registrar informe</strong>. Ahí se abre el modal
+              "Comenzar registro" y arranca el flujo.
+            </p>
+            <app-button variant="primary" icono="arrow_back" (clic)="volverASeguimiento()">
+              Volver al seguimiento
+            </app-button>
           </article>
         } @else {
           @switch (paso()) {
