@@ -1661,7 +1661,7 @@
 @if (mostrarModalComenzar() && equipoAComenzar(); as eq) {
   <app-modal
     titulo="Comenzar registro"
-    [subtitulo]="'Indicá la ventana del trabajo en campo de ' + (eq.equipoNombre || 'este equipo') + ' y el motivo por el que registrás vos.'"
+    [subtitulo]="'Indicá la ventana del trabajo en campo de ' + (eq.codigoTw || eq.modelo || 'este equipo') + ' y el motivo por el que registrás vos.'"
     icono="play_arrow"
     iconoColor="azul"
     ancho="md"
