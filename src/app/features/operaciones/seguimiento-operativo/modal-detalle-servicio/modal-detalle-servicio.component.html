@@ -280,12 +280,20 @@
                 } @else {
                   <span class="chip chip--gris equipo-card__status">PENDIENTE</span>
                 }
-                @if (eq.estado !== 'finalizado') {
-                  <!-- HU-55: Asistente / Jefe de Operaciones registra informe desde Intranet por el técnico. -->
+                @if (!eq.informeGenerado && eq.estado !== 'finalizado') {
+                  <!-- HU-55: Asistente / Jefe de Operaciones registra informe desde Intranet por el técnico.
+                       Se oculta cuando el back marca informeGenerado = true (equipo cerrado). -->
                   <app-button variant="secondary" tamano="sm" icono="edit_note"
-                              (clic)="abrirRegistrarInforme(eq.idEquipo)">
+                              (clic)="abrirRegistrarInforme(eq)">
                     Registrar informe
                   </app-button>
+                }
+                @if (eq.informeGenerado && eq.numeroInforme) {
+                  <small class="equipo-card__informe-generado"
+                         title="Informe ya emitido por el técnico o por una Asistente">
+                    <span class="material-symbols-outlined">verified</span>
+                    N° {{ eq.numeroInforme }}
+                  </small>
                 }
               </div>
             </header>
@@ -1620,4 +1628,31 @@
       </div>
     </div>
   </div>
+}
+
+<!-- ─── HU-55: Modal "Pausar y continuar" cuando el técnico tiene otro equipo abierto ──── -->
+@if (mostrarModalPausarEquipo() && equipoAPausarPara(); as eq) {
+  <app-modal
+    titulo="El técnico tiene otro equipo en ejecución"
+    [subtitulo]="'Antes de registrar este equipo, pausamos ' + (eq.otroEquipoAbierto || 'el otro equipo') + '.'"
+    icono="pause_circle"
+    iconoColor="ambar"
+    ancho="md"
+    [cerrable]="!pausandoOtroEquipo()"
+    (cerrar)="cerrarModalPausarEquipo()">
+
+    <p class="mdi__pausa-nota">
+      El otro equipo queda en estado <strong>Pausado</strong> y vos vas a poder registrar éste.
+      Si el técnico reabre el equipo pausado luego, retoma desde donde lo dejó.
+    </p>
+
+    <div class="mdi__pausa-footer">
+      <app-button variant="ghost" (clic)="cerrarModalPausarEquipo()" [disabled]="pausandoOtroEquipo()">
+        Cancelar
+      </app-button>
+      <app-button variant="primary" icono="play_arrow" (clic)="confirmarPausarYContinuar()" [cargando]="pausandoOtroEquipo()">
+        Pausar y continuar
+      </app-button>
+    </div>
+  </app-modal>
 }

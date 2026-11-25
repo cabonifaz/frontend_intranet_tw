@@ -334,6 +334,15 @@ export interface EquipoAvance {
   nObservaciones:   number;
   nMediciones:      number;
   activo:           boolean;                       // true = equipo En Ejecución (expandido)
+
+  // HU-55: flags para decidir el botón "Registrar informe" del tab Avance.
+  idOsEquipo:         number;
+  informeGenerado:    boolean;
+  numeroInforme:      string | null;
+  registroActivo:     boolean;
+  registradorNombre:  string | null;
+  registroPropio:     boolean;
+  otroEquipoAbierto:  string | null;
 }
 
 // ─── Tab 3: Mapa GPS ─────────────────────────────────────────────────────

@@ -101,6 +101,10 @@ const equipoAvanceApi = (o: Partial<EquipoAvanceApi> = {}): EquipoAvanceApi => (
     { etapa: 'montaje', orden: 4, estado: 'pendiente', hora: null },
     { etapa: 'cierre', orden: 5, estado: 'pendiente', hora: null },
   ],
+  // HU-55 — defaults para el botón "Registrar informe".
+  idOsEquipo: 50, informeGenerado: false, numeroInforme: null,
+  registroActivo: false, registradorId: null, registradorNombre: null, registroPropio: false,
+  otroEquipoAbierto: null,
   ...o,
 });
 

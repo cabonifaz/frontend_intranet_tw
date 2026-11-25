@@ -293,6 +293,21 @@ export interface EquipoAvanceApi {
   finalizado:            string | null;
   minutos:               number | null;
   etapas:                EtapaEquipoApi[];
+
+  // HU-55 (Cristopher 2026-11-24) — campos para decidir el botón "Registrar informe".
+  // informeGenerado=true → se oculta el botón (el equipo ya está cerrado).
+  informeGenerado:       boolean;
+  numeroInforme:         string | null;
+  // registroActivo && !registroPropio → al clickear, toast con el registrador; no navega.
+  registroActivo:        boolean;
+  registradorId:         number | null;
+  registradorNombre:     string | null;
+  registroPropio:        boolean;
+  // otroEquipoAbierto no null → modal "Pausar y continuar" / "Cancelar"; si pausa, navega.
+  // Formato: "CÓDIGO (N° OS)" del OTRO equipo del técnico que está en ejecución.
+  otroEquipoAbierto:     string | null;
+  // id de os_equipo (NO del equipo del cliente) — el que esperan los endpoints de registro.
+  idOsEquipo:            number;
 }
 
 export interface AvanceServicioApi {
