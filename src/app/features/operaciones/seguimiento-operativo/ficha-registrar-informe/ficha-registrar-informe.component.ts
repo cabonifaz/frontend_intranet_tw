@@ -160,16 +160,13 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
     try {
       const ctx = await this.svc.contextoRegistro(idOs, idEq);
       this.contexto.set(ctx);
-
       // La validación y el "Comenzar registro" ocurren ANTES de entrar, desde el
-      // Modal Detalle del Servicio → tab Avance por Equipos. Acá la ficha asume
-      // que la Asistente llegó autorizada y ya con sesión abierta. Si por alguna
-      // razón llegó sin sesión activa, la devolvemos al listado.
-      if (!ctx.contexto.informeGenerado && !ctx.contexto.iniciado) {
-        this.toast.info('Para registrar el informe, abrí el servicio y arrancá desde "Avance por Equipos".');
-        this.router.navigate(['/operaciones/seguimiento-operativo']);
-        return;
-      }
+      // Modal Detalle del Servicio → tab Avance por Equipos. Si por algún motivo
+      // (URL directa, F5 tras liberar bloqueo) la ficha carga sin sesión activa,
+      // el template muestra el estado-card "Volver al seguimiento" para que la
+      // Asistente arranque por el camino correcto. No forzamos navigate: el
+      // router.navigate desde el ngOnInit async puede quedar pisado por el route
+      // que Angular estaba resolviendo.
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'No se pudo cargar el contexto del registro.';
       this.errorCarga.set(msg);
@@ -177,6 +174,11 @@ export class FichaRegistrarInformeComponent implements OnInit, OnDestroy {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  /** Vuelve al listado de seguimiento operativo. Sin liberar bloqueo (acá no hay sesión). */
+  volverASeguimiento(): void {
+    this.router.navigate(['/operaciones/seguimiento-operativo']);
   }
 
   // ─── Navegación del wizard ───────────────────────────────────────────

@@ -800,6 +800,8 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
    * HU-55 — Decide qué hacer al clickear "Registrar informe":
    *  - Si otra persona ya tiene la sesión de registro (registroActivo && !registroPropio)
    *    → toast con el nombre, no navega.
+   *  - Si YA tengo sesión propia activa (registroActivo && registroPropio)
+   *    → navega directo a la ficha para retomar, sin pedir modal.
    *  - Si el técnico tiene otro equipo abierto (otroEquipoAbierto no null)
    *    → modal "Pausar y continuar" / "Cancelar". Si pausa, abre "Comenzar registro".
    *  - Si puede iniciar → abre el modal "Comenzar registro"; al confirmar, navega.
@@ -810,6 +812,10 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
     if (eq.registroActivo && !eq.registroPropio) {
       const quien = eq.registradorNombre || 'otra persona';
       this.toast.info(`${quien} ya está registrando este equipo.`);
+      return;
+    }
+    if (eq.registroActivo && eq.registroPropio) {
+      this.navegarAFichaRegistro(eq.idOsEquipo);
       return;
     }
     if (eq.otroEquipoAbierto) {
