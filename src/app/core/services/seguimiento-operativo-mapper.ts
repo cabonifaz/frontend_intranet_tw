@@ -603,6 +603,15 @@ export function adaptarEquipoAvance(e: EquipoAvanceApi): EquipoAvance {
     nObservaciones: e.observaciones,
     nMediciones:    e.mediciones,
     activo,
+
+    // HU-55 — flags del botón "Registrar informe".
+    idOsEquipo:         e.idOsEquipo,
+    informeGenerado:    !!e.informeGenerado,
+    numeroInforme:      textoONulo(e.numeroInforme),
+    registroActivo:     !!e.registroActivo,
+    registradorNombre:  textoONulo(e.registradorNombre),
+    registroPropio:     !!e.registroPropio,
+    otroEquipoAbierto:  textoONulo(e.otroEquipoAbierto),
   };
 }
 

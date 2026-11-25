@@ -8,9 +8,10 @@ import {
   COLOR_DEMORA_EN_RUTA, COLOR_DEMORA_INGRESO, etiquetaEstadoCampo, formatearDistancia, formatearDuracionMin,
 } from '../../../../core/services/seguimiento-operativo-mapper';
 import {
-  ConexionGps, DemoraIncidenciaServicio, DetalleServicioSeguimiento, EstadoEquipoCierre, EstadoEquipoServicio,
+  ConexionGps, DemoraIncidenciaServicio, DetalleServicioSeguimiento, EquipoAvance, EstadoEquipoCierre, EstadoEquipoServicio,
   EstadoTecnicoCampo, FaseDemora, ModoRegistro, TipoEventoTimeline, TipoHitoGps,
 } from '../../../../core/models/seguimiento-operativo.model';
+import { RegistroInformeIntranetService } from '../../../../core/services/registro-informe-intranet.service';
 import { FormularioRegistroAsistenteApi, SeccionEquipo, SeccionEquipoApi } from '../../../../core/models/seguimiento-operativo-api.model';
 import {
   AprobacionesServicio, AprobacionServicio, TipoAprobacion, ViaticosOs,
@@ -54,9 +55,10 @@ type FiltroTipoAprobacion = TipoAprobacion | 'todas';
   styleUrl: './modal-detalle-servicio.component.scss',
 })
 export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
-  private readonly svc    = inject(SeguimientoOperativoService);
-  private readonly toast  = inject(ToastService);
-  private readonly router = inject(Router);
+  private readonly svc          = inject(SeguimientoOperativoService);
+  private readonly toast        = inject(ToastService);
+  private readonly router       = inject(Router);
+  private readonly registroSvc  = inject(RegistroInformeIntranetService);
 
   readonly idServicio = input.required<number>();
 
@@ -776,15 +778,62 @@ export class ModalDetalleServicioComponent implements OnInit, OnDestroy {
 
   onCerrar(): void { this.cerrar.emit(); }
 
+  // ─── HU-55: Modal "Pausar y continuar" ──────────────────────────────────
+  // Cuando el técnico tiene OTRO equipo en ejecución, hay que pausarlo antes
+  // de poder iniciar el registro de este. Modal secundario arriba del detalle.
+  readonly mostrarModalPausarEquipo = signal(false);
+  readonly equipoAPausarPara        = signal<EquipoAvance | null>(null);
+  readonly pausandoOtroEquipo       = signal(false);
+
   /**
-   * HU-55 — Abre la pantalla de "Registrar informe" por la Asistente o el Jefe
-   * de Operaciones cuando el técnico no puede hacerlo desde la app móvil.
-   * Cierra el modal antes de navegar (es una ruta nueva, pantalla completa).
+   * HU-55 — Decide qué hacer al clickear "Registrar informe":
+   *  - Si otra persona ya tiene la sesión de registro (registroActivo && !registroPropio)
+   *    → toast con el nombre, no navega.
+   *  - Si el técnico tiene otro equipo abierto (otroEquipoAbierto no null)
+   *    → modal "Pausar y continuar" / "Cancelar". Si pausa, navega.
+   *  - Si puede iniciar → navega directo al wizard.
+   * Nota: usamos idOsEquipo (NO idEquipo) porque el endpoint de registro
+   * espera /equipos/{idOsEquipo}/...
    */
-  abrirRegistrarInforme(idEquipo: number): void {
+  abrirRegistrarInforme(eq: EquipoAvance): void {
+    if (eq.registroActivo && !eq.registroPropio) {
+      const quien = eq.registradorNombre || 'otra persona';
+      this.toast.info(`${quien} ya está registrando este equipo.`);
+      return;
+    }
+    if (eq.otroEquipoAbierto) {
+      this.equipoAPausarPara.set(eq);
+      this.mostrarModalPausarEquipo.set(true);
+      return;
+    }
+    this.navegarAFichaRegistro(eq.idOsEquipo);
+  }
+
+  cerrarModalPausarEquipo(): void {
+    if (this.pausandoOtroEquipo()) return;
+    this.mostrarModalPausarEquipo.set(false);
+    this.equipoAPausarPara.set(null);
+  }
+
+  async confirmarPausarYContinuar(): Promise<void> {
+    const eq = this.equipoAPausarPara(); if (!eq) return;
+    const idOs = this.idServicio(); if (idOs == null) return;
+    this.pausandoOtroEquipo.set(true);
+    try {
+      await this.registroSvc.pausarEquipoAbierto(idOs, eq.idOsEquipo, null);
+      this.mostrarModalPausarEquipo.set(false);
+      this.navegarAFichaRegistro(eq.idOsEquipo);
+    } catch (e: unknown) {
+      this.toast.error((e as Error)?.message || 'No se pudo pausar el otro equipo.');
+    } finally {
+      this.pausandoOtroEquipo.set(false);
+    }
+  }
+
+  private navegarAFichaRegistro(idOsEquipo: number): void {
     const idOs = this.idServicio();
     this.cerrar.emit();
-    this.router.navigate(['/operaciones/seguimiento-operativo', idOs, 'equipos', idEquipo, 'registrar-informe']);
+    this.router.navigate(['/operaciones/seguimiento-operativo', idOs, 'equipos', idOsEquipo, 'registrar-informe']);
   }
 
   /** Llama al técnico con el teléfono que trae la cabecera (TelefonoTecnico). */
