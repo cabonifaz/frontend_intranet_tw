@@ -4,7 +4,7 @@
 
 .fri {
   display: flex; flex-direction: column; gap: 16px;
-  padding: 16px 20px 90px;
+  padding: 16px 20px 20px;
   background: #F8FAFC;
   min-height: 100%;
 }
@@ -223,49 +223,19 @@
   p  { margin: 0; font-size: 12.5px; color: #64748B; max-width: 440px; }
 }
 
-// ── Modales (iniciar / pausar) ─────────────────────────────────────────────
-.modal-form {
-  display: flex; flex-direction: column; gap: 12px;
-
-  &__row {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    @media (max-width: 640px) { grid-template-columns: 1fr; }
+// ── Footer card (patrón ficha-programar-os) ────────────────────────────────
+.footer-fijo {
+  &__contenido {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 20px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
   }
-
-  &__full { display: flex; flex-direction: column; gap: 4px; }
-  &__nota { margin: 0 0 4px; font-size: 12.5px; color: #475569; line-height: 1.5; }
-
-  label {
-    display: flex; flex-direction: column; gap: 4px;
-    span { font-size: 11.5px; font-weight: 600; color: #475569;
-           text-transform: uppercase; letter-spacing: 0.3px; }
-    input, select, textarea {
-      padding: 8px 10px; border-radius: 8px; border: 1px solid #CBD5E1;
-      font-size: 13px; color: #0F172A; background: #FFFFFF;
-      transition: border-color 0.15s, box-shadow 0.15s;
-      &:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px #DBEAFE; }
-      &:disabled { background: #F8FAFC; color: #64748B; cursor: not-allowed; }
-    }
-    textarea { resize: vertical; font-family: inherit; min-height: 60px; }
-  }
-}
-
-.modal-footer {
-  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
-  padding-top: 14px; margin-top: 14px;
-  border-top: 1px solid #F1F5F9;
-}
-
-// ── Footer sticky ───────────────────────────────────────────────────────────
-.footer {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px;
-  padding: 12px 24px;
-  background: #FFFFFF; border-top: 1px solid #E2E8F0;
-  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
-
-  &__der { display: flex; gap: 10px; }
 }
 
 // ── Responsive stepper ──────────────────────────────────────────────────────
