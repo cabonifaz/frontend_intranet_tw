@@ -384,7 +384,9 @@
                         <span class="material-symbols-outlined">delete</span>
                       </button>
                     </div>
-                    @if (f.descripcion) {
+                    @if (f.etapaNombre) {
+                      <p class="galeria__descripcion"><strong>{{ f.etapaNombre }}:</strong> {{ f.etapaDescripcion }}</p>
+                    } @else if (f.descripcion) {
                       <p class="galeria__descripcion"><strong>Descripción:</strong> {{ f.descripcion }}</p>
                     }
                   </figcaption>
@@ -703,19 +705,25 @@
         }
 
         <label class="mev__campo">
-          <span class="mev__label">Descripción {{ modo === 'ver' ? '' : '(opcional, hasta 200 caracteres)' }}</span>
-          @if (modo === 'ver') {
-            <p class="mev__descripcion-texto">{{ evidenciaActual()?.descripcion || '— Sin descripción —' }}</p>
+          @if (modo === 'ver' && evidenciaActual()?.etapaNombre; as etapa) {
+            <span class="mev__label">{{ etapa }}</span>
+            <p class="mev__descripcion-texto">{{ evidenciaActual()?.etapaDescripcion || '— Sin detalle —' }}</p>
           } @else {
-            <textarea rows="3" maxlength="200"
-                      [ngModel]="descripcionDraft()"
-                      (ngModelChange)="descripcionDraft.set($event)"
-                      placeholder="Agregá contexto para esta evidencia…"></textarea>
-            <small class="mev__contador">{{ descripcionDraft().length }} / 200</small>
+            <span class="mev__label">Descripción {{ modo === 'ver' ? '' : '(opcional, hasta 200 caracteres)' }}</span>
+            @if (modo === 'ver') {
+              <p class="mev__descripcion-texto">{{ evidenciaActual()?.descripcion || '— Sin descripción —' }}</p>
+            } @else {
+              <textarea rows="3" maxlength="200"
+                        [ngModel]="descripcionDraft()"
+                        (ngModelChange)="descripcionDraft.set($event)"
+                        placeholder="Agregá contexto para esta evidencia…"></textarea>
+              <small class="mev__contador">{{ descripcionDraft().length }} / 200</small>
+            }
           }
         </label>
       </div>
 
+      @if (modo !== 'ver' || evidenciaActual()?.origen === 'supervisor') {
       <div class="mev__footer">
         @if (modo === 'ver') {
           <button type="button" class="mev__btn mev__btn--primario" (click)="pasarAEditar()">
@@ -739,6 +747,7 @@
           </button>
         }
       </div>
+      }
     </div>
   </div>
 }

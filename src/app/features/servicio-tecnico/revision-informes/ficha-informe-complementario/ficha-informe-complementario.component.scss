@@ -642,7 +642,7 @@
 
   // Footer
   &__footer {
-    display: flex; justify-content: flex-end; gap: 10px;
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
     padding: 12px 20px; border-top: 1px solid #E2E8F0; background: #F8FAFC;
   }
   &__btn {
