@@ -535,7 +535,9 @@
                       @if (f.validacionIa) {
                         <span class="foto__texto foto__texto--ia"><span class="material-symbols-outlined">smart_toy</span>{{ f.validacionIa }}</span>
                       }
-                      @if (f.descripcion) { <span class="foto__texto">{{ f.descripcion }}</span> }
+                      @if (f.descripcion) {
+                        <span class="foto__texto"><strong>Descripción:</strong> {{ f.descripcion }}</span>
+                      }
                     </div>
                   </button>
                 }
