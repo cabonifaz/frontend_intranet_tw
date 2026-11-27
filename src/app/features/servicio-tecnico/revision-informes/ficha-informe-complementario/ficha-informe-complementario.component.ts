@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RevisionInformesService } from '../../../../core/services/revision-informes.service';
+import { SuministrosService } from '../../../../core/services/suministros.service';
+import { SuministroListaItem } from '../../../../core/models/suministros.model';
 import { ToastService } from '../../../../core/services/toast.service';
 import {
   DetalleComplementarioApi, FotoInformeApi, GuardarComplementarioPayload,
@@ -40,11 +42,12 @@ import { EnViewportDirective } from '../../../../shared/directives/en-viewport.d
   styleUrl: './ficha-informe-complementario.component.scss',
 })
 export class FichaInformeComplementarioComponent implements OnInit {
-  private readonly svc       = inject(RevisionInformesService);
-  private readonly toast     = inject(ToastService);
-  private readonly route     = inject(ActivatedRoute);
-  private readonly router    = inject(Router);
-  private readonly sanitizer = inject(DomSanitizer);
+  private readonly svc          = inject(RevisionInformesService);
+  private readonly sumSvc       = inject(SuministrosService);
+  private readonly toast        = inject(ToastService);
+  private readonly route        = inject(ActivatedRoute);
+  private readonly router       = inject(Router);
+  private readonly sanitizer    = inject(DomSanitizer);
 
   // ─── Estado base ────────────────────────────────────────────────────────
   readonly idComplementario = signal<number | null>(null);
@@ -76,6 +79,14 @@ export class FichaInformeComplementarioComponent implements OnInit {
   private readonly MAX_CONCURRENTES = 4;
   private activas = 0;
   private cola: number[] = [];
+
+  // ─── Modal evidencia (ver / editar / nuevo) ────────────────────────────
+  readonly modalEvidencia     = signal<null | 'ver' | 'editar' | 'nuevo'>(null);
+  readonly evidenciaActual    = signal<FotoInformeApi | null>(null);
+  readonly descripcionDraft   = signal<string>('');
+  readonly archivoDraft       = signal<File | null>(null);
+  readonly previewDraft       = signal<SafeUrl | null>(null);
+  readonly guardandoEvidencia = signal<boolean>(false);
 
   // ─── Niveles y prioridades para dropdowns ──────────────────────────────
   readonly NIVELES: { v: NivelObservacion; label: string }[] = [
@@ -144,6 +155,8 @@ export class FichaInformeComplementarioComponent implements OnInit {
       this.precotizacion.set([...(d.precotizacionDetalle?.items ?? [])]);
       this.notaPrecot.set(d.precotizacionDetalle?.nota ?? '');
       this.fotos.set([...(d.fotos ?? [])]);
+      // Carga eager (limitada por MAX_CONCURRENTES): el usuario suele ver todas las fotos al abrir el tab.
+      for (const f of (d.fotos ?? [])) this.solicitarFoto(f.idEvidencia);
     } catch (e: unknown) {
       this.error.set(e instanceof Error ? e.message : 'No se pudo cargar el informe complementario.');
     } finally {
@@ -237,25 +250,153 @@ export class FichaInformeComplementarioComponent implements OnInit {
 
   eliminarItemPrecot(i: number): void {
     this.precotizacion.update(xs => xs.filter((_, idx) => idx !== i));
+    if (this.conceptoDropdownIdx() === i) this.cerrarConceptoDropdown();
   }
 
-  // ─── Fotos: upload ─────────────────────────────────────────────────────
-  async onSeleccionarArchivo(evt: Event): Promise<void> {
+  // ─── Precotización: autocompletado del campo "Concepto" (Obs #4479) ─────
+  // El input admite texto libre, pero sugiere suministros del maestro
+  // (clases: servicio, equipo, instrumento, pesa) al tipear 2+ caracteres.
+  readonly conceptoDropdownIdx  = signal<number | null>(null);
+  readonly conceptoSugerencias  = signal<SuministroListaItem[]>([]);
+  readonly conceptoBuscandoIdx  = signal<number | null>(null);
+  private conceptoTimer: ReturnType<typeof setTimeout> | null = null;
+  private conceptoSeq           = 0;
+
+  onConceptoInput(i: number, texto: string): void {
+    // Edición libre: se guarda tal cual y se desacopla de un suministro previamente elegido.
+    this.actualizarItemPrecot(i, 'concepto',     texto);
+    this.actualizarItemPrecot(i, 'idSuministro', null);
+    this.actualizarItemPrecot(i, 'codigo',       null);
+
+    if (this.conceptoTimer) { clearTimeout(this.conceptoTimer); this.conceptoTimer = null; }
+    const q = (texto ?? '').trim();
+    if (q.length < 2) {
+      this.conceptoSugerencias.set([]);
+      this.conceptoDropdownIdx.set(null);
+      this.conceptoBuscandoIdx.set(null);
+      return;
+    }
+    this.conceptoDropdownIdx.set(i);
+    this.conceptoBuscandoIdx.set(i);
+    const mioSeq = ++this.conceptoSeq;
+    this.conceptoTimer = setTimeout(async () => {
+      try {
+        const { items } = await this.sumSvc.obtenerSuministros(q, undefined, undefined, 'Activo', false, 1, 8);
+        if (mioSeq !== this.conceptoSeq) return;
+        this.conceptoSugerencias.set(items);
+      } catch {
+        if (mioSeq !== this.conceptoSeq) return;
+        this.conceptoSugerencias.set([]);
+      } finally {
+        if (mioSeq === this.conceptoSeq) this.conceptoBuscandoIdx.set(null);
+      }
+    }, 300);
+  }
+
+  onConceptoFocus(i: number): void {
+    const txt = (this.precotizacion()[i]?.concepto ?? '').trim();
+    if (txt.length >= 2 && this.conceptoSugerencias().length > 0) this.conceptoDropdownIdx.set(i);
+  }
+
+  cerrarConceptoDropdown(): void {
+    this.conceptoDropdownIdx.set(null);
+  }
+
+  seleccionarSugerencia(i: number, s: SuministroListaItem): void {
+    const it = this.precotizacion()[i];
+    this.actualizarItemPrecot(i, 'concepto',     s.descripcion);
+    this.actualizarItemPrecot(i, 'idSuministro', s.idSuministro);
+    this.actualizarItemPrecot(i, 'codigo',       String(s.idSuministro));
+    // Autollena descripción técnica si está vacía, para evitar doble tipeo.
+    if (!it?.descripcionTecnica?.trim()) {
+      this.actualizarItemPrecot(i, 'descripcionTecnica', s.descripcion);
+    }
+    this.cerrarConceptoDropdown();
+  }
+
+  // ─── Modal evidencia: aperturas ────────────────────────────────────────
+  abrirModalVer(f: FotoInformeApi): void {
+    this.evidenciaActual.set(f);
+    this.descripcionDraft.set(f.descripcion ?? '');
+    this.modalEvidencia.set('ver');
+    // Si no estaba descargado aún (no visible en grilla), lo pedimos.
+    this.solicitarFoto(f.idEvidencia);
+  }
+
+  pasarAEditar(): void {
+    const f = this.evidenciaActual();
+    if (!f) return;
+    this.descripcionDraft.set(f.descripcion ?? '');
+    this.modalEvidencia.set('editar');
+  }
+
+  abrirModalNuevo(): void {
+    this.evidenciaActual.set(null);
+    this.descripcionDraft.set('');
+    this.archivoDraft.set(null);
+    this.previewDraft.set(null);
+    this.modalEvidencia.set('nuevo');
+  }
+
+  cerrarModalEvidencia(): void {
+    if (this.guardandoEvidencia()) return;
+    this.modalEvidencia.set(null);
+    this.evidenciaActual.set(null);
+    this.descripcionDraft.set('');
+    this.archivoDraft.set(null);
+    this.previewDraft.set(null);
+  }
+
+  // ─── Modal evidencia: selección de archivo (modo nuevo) ────────────────
+  onSeleccionarArchivo(evt: Event): void {
     const input = evt.target as HTMLInputElement;
-    const files = input.files;
-    if (!files || files.length === 0) return;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+    this.archivoDraft.set(file);
+    const url = URL.createObjectURL(file);
+    this.previewDraft.set(this.sanitizer.bypassSecurityTrustUrl(url));
+  }
+
+  // ─── Modal evidencia: guardar (nuevo o editar) ─────────────────────────
+  async guardarEvidencia(): Promise<void> {
     const id = this.idComplementario();
     if (!id) return;
-    try {
-      for (const f of Array.from(files)) {
-        await this.svc.subirFotoComplementario(id, f);
+    const modo = this.modalEvidencia();
+    const desc = this.descripcionDraft().trim();
+
+    if (modo === 'nuevo') {
+      const archivo = this.archivoDraft();
+      if (!archivo) { this.toast.error('Seleccioná un archivo.'); return; }
+      this.guardandoEvidencia.set(true);
+      try {
+        await this.svc.subirFotoComplementario(id, archivo, desc || null);
+        this.toast.exito('Evidencia subida.');
+        this.guardandoEvidencia.set(false);
+        this.cerrarModalEvidencia();
+        await this.cargar(id);
+      } catch (e: unknown) {
+        this.guardandoEvidencia.set(false);
+        this.toast.error(e instanceof Error ? e.message : 'No se pudo subir la evidencia.');
       }
-      this.toast.exito('Archivo(s) subido(s).');
-      await this.cargar(id);
-    } catch (e: unknown) {
-      this.toast.error(e instanceof Error ? e.message : 'No se pudo subir el archivo.');
-    } finally {
-      input.value = '';
+      return;
+    }
+
+    if (modo === 'editar') {
+      const f = this.evidenciaActual();
+      if (!f) return;
+      this.guardandoEvidencia.set(true);
+      try {
+        await this.svc.actualizarDescripcionFotoComplementario(id, f.idEvidencia, desc || null);
+        this.toast.exito('Descripción actualizada.');
+        this.guardandoEvidencia.set(false);
+        this.cerrarModalEvidencia();
+        await this.cargar(id);
+      } catch (e: unknown) {
+        this.guardandoEvidencia.set(false);
+        this.toast.error(e instanceof Error ? e.message : 'No se pudo actualizar la descripción.');
+      }
+      return;
     }
   }
 

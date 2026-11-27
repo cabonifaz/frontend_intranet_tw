@@ -298,6 +298,12 @@ export interface FotoInformeApi {
   forzadaEn?:       string | null;
   /** HU-58: 'tecnico' si la subió el técnico desde la app (viene del original), 'supervisor' si la sumó el supervisor en el complementario, 'intranet' si la subió una asistente. */
   origen?:          string | null;
+  /** OBS #4478 — paso del checklist donde el técnico tomó la foto (ej. "Placa de identificación"). Lo registra el móvil.
+   *  Para fotos del supervisor es null; usar `descripcion` en ese caso. */
+  etapaNombre?:      string | null;
+  /** OBS #4478 — descripción del paso del checklist (ej. "Especificaciones del equipo"). Lo registra el móvil.
+   *  Para fotos del supervisor es null; usar `descripcion` en ese caso. */
+  etapaDescripcion?: string | null;
 }
 
 /** Observación registrada durante el servicio en el Seguimiento Operativo. */

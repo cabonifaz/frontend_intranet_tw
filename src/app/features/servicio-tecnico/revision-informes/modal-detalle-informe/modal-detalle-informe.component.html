@@ -535,7 +535,11 @@
                       @if (f.validacionIa) {
                         <span class="foto__texto foto__texto--ia"><span class="material-symbols-outlined">smart_toy</span>{{ f.validacionIa }}</span>
                       }
-                      @if (f.descripcion) { <span class="foto__texto">{{ f.descripcion }}</span> }
+                      @if (f.etapaNombre) {
+                        <span class="foto__texto"><strong>{{ f.etapaNombre }}:</strong> {{ f.etapaDescripcion }}</span>
+                      } @else if (f.descripcion) {
+                        <span class="foto__texto"><strong>Descripción:</strong> {{ f.descripcion }}</span>
+                      }
                     </div>
                   </button>
                 }
@@ -718,7 +722,11 @@
       }
       <div class="lightbox__pie">
         <strong>{{ foto.momentoLabel ?? foto.momento }}</strong>
-        @if (foto.descripcion) { <span>— {{ foto.descripcion }}</span> }
+        @if (foto.etapaNombre) {
+          <span>— <strong>{{ foto.etapaNombre }}:</strong> {{ foto.etapaDescripcion }}</span>
+        } @else if (foto.descripcion) {
+          <span>— {{ foto.descripcion }}</span>
+        }
         @if (foto.forzada) { <span class="chip chip--ambar">Forzada por el técnico</span> }
         @if (foto.codigoObservacion) {
           <span class="chip chip--rojo">{{ foto.codigoObservacion }}</span>

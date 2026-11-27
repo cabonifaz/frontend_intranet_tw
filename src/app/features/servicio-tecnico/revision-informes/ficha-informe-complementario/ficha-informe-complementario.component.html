@@ -338,11 +338,10 @@
         <app-seccion icono="photo_library" titulo="Fotos del complementario"
                      subtitulo="Fotos del técnico (chip Técnico) + las que agregue el supervisor (chip Supervisor). Se pueden subir y quitar.">
           <div headerActions>
-            <label class="btn-adjuntar">
+            <button type="button" class="btn-adjuntar" (click)="abrirModalNuevo()">
               <span class="material-symbols-outlined">add_photo_alternate</span>
               Adjuntar foto o video
-              <input type="file" accept="image/*,video/mp4" multiple (change)="onSeleccionarArchivo($event)" hidden>
-            </label>
+            </button>
           </div>
 
           @if (fotos().length === 0) {
@@ -351,33 +350,45 @@
             <div class="galeria">
               @for (f of fotos(); track f.idEvidencia) {
                 <figure class="galeria__item" appEnViewport (enViewport)="solicitarFoto(f.idEvidencia)">
-                  @switch (estadoFotoDe(f.idEvidencia).estado) {
-                    @case ('listo') {
-                      @if (f.esVideo) {
-                        <video class="galeria__media" muted [src]="estadoFotoDe(f.idEvidencia).safeUrl"></video>
-                      } @else {
-                        <img class="galeria__media" [src]="estadoFotoDe(f.idEvidencia).safeUrl" alt="">
+                  <button type="button" class="galeria__thumb" (click)="abrirModalVer(f)" title="Ver en grande">
+                    @switch (estadoFotoDe(f.idEvidencia).estado) {
+                      @case ('listo') {
+                        @if (f.esVideo) {
+                          <video class="galeria__media" muted [src]="estadoFotoDe(f.idEvidencia).safeUrl"></video>
+                          <span class="galeria__play" aria-hidden="true">
+                            <span class="material-symbols-outlined">play_circle</span>
+                          </span>
+                        } @else {
+                          <img class="galeria__media" [src]="estadoFotoDe(f.idEvidencia).safeUrl" alt="">
+                        }
+                      }
+                      @case ('error') {
+                        <div class="galeria__skeleton galeria__skeleton--error">
+                          <span class="material-symbols-outlined">broken_image</span>
+                        </div>
+                      }
+                      @default {
+                        <div class="galeria__skeleton">
+                          <span class="material-symbols-outlined spin">progress_activity</span>
+                        </div>
                       }
                     }
-                    @case ('error') {
-                      <div class="galeria__skeleton galeria__skeleton--error">
-                        <span class="material-symbols-outlined">broken_image</span>
-                      </div>
-                    }
-                    @default {
-                      <div class="galeria__skeleton">
-                        <span class="material-symbols-outlined spin">progress_activity</span>
-                      </div>
-                    }
-                  }
+                  </button>
                   <figcaption>
-                    <span class="chip-origen" [class.chip-origen--sup]="f.origen === 'supervisor'">
-                      {{ f.origen === 'supervisor' ? 'Supervisor' : 'Técnico' }}
-                    </span>
-                    @if (f.esVideo) { <span class="chip-video">VIDEO</span> }
-                    <button type="button" class="btn-quitar" title="Quitar" (click)="eliminarFoto(f.idEvidencia)">
-                      <span class="material-symbols-outlined">delete</span>
-                    </button>
+                    <div class="galeria__barra">
+                      <span class="chip-origen" [class.chip-origen--sup]="f.origen === 'supervisor'">
+                        {{ f.origen === 'supervisor' ? 'Supervisor' : 'Técnico' }}
+                      </span>
+                      @if (f.esVideo) { <span class="chip-video">VIDEO</span> }
+                      <button type="button" class="btn-quitar" title="Quitar" (click)="eliminarFoto(f.idEvidencia)">
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                    @if (f.etapaNombre) {
+                      <p class="galeria__descripcion"><strong>{{ f.etapaNombre }}:</strong> {{ f.etapaDescripcion }}</p>
+                    } @else if (f.descripcion) {
+                      <p class="galeria__descripcion"><strong>Descripción:</strong> {{ f.descripcion }}</p>
+                    }
                   </figcaption>
                 </figure>
               }
@@ -506,6 +517,15 @@
           } @else {
             <div class="precot-tabla-wrap">
               <table class="precot-tabla">
+                <colgroup>
+                  <col class="col-n">
+                  <col class="col-concepto">
+                  <col class="col-desc">
+                  <col class="col-cant">
+                  <col class="col-unidad">
+                  <col class="col-prio">
+                  <col class="col-acc">
+                </colgroup>
                 <thead>
                   <tr>
                     <th>#</th>
@@ -521,8 +541,34 @@
                   @for (it of precotizacion(); track $index; let i = $index) {
                     <tr>
                       <td>{{ i + 1 }}</td>
-                      <td>
-                        <input type="text" [ngModel]="it.concepto" (ngModelChange)="actualizarItemPrecot(i, 'concepto', $event)" maxlength="150">
+                      <td class="precot-concepto">
+                        <div class="autocomplete">
+                          <input type="text"
+                                 [ngModel]="it.concepto"
+                                 (ngModelChange)="onConceptoInput(i, $event)"
+                                 (focus)="onConceptoFocus(i)"
+                                 (blur)="cerrarConceptoDropdown()"
+                                 maxlength="150"
+                                 autocomplete="off"
+                                 placeholder="Buscá en el maestro o escribí libremente…">
+                          @if (conceptoBuscandoIdx() === i) {
+                            <span class="autocomplete__loading" aria-label="Buscando">
+                              <span class="material-symbols-outlined spin">progress_activity</span>
+                            </span>
+                          }
+                          @if (conceptoDropdownIdx() === i && conceptoSugerencias().length > 0) {
+                            <ul class="autocomplete__dropdown" role="listbox">
+                              @for (s of conceptoSugerencias(); track s.idSuministro) {
+                                <li class="autocomplete__item"
+                                    role="option"
+                                    (mousedown)="seleccionarSugerencia(i, s); $event.preventDefault()">
+                                  <span class="autocomplete__clase chip chip--azul">{{ s.claseLabel }}</span>
+                                  <span class="autocomplete__desc">{{ s.descripcion }}</span>
+                                </li>
+                              }
+                            </ul>
+                          }
+                        </div>
                       </td>
                       <td>
                         <input type="text" [ngModel]="it.descripcionTecnica" (ngModelChange)="actualizarItemPrecot(i, 'descripcionTecnica', $event)" maxlength="300">
@@ -581,3 +627,127 @@
 
   }
 </div>
+
+<!-- ── Modal Evidencia (ver / editar / nuevo) ─────────────────────────────── -->
+@if (modalEvidencia(); as modo) {
+  <div class="mev" (click)="cerrarModalEvidencia()">
+    <div class="mev__box" (click)="$event.stopPropagation()">
+      <div class="mev__header">
+        <div class="mev__titulo">
+          <span class="material-symbols-outlined">
+            {{ modo === 'nuevo' ? 'add_photo_alternate' : (modo === 'editar' ? 'edit' : 'photo_library') }}
+          </span>
+          {{ modo === 'nuevo' ? 'Nueva evidencia' : (modo === 'editar' ? 'Editar descripción' : 'Evidencia') }}
+        </div>
+        <button type="button" class="mev__cerrar" (click)="cerrarModalEvidencia()" aria-label="Cerrar">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="mev__body">
+        @if (modo === 'nuevo') {
+          @if (!archivoDraft()) {
+            <label class="mev__dropzone">
+              <span class="material-symbols-outlined">cloud_upload</span>
+              <strong>Seleccioná una foto o video</strong>
+              <small>JPG, PNG o MP4</small>
+              <input type="file" accept="image/*,video/mp4" (change)="onSeleccionarArchivo($event)" hidden>
+            </label>
+          } @else {
+            <div class="mev__preview">
+              @if (archivoDraft()!.type.startsWith('video/')) {
+                <video class="mev__media" controls [src]="previewDraft()"></video>
+              } @else {
+                <img class="mev__media" [src]="previewDraft()" [alt]="archivoDraft()!.name">
+              }
+              <div class="mev__archivo">
+                <span class="material-symbols-outlined">attachment</span>
+                <span class="mev__archivo-nombre">{{ archivoDraft()!.name }}</span>
+                <button type="button" class="mev__archivo-cambiar" (click)="archivoDraft.set(null); previewDraft.set(null)">
+                  Cambiar
+                </button>
+              </div>
+            </div>
+          }
+        } @else if (evidenciaActual(); as f) {
+          <div class="mev__visor">
+            @switch (estadoFotoDe(f.idEvidencia).estado) {
+              @case ('listo') {
+                @if (f.esVideo) {
+                  <video class="mev__media" controls autoplay [src]="estadoFotoDe(f.idEvidencia).safeUrl"></video>
+                } @else {
+                  <img class="mev__media" [src]="estadoFotoDe(f.idEvidencia).safeUrl" [alt]="f.descripcion ?? ''">
+                }
+              }
+              @case ('error') {
+                <div class="mev__fallback">
+                  <span class="material-symbols-outlined">{{ f.esVideo ? 'videocam_off' : 'broken_image' }}</span>
+                  <p>No se pudo cargar {{ f.esVideo ? 'el video' : 'la foto' }}.</p>
+                </div>
+              }
+              @default {
+                <div class="mev__cargando">
+                  <span class="material-symbols-outlined spin">progress_activity</span>
+                </div>
+              }
+            }
+          </div>
+          <div class="mev__meta">
+            <span class="chip-origen" [class.chip-origen--sup]="f.origen === 'supervisor'">
+              {{ f.origen === 'supervisor' ? 'Supervisor' : 'Técnico' }}
+            </span>
+            @if (f.esVideo) {
+              <span class="chip-video">VIDEO</span>
+            } @else if (f.momentoLabel) {
+              <span class="mev__momento">{{ f.momentoLabel }}</span>
+            }
+          </div>
+        }
+
+        <label class="mev__campo">
+          @if (modo === 'ver' && evidenciaActual()?.etapaNombre; as etapa) {
+            <span class="mev__label">{{ etapa }}</span>
+            <p class="mev__descripcion-texto">{{ evidenciaActual()?.etapaDescripcion || '— Sin detalle —' }}</p>
+          } @else {
+            <span class="mev__label">Descripción {{ modo === 'ver' ? '' : '(opcional, hasta 200 caracteres)' }}</span>
+            @if (modo === 'ver') {
+              <p class="mev__descripcion-texto">{{ evidenciaActual()?.descripcion || '— Sin descripción —' }}</p>
+            } @else {
+              <textarea rows="3" maxlength="200"
+                        [ngModel]="descripcionDraft()"
+                        (ngModelChange)="descripcionDraft.set($event)"
+                        placeholder="Agregá contexto para esta evidencia…"></textarea>
+              <small class="mev__contador">{{ descripcionDraft().length }} / 200</small>
+            }
+          }
+        </label>
+      </div>
+
+      @if (modo !== 'ver' || evidenciaActual()?.origen === 'supervisor') {
+      <div class="mev__footer">
+        @if (modo === 'ver') {
+          <button type="button" class="mev__btn mev__btn--primario" (click)="pasarAEditar()">
+            <span class="material-symbols-outlined">edit</span>
+            Editar descripción
+          </button>
+        } @else {
+          <button type="button" class="mev__btn mev__btn--secundario" (click)="cerrarModalEvidencia()" [disabled]="guardandoEvidencia()">
+            Cancelar
+          </button>
+          <button type="button" class="mev__btn mev__btn--primario"
+                  [disabled]="guardandoEvidencia() || (modo === 'nuevo' && !archivoDraft())"
+                  (click)="guardarEvidencia()">
+            @if (guardandoEvidencia()) {
+              <span class="material-symbols-outlined spin">progress_activity</span>
+              Guardando…
+            } @else {
+              <span class="material-symbols-outlined">{{ modo === 'nuevo' ? 'upload' : 'save' }}</span>
+              {{ modo === 'nuevo' ? 'Subir evidencia' : 'Guardar descripción' }}
+            }
+          </button>
+        }
+      </div>
+      }
+    </div>
+  </div>
+}

@@ -112,12 +112,15 @@ export class RevisionInformesService {
     }
   }
 
-  /** Sube una foto/video al complementario. El back la registra en evidencia_fotografica con el id del complementario. */
-  async subirFotoComplementario(idInformeComplementario: number, archivo: File): Promise<void> {
+  /** Sube una foto/video al complementario. El back la registra en evidencia_fotografica con el id del complementario.
+   *  Opcionalmente acepta una descripción (hasta 200 caracteres) que el supervisor registra al subir. */
+  async subirFotoComplementario(idInformeComplementario: number, archivo: File, descripcion?: string | null): Promise<void> {
     if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
     try {
       const form = new FormData();
       form.append('archivo', archivo);
+      const d = (descripcion ?? '').trim();
+      if (d) form.append('descripcion', d);
       const r = await firstValueFrom(
         this.http.post<RespuestaRevisionApi<unknown>>(
           `${this.base}/complementarios/${idInformeComplementario}/fotos`, form,
@@ -126,6 +129,26 @@ export class RevisionInformesService {
       if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo subir la foto.');
     } catch (e) {
       throw this.comoError(e, 'No se pudo subir la foto.');
+    }
+  }
+
+  /** Actualiza la descripción de una foto del complementario. Para fotos del técnico el back guarda la descripción
+   *  en un campo aparte sin alterar el informe original (ver mensaje-back-obs-4478-editar-descripcion-foto.md). */
+  async actualizarDescripcionFotoComplementario(
+    idInformeComplementario: number, idEvidencia: number, descripcion: string | null,
+  ): Promise<void> {
+    if (!Number.isInteger(idInformeComplementario) || idInformeComplementario <= 0) throw new Error('El complementario indicado no es válido.');
+    if (!Number.isInteger(idEvidencia) || idEvidencia <= 0) throw new Error('La evidencia indicada no es válida.');
+    try {
+      const r = await firstValueFrom(
+        this.http.patch<RespuestaRevisionApi<unknown>>(
+          `${this.base}/complementarios/${idInformeComplementario}/fotos/${idEvidencia}/descripcion`,
+          { descripcion: (descripcion ?? '').trim() || null },
+        ),
+      );
+      if (r.idTipoMensaje !== 2) throw new Error(r.mensaje || 'No se pudo actualizar la descripción.');
+    } catch (e) {
+      throw this.comoError(e, 'No se pudo actualizar la descripción.');
     }
   }
 
