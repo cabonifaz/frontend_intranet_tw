@@ -426,6 +426,15 @@
 }
 
 // ── Footer ───────────────────────────────────────────────────────────────
+.mdi__aviso-bloqueo {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 24px;
+  background: #FEF3C7;
+  border-top: 1px solid #FDE68A;
+  color: #92400E;
+  font-size: 13px; line-height: 1.5;
+  .material-symbols-outlined { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+}
 .mdi__footer {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 24px;

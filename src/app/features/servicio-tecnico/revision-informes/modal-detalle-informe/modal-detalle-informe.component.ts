@@ -420,7 +420,8 @@ export class ModalDetalleInformeComponent implements OnInit, OnDestroy {
 
   onVerComplementario(): void {
     const c = this.cabecera();
-    if (c?.tieneComplementario && c.idInformeComplementario != null) {
+    if (c?.idInformeComplementario != null
+        && (c.tieneComplementario || c.accionPrincipal === 'continuar_complementario')) {
       this.verComplementario.emit(c.idInformeComplementario);
     }
   }
