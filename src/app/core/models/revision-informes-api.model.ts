@@ -105,7 +105,7 @@ export type OportunidadComercial =
 
 /** Botón primario del modal según estado + acciones permitidas. */
 export type AccionPrincipalInforme =
-  | 'registrar_revision' | 'ver_complementario' | null;
+  | 'registrar_revision' | 'ver_complementario' | 'continuar_complementario' | null;
 
 export interface CabeceraInformeApi {
   idInforme:                number;

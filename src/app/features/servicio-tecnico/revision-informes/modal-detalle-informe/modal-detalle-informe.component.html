@@ -640,6 +640,12 @@
 
     <!-- ── Footer ──────────────────────────────────────────────────────── -->
     @if (cabecera(); as c) {
+      @if (c.mensajeBloqueo) {
+        <div class="mdi__aviso-bloqueo">
+          <span class="material-symbols-outlined">info</span>
+          <span>{{ c.mensajeBloqueo }}</span>
+        </div>
+      }
       <div class="mdi__footer">
         <div class="mdi__footer-izq">
           <button class="mdi__link" type="button" (click)="descargarPdf()">
@@ -654,20 +660,26 @@
           }
         </div>
         <div class="mdi__footer-der">
-          @if (c.puedeGenerarComplementario) {
-            <app-button variant="secondary" icono="note_add" (clic)="onGenerarComplementario()">
-              {{ c.tieneComplementario ? 'Continuar Informe Complementario' : 'Generar Informe Complementario' }}
+          @if (c.accionPrincipal === 'continuar_complementario' && c.idInformeComplementario) {
+            <app-button variant="primary" icono="edit_note" (clic)="onVerComplementario()">
+              Continuar informe complementario
             </app-button>
-          }
-          @if (c.puedeRegistrarRevision) {
-            <app-button variant="primary" icono="check_circle" (clic)="onRegistrarRevision()">
-              Registrar Revisión
-            </app-button>
-          }
-          @if (c.tieneComplementario && c.idInformeComplementario) {
-            <app-button variant="primary" icono="description" (clic)="onVerComplementario()">
-              Ver Informe Complementario
-            </app-button>
+          } @else {
+            @if (c.puedeGenerarComplementario) {
+              <app-button variant="secondary" icono="note_add" (clic)="onGenerarComplementario()">
+                Generar Informe Complementario
+              </app-button>
+            }
+            @if (c.puedeRegistrarRevision) {
+              <app-button variant="primary" icono="check_circle" (clic)="onRegistrarRevision()">
+                Registrar Revisión
+              </app-button>
+            }
+            @if (c.tieneComplementario && c.idInformeComplementario) {
+              <app-button variant="primary" icono="description" (clic)="onVerComplementario()">
+                Ver Informe Complementario
+              </app-button>
+            }
           }
         </div>
       </div>
